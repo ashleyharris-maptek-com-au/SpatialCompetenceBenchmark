@@ -21,8 +21,37 @@ Do not output anything else than the OpenSCAD file, as commentary doesn't compil
 
 structure = None
 
-subpassParamSummary = [
-  """
+referenceScad = """
+module reference()
+{
+cylinder(r=4.572, h=1.299);
+translate([0,0,1.299]) cylinder(r1=4.572, r2=0, h=2.970);
+}
+"""
+
+
+def resultToScad(result):
+    if "```" in result:
+        result = result.split("```")[1]
+        result = result.partition("\n")[
+            2]  # Drop the first line as it might be "```openscad"
+
+    import re
+    result = re.sub(r"\$fn\s*=\s*[0-9]+", "$fn=50", result)
+
+    return "module result(){ $fn = 50; \n union(){" + result + "}}"
+
+
+def postProcessScore(score, subPassIndex):
+    # Dumb solutions like a single cone do intersect the reference geometry a decent amount,
+    # so we penalise scores far below 1.
+    return score**5
+
+
+highLevelSummary = """
+This simulates falling sand and a bizare assortment of units of measurement, seeing if the
+LLM can model a silo filling up.<br><br>
+
   Some things to watch out for:<ul>
     <li>Total volume is 150.3 cubic meters. 0.02831685 m³ + 42.4753 m³ + 100 m³ + 4.0006 m³</li>
     <li>The nozzle opening is 25NB, not zero-width, so sands start x/y is evenly distributed
@@ -30,33 +59,7 @@ subpassParamSummary = [
     <li>The walls of the silo require this to be a cylinder with a cone on top.</li>
   </ul>
 
-  A regex capturing $fn=\d+ is used to normalise the result and reference geometry to 
+  A regex capturing $fn=[0-9]+ is used to normalise the result and reference geometry to 
   7.2 degrees / 50 segments, ensuring that the LLM isn't penalised for different partitions of 
   a circle.
-  """
-]
-
-referenceScad = """
-module reference()
-{
-    cylinder(r=4.572, h=1.299, $fn=50);
-    translate([0, 0, 1.299])
-        cylinder(r1=4.572, r2=0.025/2, h=2.948, $fn=50);
-}
 """
-
-
-def resultToScad(result):
-  if "```" in result:
-    result = result.split("```")[1]
-    result = result.partition("\n")[2] # Drop the first line as it might be "```openscad"
-
-  import re
-  result = re.sub(r"\$fn\s*=\s*\d+", "$fn=50", result)
-
-  return "module result(){ $fn = 50; \n union(){" + result + "}}"
-
-def postProcessScore(score, subPassIndex):
-  # Dumb solutions like a single cone do intersect the reference geometry a decent amount,
-  # so we penalise scores far below 1.
-  return score ** 5

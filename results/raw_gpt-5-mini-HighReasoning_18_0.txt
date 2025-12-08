@@ -1,0 +1,106 @@
+// OpenSCAD file (units: meters)
+// Tallest pyramid that can be built with 20,000 stones (50 cm cubes), subject to stacking rule.
+// - Stone cube side (s): 0.500 m (500 mm)
+// - Each layer is a centered square slab composed of cubes; layer count (N) chosen as largest N with sum_{k=1..N} k^2 <= 20000
+//   For N = 38: total stones used = 38*39*77/6 = 19,019 (<= 20,000). This yields the tallest solid stone pyramid.
+// - Stone pyramid height = N * s = 38 * 0.5 m = 19.000 m
+//
+// Marble facade (smooth outer pyramid) -- provided as an exact pyramid polyhedron that fully contains the stone assembly.
+// The marble shell (wedges) is the boolean difference: outer_pyramid \ stone_assembly.
+// The stonemason may slice that shell by each stone footprint to obtain individual wedge pieces.
+//
+// All numbers given with millimeter precision (3 decimal places) where appropriate.
+
+// ===================== Parameters =====================
+s = 0.5;                // stone cube side (m)
+N = 38;                 // number of layers
+stones_used = 19019;    // precomputed sum_{k=1..38} k^2
+stone_pyramid_height = N * s; // 19.000 m
+
+// Marble outer pyramid parameters (chosen to fully contain the stepped stone pyramid and be convenient to work with).
+// Apex height H chosen (meters). A conservative choice that keeps base modest while allowing a smooth facade:
+H = 38.0;               // apex height (m) for the marble pyramid (twice the stone height for a well-behaved shell)
+base_half = 722.0/75.0; // 9.626666666666667 m (computed to guarantee the marble pyramid contains the stone assembly to millimetric precision)
+base_side = 2 * base_half; // 19.253333333333334 m
+
+// ===================== Modules =====================
+
+// Stone pyramid: represented efficiently as stacked centered square slabs (one slab per layer).
+// Each slab has side length (n * s) and thickness s, with n = N - layer_index.
+module stone_pyramid_slabs() {
+    union() {
+        // layer 0 is the bottom slab; layer N-1 is the top single cube
+        for (layer = [0 : N - 1]) {
+            n = N - layer;                  // number of cubes per side in this layer
+            side = n * s;                   // slab side length (m)
+            z = layer * s;                  // bottom z of this slab (m)
+            // Place slab so it is centered on X,Y and sits on ground at z
+            translate([-side/2, -side/2, z])
+                cube([side, side, s], center = false);
+        }
+    }
+}
+
+// Outer smooth pyramid (marble), axis-aligned, centered at origin, faces facing cardinal directions.
+// Base is a square at z = 0 with side length base_side, apex at (0,0,H).
+module outer_pyramid() {
+    b = base_half;
+    // base corners (counterclockwise), then apex
+    pts = [
+        [-b, -b, 0],
+        [ b, -b, 0],
+        [ b,  b, 0],
+        [-b,  b, 0],
+        [ 0,  0, H]
+    ];
+    // triangular faces for the four sides, plus the base face (quad)
+    faces = [
+        [0, 1, 4],
+        [1, 2, 4],
+        [2, 3, 4],
+        [3, 0, 4],
+        [0, 1, 2, 3]  // base (optional; included for a closed solid)
+    ];
+    // Build the polyhedron precisely
+    polyhedron(points = pts, faces = faces);
+}
+
+// Marble shell: the volume of marble needed to make the exterior smooth:
+// outer_pyramid MINUS the stone pyramid slabs. This produces the combined wedge volumes (aggregated).
+module marble_shell() {
+    difference() {
+        outer_pyramid();
+        // subtract the stone assembly so the remaining volume is exactly the outer veneer (wedges).
+        stone_pyramid_slabs();
+    }
+}
+
+// Optional: a thin transparent offset to avoid coplanar z-fighting when visualizing both veneer and stones.
+visual_offset = 1e-6; // 1 micrometer shift for display only (negligible, keeps CSG exact)
+
+// ===================== Top-level rendering =====================
+// The file renders both the stone assembly (exact to the millimeter) and the marble shell (the aggregated wedges).
+// The stonemason can extract per-stone wedge pieces by intersecting the marble_shell() with each stone footprint
+// (vertical prism of footprint size s x s) and exporting each resulting solid for cutting instructions.
+
+// Stones (bronze color)
+color([0.75, 0.60, 0.40])  // visual only
+    stone_pyramid_slabs();
+
+// Marble shell (white, slightly transparent)
+color([0.95, 0.95, 0.95, 0.98])
+    marble_shell();
+
+// ===================== Notes (for the stonemason / CAD usage) =====================
+// - Units are meters. All geometry is placed exactly using the parameters above. Dimensions are exact to millimetre precision.
+// - To obtain individual wedge pieces for each external stone:
+//     For each exposed stone whose center is at (cx, cy) and whose slab top is at z = z_top:
+//       footprint_prism = translate([cx - s/2, cy - s/2, 0]) cube([s, s, H], center = false);
+//       single_wedge = intersection() { marble_shell(); footprint_prism; }
+//     Export single_wedge for cutting the marble piece that covers the stone at (cx, cy).
+// - Cube centers (meters) for a given layer 'layer' (0 = bottom) with n = N - layer stones per side:
+//     positions = [ (-(n-1)/2 + k) * s  for k = 0..n-1 ]  (same for X and Y). The slab-centered representation used here matches this placement exactly.
+// - Total stones used: stones_used = 19019 (this is the tallest solid pyramid buildable with <= 20,000 such stones).
+// - Stone pyramid exterior (stepped form) and marble shell are exact CSG solids; export as STL or other CAD formats as needed.
+//
+// End of file.

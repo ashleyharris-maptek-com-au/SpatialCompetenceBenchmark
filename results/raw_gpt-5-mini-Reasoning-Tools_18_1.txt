@@ -1,0 +1,134 @@
+// Pharaoh's Pyramid Plan (OpenSCAD)
+// Units: millimetres (mm)
+// Tallest pyramid given 150,000 stones of 500 mm (0.5 m) side each.
+// Each stone is a cube of side s. The stacking rule produces a stepped square pyramid:
+// layer k has k-by-k stones (k = 1..N). No internal voids.
+// N is chosen so sum_{k=1..N} k^2 <= 150000.
+// This file produces:
+//  - the exact stepped pyramid (solid) built from non-overlapping layer slabs (accurate to mm)
+//  - the marble wedges (one per exterior stone footprint) that fill the difference between
+//    the smooth enclosing square pyramid and the stepped pyramid. Each wedge is the part
+//    of the smooth exterior that sits above the stone's footprint column; i.e.
+//    wedge_for_stone = (smooth_pyramid ∩ stone_footprint_column) \ stone_column.
+// Orientation: +Y is North; the pyramid is centred at the origin (tomb at 0,0,0).
+// NOTE: render/export may be heavy because of many boolean ops (this file is optimized
+// to use one slab per layer and to partition the marble shell per stone footprint).
+
+// -------------------- PARAMETERS (metric SI: millimetres) --------------------
+s = 500;            // stone side-length, mm (0.5 m)
+N = 76;             // number of layers (computed: maximal N with sum k^2 <= 150000)
+H = N * s;          // smooth pyramid height, mm
+W = N * s;          // smooth pyramid base side, mm
+// exact stone count used:
+total_stones = N*(N+1)*(2*N+1)/6; // 149226 for N=76
+
+// visual tuning
+stone_color = [0.67,0.47,0.31]; // sandstone-like
+marble_color = [0.975,0.975,0.985]; // almost-white marble
+show_step_pyramid = true;
+show_marble_wedges = true;
+
+// -------------------- HELPER FUNCTIONS --------------------
+// left (minimum) x or y coordinate for stone (i index in [0..k-1]) in layer of width k
+// x0 = (2*i - k) * s / 2  (gives integer mm with s multiple of 2)
+function leftCoord(i,k) = (2*i - k) * s / 2;
+
+// center coordinate of stone i in a k-wide layer: center = (2*i - (k-1)) * s / 2
+function centerCoord(i,k) = (2*i - (k-1)) * s / 2;
+
+// -------------------- GEOMETRY MODULES --------------------
+
+// Smooth enclosing square pyramid: base square centered at origin, apex at z = H
+module smooth_pyramid() {
+    // vertices
+    W2 = W/2;
+    apex = [0,0,H];
+    pts = [
+        [-W2, -W2, 0], // 0
+        [ W2, -W2, 0], // 1
+        [ W2,  W2, 0], // 2
+        [-W2,  W2, 0], // 3
+        apex           // 4
+    ];
+    // faces (use triangles for compatibility)
+    faces = [
+        [0,1,2],
+        [0,2,3],
+        [0,1,4],
+        [1,2,4],
+        [2,3,4],
+        [3,0,4]
+    ];
+    polyhedron(points = pts, faces = faces);
+}
+
+// Stepped pyramid as a solid (union of k*s by k*s by s slabs, one slab per layer).
+// Using one slab per layer keeps the model exact and compact (76 slabs).
+module stepped_pyramid() {
+    union() {
+        for (k = [1: N]) {
+            dx = k * s;
+            dy = k * s;
+            // place slab centered in X/Y and at correct Z
+            zcenter = ((2*k - 1) * s) / 2; // (2*k -1)/2 * s
+            translate([0, 0, zcenter])
+                cube([dx, dy, s], center=true);
+        }
+    }
+}
+
+// Marble wedge for a single stone footprint at layer k, indices (i,j).
+// The footprint (vertical prism) is the XY cell [leftCoord(i,k), leftCoord(i,k)+s] x [leftCoord(j,k), leftCoord(j,k)+s].
+// Wedge = (smooth_pyramid ∩ footprint_prism_height_H) \ (footprint_prism_height_k*s).
+module marble_wedge_for(i, j, k_layer) {
+    x0 = leftCoord(i, k_layer);
+    y0 = leftCoord(j, k_layer);
+    // Prism across full pyramid height (we intersect with smooth pyramid, so using H is fine)
+    prism = translate([x0, y0, 0]) cube([s, s, H], center=false);
+    // stone column height to subtract (stack of stones up to this layer)
+    column = translate([x0, y0, 0]) cube([s, s, k_layer * s], center=false);
+
+    difference() {
+        intersection() {
+            // the part of the smooth pyramid that lies over this footprint
+            smooth_pyramid();
+            prism;
+        }
+        // subtract the stone column part (so only the exterior marble remains)
+        column;
+    }
+}
+
+// -------------------- ASSEMBLY --------------------
+module assembly() {
+    // Show stepped pyramid (stone mass)
+    if (show_step_pyramid) {
+        color(stone_color)
+            stepped_pyramid();
+    }
+
+    // Show marble wedges partitioned by stone footprint (only exterior footprints)
+    if (show_marble_wedges) {
+        color(marble_color)
+        union() {
+            // For each layer k, generate wedges for perimeter stones only (interior footprints produce empty wedges)
+            for (k = [1 : N]) {
+                for (i = [0 : k-1]) {
+                    for (j = [0 : k-1]) {
+                        // perimeter test: stone is on the outer boundary of the k-by-k layer
+                        if (i == 0 || i == (k-1) || j == 0 || j == (k-1)) {
+                            // produce wedge only if non-empty; generating for exterior footprints only
+                            // this partitions the marble shell across stone footprints (unique assignment)
+                            marble_wedge_for(i, j, k);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -------------------- RENDER / MAIN --------------------
+// Centered over the origin; +Y is north (faces aligned to axes).
+// Calling assembly() produces the stepped stones and the marble wedges.
+assembly();

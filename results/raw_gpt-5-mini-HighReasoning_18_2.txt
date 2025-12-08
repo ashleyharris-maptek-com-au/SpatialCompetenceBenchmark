@@ -1,0 +1,231 @@
+// Pharaoh's Pyramid — OpenSCAD plan (Metric: meters)
+// Tallest pyramid possible with 600000 stones (each 0.5 m cube).
+// Stones are moved in layers; each stone is a 50 cm cube (0.5 m).
+//
+// Summary (computed):
+//   stone_edge = 0.500 m
+//   stones_available = 600000
+//   max_full_layers = 121  // largest L with sum_{k=1..L} k^2 <= 600000
+//   stones_used = 597761
+//   stones_unused = 2239
+//   pyramid_height = 121 * 0.5 = 60.5 m
+//   base_side (stones) = 121 stones -> base_side = 121 * 0.5 = 60.5 m
+// The stepped core is modelled exactly (every step is a full layer).
+//
+// The outer smooth facade (marble) is provided as a single smooth square pyramid
+// that fully encloses the stepped core. To guarantee enclosure for all steps
+// without modifying core stones, the facade base is scaled by `outer_scale`.
+// By default outer_scale = 2.0 (this places the smooth base side at 121.0 m,
+// with apex at the stepped pyramid top = 60.5 m). If you need a different
+// enclosure strategy (smaller facade height or different scale), change
+// `outer_scale` below.
+//
+// NOTES:
+// - All dimensions are in metres. Coordinates and dimensions use mm-level
+//   precision internally (floating point).
+// - The stepped core is constructed as L slabs (one per layer). This is exact
+//   (no internal voids) and volume equals the number of stones * stone_volume.
+// - The facade is created as `outer_smooth()` (polyhedron) and the marble shell
+//   as outer_smooth - inner_stepped (difference). This shell covers every
+//   external stone. If you need each marble wedge exported as a separate part
+//   (one wedge per external stone), set `export_wedges_separately = true`.
+//   Warning: exporting all wedges is heavy (many boolean ops); default is false.
+//
+// Usage:
+// - Open in OpenSCAD. The default view shows the stepped core (brown) and the
+//   marble shell (pale). To export per-stone wedges uncomment/set the flag
+//   `export_wedges_separately = true` (only recommended for batch export or
+//   with sufficient memory).
+//
+// Implementation details:
+// - inner_stepped(): builds exact stacked slabs, one slab per layer l=0..L-1:
+//      slab side = (L-l) * stone_edge, height = stone_edge, z = l*stone_edge
+// - outer_smooth(): square pyramid polyhedron with base on z=0 and apex at z=H
+// - marble_shell: difference(outer_smooth(), inner_stepped())
+//
+// End of descriptive comments — model starts here.
+
+// ----------------------------- Parameters -----------------------------
+stone_edge = 0.500;                 // m (50 cm cube)
+stone_volume = stone_edge^3;        // m^3 per stone
+
+stones_available = 600000;          // total stones available
+L = 121;                            // computed max full layers (see summary above)
+s = stone_edge;
+
+stones_used = (L*(L+1)*(2*L+1))/6;  // sum k^2
+stones_unused = stones_available - stones_used;
+
+pyramid_height = L * s;             // m
+base_side = L * s;                  // m (stepped core base side)
+half_base = base_side / 2;          // m
+
+// Outer facade configuration (choose to fully enclose the stepped core)
+outer_scale = 2.0;                  // scale factor for facade base side vs core
+outer_base_side = base_side * outer_scale;
+outer_half = outer_base_side / 2;   // m
+outer_height = pyramid_height;      // keep apex at stepped core top by default
+
+// Visualization / export toggles
+show_core = true;                   // show stepped core (true/false)
+show_shell = true;                  // show marble shell (true/false)
+export_wedges_separately = false;   // extremely heavy: one wedge per external stone
+show_grid_edges = false;            // draw thin seam lines at stone boundaries
+
+// Small epsilon to avoid exact coplanar boolean degeneracies
+eps = 1e-9;
+
+// ----------------------------- Reports (compile-time) -----------------------------
+echo("stone_edge (m) = ", s);
+echo("stone_volume (m^3) = ", stone_volume);
+echo("layers (L) = ", L);
+echo("stones_used = ", stones_used);
+echo("stones_available = ", stones_available);
+echo("stones_unused = ", stones_unused);
+echo("pyramid_height (m) = ", pyramid_height);
+echo("core base_side (m) = ", base_side);
+echo("outer_scale = ", outer_scale);
+echo("outer_base_side (m) = ", outer_base_side);
+echo("outer_height (m) = ", outer_height);
+echo("inner stepped volume (m^3) = ", stones_used * stone_volume);
+echo("outer smooth pyramid vol (m^3) approx = ", (outer_base_side * outer_base_side * outer_height) / 3);
+
+// ----------------------------- Geometry modules -----------------------------
+module outer_smooth() {
+    // Square pyramid with base on z=0, base square side = outer_base_side,
+    // apex at (0,0,outer_height). The base is centered at origin, sides aligned
+    // to axes so the north face is the +y face as required.
+    polyhedron(
+        points = [
+            [-outer_half, -outer_half, 0 - eps],  // 0
+            [ outer_half, -outer_half, 0 - eps],  // 1
+            [ outer_half,  outer_half, 0 - eps],  // 2
+            [-outer_half,  outer_half, 0 - eps],  // 3
+            [ 0, 0, outer_height]                  // 4 apex
+        ],
+        faces = [
+            [0,1,2,3],   // base
+            [0,1,4],     // side 1 (south)
+            [1,2,4],     // side 2 (east)
+            [2,3,4],     // side 3 (north)
+            [3,0,4]      // side 4 (west)
+        ]
+    );
+}
+
+module inner_stepped() {
+    // Exact stepped core as stacked square slabs (one slab per layer).
+    // Each slab is a single box: side = m * s, height = s, positioned at z = l*s.
+    for (l = [0 : L-1]) {
+        m = L - l;
+        side = m * s;
+        z = l * s;
+        translate([ -side/2, -side/2, z ])
+            // cube with exact mm-level sizes
+            cube([ side, side, s ], center = false);
+    }
+}
+
+module seam_grid(thickness = 0.005) {
+    // Optional thin seam markers at stone boundaries for reference (not cutting).
+    // thickness in meters (default 5 mm visible lines).
+    for (l = [0 : L-1]) {
+        m = L - l;
+        side = m * s;
+        left = -side/2;
+        z = l * s;
+        // vertical lines (along y)
+        for (i = [0 : m]) {
+            x = left + i*s;
+            translate([x - thickness/2, left, z])
+                cube([thickness, side, s], center=false);
+        }
+        // horizontal lines (along x)
+        for (j = [0 : m]) {
+            y = left + j*s;
+            translate([left, y - thickness/2, z])
+                cube([side, thickness, s], center=false);
+        }
+    }
+}
+
+module export_wedges() {
+    // EXPENSIVE: create one wedge per external stone.
+    // Wedge per external stone = (outer_smooth ∩ stone_prism) - stone_cube
+    // stone_prism spans z from 0..outer_height, footprint is stone square.
+    // This produces a "marble tile" that fits around the stone exterior.
+    // Default not called (export_wedges_separately = false).
+    count = 0;
+    for (l = [1 : L]) {
+        m = L - l + 1;
+        side = m * s;
+        left = -side/2;
+        zbottom = (l - 1) * s;
+        for (i = [0 : m-1]) {
+            for (j = [0 : m-1]) {
+                // external stone check: on perimeter of its layer
+                if (i == 0 || i == (m-1) || j == 0 || j == (m-1)) {
+                    x0 = left + i*s;
+                    y0 = left + j*s;
+                    // intersection(outer_smooth, prism) and subtract stone cube
+                    // produce one wedge piece
+                    translate([0,0,0])
+                        difference() {
+                            intersection() {
+                                outer_smooth();
+                                // prism for this stone footprint (full height)
+                                translate([x0, y0, 0])
+                                    cube([s, s, outer_height + s], center=false);
+                            }
+                            // remove the stone volume so wedge fits around stone
+                            translate([x0, y0, zbottom])
+                                cube([s, s, s], center=false);
+                        }
+                    // commented counter (can't accumulate easily, just for logic)
+                    count = count + 1;
+                }
+            }
+        }
+    }
+    // echo number of wedges created (compile-time)
+    echo("wedges_exported (approx) = ", count);
+}
+
+// ----------------------------- Final assembly -----------------------------
+$fn = 16;  // reasonable smoothness for the viewer (not used in polyhedron)
+
+union() {
+    // Marble shell (outer smooth minus inner stepped) —— main facade piece.
+    if (show_shell) {
+        // color pale (marble)
+        color([0.95, 0.95, 0.98])
+            difference() {
+                outer_smooth();
+                // inner stepped is subtracted to leave the external marble shell only
+                inner_stepped();
+            }
+    }
+
+    // Optionally show the exact stepped core
+    if (show_core) {
+        // color for stone blocks
+        color([0.72, 0.53, 0.36])
+            inner_stepped();
+    }
+
+    // visual seam grid (optional)
+    if (show_grid_edges) {
+        color([0,0,0])
+            seam_grid(0.01);
+    }
+
+    // Very heavy per-stone wedge export: run only if explicitly enabled
+    if (export_wedges_separately) {
+        // produce individual wedge solids (may be very slow)
+        // Consider exporting using `export_wedges_separately = true` only when needed.
+        color([0.9, 0.85, 0.8])
+            export_wedges();
+    }
+}
+
+// End of file.

@@ -120,3 +120,4 @@ translate([3, 2, 0]) linear_extrude(0.01) text("13",size=0.15, halign="center", 
 translate([2, 2, 0]) linear_extrude(0.01) text("14",size=0.15, halign="center", valign="center");
 
 translate([1, 2, 0]) linear_extrude(0.01) text("15",size=0.15, halign="center", valign="center");
+center", valign="center");

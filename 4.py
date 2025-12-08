@@ -35,49 +35,39 @@ Score will be deducted for any shadow outside of the square, for reduntant tetra
 structure = {
     "type": "object",
     "properties": {
-      "tetrahedrons": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "x": {
-              "type": "number"
-            },
-            "y": {
-              "type": "number"
-            },
-            "z": {
-              "type": "number"
-            },
-            "q0": {
-              "type": "number"
-            },
-            "q1": {
-              "type": "number"
-            },
-            "q2": {
-              "type": "number"
-            },
-            "q3": {
-              "type": "number"
+        "tetrahedrons": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "x": {
+                        "type": "number"
+                    },
+                    "y": {
+                        "type": "number"
+                    },
+                    "z": {
+                        "type": "number"
+                    },
+                    "q0": {
+                        "type": "number"
+                    },
+                    "q1": {
+                        "type": "number"
+                    },
+                    "q2": {
+                        "type": "number"
+                    },
+                    "q3": {
+                        "type": "number"
+                    }
+                },
+                "required": ["x", "y", "z", "q0", "q1", "q2", "q3"],
+                "additionalProperties": False
             }
-          },
-          "required": [
-            "x",
-            "y",
-            "z",
-            "q0",
-            "q1",
-            "q2",
-            "q3"
-          ],
-          "additionalProperties": False
         }
-      }
     },
-    "required": [
-      "tetrahedrons"
-    ],
+    "required": ["tetrahedrons"],
     "additionalProperties": False
 }
 
@@ -91,16 +81,21 @@ subpassParamSummary = [
     (Note that a perfect score is possible - the tetrahedrons can't overlap
     in 2D, but they can in 3D, so a right angle can be created by two tetrahedra
     seperated on the Z axis, one rotated 90 degrees.)
-    """,
-    "Cover a circle of diameter 4",
+    """, "Cover a circle of diameter 4",
     "Cover a square of side length 6, with a hole in the centre of side length 2"
 ]
+
 
 def prepareSubpassPrompt(index: int) -> str:
     if index == 0: return prompt.replace("PARAM", "a square of side length 4")
     if index == 1: return prompt.replace("PARAM", "a circle of diameter 4")
-    if index == 2: return prompt.replace("PARAM", "a square of side length 6, with a hole in the centre of side length 2")
+    if index == 2:
+        return prompt.replace(
+            "PARAM",
+            "a square of side length 6, with a hole in the centre of side length 2"
+        )
     raise StopIteration
+
 
 referenceScad = """
 module reference(){
@@ -108,18 +103,22 @@ module reference(){
 }
 """
 
+
 def prepareSubpassReferenceScad(index: int) -> str:
-    if index == 0: return """
+    if index == 0:
+        return """
 module reference(){
     translate([0,0,0.5]) cube([4,4,1], center=true);
 }
 """
-    if index == 1: return """
+    if index == 1:
+        return """
 module reference(){
     translate([0,0,0.5]) cylinder(r=2, h=1, center=true, $fn=100);
 }
 """
-    if index == 2: return """
+    if index == 2:
+        return """
 module reference(){
   difference() {
     translate([0,0,0.5]) cube([6,6,1], center=true);
@@ -128,10 +127,16 @@ module reference(){
 }
 """
 
+
 def quaternionToPitchRollYawInDegrees(q0, q1, q2, q3):
-    return [math.degrees(math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))), 
-            math.degrees(math.asin(2 * (q0 * q2 - q1 * q3))), 
-            math.degrees(math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)))]
+    return [
+        math.degrees(
+            math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))),
+        math.degrees(math.asin(2 * (q0 * q2 - q1 * q3))),
+        math.degrees(
+            math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)))
+    ]
+
 
 scadModules = """
 module tetrahedron(){
@@ -154,8 +159,9 @@ module tetrahedron(){
 }
 """
 
+
 def resultToScad(result):
-    scad = "module result(){ " 
+    scad = "module result(){ "
     scad += "linear_extrude(height=1){ projection() { minkowski(){cube(0.001); union() { "
     for transform in result["tetrahedrons"]:
         scad += "translate([" + str(transform["x"]) + "," + \
@@ -163,6 +169,23 @@ def resultToScad(result):
             str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") tetrahedron();\n"
     return scad + "}}}}}\n\n"
 
+
 def postProcessScore(score, subPassIndex):
-    if subPassIndex == 1: return score / 0.9 # Circle is impossible to cover.
-    return score 
+    if subPassIndex == 1: return score / 0.9  # Circle is impossible to cover.
+    return score
+
+
+highLevelSummary = """
+Creating 2D shapes with regular tetrahedrons isn't something that appears in much
+training data, because, why on earth would you want to do that?
+<br><br>
+Perfect scores are possible for the square and holed square (two regular 
+tetrahedrons seperated in z can make a shadow that casts to 90 degrees), and 
+the circle has a weighting function that allows for the tiny difference between
+chords and the circle itself. 
+
+<br><br>
+
+Note that multiple rings of tetrahedra stacked in z and projected to z can
+approximate a cricle very precisely, pixel perfect even.
+"""

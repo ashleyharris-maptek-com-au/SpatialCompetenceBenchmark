@@ -38,33 +38,35 @@ structure = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "x": { "type": "number" },
-                    "y": { "type": "number" },
-                    "z": { "type": "number" },
-                    "q0": { "type": "number" },
-                    "q1": { "type": "number" },
-                    "q2": { "type": "number" },
-                    "q3": { "type": "number" }
+                    "x": {
+                        "type": "number"
+                    },
+                    "y": {
+                        "type": "number"
+                    },
+                    "z": {
+                        "type": "number"
+                    },
+                    "q0": {
+                        "type": "number"
+                    },
+                    "q1": {
+                        "type": "number"
+                    },
+                    "q2": {
+                        "type": "number"
+                    },
+                    "q3": {
+                        "type": "number"
+                    }
                 },
                 "additionalProperties": False,
-                "required": [
-                    "x",
-                    "y",
-                    "z",
-                    "q0",
-                    "q1",
-                    "q2",
-                    "q3"
-                ]
+                "required": ["x", "y", "z", "q0", "q1", "q2", "q3"]
             }
         }
     },
-    "propertyOrdering": [
-        "tetrahedra"
-    ],
-    "required": [
-        "tetrahedra"
-    ],
+    "propertyOrdering": ["tetrahedra"],
+    "required": ["tetrahedra"],
     "additionalProperties": False
 }
 
@@ -79,24 +81,26 @@ subpassParamSummary = [
     "Itself, but scaled up by a factor of 10 "
 ]
 
+
 def prepareSubpassPrompt(index: int) -> str:
-    if index == 0: 
+    if index == 0:
         return prompt + "Sphere of radius 4, with the center at origin."
-    if index == 1: 
+    if index == 1:
         return prompt + "Torus of major radius 8, and minor radius 2, with the center at origin."
-    if index == 2: 
+    if index == 2:
         return prompt + "Set of dumbbells. 2 spheres of radius 2, with centers x = +/-4, and a cylinder of diameter 1 connecting them."
-    if index == 3: 
+    if index == 3:
         return prompt + "Axially aligned square based pyramid with base side 4 and height 4, sitting on the Z=0 plane, centered at origin."
-    if index == 4: 
+    if index == 4:
         return prompt + "Cylinder of radius 3 and height 6, centered at origin and aligned along the Z-axis."
-    if index == 5: 
+    if index == 5:
         return prompt + "Cube of side length 4, centered at origin."
-    if index == 6: 
+    if index == 6:
         return prompt + "Octahedron with edge length 4, hieght 2, centered at origin, with faces on the x, y, and z plane."
     if index == 7:
         return prompt + "Tetrahedron of side length 10, with vertices at 0,0,0 and 10,0,0."
     raise StopIteration
+
 
 referenceScad = """
 module reference(){
@@ -104,20 +108,24 @@ module reference(){
 }
 """
 
+
 def prepareSubpassReferenceScad(index: int) -> str:
-    if index == 0: return """
+    if index == 0:
+        return """
 module reference(){
     sphere(r=4, $fn=20);
 }
 """
-    if index == 1: return """
+    if index == 1:
+        return """
 module reference(){
     rotate_extrude()
         translate([8, 0, 0])
             circle(r = 2, $fn = 16);
 }
 """
-    if index == 2: return """
+    if index == 2:
+        return """
 module reference(){
   union() {
     translate([-4,0,0]) sphere(r=2);
@@ -126,40 +134,51 @@ module reference(){
   }
 }
 """
-    if index == 3: return """
+    if index == 3:
+        return """
 module reference(){
     rotate([0,0,45]) cylinder(r1=2, r2=0,h=4, $fn=4);
 }
 """
 
-    if index == 4: return """
+    if index == 4:
+        return """
 module reference(){
     cylinder(r=3, h=6, center=true, $fn=50);
 }
 """
 
-    if index == 5: return """
+    if index == 5:
+        return """
 module reference(){
     cube([4,4,4], center=true);
 }
 """
 
-    if index == 6: return """
+    if index == 6:
+        return """
 module reference(){
     cylinder(r=4, h=2, center=true, $fn=8);
 }
 """
 
-    if index == 7: return """
+    if index == 7:
+        return """
 module reference(){
     scale([10,10,10]) tetrahedron();
 }
 """
 
+
 def quaternionToPitchRollYawInDegrees(q0, q1, q2, q3):
-    return [math.degrees(math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))), 
-            math.degrees(math.asin(2 * (q0 * q2 - q1 * q3))), 
-            math.degrees(math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)))]
+    return [
+        math.degrees(
+            math.atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2))),
+        math.degrees(math.asin(2 * (q0 * q2 - q1 * q3))),
+        math.degrees(
+            math.atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)))
+    ]
+
 
 scadModules = """
 module tetrahedron(){
@@ -182,33 +201,50 @@ module tetrahedron(){
 }
 """
 
+
 def resultToScad(result):
-    scad = "module result(){ " 
+    scad = "module result(){ "
     scad += "minkowski(){cube(0.001); union() { "
     printedTetrahedra = 0
     for transform in result["tetrahedra"]:
-      try:
-        # if any nans or infinites, skip
-        if any([math.isnan(x) or math.isinf(x) for x in transform.values()]):
-            print("Dropping a tetrahedron that wasn't finite: " + str(transform))
-            continue
+        try:
+            # if any nans or infinites, skip
+            if any(
+                [math.isnan(x) or math.isinf(x) for x in transform.values()]):
+                print("Dropping a tetrahedron that wasn't finite: " +
+                      str(transform))
+                continue
 
-        # If quaternion is not normalised, skip it.
-        magnitude = abs(transform["q0"]**2 + transform["q1"]**2 + transform["q2"]**2 + transform["q3"]**2)
-        if magnitude - 1 > 0.001:
-            print("Dropping a tetrahedron that wasn't normalised |q| = " + str(magnitude) + ": " + str(transform))
-            continue
+            # If quaternion is not normalised, skip it.
+            magnitude = abs(transform["q0"]**2 + transform["q1"]**2 +
+                            transform["q2"]**2 + transform["q3"]**2)
+            if magnitude - 1 > 0.001:
+                print("Dropping a tetrahedron that wasn't normalised |q| = " +
+                      str(magnitude) + ": " + str(transform))
+                continue
 
-        scad += "translate([" + str(transform["x"]) + "," + \
-            str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
-            str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") tetrahedron();\n"
-        printedTetrahedra += 1
-      except Exception as e:
-        print("Dropping a tetrahedron that wasn't valid: " + str(transform) + " " + str(e))
-
+            scad += "translate([" + str(transform["x"]) + "," + \
+                str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
+                str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") tetrahedron();\n"
+            printedTetrahedra += 1
+        except Exception as e:
+            print("Dropping a tetrahedron that wasn't valid: " +
+                  str(transform) + " " + str(e))
 
     if printedTetrahedra == 0:
         print("Test 19: No valid tetrahedra were provided by the LLM.")
         return ""
 
     return scad + "}}}\n\n"
+
+
+highLevelSummary = """
+Can the LLM create complex shapes out of tetrahedra?
+<br><br>
+This is a very hard test for it, as it needs to fill entire volumes with non-overlapping
+tetrahedra.
+<br><br>
+Very few LLMs are even able to figure out the quaternions to rotate the tetrahedra into
+correct positons, let alone fill the volumes with them, with most non-tooling
+LLMs failing due unnormalised quaternions.
+"""

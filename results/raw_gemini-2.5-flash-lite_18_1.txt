@@ -1,0 +1,447 @@
+```openscad
+// Pharaoh's Pyramid - Tallest possible with budget
+
+// Stone dimensions
+stone_size = 0.5; // meters (50 cm)
+
+// Available stones
+available_stones = 150000;
+
+// Men available (not directly used in OpenSCAD geometry but for context)
+// men_available = 100000;
+
+// Stone for one level
+// We need to determine how many stones fit on each level based on the placement rule.
+// Each stone must have its 4 base corners in the middle of another stone.
+// This means each level will have stones placed in a checkerboard pattern relative to the level below.
+// The number of stones on a level will be a square number.
+// Let N be the number of stones along one edge of a square level.
+// The number of stones on that level is N*N.
+// However, due to the placement rule, each stone is supported by 4 stones below.
+// This implies that if level 'l' (starting from 0 at the top) has N*N stones,
+// then level 'l+1' below it must have (N+1)*(N+1) stones.
+// The number of stones needed for a pyramid with k levels (top level has 1 stone):
+// Level 0 (top): 1 stone (1x1)
+// Level 1: 4 stones (2x2) - each corner of the top stone sits on the middle of 4 stones below.
+// Level 2: 9 stones (3x3) - the 4 stones of level 1 are supported by 9 stones.
+// Level k (bottom): (k+1)*(k+1) stones
+// The total number of stones for a pyramid with 'h' layers (where h is the number of full levels starting from the top) is the sum of squares:
+// Sum_{i=0}^{h-1} (i+1)^2 = 1^2 + 2^2 + ... + h^2
+
+// Function to calculate total stones for a pyramid with 'levels' layers (top layer is level 1)
+function total_stones_for_levels(levels) = sum(i=[1:levels], i*i);
+
+// Find the maximum number of levels possible with the available stones
+// We are looking for the largest 'h' such that total_stones_for_levels(h) <= available_stones
+max_levels = 0;
+for (h = 1; h <= 200; h++) { // Iterate up to a reasonable limit
+    if (total_stones_for_levels(h) <= available_stones) {
+        max_levels = h;
+    } else {
+        break;
+    }
+}
+
+// Debugging: Print the maximum levels and stones used
+// echo("Max levels possible: ", max_levels);
+// echo("Total stones used: ", total_stones_for_levels(max_levels));
+
+// Pyramid parameters
+num_levels = max_levels;
+base_stones_per_side = num_levels; // The bottom layer will have num_levels * num_levels stones
+
+// Height of the pyramid
+// Each level is stone_size high.
+pyramid_height = num_levels * stone_size;
+
+// Define the rendering module for a single stone
+module stone() {
+    cube([stone_size, stone_size, stone_size]);
+}
+
+// Generate the pyramid
+// We will place stones layer by layer, from bottom to top.
+// The origin (0,0,0) will be the center of the base of the pyramid.
+// The pyramid faces north (+y).
+
+// The base layer is centered.
+// The total width of the base layer in one direction will be num_levels * stone_size.
+// To center it, we offset by half this width.
+base_offset = (base_stones_per_side * stone_size) / 2;
+
+// Iterate through each level
+for (level = 0; level < num_levels; level++) {
+    // The number of stones along one edge of this level
+    stones_per_side_this_level = num_levels - level;
+    total_stones_this_level = stones_per_side_this_level * stones_per_side_this_level;
+
+    // The offset for this level to center it
+    offset_this_level = (stones_per_side_this_level * stone_size) / 2;
+
+    // The z-position of the bottom of this level
+    // The bottom layer (level = num_levels - 1) is at z = 0.
+    // Subsequent layers are stacked on top.
+    z_pos = level * stone_size;
+
+    // Iterate through stones in this level
+    for (x_idx = 0; x_idx < stones_per_side_this_level; x_idx++) {
+        for (y_idx = 0; y_idx < stones_per_side_this_level; y_idx++) {
+
+            // Calculate the center position of the stone
+            // We offset from the center of the level.
+            // The coordinates here are relative to the center of the level.
+            x_center_offset = (x_idx + 0.5 - stones_per_side_this_level / 2) * stone_size;
+            y_center_offset = (y_idx + 0.5 - stones_per_side_this_level / 2) * stone_size;
+
+            // The actual x and y coordinates in the global coordinate system
+            // Pyramid faces north (+y). The x-axis is east-west.
+            // The placement rule is that each stone has its 4 base corners in the middle of another stone.
+            // This means for a level N, the stones are at positions like (i*2, j*2) if we consider a grid.
+            // However, our current approach is to build discrete layers.
+            // The rule implies a checkerboard placement of stones for adjacent layers.
+            // If a level has k*k stones, the layer below has (k+1)*(k+1) stones.
+            // The stones of layer k are supported by the centers of stones in layer k+1.
+            // This means that for a stone at (x, y) in layer k, its center is supported by
+            // the centers of 4 stones in layer k+1.
+            // Let's re-think the positioning based on the rule:
+            // "each stone must have all 4 base corners sitting in the middle of another stone"
+            // This means if a stone is at (x, y, z), its base corners are at (x +/- stone_size/2, y +/- stone_size/2, z).
+            // These corners must be at the center of stones in the layer below.
+            // This implies a coarser grid for layers below.
+
+            // Let's re-evaluate the structure based on the rule:
+            // A stone at level L (top = 0) with side length S, its base corners are at
+            // (X +/- S/2, Y +/- S/2, Z).
+            // These corners must be at the center of stones in level L+1.
+            // If level L has stones of size S_L, and level L+1 has stones of size S_{L+1},
+            // then the centers of stones in L+1 must be at points separated by distances related to S_L.
+            // This implies that the number of stones on successive layers is not N*N and (N+1)*(N+1).
+            // If the top stone (1x1) is at the center. Its corners are at (+/- stone_size/2, +/- stone_size/2, stone_size).
+            // These must be at the center of stones in the layer below.
+            // This layer below must have stones whose centers form a grid with spacing of stone_size.
+            // So, the next layer down must have stones at (0,0), (stone_size, 0), (0, stone_size), (stone_size, stone_size) relative to some origin.
+            // This would mean the second layer has 4 stones, forming a 2x2 square.
+            // The centers of these 4 stones are at ( +/- stone_size/2, +/- stone_size/2 ) relative to their layer's center.
+            // The base of the top stone (1 stone) sits on the centers of the 4 stones below (2x2 = 4 stones).
+            // The base of these 4 stones (each centered at +/- stone_size/2, +/- stone_size/2) must sit on the centers of stones in the next layer.
+            // The corners of a stone centered at (x_c, y_c) are (x_c +/- stone_size/2, y_c +/- stone_size/2).
+            // If the centers of stones in layer k are at (i*S, j*S), then the layer k+1 centers must be at (i*S + S/2, j*S + S/2).
+            // This forms a checkerboard pattern.
+            // So, if level `l` has `N_l` stones along its side, the centers are spaced `stone_size`.
+            // The next layer `l+1` must have centers spaced `stone_size`.
+            // The number of stones along the side of the base layer for a pyramid of `num_levels` (where top is level 0) is `num_levels`.
+            // So the base layer is `num_levels` x `num_levels`.
+            // The centers are at ( (i - num_levels/2 + 0.5) * stone_size, (j - num_levels/2 + 0.5) * stone_size ).
+            // The layer above it is `(num_levels-1)` x `(num_levels-1)`.
+            // Its centers are at ( (i - (num_levels-1)/2 + 0.5) * stone_size, (j - (num_levels-1)/2 + 0.5) * stone_size ).
+            // The rule means that for a stone on level L, its base corners must be at the centers of stones on level L+1.
+            // If level L has N stones on a side, its center stones are at roughly (0,0). Its corners are at (+/- N/2 * stone_size, +/- N/2 * stone_size).
+            // These corners should align with the centers of stones in the layer below.
+            // This means the spacing of centers in the layer below must be `stone_size`.
+            // So, if level `l` has `N_l` stones on a side, the centers are spaced `stone_size`.
+            // The layer `l+1` below it has `N_{l+1}` stones on a side.
+            // The relationship: The number of stones on a layer should be a square of an integer.
+            // Let's count from the top.
+            // Level 0: 1 stone (1x1)
+            // Level 1: 4 stones (2x2). Each corner of the top stone sits on the middle of 4 stones below.
+            // Level 2: 9 stones (3x3). The 4 stones of level 1 sit on the middle of these 9 stones.
+            // Total stones for `h` layers (top is 1 layer) = sum_{i=1}^{h} i^2.
+            // So, if `max_levels` is the number of layers, the bottom layer has `max_levels` * `max_levels` stones.
+            // The number of stones along the side of the base is `max_levels`.
+            // The z-position of the bottom of the pyramid is 0.
+            // The height of the pyramid is `max_levels * stone_size`.
+
+            // For level `l` (where `l=0` is the top level), the number of stones on a side is `num_levels - l`.
+            // The number of stones on this level is `(num_levels - l)^2`.
+            // The z-position of the bottom of this level is `l * stone_size`.
+
+            // Let's iterate from bottom up for easier positioning.
+            // Let `current_level` go from 0 to `num_levels - 1`.
+            // `current_level = 0` is the base. It has `num_levels` stones per side.
+            // `current_level = num_levels - 1` is the top. It has 1 stone per side.
+            // So, stones per side for `current_level` is `num_levels - current_level`.
+
+            // Iterate from the bottom layer (level_idx = 0) up to the top layer (level_idx = num_levels - 1)
+            // This makes z-positioning easier.
+            // `level_idx` is the index of the layer, starting from the ground (0).
+            // `num_levels` is the total number of layers (height of pyramid in terms of number of stones).
+
+            // `stones_on_side` for the current layer.
+            // Layer 0 (bottom): `num_levels` stones per side.
+            // Layer `num_levels-1` (top): 1 stone per side.
+            stones_on_side = num_levels - level; // Using `level` as iterating from top-down in the loop above.
+                                                // If `level` is 0 (top), stones_on_side = num_levels. This is wrong.
+                                                // Let's use the `level` variable from the outer loop (0 to num_levels-1) which is top-down.
+
+            // Corrected positioning based on top-down iteration:
+            // `level` = 0 (topmost layer). `stones_per_side_this_level` = 1.
+            // `level` = `num_levels - 1` (bottommost layer). `stones_per_side_this_level` = `num_levels`.
+
+            stones_per_side_this_level = num_levels - level;
+            offset_this_level = (stones_per_side_this_level * stone_size) / 2;
+            z_pos = level * stone_size; // Bottom of this layer is at height `level * stone_size`
+
+            // The x and y indices for this level.
+            // The loop variables `x_idx` and `y_idx` are from 0 to `stones_per_side_this_level - 1`.
+            // We need to center these stones.
+            // For a level with `N` stones per side, the centers are at:
+            // `( (i + 0.5 - N/2) * stone_size )` for `i` from 0 to `N-1`.
+            // Example: N=3. i=0,1,2. Centers: (0.5-1.5)*S = -S, (1.5-1.5)*S = 0, (2.5-1.5)*S = S.
+            // This gives centers at -S, 0, S. Spacing is S.
+            // The outer edge of the pyramid is formed by the outer stones.
+            // To ensure corners are in the middle of stones below, the spacing of centers in adjacent layers is `stone_size`.
+            // Thus, each layer's stones are positioned on a grid of `stone_size` spacing.
+            // The key is the offset to center the whole pyramid.
+
+            // Coordinates relative to the center of the current level.
+            // `x_idx` and `y_idx` go from 0 to `stones_per_side_this_level - 1`.
+            // To center them, we want the indices to range from approximately `-N/2` to `+N/2`.
+            // `(x_idx - (stones_per_side_this_level - 1) / 2)` will center the indices.
+            // Let's use `stones_per_side_this_level / 2.0` for correct centering with odd/even numbers.
+            // The offset from the center of the level for the center of a stone.
+            x_center_offset_local = (x_idx - (stones_per_side_this_level - 1) / 2) * stone_size;
+            y_center_offset_local = (y_idx - (stones_per_side_this_level - 1) / 2) * stone_size;
+
+            // Global x and y positions (centered at 0,0 for the base).
+            // The pyramid is centered at the origin (0,0).
+            // North is +y.
+            // x_pos = x_center_offset_local;
+            // y_pos = y_center_offset_local;
+
+            // The placement rule "4 base corners sitting in the middle of another stone"
+            // implies that the centers of stones on layer L are positioned such that their
+            // corners align with the centers of stones on layer L+1.
+            // If layer L has N stones per side, and layer L+1 has N+1 stones per side.
+            // The centers of layer L stones form a grid of spacing S.
+            // The centers of layer L+1 stones form a grid of spacing S.
+            // The relative offset between the grids of centers for adjacent layers is S/2.
+            // This creates the stepped structure.
+
+            // For a pyramid of `num_levels`, the base has `num_levels` stones per side.
+            // The total width is `num_levels * stone_size`. Centered at 0.
+            // For `level` from 0 (top) to `num_levels-1` (bottom):
+            // `stones_on_side = num_levels - level`
+            // `z_pos = level * stone_size`
+            // `center_x` and `center_y` of this layer relative to pyramid center (0,0).
+            // The range of stone centers for `N` stones per side, centered at 0:
+            // `(i - (N-1)/2) * stone_size` for `i` from 0 to `N-1`.
+            // This gives centers at `-(N-1)/2 * S`, `-(N-3)/2 * S`, ..., `(N-1)/2 * S`.
+            // Example N=4: i=0,1,2,3. Indices: (0-1.5)*S=-1.5S, (1-1.5)*S=-0.5S, (2-1.5)*S=0.5S, (3-1.5)*S=1.5S.
+            // Centers: -1.5S, -0.5S, 0.5S, 1.5S. Spacing is S.
+            // This looks correct for the structure of centers.
+
+            stones_on_side = num_levels - level;
+            z_pos = level * stone_size;
+
+            // For each stone in the current layer
+            for (x_idx = 0; x_idx < stones_on_side; x_idx++) {
+                for (y_idx = 0; y_idx < stones_on_side; y_idx++) {
+
+                    // Calculate the center position of this stone in global coordinates
+                    // The x and y coordinates are relative to the center of the pyramid base.
+                    // The offset for this layer's grid of centers.
+                    x_offset = (x_idx - (stones_on_side - 1) / 2.0) * stone_size;
+                    y_offset = (y_idx - (stones_on_side - 1) / 2.0) * stone_size;
+
+                    // The rule implies that the centers of stones in adjacent layers are offset by stone_size/2.
+                    // This means the grid of centers for level `l` is offset by `stone_size/2` from level `l+1`.
+                    // So, if level `l` has `N_l` stones per side, and level `l+1` has `N_{l+1}` stones per side.
+                    // The centers for level `l` are at `( (i - (N_l-1)/2.0) * S )`.
+                    // The centers for level `l+1` are at `( (j - (N_{l+1}-1)/2.0) * S )`.
+                    // The corners of a stone at `(X_c, Y_c)` are `(X_c +/- S/2, Y_c +/- S/2)`.
+                    // These corners must be equal to the centers of stones in the layer below.
+                    // This implies that `N_l` and `N_{l+1}` are consecutive integers.
+                    // If level `l` has `N_l` stones on a side, the next layer down `l+1` has `N_{l+1} = N_l + 1`.
+                    // This confirms our `num_levels - level` calculation for stones on side.
+
+                    // The pyramid faces North (+y).
+                    // So, when placing stones, the x-axis is East-West, y-axis is North-South.
+                    // The base of the pyramid is aligned with x and y axes.
+
+                    // For each stone, we translate it to its calculated position.
+                    // The stone itself is defined at (0,0,0) with dimensions [stone_size, stone_size, stone_size].
+                    // We need to translate its center to (x_offset, y_offset, z_pos).
+                    // The `cube()` module defines a cube with its corner at the origin.
+                    // To center it at `(x_offset, y_offset, z_pos)`, we translate by `(x_offset, y_offset, z_pos)`.
+                    // The origin of `cube([size, size, size])` is at one corner.
+                    // So, to place a stone centered at `(x_offset, y_offset, z_pos)`, we need to translate its corner by:
+                    // `(x_offset - stone_size/2, y_offset - stone_size/2, z_pos)`
+                    // However, if we consider `x_offset` and `y_offset` as the center of the stone, and `z_pos` as the bottom of the stone.
+                    // The `cube()` module has its minimum corner at `[0,0,0]`.
+                    // So, to place a stone centered at `(x_offset, y_offset, z_pos)`:
+                    // Translate by `[x_offset, y_offset, z_pos]`. This places the minimum corner of the stone at `[x_offset, y_offset, z_pos]`.
+                    // The center of the stone will be at `[x_offset + stone_size/2, y_offset + stone_size/2, z_pos + stone_size/2]`.
+                    // This is not what we want if `z_pos` is the bottom of the layer.
+
+                    // Let's define `z_pos` as the bottom of the layer.
+                    // The center of the stone is then at `(x_offset, y_offset, z_pos + stone_size/2)`.
+                    // We can place the stone's minimum corner at `(x_offset, y_offset, z_pos)`.
+                    // This means the cube goes from `[x_offset, y_offset, z_pos]` to `[x_offset + stone_size, y_offset + stone_size, z_pos + stone_size]`.
+                    // The center of this stone is then at `[x_offset + stone_size/2, y_offset + stone_size/2, z_pos + stone_size/2]`.
+                    // This is consistent with `z_pos` being the bottom of the layer.
+
+                    // For centering:
+                    // The center of the pyramid base is at (0,0,0).
+                    // The x and y offsets calculated should place the *center* of the stone at that position.
+                    // So, we need to translate the stone's origin by `(x_offset - stone_size/2, y_offset - stone_size/2, z_pos)`.
+                    // This will make the center of the stone be at `(x_offset, y_offset, z_pos + stone_size/2)`.
+
+                    // Let's adjust the interpretation of `z_pos` and offsets.
+                    // `z_pos` = bottom of the current layer.
+                    // The center of the current level is at (0,0) in x,y.
+                    // The centers of stones within this level are at `(x_offset, y_offset)`.
+                    // We want to place a stone centered at `(x_offset, y_offset, z_pos + stone_size/2)`.
+                    // The `cube()` command places its corner at the origin.
+                    // To place a stone centered at `(cx, cy, cz)`, we translate by `(cx - size/2, cy - size/2, cz - size/2)`.
+                    // So, we translate by `(x_offset - stone_size/2, y_offset - stone_size/2, z_pos)`.
+
+                    // The placement rule "each stone must have all 4 base corners sitting in the middle of another stone"
+                    // implies that if a stone is on layer L, its base corners are on the centers of stones on layer L+1.
+                    // This means the grid of centers for layer L is offset by `stone_size/2` from the grid of centers for layer L+1.
+                    // If the top layer (level=0) has 1 stone at (0,0, z_top).
+                    // Its corners are at (+/- stone_size/2, +/- stone_size/2, z_top).
+                    // These must be at the center of stones in layer 1.
+                    // Layer 1 has 4 stones per side.
+                    // Its centers form a grid of spacing `stone_size`.
+                    // Their centers are at (+/- stone_size/2, +/- stone_size/2) relative to the center of layer 1.
+                    // This means layer 1's centers are at `( stone_size/2, stone_size/2 )`, `( -stone_size/2, stone_size/2 )`, etc.
+                    // The `z_pos` for layer `level` (from top, 0-indexed) is `(num_levels - 1 - level) * stone_size`.
+                    // The bottom layer (level = num_levels - 1) has `z_pos = 0`.
+                    // The top layer (level = 0) has `z_pos = (num_levels - 1) * stone_size`.
+
+                    // Let's iterate from bottom to top for simpler Z.
+                    // `level_from_bottom` goes from 0 (base) to `num_levels-1` (top).
+                    // `z_pos = level_from_bottom * stone_size`.
+                    // `stones_on_side = num_levels - level_from_bottom`.
+
+                    // Re-writing the loop for bottom-up:
+                    // The outer loop will iterate from `level_from_bottom = 0` to `num_levels - 1`.
+                    // `z_pos` for this layer is `level_from_bottom * stone_size`.
+                    // `stones_on_side` for this layer is `num_levels - level_from_bottom`.
+
+                    // Global center of the pyramid is (0,0,0).
+                    // The pyramid faces North (+y).
+
+                    // Consider the base layer (level_from_bottom = 0):
+                    // `stones_on_side = num_levels`.
+                    // Centers are at `( (i - (num_levels-1)/2.0) * stone_size, (j - (num_levels-1)/2.0) * stone_size )`.
+                    // Consider the layer above (level_from_bottom = 1):
+                    // `stones_on_side = num_levels - 1`.
+                    // Centers are at `( (i' - (num_levels-2)/2.0) * stone_size, (j' - (num_levels-2)/2.0) * stone_size )`.
+                    // The rule: corners of a stone on layer L must be at the centers of stones on layer L+1.
+                    // This means the grid of centers for layer L must be offset by `stone_size/2` from layer L+1.
+
+                    // If the centers of layer `L+1` are at `(x_c, y_c)`, then centers of layer `L` are at `(x_c +/- stone_size/2, y_c +/- stone_size/2)`.
+                    // This implies the grid of centers for layer `l` is offset by `(stone_size/2, stone_size/2)` relative to the layer below it.
+
+                    // Let's define the origin of the pyramid at the center of its base.
+                    // The bottom layer has `N` stones per side.
+                    // Its centers are at `( (i - (N-1)/2.0) * stone_size, (j - (N-1)/2.0) * stone_size )`.
+                    // The layer above has `N-1` stones per side.
+                    // Its centers are at `( (i' - (N-2)/2.0) * stone_size, (j' - (N-2)/2.0) * stone_size )`.
+                    // The offset of centers between adjacent layers is `stone_size/2`.
+
+                    // Let's define the `offset_factor` for the grid.
+                    // For the base layer (`level_from_bottom = 0`), offset_factor = 0.
+                    // For the next layer (`level_from_bottom = 1`), offset_factor = 1.
+                    // So, the x and y center coordinates for a stone at `(x_idx, y_idx)` in layer `level_from_bottom` are:
+                    // `x_center = (x_idx - (stones_on_side - 1)/2.0 + offset_factor) * stone_size`
+                    // `y_center = (y_idx - (stones_on_side - 1)/2.0 + offset_factor) * stone_size`
+
+                    // Re-looping with correct bottom-up logic and offset.
+                    // `num_levels` is the total number of layers (height in stones).
+                    // Bottom layer is level 0. Top layer is level `num_levels - 1`.
+
+                    // Iterate through each layer from bottom to top.
+                    // `layer_index` goes from 0 to `num_levels - 1`.
+                    // `z_pos` of the bottom of the layer.
+                    // `stones_per_side_this_layer`.
+                    // `offset_shift` to align centers correctly.
+
+                    // `layer_index` 0 to `num_levels - 1` (bottom to top).
+                    // `z_position = layer_index * stone_size;`
+                    // `stones_on_side = num_levels - layer_index;`
+                    // `offset_shift = layer_index / 2.0;` // This shift is applied to the index-based offset.
+
+                    // The global x,y origin (0,0) is the center of the pyramid's base.
+                    // North is +y direction.
+
+                    // For each stone in the current layer:
+                    // `x_idx` and `y_idx` from 0 to `stones_on_side - 1`.
+                    // Position relative to the layer's center:
+                    // `x_local = (x_idx - (stones_on_side - 1) / 2.0) * stone_size;`
+                    // `y_local = (y_idx - (stones_on_side - 1) / 2.0) * stone_size;`
+
+                    // Add the layer offset:
+                    // `x_center = x_local + offset_shift * stone_size;`
+                    // `y_center = y_local + offset_shift * stone_size;`
+
+                    // This seems correct. Let's implement this.
+
+                    // --- Re-initializing loops for clarity ---
+                }
+            }
+        }
+    }
+}
+
+// Final attempt at loop structure and positioning
+// num_levels is the total number of layers.
+// The base layer is layer 0, z=0.
+// The top layer is layer num_levels-1.
+
+// Iterate through each layer from bottom (0) to top (num_levels - 1)
+for (layer_index = 0; layer_index < num_levels; layer_index++) {
+
+    // Z position of the bottom of the current layer
+    z_pos = layer_index * stone_size;
+
+    // Number of stones along one side of this layer
+    // Bottom layer (index 0) has num_levels stones on a side.
+    // Top layer (index num_levels-1) has 1 stone on a side.
+    stones_on_side = num_levels - layer_index;
+
+    // The offset shift for the grid of centers.
+    // This shift is added to the index-based positioning to create the stepped effect.
+    // Layer 0 (base): offset_shift = 0
+    // Layer 1: offset_shift = 0.5
+    // Layer 2: offset_shift = 1.0
+    offset_shift = layer_index / 2.0;
+
+    // Iterate through each stone in the current layer (x_idx, y_idx from 0 to stones_on_side - 1)
+    for (x_idx = 0; x_idx < stones_on_side; x_idx++) {
+        for (y_idx = 0; y_idx < stones_on_side; y_idx++) {
+
+            // Calculate the center of the stone in global coordinates.
+            // Origin (0,0,0) is the center of the pyramid's base.
+            // North is +y.
+
+            // Position relative to the center of the current layer's grid.
+            // `x_idx` and `y_idx` range from 0 to `stones_on_side - 1`.
+            // `(x_idx - (stones_on_side - 1) / 2.0)` centers the indices around 0.
+            // Multiply by `stone_size` to get the spacing.
+            x_local_center = (x_idx - (stones_on_side - 1) / 2.0) * stone_size;
+            y_local_center = (y_idx - (stones_on_side - 1) / 2.0) * stone_size;
+
+            // Apply the layer offset shift.
+            // This shift accounts for the stepping of the pyramid.
+            // The shift is half a stone size in x and y for each subsequent layer.
+            global_x_center = x_local_center + offset_shift * stone_size;
+            global_y_center = y_local_center + offset_shift * stone_size;
+
+            // The z coordinate is the bottom of the layer.
+            // We need to place the stone centered at (global_x_center, global_y_center, z_pos + stone_size/2).
+            // The cube module's origin is at its minimum corner.
+            // To place a cube of size S centered at (cx, cy, cz), we translate by (cx - S/2, cy - S/2, cz - S/2).
+            translate([global_x_center - stone_size/2, global_y_center - stone_size/2, z_pos]) {
+                stone();
+            }
+        }
+    }
+}
+
+// Module for a single stone (50cm cube)
+module stone() {
+    cube([stone_size, stone_size, stone_size]);
+}
+```

@@ -27,72 +27,54 @@ Return a polyhedron that is the union of the two solid objects.
 """
 
 structure = {
-  "type": "object",
-  "properties": {
-    "polyhedron": {
-      "type": "object",
-      "properties": {
-        "vertex": {
-          "type": "array",
-          "items": {
+    "type": "object",
+    "properties": {
+        "polyhedron": {
             "type": "object",
             "properties": {
-              "xyz": {
-                "type": "array",
-                "items": {
-                  "type": "number"
+                "vertex": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "xyz": {
+                                "type": "array",
+                                "items": {
+                                    "type": "number"
+                                }
+                            }
+                        },
+                        "propertyOrdering": ["xyz"],
+                        "additionalProperties": False,
+                        "required": ["xyz"]
+                    }
+                },
+                "faces": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "vertex": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "propertyOrdering": ["vertex"],
+                        "additionalProperties": False,
+                        "required": ["vertex"]
+                    }
                 }
-              }
             },
-            "propertyOrdering": [
-              "xyz"
-            ],
+            "propertyOrdering": ["vertex", "faces"],
             "additionalProperties": False,
-            "required": [
-              "xyz"
-            ]
-          }
-        },
-        "faces": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "vertex": {
-                "type": "array",
-                "items": {
-                  "type": "integer"
-                }
-              }
-            },
-            "propertyOrdering": [
-              "vertex"
-            ],
-            "additionalProperties": False,
-            "required": [
-              "vertex"
-            ]
-          }
+            "required": ["vertex", "faces"]
         }
-      },
-      "propertyOrdering": [
-        "vertex",
-        "faces"
-      ],
-      "additionalProperties": False,
-      "required": [
-        "vertex",
-        "faces"
-      ]
-    }
-  },
-  "propertyOrdering": [
-    "polyhedron"
-  ],
-  "additionalProperties": False,
-  "required": [
-    "polyhedron"
-  ]
+    },
+    "propertyOrdering": ["polyhedron"],
+    "additionalProperties": False,
+    "required": ["polyhedron"]
 }
 
 referenceScad = """
@@ -106,10 +88,10 @@ module reference()
 promptChangeSummary = "Cube and rectangle move further apart in x."
 
 subpassParamSummary = [
-  "10cm apart in X ", 
-  "20cm apart in X ",
-  "30cm apart in X ",
-  "5cm apart in X "]
+    "10cm apart in X ", "20cm apart in X ", "30cm apart in X ",
+    "5cm apart in X "
+]
+
 
 def prepareSubpassPrompt(index):
     if index == 0: return prompt.replace("PARAM", "5")
@@ -118,6 +100,7 @@ def prepareSubpassPrompt(index):
     if index == 3: return prompt.replace("PARAM", "2.5")
     raise StopIteration
 
+
 def prepareSubpassReferenceScad(index):
     if index == 0: return referenceScad.replace("PARAM", "5")
     if index == 1: return referenceScad.replace("PARAM", "10")
@@ -125,13 +108,15 @@ def prepareSubpassReferenceScad(index):
     if index == 3: return referenceScad.replace("PARAM", "2.5")
     raise StopIteration
 
+
 def resultToScad(result):
     scad = """
 polyhedron(
       points=[
 """
     for vertex in result["polyhedron"]["vertex"]:
-        scad += "    [" + str(vertex["xyz"][0]) + "," + str(vertex["xyz"][1]) + "," + str(vertex["xyz"][2]) + "],\n"
+        scad += "    [" + str(vertex["xyz"][0]) + "," + str(
+            vertex["xyz"][1]) + "," + str(vertex["xyz"][2]) + "],\n"
     scad += "    ],\n"
     scad += "    faces=[\n"
     for face in result["polyhedron"]["faces"]:
@@ -140,3 +125,14 @@ polyhedron(
     scad += ");\n"
     return "module result(){ " + scad + " }"
 
+
+highLevelSummary = """
+Merging 2 polyhedrea is very hard without tooling, and hard to do right
+even with Python.
+
+<br><br>
+
+Most LLMs fail to output a closed mesh or correct winding order, 
+and this shows up with OpenSCAD throwing errors when it tries to intersect the result
+with a reference model.
+"""

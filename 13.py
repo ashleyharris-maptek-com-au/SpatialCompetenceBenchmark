@@ -1,5 +1,6 @@
 import VolumeComparison as vc
 import os
+
 title = "Hide and seek behind a building"
 
 promptChangeSummary = "Varying crowd size and building dimensions"
@@ -7,7 +8,7 @@ promptChangeSummary = "Varying crowd size and building dimensions"
 subpassParamSummary = [
     "4 people, 2m building",
     "20 people, 4m building",
-    "40 people, 6m building", 
+    "40 people, 6m building",
     "80 people, 8m building",
     "150 people, 10m building",
     "200 people, 7m building",
@@ -41,35 +42,35 @@ structure = {
                         }
                     }
                 },
-                "propertyOrdering": [
-                    "xy"
-                ],
-                "required": [
-                    "xy"
-                ],
+                "propertyOrdering": ["xy"],
+                "required": ["xy"],
                 "additionalProperties": False,
             }
         }
     },
     "additionalProperties": False,
-    "propertyOrdering": [
-        "people"
-    ],
-    "required": [
-        "people"
-    ]
+    "propertyOrdering": ["people"],
+    "required": ["people"]
 }
 
+
 def prepareSubpassPrompt(index):
-    if index == 0: return prompt.replace("PARAM_A", "4").replace("PARAM_B", "2")
-    if index == 1: return prompt.replace("PARAM_A", "20").replace("PARAM_B", "4")
-    if index == 2: return prompt.replace("PARAM_A", "40").replace("PARAM_B", "6")
-    if index == 3: return prompt.replace("PARAM_A", "80").replace("PARAM_B", "8")
-    if index == 4: return prompt.replace("PARAM_A", "150").replace("PARAM_B", "10")
-    if index == 5: return prompt.replace("PARAM_A", "200").replace("PARAM_B", "7")
+    if index == 0:
+        return prompt.replace("PARAM_A", "4").replace("PARAM_B", "2")
+    if index == 1:
+        return prompt.replace("PARAM_A", "20").replace("PARAM_B", "4")
+    if index == 2:
+        return prompt.replace("PARAM_A", "40").replace("PARAM_B", "6")
+    if index == 3:
+        return prompt.replace("PARAM_A", "80").replace("PARAM_B", "8")
+    if index == 4:
+        return prompt.replace("PARAM_A", "150").replace("PARAM_B", "10")
+    if index == 5:
+        return prompt.replace("PARAM_A", "200").replace("PARAM_B", "7")
     raise StopIteration
 
-def resultToImage(result, subPass, aiEngineName : str, fromAbove : bool = False):
+
+def resultToImage(result, subPass, aiEngineName: str, fromAbove: bool = False):
     buildingWidth = 2  # Default width for subpass 0
     if subPass == 1:
         buildingWidth = 4
@@ -89,11 +90,14 @@ def resultToImage(result, subPass, aiEngineName : str, fromAbove : bool = False)
         openScadData += f"translate([{x}, {y}, 1]) color([1,0,0]) cube([0.5, 0.5, 2], center=true);\n"
 
     output_path = f"results/13_Visualization_{aiEngineName}_subpass{subPass}_{fromAbove}.png"
-    vc.render_scadText_to_png(openScadData, output_path, "--camera=100,100,20,0,0,2" if not fromAbove else "--camera=-10,-10,200,0,0,20")
+    vc.render_scadText_to_png(
+        openScadData, output_path, "--camera=100,100,20,0,0,2"
+        if not fromAbove else "--camera=-10,-10,200,0,0,20")
     print(f"Saved visualization to {output_path}")
     return output_path
 
-def gradeAnswer(result, subPass, aiEngineName : str):
+
+def gradeAnswer(result, subPass, aiEngineName: str):
     buildingWidth = 2  # Default width for subpass 0
     if subPass == 1:
         buildingWidth = 4
@@ -120,7 +124,7 @@ def gradeAnswer(result, subPass, aiEngineName : str):
     # Check for overlaps between people
     for i, person1 in enumerate(result["people"]):
         x1, y1 = person1["xy"]
-        for j, person2 in enumerate(result["people"][i+1:], i+1):
+        for j, person2 in enumerate(result["people"][i + 1:], i + 1):
             x2, y2 = person2["xy"]
             distance_between = ((x2 - x1)**2 + (y2 - y1)**2)**0.5
             if distance_between < 0.5:  # People overlap
@@ -130,7 +134,8 @@ def gradeAnswer(result, subPass, aiEngineName : str):
     building_half_width = buildingWidth / 2
     for person in result["people"]:
         x, y = person["xy"]
-        if (abs(x) <= building_half_width + 0.25) and (abs(y) <= building_half_width + 0.25):
+        if (abs(x) <= building_half_width +
+                0.25) and (abs(y) <= building_half_width + 0.25):
             return 0, f"Person at ({x}, {y}) intersects with building"
 
     path = resultToImage(result, subPass, aiEngineName)
@@ -154,9 +159,18 @@ def gradeAnswer(result, subPass, aiEngineName : str):
         return final_score, f"{visible_pixels} red pixels visible (people partially visible to sniper)"
     return final_score, f"All {actualPopulationSize} people hidden from sniper"
 
-def resultToNiceReport(result, subPass, aiEngineName : str):
+
+def resultToNiceReport(result, subPass, aiEngineName: str):
     path = resultToImage(result, subPass, aiEngineName)
     path2 = resultToImage(result, subPass, aiEngineName, True)
     return \
         "<img src='" + os.path.basename(path) + "' alt='Subpass " + str(subPass) + " visualization' style='max-width: 100%;' />" + \
         "<img src='" + os.path.basename(path2) + "' alt='Subpass " + str(subPass) + " visualization from above' style='max-width: 100%;' />"
+
+
+highLevelSummary = """
+This test creates a sniper's view of a building with a crowd of people hidden behind it.
+<br><br>
+Can the LLM picture the projection of the building and hide the people behind it?
+
+"""

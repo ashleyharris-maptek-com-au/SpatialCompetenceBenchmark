@@ -4,22 +4,24 @@ title = "Grid Partitioning with Off-Axis Lines"
 
 promptChangeSummary = "Bigger grids with more regions"
 
+
 def createGrid(index):
     random.seed(index)
     cells = []
     size = index * index * 10 + 10
-    for i in range(size): # 10, 20, 50, 130
+    for i in range(size):  # 10, 20, 50, 130
         cells.append(list("." * size))
 
     for i in range(index * index * 3 + 3):
-      while True:
-        row = random.randint(0, size - 1)
-        col = random.randint(0, size - 1)
-        if cells[row][col] == ".":
-            cells[row][col] = chr(ord('A') + i % 26)
-            break
+        while True:
+            row = random.randint(0, size - 1)
+            col = random.randint(0, size - 1)
+            if cells[row][col] == ".":
+                cells[row][col] = chr(ord('A') + i % 26)
+                break
 
     return "\n".join([''.join(row) for row in cells])
+
 
 structure = {
     "type": "object",
@@ -36,31 +38,22 @@ structure = {
                         "type": "number"
                     }
                 },
-                "propertyOrdering": [
-                    "a",
-                    "b"
-                ],
+                "propertyOrdering": ["a", "b"],
                 "additionalProperties": False,
-                "required": [
-                    "a",
-                    "b"
-                ]
+                "required": ["a", "b"]
             }
         }
     },
-    "propertyOrdering": [
-        "lines"
-    ],
+    "propertyOrdering": ["lines"],
     "additionalProperties": False,
-    "required": [
-        "lines"
-    ]
+    "required": ["lines"]
 }
+
 
 def prepareSubpassPrompt(index):
     prompt = "You are given the following grid of cells:"
 
-    if index == 4: 
+    if index == 4:
         raise StopIteration
 
     prompt += "\n" + createGrid(index)
@@ -77,23 +70,27 @@ rigerous, is a common convention in computer graphics. Giving an "equation" that
 
     return prompt
 
-subpassParamSummary = [
-    "<br><pre>" + createGrid(0).replace("\n","<br>") + "</pre>",
-    "<br><pre>" + createGrid(1).replace("\n","<br>") + "</pre>",
-    "<br><pre style='font-size:10px'>" + createGrid(2).replace("\n","<br>") + "</pre>",
-    "<br><pre style='font-size:7px'>" + createGrid(3).replace("\n","<br>") + "</pre>"]
 
-def gradeAnswer(answer : dict, subPassIndex : int, aiEngineName : str):
+subpassParamSummary = [
+    "<br><pre>" + createGrid(0).replace("\n", "<br>") + "</pre>",
+    "<br><pre>" + createGrid(1).replace("\n", "<br>") + "</pre>",
+    "<br><pre style='font-size:10px'>" + createGrid(2).replace("\n", "<br>") +
+    "</pre>", "<br><pre style='font-size:7px'>" +
+    createGrid(3).replace("\n", "<br>") + "</pre>"
+]
+
+
+def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
     # Get the lines from the answer
     lines = answer.get("lines") if isinstance(answer, dict) else None
     if not isinstance(lines, list):
         return 0, "Answer must contain a 'lines' array"
-    
+
     # Create and parse the grid
     grid_str = createGrid(subPassIndex)
     grid = [list(row) for row in grid_str.split('\n')]
     size = len(grid)
-    
+
     # Extract line equations (y = ax + b)
     equations = []
     for line in lines:
@@ -105,7 +102,7 @@ def gradeAnswer(answer : dict, subPassIndex : int, aiEngineName : str):
             equations.append((a, b))
         except (TypeError, ValueError):
             continue
-    
+
     # For each cell with a letter, determine its region ID based on which side of each line it's on
     def get_region_id(x, y):
         # Region ID is a tuple of booleans indicating which side of each line the point is on
@@ -121,46 +118,48 @@ def gradeAnswer(answer : dict, subPassIndex : int, aiEngineName : str):
                 above = y > a * x + b
             region.append(above)
         return tuple(region)
-    
+
     # Collect all letters in each region
     from collections import defaultdict
     region_letters = defaultdict(set)
-    
+
     for y in range(size):
         for x in range(size):
             cell = grid[y][x]
             if cell != '.':
                 region_id = get_region_id(x, y)
                 region_letters[region_id].add(cell)
-    
+
     # Check if each region contains only one unique letter
     total_regions = len(region_letters)
     if total_regions == 0:
         return 0, "No regions found"
-    
+
     # Find all regions across the entire grid (including empty ones)
     all_regions = set()
     for y in range(size):
         for x in range(size):
             all_regions.add(get_region_id(x, y))
-    
+
     # Count empty regions (regions with no letters)
     empty_regions = len(all_regions) - len(region_letters)
 
-    correct_regions = sum(1 for letters in region_letters.values() if len(letters) == 1)
-    
+    correct_regions = sum(1 for letters in region_letters.values()
+                          if len(letters) == 1)
+
     # Penalize for empty regions - each empty region reduces the score
     score = correct_regions / total_regions
     if empty_regions > 0:
         penalty = empty_regions * 0.1  # 10% penalty per empty region
         score = max(0, score - penalty)
-    
+
     msg = f"{correct_regions}/{total_regions} regions correctly partitioned using {len(equations)} lines"
     if empty_regions > 0:
         msg += f" ({empty_regions} empty regions, -{empty_regions * 10}% penalty)"
     return score, msg
 
-def resultToNiceReport(answer, subPassIndex, aiEngineName : str):
+
+def resultToNiceReport(answer, subPassIndex, aiEngineName: str):
     grid_str = createGrid(subPassIndex)
     grid = [list(row) for row in grid_str.split('\n')]
     size = len(grid)
@@ -176,7 +175,7 @@ def resultToNiceReport(answer, subPassIndex, aiEngineName : str):
             equations.append((a, b))
         except (TypeError, ValueError):
             continue
-    
+
     # For each cell with a letter, determine its region ID based on which side of each line it's on
     def get_region_id(x, y):
         # Region ID is a tuple of booleans indicating which side of each line the point is on
@@ -192,18 +191,21 @@ def resultToNiceReport(answer, subPassIndex, aiEngineName : str):
                 above = y > a * x + b
             region.append(above)
         return tuple(region)
-    
+
     # Collect all letters in each region
     from collections import defaultdict
     region_colours = {}
-    
+
     out = "<span style='font-family: monospace;'>"
     for y in range(size):
         for x in range(size):
             cell = grid[y][x]
             id = get_region_id(x, y)
             if id not in region_colours:
-                region_colours[id] = [10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)]
+                region_colours[id] = [
+                    10 * random.randint(0, 25), 10 * random.randint(0, 25),
+                    10 * random.randint(0, 25)
+                ]
             out += f"<span style='background-color: rgb({region_colours[id][0]}, {region_colours[id][1]}, {region_colours[id][2]});'>"
             out += cell
             out += "</span>"
@@ -213,3 +215,9 @@ def resultToNiceReport(answer, subPassIndex, aiEngineName : str):
     return out
 
 
+highLevelSummary = """
+This involves crafting 2D lines that partition a grid into regions.
+<br><br>
+Most LLMs can get the low density ones (like 3 parallel lines), but when dozens of
+lines are required, and penalties given for empty regions, performance drops.
+"""

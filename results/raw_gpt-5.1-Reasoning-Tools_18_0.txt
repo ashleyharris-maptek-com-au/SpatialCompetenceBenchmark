@@ -1,0 +1,121 @@
+/*
+ Pharaoh's Pyramid Plan
+ All units in millimeters (mm).
+
+ Core stones:
+   - Each structural stone is a 500 mm cube.
+   - 20,000 stones available.
+   - Tallest square pyramid with no internal voids and valid stacking
+     (each upper stone resting on four below, centered) uses:
+       layers_core = 38
+       stones_used_core = 38 * 39 * 77 / 6 = 19,019 stones
+     leaving 981 stones unused.
+
+ Geometry:
+   - Core step pyramid: 38 layers high, base 38 stones per edge.
+     Core height      = 38 * 500 = 19,000 mm.
+     Core base width  = 38 * 500 = 19,000 mm.
+
+   - Smooth marble pyramid is chosen as the smallest right square pyramid
+     that completely encloses the stepped stone core:
+       outer_base_blocks = 39
+       outer_layers      = 39
+       outer_base_width  = 39 * 500 = 19,500 mm
+       outer_height      = 39 * 500 = 19,500 mm
+     It is centered over the tomb at the origin, and one face is aligned
+     with +y (north).
+
+ Display controls:
+   - show_core          : show the solid stepped stone core.
+   - show_outer_pyramid : show the smooth outer marble pyramid.
+   - show_marble_only   : show only the marble volume (outer minus core).
+*/
+
+stone_size = 500;        // mm per stone edge
+
+layers_core       = 38;  // vertical layers of large stones (core)
+base_blocks_core  = 38;  // stones along one side of the lowest core layer
+stones_available  = 20000;
+stones_used_core  = layers_core * (layers_core + 1) * (2 * layers_core + 1) / 6;  // 19019
+stones_left_over  = stones_available - stones_used_core;                          // 981
+
+outer_base_blocks = 39;  // number of stone-widths along one side of outer pyramid base
+outer_layers      = 39;  // outer pyramid height in stone-heights
+
+// Derived dimensions
+core_height      = layers_core      * stone_size;
+core_base_width  = base_blocks_core * stone_size;
+
+outer_height     = outer_layers      * stone_size;
+outer_base_width = outer_base_blocks * stone_size;
+
+// Display selectors
+show_core          = true;   // show stepped stone core
+show_outer_pyramid = true;   // show smooth enclosing pyramid
+show_marble_only   = false;  // show only cladding (difference of outer - core)
+
+
+// --- Core step pyramid (as union of per-layer slabs, exact external volume) ---
+module core_pyramid()
+{
+    // Each layer is a single solid square slab whose footprint
+    // equals the union of all stones in that layer.
+    for (k = [0 : layers_core - 1]) {
+        D        = layers_core - k;          // squares per side in this layer
+        w        = D * stone_size;           // width of this layer (square)
+        z_center = (k + 0.5) * stone_size;   // center height of this layer
+
+        translate([0, 0, z_center])
+            cube([w, w, stone_size], center = true);
+    }
+}
+
+
+// --- Smooth outer marble pyramid ---
+module smooth_pyramid()
+{
+    w = outer_base_width;
+    h = outer_height;
+
+    // Vertices: base square centered on origin, apex directly above origin.
+    // y = + direction is north; the face with vertices 2-3-4 is the north face.
+    points = [
+        [-w/2, -w/2, 0],  // 0: southwest base corner
+        [ w/2, -w/2, 0],  // 1: southeast base corner
+        [ w/2,  w/2, 0],  // 2: northeast base corner (north-east)
+        [-w/2,  w/2, 0],  // 3: northwest base corner (north-west)
+        [   0,    0,  h]  // 4: apex, directly above tomb at origin
+    ];
+
+    faces = [
+        [0, 1, 2], [0, 2, 3],  // base (two triangles)
+        [0, 1, 4],             // south face (-y)
+        [1, 2, 4],             // east face  (+x)
+        [2, 3, 4],             // north face (+y)
+        [3, 0, 4]              // west face  (-x)
+    ];
+
+    polyhedron(points = points, faces = faces);
+}
+
+
+// --- Marble volume only (outer pyramid minus stone core) ---
+module marble_volume()
+{
+    difference() {
+        smooth_pyramid();
+        core_pyramid();
+    }
+}
+
+
+// --- Top-level model selection ---
+
+if (show_core)
+    color([0.85, 0.75, 0.55]) core_pyramid();         // limestone core
+
+if (show_outer_pyramid)
+    color([1.0, 1.0, 1.0, 0.4]) smooth_pyramid();     // translucent marble shell
+
+if (show_marble_only)
+    color([1.0, 1.0, 1.0]) marble_volume();           // solid marble cladding only

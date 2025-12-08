@@ -1,59 +1,84 @@
 ```openscad
-// OpenSCAD plan for the Pharaoh's Pyramid
+// Pharaoh's Pyramid Plan
 
-// Define constants in metric SI units (meters)
-stone_side_length = 0.5; // Each stone is a 50cm side-length cube (0.5 meters)
+// --- Parameters ---
+// Stone side length in meters (50cm)
+stone_size = 0.5; // 0.5 meters
 
-// Maximum number of stones available from the budget
-total_stones_budget = 2500000;
+// Maximum number of stones on one side of the base layer, calculated based on the total stone budget.
+// The total number of stones in a solid square pyramid with N layers (where N is the number of stones
+// on the base side) is the sum of squares from 1 to N, which is given by the formula N*(N+1)*(2N+1)/6.
+// Pharaoh's budget: 2,500,000 stones.
+// We need to find the largest N such that N*(N+1)*(2N+1)/6 <= 2,500,000.
+// - For N = 197: 197 * 198 * 395 / 6 = 2,485,005 stones (within budget)
+// - For N = 198: 198 * 199 * 397 / 6 = 2,511,333 stones (exceeds budget)
+// Therefore, the maximum number of stones on the base side (and thus the number of layers) is 197.
+base_stones_N = 197;
 
-// Calculate the maximum base layer size (N) for the pyramid.
-// A pyramid with 'N' stones along its base edge will have 'N' layers.
-// The total number of stones is the sum of squares: 1^2 + 2^2 + ... + N^2.
-// The formula for this sum is N * (N + 1) * (2 * N + 1) / 6.
-// We need to find the largest integer N such that this sum is less than or equal to total_stones_budget.
+// --- Derived Dimensions ---
+// Total height of the pyramid from base to its apex
+pyramid_height = base_stones_N * stone_size; // 197 * 0.5m = 98.5 meters
 
-// Pre-calculation based on total_stones_budget = 2,500,000:
-// For N = 195, total stones = 195 * 196 * 391 / 6 = 2,490,070 stones. (Fits budget)
-// For N = 196, total stones = 196 * 197 * 393 / 6 = 2,519,266 stones. (Exceeds budget)
-N_base_stones = 195; // Maximum number of stones along one edge of the base layer
+// Side length of the square base of the pyramid
+pyramid_base_side = base_stones_N * stone_size; // 197 * 0.5m = 98.5 meters
 
-// Calculate the overall dimensions of the pyramid
-pyramid_base_width = N_base_stones * stone_side_length; // Width of the base layer
-pyramid_height = N_base_stones * stone_side_length;     // Total height (N layers, each 'stone_side_length' tall)
+// --- Centering the Pyramid ---
+// The pyramid must be centered over the tomb, meaning its geometric center on the X-Y plane is at (0,0).
+// The Z-axis starts from 0 (ground level).
+// The base_offset values shift the entire pyramid structure so its bottom-center aligns with (0,0,0).
+// The bottom-left-front corner of the base layer will be at (base_offset_x, base_offset_y, 0).
+base_offset_x = -pyramid_base_side / 2;
+base_offset_y = -pyramid_base_side / 2;
 
-// The pyramid must be centered over the future tomb (0,0) and rest on the ground (Z=0).
-// Each subsequent layer is offset by half a stone length (stone_side_length / 2)
-// in both X and Y directions from the layer below it, according to the rule:
-// "each stone must have all 4 base corners sitting in the middle of another stone."
-// This results in a 45-degree angle of ascent for the pyramid's sides.
+// --- Pyramid Construction Module ---
+// This module generates all the individual stone blocks.
+// Each layer 'k' (0-indexed, k=0 is the base layer) has (base_stones_N - k) stones on its side.
+// The placement rule: "each stone must have all 4 base corners sitting in the middle of another stone"
+// implies a specific stepping pattern:
+// - Each successive layer is horizontally shifted inwards by (stone_size / 2) on both X and Y axes
+//   relative to the layer directly below it.
+// - This shift accumulates with height. So, layer 'k' is shifted by (k * stone_size / 2)
+//   from the initial alignment of the base layer's edges.
+module generate_pyramid() {
+    // Iterate through pyramid layers, from the base (k=0) to the apex (k=base_stones_N-1)
+    for (k = 0; k < base_stones_N; k = k + 1) {
+        // Number of stones along one edge for the current layer
+        current_layer_N = base_stones_N - k;
+        
+        // Accumulative horizontal shift for the current layer due to the stepping rule
+        // This makes the pyramid taper inwards as it rises.
+        layer_stepping_shift = k * stone_size / 2;
 
-// Loop through each layer of the pyramid, starting from the base (k=0) up to the top (k=N_base_stones-1)
-for (k = [0 : N_base_stones - 1]) {
-    // Determine the number of stones along one edge for the current layer
-    current_layer_N = N_base_stones - k;
-
-    // Calculate the Z-position for the bottom face of stones in the current layer
-    layer_z_pos = k * stone_side_length;
-
-    // Calculate the starting X and Y coordinates for the bottom-left corner of the current layer.
-    // The entire pyramid is centered, so the base layer's effective origin is at (-pyramid_base_width/2, -pyramid_base_width/2).
-    // Each layer 'k' is inset by 'k' steps, where each step is stone_side_length / 2.
-    layer_x_start = -pyramid_base_width / 2 + k * (stone_side_length / 2);
-    layer_y_start = -pyramid_base_width / 2 + k * (stone_side_length / 2);
-
-    // Loop through the grid of stones within the current layer
-    for (i = [0 : current_layer_N - 1]) { // Iterate along the X-axis for stones in this layer
-        for (j = [0 : current_layer_N - 1]) { // Iterate along the Y-axis for stones in this layer
-            // Calculate the X and Y positions for the bottom-left-front corner of the current stone
-            stone_x_pos = layer_x_start + i * stone_side_length;
-            stone_y_pos = layer_y_start + j * stone_side_length;
-            
-            // Place the cube representing the stone
-            translate([stone_x_pos, stone_y_pos, layer_z_pos]) {
-                cube(stone_side_length);
+        // Iterate along the X-axis for stones in the current layer
+        for (i = 0; i < current_layer_N; i = i + 1) {
+            // Iterate along the Y-axis for stones in the current layer
+            for (j = 0; j < current_layer_N; j = j + 1) {
+                // Calculate the bottom-left-front corner position for the current stone.
+                // 1. base_offset_x/y: Centers the entire pyramid on the X-Y plane.
+                // 2. i*stone_size and j*stone_size: Positions the stone within its current layer's grid.
+                // 3. layer_stepping_shift: Adjusts for the inward stepping of higher layers.
+                // 4. k*stone_size: Sets the vertical (Z-axis) height of the current layer.
+                x_pos = base_offset_x + i * stone_size + layer_stepping_shift;
+                y_pos = base_offset_y + j * stone_size + layer_stepping_shift;
+                z_pos = k * stone_size;
+                
+                // Place a cube representing this individual stone block
+                translate([x_pos, y_pos, z_pos]) {
+                    cube(stone_size);
+                }
             }
         }
     }
 }
+
+// Call the module to render the entire pyramid.
+// IMPORTANT PERFORMANCE NOTE:
+// This model generates 2,485,005 individual cube objects. OpenSCAD's rendering engine
+// (especially for preview) is not optimized for such a large number of primitives.
+// Previewing (F5) or rendering (F6) this model may take a very long time (hours)
+// or consume significant system memory, potentially causing OpenSCAD to freeze or crash.
+// For initial testing or faster visualization, you might temporarily reduce 'base_stones_N'
+// (e.g., set it to 20 for a small pyramid of 2870 stones) to observe the structure.
+// The generated STL file for the full pyramid will also be extremely large.
+generate_pyramid();
 ```

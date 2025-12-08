@@ -14,49 +14,35 @@ Return a 5 element array of where each of the pipes are located:
 """
 
 structure = {
-  "type": "object",
-  "properties": {
-    "reasoning": {
-      "type": "string"
-    },
-    "pipes": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "xCentre": {
-            "type": "number"
-          },
-          "yCentre": {
-            "type": "number"
-          },
-          "rotationDegrees": {
-            "type": "number"
-          }
+    "type": "object",
+    "properties": {
+        "reasoning": {
+            "type": "string"
         },
-        "propertyOrdering": [
-          "xCentre",
-          "yCentre",
-          "rotationDegrees"
-        ],
-        "required": [
-          "xCentre",
-          "yCentre",
-          "rotationDegrees"
-        ],
-        "additionalProperties": False,
-      }
-    }
-  },
-  "propertyOrdering": [
-    "reasoning",
-    "pipes"
-  ],
-  "required": [
-    "reasoning",
-    "pipes"
-  ],
-  "additionalProperties": False,
+        "pipes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "xCentre": {
+                        "type": "number"
+                    },
+                    "yCentre": {
+                        "type": "number"
+                    },
+                    "rotationDegrees": {
+                        "type": "number"
+                    }
+                },
+                "propertyOrdering": ["xCentre", "yCentre", "rotationDegrees"],
+                "required": ["xCentre", "yCentre", "rotationDegrees"],
+                "additionalProperties": False,
+            }
+        }
+    },
+    "propertyOrdering": ["reasoning", "pipes"],
+    "required": ["reasoning", "pipes"],
+    "additionalProperties": False,
 }
 
 referenceScad = """
@@ -68,22 +54,23 @@ module reference()
 }
 """
 
+
 def resultToScad(result):
-  scad = "module result(){ union(){"
-  for pipe in result["pipes"]:
-    scad += "translate([" + str(pipe["xCentre"]) + "," + \
-      str(pipe["yCentre"]) + "]) rotate([0,0," + \
-      str(pipe["rotationDegrees"]) + "]) cube([5,0.1,.1], center=true);\n"
+    scad = "module result(){ union(){"
+    for pipe in result["pipes"]:
+        scad += "translate([" + str(pipe["xCentre"]) + "," + \
+          str(pipe["yCentre"]) + "]) rotate([0,0," + \
+          str(pipe["rotationDegrees"]) + "]) cube([5,0.1,.1], center=true);\n"
 
-  return scad + "}}"
+    return scad + "}}"
 
-subpassParamSummary =[ 
-"""Every AI I've tested has failed to solve this problem. 
+
+highLevelSummary = \
+    """
+This is a deceptively hard problem to solve, the issue is overlap at the 3-way joins.
+
+Closeup of correct result: (Note all 3 pipes touch but don't overlap.)
 <pre>
-Closeup of correct result:
-(Note all 3 pipes touch but 
- don't overlap.)
-
    x = -2.55 (from -2.6 to -2.5)
    | 
 |  i  |
@@ -97,11 +84,10 @@ X-----X - - - - - - -
 |  i  |
 |  i  |
 |  i  |
+</pre>
 
-Closeup of typical failed result:       
-(note the overlap between vertical      
-pipes and the horizontal pipe)         
-
+Closeup of typical failed result: (note the overlap between vertical pipes and the horizontal pipe)         
+<pre>
    x = -2.5 (from -2.55 to -2.45)       
    |                                    
 |  i  |                                 
@@ -115,8 +101,5 @@ X--XXXX - - - - - - -
 |  X--X              
 |  i  |                                 
 |  i  |                                 
-
 </pre>
-
 """
-]

@@ -31,7 +31,7 @@ REASONING = False
 # - False: No tools available
 # - True: Enable built-in tools (web_search, x_search, code_execution)
 # - List of function definitions: Enable specific custom tools
-# 
+#
 # Examples:
 #   TOOLS = False                    # No tools
 #   TOOLS = True                     # All built-in tools
@@ -39,7 +39,11 @@ REASONING = False
 #   TOOLS = [function_def]           # Custom function only
 TOOLS = False
 
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() + str(TOOLS).encode()).hexdigest()
+configAndSettingsHash = hashlib.sha256(MODEL.encode() +
+                                       str(REASONING).encode() +
+                                       str(TOOLS).encode() +
+                                       b"version2").hexdigest()
+
 
 def Configure(Model, Reasoning, Tools):
     global MODEL
@@ -49,10 +53,64 @@ def Configure(Model, Reasoning, Tools):
     MODEL = Model
     REASONING = Reasoning
     TOOLS = Tools
-    configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() + str(TOOLS).encode()).hexdigest()
+    configAndSettingsHash = hashlib.sha256(MODEL.encode() +
+                                           str(REASONING).encode() +
+                                           str(TOOLS).encode() +
+                                           b"version2").hexdigest()
+
 
 import os
 import json
+from typing import Any, List, Optional
+from pydantic import BaseModel, create_model
+
+
+def json_schema_to_pydantic(schema: dict,
+                            name: str = "DynamicModel") -> type[BaseModel]:
+    """
+    Convert a JSON schema dict to a Pydantic model class.
+    Supports basic types: string, number, integer, boolean, array, object.
+    """
+
+    def get_python_type(prop_schema: dict) -> Any:
+        """Convert JSON schema type to Python/Pydantic type."""
+        json_type = prop_schema.get("type", "string")
+
+        if json_type == "string":
+            return str
+        elif json_type == "number":
+            return float
+        elif json_type == "integer":
+            return int
+        elif json_type == "boolean":
+            return bool
+        elif json_type == "array":
+            items_schema = prop_schema.get("items", {})
+            item_type = get_python_type(items_schema)
+            return List[item_type]
+        elif json_type == "object":
+            # Nested object - create a nested model
+            nested_props = prop_schema.get("properties", {})
+            if nested_props:
+                return json_schema_to_pydantic(prop_schema, name + "Nested")
+            return dict
+        else:
+            return Any
+
+    properties = schema.get("properties", {})
+    required = set(schema.get("required", []))
+
+    # Build field definitions for create_model
+    field_definitions = {}
+    for prop_name, prop_schema in properties.items():
+        python_type = get_python_type(prop_schema)
+        if prop_name in required:
+            field_definitions[prop_name] = (python_type, ...)
+        else:
+            field_definitions[prop_name] = (Optional[python_type], None)
+
+    return create_model(name, **field_definitions)
+
 
 def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
     """
@@ -67,109 +125,133 @@ def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
     """
     from xai_sdk import Client
     from xai_sdk.chat import user
-    
+
     try:
         # Initialize the client - uses XAI_API_KEY environment variable
         client = Client(timeout=3600)
-        
+
         # Build chat creation parameters
-        chat_params = {
-            "model": MODEL
-        }
-        
-        # Add reasoning effort if specified
+        chat_params = {"model": MODEL}
+
+        # Seems to have been removed from the API after grok-3
         # Map 0-10 scale to low/medium/high
-        if REASONING and REASONING != 0:
-            if isinstance(REASONING, int):
-                if REASONING <= 3:
-                    chat_params["reasoning_effort"] = "low"
-                elif REASONING <= 7:
-                    chat_params["reasoning_effort"] = "medium"
-                else:
-                    chat_params["reasoning_effort"] = "high"
-            else:
-                chat_params["reasoning_effort"] = "medium"
-        
-        # Add structured output if schema provided
+        #model_has_builtin_reasoning = "reasoning" in MODEL.lower(
+        #) and "non-reasoning" not in MODEL.lower()
+        #if REASONING and REASONING != 0 and not model_has_builtin_reasoning:
+        #    if isinstance(REASONING, int):
+        #        if REASONING <= 3:
+        #            chat_params["reasoning_effort"] = "low"
+        #        elif REASONING <= 7:
+        #            chat_params["reasoning_effort"] = "medium"
+        #        else:
+        #            chat_params["reasoning_effort"] = "high"
+        #    else:
+        #        chat_params["reasoning_effort"] = "medium"
+
+        # Convert JSON schema to Pydantic model if provided
+        pydantic_model = None
         if structure is not None:
-            chat_params["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "structured_response",
-                    "strict": True,
-                    "schema": structure
-                }
-            }
-        
+            try:
+                pydantic_model = json_schema_to_pydantic(
+                    structure, "ResponseModel")
+            except Exception as e:
+                print(f"Failed to convert schema to Pydantic: {e}")
+                pydantic_model = None
+
         # Add tools if specified
         if TOOLS is True:
-            chat_params["tools"] = [
-                {"type": "web_search"},
-                {"type": "x_search"},
-                {"type": "code_execution"}
-            ]
+            chat_params["tools"] = [{
+                "type": "web_search"
+            }, {
+                "type": "x_search"
+            }, {
+                "type": "code_execution"
+            }]
         elif TOOLS and TOOLS is not False:
             if isinstance(TOOLS, list):
                 chat_params["tools"] = TOOLS
-        
+
         # Create chat and add user message
         chat = client.chat.create(**chat_params)
-        chat.append(user(prompt))
-        
-        # Stream to capture reasoning/thinking content in real-time
+
+        # If structured output requested, add schema to prompt
+        if pydantic_model is not None:
+            schema_json = json.dumps(structure, indent=2)
+            structured_prompt = f"""{prompt}
+
+You MUST respond with valid JSON that matches this exact schema:
+{schema_json}
+
+Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation."""
+            chat.append(user(structured_prompt))
+        else:
+            chat.append(user(prompt))
+
+        # Stream response and accumulate (works for both structured and unstructured)
         chainOfThought = ""
         output_text = ""
         current_thinking_line = ""
-        
+
         for response, chunk in chat.stream():
             # Check if this chunk contains reasoning/thinking content
             if hasattr(chunk, 'reasoning_content') and chunk.reasoning_content:
                 current_thinking_line += chunk.reasoning_content
-                # Print complete lines as they arrive
                 while "\n" in current_thinking_line:
-                    line, current_thinking_line = current_thinking_line.split("\n", 1)
+                    line, current_thinking_line = current_thinking_line.split(
+                        "\n", 1)
                     print(f"Thinking: {line}", flush=True)
                     chainOfThought += line + "\n"
-            
+
             # Regular content
             if hasattr(chunk, 'content') and chunk.content:
                 output_text += chunk.content
-        
+
         # Flush any remaining thinking content
         if current_thinking_line:
             print(f"Thinking: {current_thinking_line}", flush=True)
             chainOfThought += current_thinking_line
-        
-        # Strip trailing newline from chain of thought
+
         chainOfThought = chainOfThought.rstrip("\n")
-        
+
         # Also check final response for reasoning content if not captured during streaming
-        if not chainOfThought and hasattr(response, 'reasoning_content') and response.reasoning_content:
+        if not chainOfThought and hasattr(
+                response, 'reasoning_content') and response.reasoning_content:
             chainOfThought = response.reasoning_content
             for line in chainOfThought.split("\n"):
                 print(f"Thinking: {line}", flush=True)
-        
+
         # Get final content from response if streaming didn't capture it
         if not output_text and hasattr(response, 'content'):
             output_text = response.content or ""
-        
+
         if chainOfThought:
             print()  # Blank line after thinking
-        
-        print(output_text)
-        
-        # Parse and return response
-        if structure is not None:
-            if output_text:
-                return json.loads(output_text), chainOfThought
-            return {}, chainOfThought
+
+        # Parse structured output if we have a Pydantic model
+        if pydantic_model is not None:
+            try:
+                # Strip markdown code blocks if present
+                parse_text = output_text
+                if "```json" in parse_text:
+                    parse_text = parse_text.split("```json",
+                                                  1)[1].split("```", 1)[0]
+                elif "```" in parse_text:
+                    parse_text = parse_text.split("```", 1)[1].split("```",
+                                                                     1)[0]
+
+                parse_text = parse_text.strip()
+
+                # Parse and validate with Pydantic
+                parsed_obj = pydantic_model.model_validate_json(parse_text)
+                result_dict = parsed_obj.model_dump()
+                return result_dict, chainOfThought
+            except Exception as e:
+                print(f"Structured parse failed: {e}")
+                return {}, ""
         else:
+            # Non-structured output - just return the text
             return output_text or "", chainOfThought
-            
+
     except Exception as e:
         print(f"Error calling xAI Grok API: {e}")
-        # Return appropriate empty response based on structure
-        if structure is not None:
-            return {}, ""
-        else:
-            return "", ""
+        return None

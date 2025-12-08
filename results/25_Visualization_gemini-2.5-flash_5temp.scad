@@ -1,15 +1,1710 @@
-color([0.6368036454816876,0.4396073138404065,0.21313533217243863]) hull(){
+color([0.6412864977946658,0.9406910621679271,0.45632471025474486]) hull(){
+    translate([18,58]) sphere(0.01);
+    translate([58,98]) sphere(0.01);
+    translate([22,90]) sphere(0.01);
+}
+color([0.04105125908338825,0.3309402146952306,0.23791886775277915]) hull(){
+    translate([50,93]) sphere(0.01);
+    translate([44,55]) sphere(0.01);
+    translate([64,14]) sphere(0.01);
+}
+color([0.7128186152372809,0.1716993730058638,0.11442269037932928]) hull(){
+    translate([68,15]) sphere(0.01);
+    translate([10,94]) sphere(0.01);
+    translate([58,33]) sphere(0.01);
+}
+color([0.8645602562139963,0.2664368674213208,0.9073883977153171]) hull(){
+    translate([6,84]) sphere(0.01);
+    translate([82,26]) sphere(0.01);
+    translate([42,29]) sphere(0.01);
+}
+color([0.9965694189565097,0.13000001149551788,0.7593972705310159]) hull(){
+    translate([39,98]) sphere(0.01);
+    translate([26,22]) sphere(0.01);
+    translate([18,24]) sphere(0.01);
+}
+color([0.8933230090085382,0.36427635672205216,0.32546965883778667]) hull(){
     translate([44,47]) sphere(0.01);
-    translate([44,51]) sphere(0.01);
+    translate([80,52]) sphere(0.01);
+    translate([26,51]) sphere(0.01);
+}
+color([0.36196691821862237,0.11105994403941222,0.1072651120587198]) hull(){
+    translate([59,71]) sphere(0.01);
+    translate([35,48]) sphere(0.01);
+    translate([20,83]) sphere(0.01);
+}
+color([0.4252155075596209,0.8170217823233284,0.8596572384624677]) hull(){
+    translate([81,15]) sphere(0.01);
+    translate([23,0]) sphere(0.01);
+    translate([77,50]) sphere(0.01);
+}
+color([0.11253891424253948,0.053144801449230394,0.07810399678729552]) hull(){
+    translate([18,99]) sphere(0.01);
+    translate([72,20]) sphere(0.01);
+    translate([24,21]) sphere(0.01);
+}
+color([0.3303189608701519,0.8878385172664008,0.9915758487852713]) hull(){
+    translate([3,85]) sphere(0.01);
+    translate([30,57]) sphere(0.01);
+    translate([81,49]) sphere(0.01);
+}
+color([0.3991396240839341,0.9884733860426759,0.7073167310918903]) hull(){
+    translate([16,79]) sphere(0.01);
+    translate([70,96]) sphere(0.01);
+    translate([6,77]) sphere(0.01);
+}
+color([0.4797484147145269,0.44754869723724466,0.43278340388131575]) hull(){
+    translate([31,91]) sphere(0.01);
+    translate([79,99]) sphere(0.01);
+    translate([64,91]) sphere(0.01);
+}
+color([0.6410055803419278,0.6280975156939397,0.20455433969756176]) hull(){
+    translate([37,88]) sphere(0.01);
+    translate([75,43]) sphere(0.01);
+    translate([67,87]) sphere(0.01);
+}
+color([0.6068611066737437,0.8672990551936495,0.06046535592946245]) hull(){
+    translate([43,69]) sphere(0.01);
+    translate([46,61]) sphere(0.01);
+    translate([51,97]) sphere(0.01);
+}
+color([0.9201340265664664,0.39863450806917233,0.823054897493322]) hull(){
+    translate([7,12]) sphere(0.01);
+    translate([38,83]) sphere(0.01);
+    translate([55,32]) sphere(0.01);
+}
+color([0.103427069840068,0.8111418694840618,0.11409626878991175]) hull(){
+    translate([30,90]) sphere(0.01);
+    translate([91,55]) sphere(0.01);
+    translate([98,65]) sphere(0.01);
+}
+color([0.9897431084520717,0.5604580560214266,0.5536551446296145]) hull(){
+    translate([63,74]) sphere(0.01);
+    translate([32,18]) sphere(0.01);
+    translate([7,86]) sphere(0.01);
+}
+color([0.5583582994701957,0.6331886763168607,0.5149853079827476]) hull(){
+    translate([74,41]) sphere(0.01);
+    translate([21,6]) sphere(0.01);
+    translate([96,35]) sphere(0.01);
+}
+color([0.0013888125298527898,0.38377849381755014,0.4289771141480134]) hull(){
+    translate([90,89]) sphere(0.01);
+    translate([15,91]) sphere(0.01);
+    translate([6,100]) sphere(0.01);
+}
+color([0.18571177036205377,0.9821108307487698,0.22198389178555]) hull(){
+    translate([76,28]) sphere(0.01);
+    translate([39,67]) sphere(0.01);
+    translate([79,27]) sphere(0.01);
+}
+color([0.5423662419537795,0.4665368698334095,0.529817929856837]) hull(){
+    translate([83,95]) sphere(0.01);
+    translate([93,72]) sphere(0.01);
     translate([45,42]) sphere(0.01);
 }
-color([0.65487357625566,0.5195911243495295,0.9295357628477254]) hull(){
-    translate([46,61]) sphere(0.01);
-    translate([44,55]) sphere(0.01);
+color([0.23113032008665235,0.6332005648478245,0.358546624467196]) hull(){
+    translate([58,1]) sphere(0.01);
+    translate([88,14]) sphere(0.01);
+    translate([60,24]) sphere(0.01);
+}
+color([0.2986285326765037,0.03155815300288933,0.42200374619051706]) hull(){
+    translate([67,15]) sphere(0.01);
+    translate([92,76]) sphere(0.01);
+    translate([26,5]) sphere(0.01);
+}
+color([0.5451171478512445,0.8948082271473208,0.17285101743289433]) hull(){
+    translate([49,92]) sphere(0.01);
+    translate([13,51]) sphere(0.01);
+    translate([86,91]) sphere(0.01);
+}
+color([0.029101026622139314,0.8952355116300039,0.8406606607257339]) hull(){
+    translate([19,79]) sphere(0.01);
+    translate([84,82]) sphere(0.01);
+    translate([61,69]) sphere(0.01);
+}
+color([0.45576943846109663,0.5386583987974967,0.7688385120264425]) hull(){
+    translate([4,89]) sphere(0.01);
+    translate([56,20]) sphere(0.01);
+    translate([6,60]) sphere(0.01);
+}
+color([0.4568787242638358,0.636245118430889,0.7697764762859295]) hull(){
+    translate([96,6]) sphere(0.01);
+    translate([25,31]) sphere(0.01);
+    translate([20,12]) sphere(0.01);
+}
+color([0.34232015255838355,0.3184587403347824,0.3532643490664046]) hull(){
+    translate([4,17]) sphere(0.01);
+    translate([27,82]) sphere(0.01);
+    translate([11,15]) sphere(0.01);
+}
+color([0.8904939845630896,0.8870153428836475,0.8856540158607858]) hull(){
+    translate([32,8]) sphere(0.01);
+    translate([88,93]) sphere(0.01);
+    translate([51,4]) sphere(0.01);
+}
+color([0.7133608687677083,0.38780414674135744,0.331987761790176]) hull(){
+    translate([69,54]) sphere(0.01);
+    translate([60,57]) sphere(0.01);
+    translate([43,89]) sphere(0.01);
+}
+color([0.6694551844637135,0.049023178801574585,0.5550570217218328]) hull(){
+    translate([58,67]) sphere(0.01);
+    translate([24,77]) sphere(0.01);
+    translate([74,32]) sphere(0.01);
+}
+color([0.3283570049801383,0.28029770053100345,0.08338734945476356]) hull(){
+    translate([53,18]) sphere(0.01);
+    translate([26,52]) sphere(0.01);
+    translate([9,76]) sphere(0.01);
+}
+color([0.5865519708667122,0.38202982032690824,0.866963502886238]) hull(){
+    translate([34,51]) sphere(0.01);
+    translate([33,90]) sphere(0.01);
+    translate([12,24]) sphere(0.01);
+}
+color([0.15462207596770516,0.18740784499858854,0.8628887369290352]) hull(){
+    translate([29,6]) sphere(0.01);
+    translate([49,34]) sphere(0.01);
+    translate([0,34]) sphere(0.01);
+}
+color([0.95666403073652,0.13672749460656242,0.5241254366639385]) hull(){
+    translate([38,4]) sphere(0.01);
+    translate([3,71]) sphere(0.01);
+    translate([37,29]) sphere(0.01);
+}
+color([0.5826326527205238,0.3768117287155853,0.40299368510928046]) hull(){
+    translate([51,1]) sphere(0.01);
+    translate([83,10]) sphere(0.01);
+    translate([28,38]) sphere(0.01);
+}
+color([0.9942372956474195,0.25936511365213566,0.951516328577162]) hull(){
+    translate([82,82]) sphere(0.01);
+    translate([92,80]) sphere(0.01);
+    translate([2,11]) sphere(0.01);
+}
+color([0.4652417603140324,0.05491100869322374,0.24993608855167704]) hull(){
+    translate([74,45]) sphere(0.01);
+    translate([41,86]) sphere(0.01);
+    translate([56,4]) sphere(0.01);
+}
+color([0.12232090728325251,0.06484265692908964,0.7111278452234024]) hull(){
+    translate([93,98]) sphere(0.01);
+    translate([23,10]) sphere(0.01);
+    translate([2,88]) sphere(0.01);
+}
+color([0.02965380198962897,0.9792509051362377,0.9945754945699466]) hull(){
+    translate([79,45]) sphere(0.01);
+    translate([70,18]) sphere(0.01);
+    translate([20,89]) sphere(0.01);
+}
+color([0.03141501329120944,0.4550626724555813,0.7852730167407442]) hull(){
+    translate([0,87]) sphere(0.01);
+    translate([94,1]) sphere(0.01);
+    translate([90,40]) sphere(0.01);
+}
+color([0.43186938629421634,0.7609829848709094,0.2767667515483062]) hull(){
+    translate([64,50]) sphere(0.01);
+    translate([22,48]) sphere(0.01);
+    translate([48,93]) sphere(0.01);
+}
+color([0.4615732377170255,0.8197923109283066,0.47310763872828454]) hull(){
+    translate([57,25]) sphere(0.01);
+    translate([27,20]) sphere(0.01);
+    translate([76,73]) sphere(0.01);
+}
+color([0.03809314862500979,0.5075737804895283,0.31037898819713694]) hull(){
+    translate([70,34]) sphere(0.01);
+    translate([9,80]) sphere(0.01);
+    translate([58,81]) sphere(0.01);
+}
+color([0.5273775998731943,0.11867019148322078,0.7277494353539109]) hull(){
+    translate([95,17]) sphere(0.01);
+    translate([55,74]) sphere(0.01);
+    translate([74,64]) sphere(0.01);
+}
+color([0.1416701971172848,0.3856808721063091,0.7425588425753336]) hull(){
+    translate([14,83]) sphere(0.01);
+    translate([38,16]) sphere(0.01);
+    translate([14,74]) sphere(0.01);
+}
+color([0.056280931120550326,0.132999013036742,0.2070942525128303]) hull(){
+    translate([78,28]) sphere(0.01);
+    translate([6,50]) sphere(0.01);
+    translate([58,55]) sphere(0.01);
+}
+color([0.14994018154745115,0.15503361695306728,0.750918642108121]) hull(){
+    translate([90,44]) sphere(0.01);
+    translate([11,8]) sphere(0.01);
+    translate([5,56]) sphere(0.01);
+}
+color([0.9270738029032742,0.272413323807713,0.7318451747544863]) hull(){
+    translate([53,2]) sphere(0.01);
+    translate([72,19]) sphere(0.01);
+    translate([61,13]) sphere(0.01);
+}
+color([0.22532432288391258,0.26137920662138814,0.5813445272419822]) hull(){
+    translate([88,11]) sphere(0.01);
+    translate([37,80]) sphere(0.01);
+    translate([86,12]) sphere(0.01);
+}
+color([0.2818083410996183,0.3634307134242535,0.9552253331969711]) hull(){
+    translate([71,72]) sphere(0.01);
+    translate([18,17]) sphere(0.01);
+    translate([97,70]) sphere(0.01);
+}
+color([0.047998997243986485,0.6979018083009778,0.08815358821466346]) hull(){
+    translate([74,18]) sphere(0.01);
+    translate([21,45]) sphere(0.01);
+    translate([94,72]) sphere(0.01);
+}
+color([0.6958866697067958,0.12620359835460115,0.1008856027957683]) hull(){
+    translate([48,91]) sphere(0.01);
+    translate([93,13]) sphere(0.01);
+    translate([82,62]) sphere(0.01);
+}
+color([0.6625444436601752,0.1613504347781617,0.05584381010596051]) hull(){
+    translate([41,14]) sphere(0.01);
+    translate([86,100]) sphere(0.01);
+    translate([60,36]) sphere(0.01);
+}
+color([0.2529798044738284,0.7511304080887747,0.31446473932017394]) hull(){
+    translate([29,94]) sphere(0.01);
+    translate([98,99]) sphere(0.01);
+    translate([44,29]) sphere(0.01);
+}
+color([0.627064082426501,0.25448665693317196,0.5029325444083566]) hull(){
+    translate([4,1]) sphere(0.01);
+    translate([28,64]) sphere(0.01);
+    translate([14,70]) sphere(0.01);
+}
+color([0.3676565506825805,0.651521256639127,0.13337017900895198]) hull(){
+    translate([11,16]) sphere(0.01);
+    translate([60,80]) sphere(0.01);
+    translate([6,94]) sphere(0.01);
+}
+color([0.837690248889771,0.3613377134095854,0.48292982350345126]) hull(){
+    translate([61,44]) sphere(0.01);
+    translate([65,61]) sphere(0.01);
+    translate([26,63]) sphere(0.01);
+}
+color([0.89663529806404,0.49902627090757234,0.7537822059021138]) hull(){
+    translate([6,85]) sphere(0.01);
+    translate([64,75]) sphere(0.01);
+    translate([32,3]) sphere(0.01);
+}
+color([0.22874569339663264,0.9671732241688551,0.47237870550182237]) hull(){
+    translate([77,67]) sphere(0.01);
+    translate([67,98]) sphere(0.01);
+    translate([13,88]) sphere(0.01);
+}
+color([0.03911559370804696,0.4797080856488788,0.3231116898217884]) hull(){
+    translate([23,5]) sphere(0.01);
+    translate([74,90]) sphere(0.01);
+    translate([29,59]) sphere(0.01);
+}
+color([0.9713615842958687,0.8273769797936081,0.8408337876201323]) hull(){
+    translate([88,1]) sphere(0.01);
+    translate([14,28]) sphere(0.01);
+    translate([46,41]) sphere(0.01);
+}
+color([0.48552932436776197,0.6578686165552565,0.5442253688535058]) hull(){
+    translate([15,80]) sphere(0.01);
+    translate([38,13]) sphere(0.01);
+    translate([39,39]) sphere(0.01);
+}
+color([0.5999636507260497,0.7237284007795656,0.768477840008389]) hull(){
+    translate([89,56]) sphere(0.01);
+    translate([79,24]) sphere(0.01);
+    translate([41,11]) sphere(0.01);
+}
+color([0.39919497436663987,0.5025143374016644,0.025055445802980247]) hull(){
+    translate([20,43]) sphere(0.01);
+    translate([76,98]) sphere(0.01);
+    translate([82,79]) sphere(0.01);
+}
+color([0.8622097066671314,0.9174531722476837,0.6143925012121764]) hull(){
+    translate([19,24]) sphere(0.01);
+    translate([91,54]) sphere(0.01);
+    translate([10,11]) sphere(0.01);
+}
+color([0.11973554167709533,0.3083466376074071,0.2479170780849217]) hull(){
+    translate([40,77]) sphere(0.01);
+    translate([26,40]) sphere(0.01);
+    translate([34,19]) sphere(0.01);
+}
+color([0.7251751864040653,0.7439804793975132,0.10494851561748952]) hull(){
+    translate([85,14]) sphere(0.01);
+    translate([56,96]) sphere(0.01);
+    translate([2,26]) sphere(0.01);
+}
+color([0.5383843274537697,0.6652416404660696,0.8920646197270422]) hull(){
+    translate([66,20]) sphere(0.01);
+    translate([60,95]) sphere(0.01);
+    translate([76,84]) sphere(0.01);
+}
+color([0.399491629479067,0.499461091602599,0.34989648961467346]) hull(){
+    translate([5,69]) sphere(0.01);
+    translate([56,44]) sphere(0.01);
+    translate([0,10]) sphere(0.01);
+}
+color([0.29526278237412984,0.17057957989831074,0.9678783922865378]) hull(){
+    translate([63,7]) sphere(0.01);
+    translate([54,48]) sphere(0.01);
+    translate([19,24]) sphere(0.01);
+}
+color([0.3071997968481256,0.3900899558996832,0.19649794762289108]) hull(){
+    translate([55,23]) sphere(0.01);
+    translate([26,34]) sphere(0.01);
+    translate([32,27]) sphere(0.01);
+}
+color([0.8064358997750127,0.42444570195086184,0.031050167670883755]) hull(){
+    translate([37,51]) sphere(0.01);
+    translate([50,33]) sphere(0.01);
+    translate([42,3]) sphere(0.01);
+}
+color([0.6335002134768022,0.12671404771886274,0.04265135790798624]) hull(){
+    translate([93,34]) sphere(0.01);
+    translate([30,66]) sphere(0.01);
+    translate([22,6]) sphere(0.01);
+}
+color([0.44063116821149884,0.2248672432039669,0.4444501373738342]) hull(){
+    translate([84,53]) sphere(0.01);
+    translate([11,92]) sphere(0.01);
+    translate([45,15]) sphere(0.01);
+}
+color([0.7597844899814927,0.4424780285840133,0.5818398356761626]) hull(){
+    translate([21,100]) sphere(0.01);
+    translate([78,60]) sphere(0.01);
+    translate([47,27]) sphere(0.01);
+}
+color([0.697164425779396,0.3473733746720753,0.27012334513661285]) hull(){
+    translate([99,84]) sphere(0.01);
+    translate([66,30]) sphere(0.01);
+    translate([51,2]) sphere(0.01);
+}
+color([0.2525436783838323,0.549766421603873,0.21648522187020935]) hull(){
+    translate([59,43]) sphere(0.01);
+    translate([5,33]) sphere(0.01);
+    translate([63,76]) sphere(0.01);
+}
+color([0.8972875486880917,0.011626858068686796,0.14621658954786865]) hull(){
+    translate([6,9]) sphere(0.01);
+    translate([45,5]) sphere(0.01);
+    translate([83,33]) sphere(0.01);
+}
+color([0.47792166861927365,0.70331530228621,0.10643819811983901]) hull(){
+    translate([99,74]) sphere(0.01);
+    translate([58,73]) sphere(0.01);
+    translate([79,92]) sphere(0.01);
+}
+color([0.3022812763850795,0.8642827740535285,0.045315535573725585]) hull(){
+    translate([36,68]) sphere(0.01);
+    translate([50,46]) sphere(0.01);
+    translate([41,20]) sphere(0.01);
+}
+color([0.19300994232329327,0.12895513645598944,0.22236878355348322]) hull(){
+    translate([16,94]) sphere(0.01);
+    translate([23,43]) sphere(0.01);
+    translate([63,99]) sphere(0.01);
+}
+color([0.07446717431424965,0.29555505663723125,0.903191896570371]) hull(){
+    translate([51,79]) sphere(0.01);
+    translate([52,31]) sphere(0.01);
+    translate([97,63]) sphere(0.01);
+}
+color([0.4220303973569174,0.7050184105235258,0.6777841575179138]) hull(){
+    translate([95,12]) sphere(0.01);
+    translate([67,27]) sphere(0.01);
+    translate([22,9]) sphere(0.01);
+}
+color([0.5407743698026002,0.6856294665414817,0.2955998308209824]) hull(){
+    translate([31,10]) sphere(0.01);
+    translate([2,78]) sphere(0.01);
+    translate([35,61]) sphere(0.01);
+}
+color([0.08042222122028464,0.7104538153308544,0.1526450505190653]) hull(){
+    translate([28,42]) sphere(0.01);
+    translate([52,88]) sphere(0.01);
+    translate([5,76]) sphere(0.01);
+}
+color([0.22011707977654815,0.9545231222535324,0.6709564506584681]) hull(){
+    translate([34,60]) sphere(0.01);
+    translate([44,88]) sphere(0.01);
+    translate([43,91]) sphere(0.01);
+}
+color([0.4337625904412067,0.8033544818520216,0.3650787265401172]) hull(){
+    translate([89,9]) sphere(0.01);
+    translate([65,36]) sphere(0.01);
+    translate([78,95]) sphere(0.01);
+}
+color([0.6480991081050926,0.7155196799871991,0.7914657417585678]) hull(){
+    translate([20,47]) sphere(0.01);
+    translate([39,29]) sphere(0.01);
     translate([51,55]) sphere(0.01);
 }
-color([0.5484054396345015,0.1795491616181364,0.36277019899079666]) hull(){
-    translate([35,48]) sphere(0.01);
+color([0.21966285225249016,0.5025440859376432,0.06664533871115608]) hull(){
+    translate([5,0]) sphere(0.01);
+    translate([34,10]) sphere(0.01);
+    translate([68,92]) sphere(0.01);
+}
+color([0.4863504243401676,0.9164047286554473,0.6438086061294896]) hull(){
+    translate([96,89]) sphere(0.01);
+    translate([12,35]) sphere(0.01);
+    translate([80,54]) sphere(0.01);
+}
+color([0.6486168354293581,0.4499116036484727,0.9379881287578624]) hull(){
+    translate([61,68]) sphere(0.01);
+    translate([35,94]) sphere(0.01);
+    translate([98,80]) sphere(0.01);
+}
+color([0.735261698519066,0.7786354918065169,0.11347857448592391]) hull(){
+    translate([70,87]) sphere(0.01);
+    translate([5,63]) sphere(0.01);
+    translate([87,80]) sphere(0.01);
+}
+color([0.03422336223447253,0.02162654399917463,0.6300362526704706]) hull(){
+    translate([39,23]) sphere(0.01);
+    translate([11,11]) sphere(0.01);
+    translate([97,62]) sphere(0.01);
+}
+color([0.29799019293217766,0.10309518656437378,0.913256550671344]) hull(){
+    translate([78,83]) sphere(0.01);
+    translate([80,26]) sphere(0.01);
+    translate([67,10]) sphere(0.01);
+}
+color([0.9796499272844822,0.03785253093113172,0.9704703250443508]) hull(){
+    translate([43,78]) sphere(0.01);
+    translate([90,19]) sphere(0.01);
+    translate([51,64]) sphere(0.01);
+}
+color([0.966920939349135,0.9128944441283107,0.36393314069516247]) hull(){
+    translate([5,50]) sphere(0.01);
+    translate([42,52]) sphere(0.01);
+    translate([22,72]) sphere(0.01);
+}
+color([0.089531738064349,0.471148907374245,0.4459976861023436]) hull(){
+    translate([55,31]) sphere(0.01);
+    translate([87,95]) sphere(0.01);
+    translate([77,87]) sphere(0.01);
+}
+color([0.4675965470645046,0.45177397830032673,0.49905480300053673]) hull(){
+    translate([10,57]) sphere(0.01);
+    translate([47,0]) sphere(0.01);
+    translate([36,54]) sphere(0.01);
+}
+color([0.39368820652317227,0.32900465453114147,0.45569554119906297]) hull(){
+    translate([1,57]) sphere(0.01);
+    translate([91,76]) sphere(0.01);
+    translate([36,25]) sphere(0.01);
+}
+color([0.5455654130569513,0.6364459702188668,0.6500171745128894]) hull(){
+    translate([57,62]) sphere(0.01);
+    translate([81,91]) sphere(0.01);
+    translate([67,16]) sphere(0.01);
+}
+color([0.1891586635970972,0.07375210597657023,0.5443285858033147]) hull(){
+    translate([60,18]) sphere(0.01);
+    translate([26,82]) sphere(0.01);
     translate([36,49]) sphere(0.01);
-    translate([37,51]) sphere(0.01);
+}
+color([0.495819260610425,0.47483817005350126,0.47798022088346337]) hull(){
+    translate([1,3]) sphere(0.01);
+    translate([51,14]) sphere(0.01);
+    translate([98,81]) sphere(0.01);
+}
+color([0.5466851589737057,0.1544811719236543,0.3544389582642892]) hull(){
+    translate([100,93]) sphere(0.01);
+    translate([73,31]) sphere(0.01);
+    translate([18,97]) sphere(0.01);
+}
+color([0.722880635628964,0.5087702444282068,0.813059315127735]) hull(){
+    translate([96,30]) sphere(0.01);
+    translate([60,22]) sphere(0.01);
+    translate([52,39]) sphere(0.01);
+}
+color([0.47397172619506733,0.1502191733087036,0.9763374563976862]) hull(){
+    translate([37,67]) sphere(0.01);
+    translate([49,49]) sphere(0.01);
+    translate([49,73]) sphere(0.01);
+}
+color([0.5212321316390497,0.6853418479016123,0.3398683140482872]) hull(){
+    translate([91,99]) sphere(0.01);
+    translate([86,60]) sphere(0.01);
+    translate([14,71]) sphere(0.01);
+}
+color([0.12825566763440321,0.8427816865964836,0.3926529698361072]) hull(){
+    translate([73,99]) sphere(0.01);
+    translate([17,4]) sphere(0.01);
+    translate([65,95]) sphere(0.01);
+}
+color([0.8658260507714884,0.26966986476850663,0.13828136475390695]) hull(){
+    translate([7,2]) sphere(0.01);
+    translate([65,54]) sphere(0.01);
+    translate([49,48]) sphere(0.01);
+}
+color([0.39357082633436347,0.42891001093422443,0.7309070157875316]) hull(){
+    translate([28,2]) sphere(0.01);
+    translate([14,9]) sphere(0.01);
+    translate([28,85]) sphere(0.01);
+}
+color([0.9677368486122874,0.1800917651541627,0.277785947245334]) hull(){
+    translate([48,34]) sphere(0.01);
+    translate([39,66]) sphere(0.01);
+    translate([94,20]) sphere(0.01);
+}
+color([0.0236069018460221,0.5536091703301972,0.4552326139551651]) hull(){
+    translate([78,61]) sphere(0.01);
+    translate([78,96]) sphere(0.01);
+    translate([70,46]) sphere(0.01);
+}
+color([0.08698497868426835,0.788138791689303,0.580839883121756]) hull(){
+    translate([85,44]) sphere(0.01);
+    translate([44,52]) sphere(0.01);
+    translate([35,9]) sphere(0.01);
+}
+color([0.642460664456652,0.8717246388972788,0.4196136277733318]) hull(){
+    translate([54,29]) sphere(0.01);
+    translate([49,0]) sphere(0.01);
+    translate([37,69]) sphere(0.01);
+}
+color([0.9282652248936205,0.7696758975576687,0.16407122493183435]) hull(){
+    translate([4,81]) sphere(0.01);
+    translate([47,97]) sphere(0.01);
+    translate([90,84]) sphere(0.01);
+}
+color([0.5531683229046898,0.8416927294522771,0.24829252909920263]) hull(){
+    translate([86,61]) sphere(0.01);
+    translate([52,32]) sphere(0.01);
+    translate([56,17]) sphere(0.01);
+}
+color([0.48414399402347363,0.8905082416021144,0.8691394702894701]) hull(){
+    translate([89,63]) sphere(0.01);
+    translate([79,97]) sphere(0.01);
+    translate([76,45]) sphere(0.01);
+}
+color([0.060113273758452546,0.41485247980864104,0.26293855080178796]) hull(){
+    translate([37,1]) sphere(0.01);
+    translate([9,50]) sphere(0.01);
+    translate([15,66]) sphere(0.01);
+}
+color([0.6524543903095563,0.31618220767112737,0.5143305157589423]) hull(){
+    translate([51,26]) sphere(0.01);
+    translate([84,20]) sphere(0.01);
+    translate([34,6]) sphere(0.01);
+}
+color([0.1565935417928792,0.34538488422102687,0.4826602268140501]) hull(){
+    translate([5,90]) sphere(0.01);
+    translate([11,67]) sphere(0.01);
+    translate([88,96]) sphere(0.01);
+}
+color([0.8785177386403842,0.8641079707324776,0.4461377634814232]) hull(){
+    translate([57,44]) sphere(0.01);
+    translate([3,44]) sphere(0.01);
+    translate([75,86]) sphere(0.01);
+}
+color([0.648126655008932,0.19401910237423003,0.7547027344049569]) hull(){
+    translate([25,83]) sphere(0.01);
+    translate([42,95]) sphere(0.01);
+    translate([31,73]) sphere(0.01);
+}
+color([0.16741737209019458,0.05072265924402186,0.9686876542410076]) hull(){
+    translate([37,66]) sphere(0.01);
+    translate([79,36]) sphere(0.01);
+    translate([40,82]) sphere(0.01);
+}
+color([0.7424594295197274,0.7702610922263022,0.6271617060411596]) hull(){
+    translate([41,40]) sphere(0.01);
+    translate([33,13]) sphere(0.01);
+    translate([20,85]) sphere(0.01);
+}
+color([0.8911971188746306,0.8658182236350924,0.4011922503163924]) hull(){
+    translate([39,56]) sphere(0.01);
+    translate([64,81]) sphere(0.01);
+    translate([29,29]) sphere(0.01);
+}
+color([0.2707296363799844,0.31659042497812195,0.3522819706901449]) hull(){
+    translate([30,43]) sphere(0.01);
+    translate([18,50]) sphere(0.01);
+    translate([60,59]) sphere(0.01);
+}
+color([0.06485440010304422,0.051373228404581806,0.737291345378423]) hull(){
+    translate([18,51]) sphere(0.01);
+    translate([45,84]) sphere(0.01);
+    translate([22,92]) sphere(0.01);
+}
+color([0.776536047562898,0.9758735067392873,0.8032426508245281]) hull(){
+    translate([81,31]) sphere(0.01);
+    translate([79,29]) sphere(0.01);
+    translate([91,36]) sphere(0.01);
+}
+color([0.757464496476667,0.3595029809900341,0.7331995973959315]) hull(){
+    translate([36,62]) sphere(0.01);
+    translate([38,71]) sphere(0.01);
+    translate([81,75]) sphere(0.01);
+}
+color([0.5296880503487535,0.0595175300981422,0.6846399748544602]) hull(){
+    translate([35,74]) sphere(0.01);
+    translate([43,3]) sphere(0.01);
+    translate([48,79]) sphere(0.01);
+}
+color([0.9425453263792953,0.76816429293903,0.24613030322395746]) hull(){
+    translate([49,71]) sphere(0.01);
+    translate([54,61]) sphere(0.01);
+    translate([36,66]) sphere(0.01);
+}
+color([0.5897402839512162,0.60687886946789,0.8365208423261962]) hull(){
+    translate([52,92]) sphere(0.01);
+    translate([94,3]) sphere(0.01);
+    translate([90,67]) sphere(0.01);
+}
+color([0.8467094312659272,0.6487457259165667,0.8647128779776831]) hull(){
+    translate([51,93]) sphere(0.01);
+    translate([18,42]) sphere(0.01);
+    translate([76,35]) sphere(0.01);
+}
+color([0.8779111484858203,0.1499714805785789,0.2808015904843869]) hull(){
+    translate([44,47]) sphere(0.01);
+    translate([54,15]) sphere(0.01);
+    translate([74,23]) sphere(0.01);
+}
+color([0.44415016423153886,0.0737662177603351,0.5643813804540975]) hull(){
+    translate([94,16]) sphere(0.01);
+    translate([90,15]) sphere(0.01);
+    translate([10,59]) sphere(0.01);
+}
+color([0.5854400290532984,0.6731167744395135,0.2965429942869915]) hull(){
+    translate([19,25]) sphere(0.01);
+    translate([21,7]) sphere(0.01);
+    translate([71,91]) sphere(0.01);
+}
+color([0.200157086853877,0.7196171547205524,0.8802842786643941]) hull(){
+    translate([97,70]) sphere(0.01);
+    translate([61,58]) sphere(0.01);
+    translate([90,81]) sphere(0.01);
+}
+color([0.6462580614452894,0.10247375332901676,0.6679113195193662]) hull(){
+    translate([75,39]) sphere(0.01);
+    translate([9,50]) sphere(0.01);
+    translate([12,42]) sphere(0.01);
+}
+color([0.12721296584235264,0.31232119589445373,0.6374753712752877]) hull(){
+    translate([63,82]) sphere(0.01);
+    translate([56,58]) sphere(0.01);
+    translate([96,74]) sphere(0.01);
+}
+color([0.09478872843629693,0.7829440291255841,0.9813937985933147]) hull(){
+    translate([37,70]) sphere(0.01);
+    translate([93,72]) sphere(0.01);
+    translate([5,72]) sphere(0.01);
+}
+color([0.053971874464108116,0.6075463427743799,0.6274969017151208]) hull(){
+    translate([99,93]) sphere(0.01);
+    translate([18,8]) sphere(0.01);
+    translate([3,95]) sphere(0.01);
+}
+color([0.4037929336898667,0.28781053751023045,0.35314305166967963]) hull(){
+    translate([58,73]) sphere(0.01);
+    translate([10,94]) sphere(0.01);
+    translate([40,2]) sphere(0.01);
+}
+color([0.22683810917377878,0.24505520605003217,0.8695519573630902]) hull(){
+    translate([73,4]) sphere(0.01);
+    translate([86,69]) sphere(0.01);
+    translate([70,95]) sphere(0.01);
+}
+color([0.39890977881232415,0.07898991846441872,0.06661708916570241]) hull(){
+    translate([13,67]) sphere(0.01);
+    translate([99,12]) sphere(0.01);
+    translate([11,44]) sphere(0.01);
+}
+color([0.7679531709598452,0.037541809387450775,0.3497745617534035]) hull(){
+    translate([55,92]) sphere(0.01);
+    translate([70,13]) sphere(0.01);
+    translate([37,0]) sphere(0.01);
+}
+color([0.9240942620748619,0.9985326576258112,0.4812136095522208]) hull(){
+    translate([78,43]) sphere(0.01);
+    translate([2,58]) sphere(0.01);
+    translate([96,23]) sphere(0.01);
+}
+color([0.24706830493223186,0.19395734886574822,0.3390944266822066]) hull(){
+    translate([93,6]) sphere(0.01);
+    translate([90,97]) sphere(0.01);
+    translate([53,7]) sphere(0.01);
+}
+color([0.6286383572385004,0.15237347056175765,0.261602668359888]) hull(){
+    translate([94,82]) sphere(0.01);
+    translate([83,94]) sphere(0.01);
+    translate([69,80]) sphere(0.01);
+}
+color([0.4974156256940825,0.8968633008396062,0.19235009205795361]) hull(){
+    translate([70,43]) sphere(0.01);
+    translate([97,33]) sphere(0.01);
+    translate([95,95]) sphere(0.01);
+}
+color([0.9993054446306133,0.10415134000909887,0.31191768693072297]) hull(){
+    translate([63,11]) sphere(0.01);
+    translate([6,93]) sphere(0.01);
+    translate([58,61]) sphere(0.01);
+}
+color([0.44799745746106256,0.0004051826161016736,0.5370947787391629]) hull(){
+    translate([78,85]) sphere(0.01);
+    translate([32,90]) sphere(0.01);
+    translate([29,49]) sphere(0.01);
+}
+color([0.509468583951139,0.056525219165242224,0.11403344913927915]) hull(){
+    translate([4,70]) sphere(0.01);
+    translate([50,96]) sphere(0.01);
+    translate([72,1]) sphere(0.01);
+}
+color([0.3760385776815792,0.35990160959470097,0.1887919617607634]) hull(){
+    translate([13,35]) sphere(0.01);
+    translate([23,88]) sphere(0.01);
+    translate([49,0]) sphere(0.01);
+}
+color([0.4090247781569407,0.7583352569897875,0.19579996699928204]) hull(){
+    translate([23,53]) sphere(0.01);
+    translate([20,85]) sphere(0.01);
+    translate([72,27]) sphere(0.01);
+}
+color([0.2850180249644604,0.8850109686368552,0.06228694688066683]) hull(){
+    translate([39,28]) sphere(0.01);
+    translate([9,18]) sphere(0.01);
+    translate([80,65]) sphere(0.01);
+}
+color([0.3427699732548495,0.5288013111003668,0.5899880841428308]) hull(){
+    translate([7,70]) sphere(0.01);
+    translate([42,100]) sphere(0.01);
+    translate([12,75]) sphere(0.01);
+}
+color([0.2050767107104433,0.6928272036843355,0.7264173075654474]) hull(){
+    translate([90,74]) sphere(0.01);
+    translate([36,79]) sphere(0.01);
+    translate([82,95]) sphere(0.01);
+}
+color([0.4048997359735056,0.916378147879009,0.6732971752921885]) hull(){
+    translate([24,12]) sphere(0.01);
+    translate([88,51]) sphere(0.01);
+    translate([74,42]) sphere(0.01);
+}
+color([0.4290055928665458,0.23453812170718102,0.15439335522424358]) hull(){
+    translate([98,6]) sphere(0.01);
+    translate([44,51]) sphere(0.01);
+    translate([4,86]) sphere(0.01);
+}
+color([0.8093231568725141,0.08633567891086813,0.17786797451849035]) hull(){
+    translate([64,76]) sphere(0.01);
+    translate([87,93]) sphere(0.01);
+    translate([100,89]) sphere(0.01);
+}
+color([0.597908209516087,0.2049302140046264,0.38259819383496607]) hull(){
+    translate([40,28]) sphere(0.01);
+    translate([95,43]) sphere(0.01);
+    translate([94,38]) sphere(0.01);
+}
+color([0.09820935578849854,0.7126580228806777,0.12963285250031453]) hull(){
+    translate([71,21]) sphere(0.01);
+    translate([8,70]) sphere(0.01);
+    translate([82,59]) sphere(0.01);
+}
+color([0.1405419357639307,0.15005427666135895,0.21625088311912088]) hull(){
+    translate([48,14]) sphere(0.01);
+    translate([0,4]) sphere(0.01);
+    translate([42,85]) sphere(0.01);
+}
+color([0.32525440064043776,0.7889538383345114,0.903373120230993]) hull(){
+    translate([93,91]) sphere(0.01);
+    translate([67,34]) sphere(0.01);
+    translate([71,98]) sphere(0.01);
+}
+color([0.06977575266170288,0.7362720839865503,0.2020320956073609]) hull(){
+    translate([96,82]) sphere(0.01);
+    translate([66,93]) sphere(0.01);
+    translate([82,65]) sphere(0.01);
+}
+color([0.5423401186675025,0.3142030079413114,0.2863028083493637]) hull(){
+    translate([70,21]) sphere(0.01);
+    translate([58,6]) sphere(0.01);
+    translate([86,21]) sphere(0.01);
+}
+color([0.2877204404819569,0.28152403442233176,0.5360057575380175]) hull(){
+    translate([12,73]) sphere(0.01);
+    translate([2,47]) sphere(0.01);
+    translate([71,3]) sphere(0.01);
+}
+color([0.5485858365689398,0.3160912847100037,0.1726206824472417]) hull(){
+    translate([38,67]) sphere(0.01);
+    translate([62,88]) sphere(0.01);
+    translate([24,80]) sphere(0.01);
+}
+color([0.9286524442978176,0.2763596658323645,0.9635545390661618]) hull(){
+    translate([7,46]) sphere(0.01);
+    translate([28,91]) sphere(0.01);
+    translate([94,27]) sphere(0.01);
+}
+color([0.008450209499696881,0.9833800899883325,0.7835523513514916]) hull(){
+    translate([57,13]) sphere(0.01);
+    translate([14,58]) sphere(0.01);
+    translate([80,4]) sphere(0.01);
+}
+color([0.2873354165488382,0.1255494074447594,0.7210090079272947]) hull(){
+    translate([62,20]) sphere(0.01);
+    translate([100,54]) sphere(0.01);
+    translate([59,56]) sphere(0.01);
+}
+color([0.08812737617158117,0.398236089702665,0.7163432287626534]) hull(){
+    translate([89,54]) sphere(0.01);
+    translate([62,75]) sphere(0.01);
+    translate([96,86]) sphere(0.01);
+}
+color([0.6622406155683929,0.5366635589440476,0.34207905320638676]) hull(){
+    translate([32,86]) sphere(0.01);
+    translate([63,8]) sphere(0.01);
+    translate([32,47]) sphere(0.01);
+}
+color([0.13074362195156275,0.8461927484521828,0.3676559052771552]) hull(){
+    translate([49,24]) sphere(0.01);
+    translate([13,69]) sphere(0.01);
+    translate([26,9]) sphere(0.01);
+}
+color([0.9466232172358584,0.37576346302440744,0.7738670793165449]) hull(){
+    translate([87,66]) sphere(0.01);
+    translate([3,42]) sphere(0.01);
+    translate([24,6]) sphere(0.01);
+}
+color([0.5737219409592526,0.2383097732807936,0.6780550854220364]) hull(){
+    translate([77,51]) sphere(0.01);
+    translate([63,80]) sphere(0.01);
+    translate([66,5]) sphere(0.01);
+}
+color([0.6000681642891845,0.055512920219609074,0.23470921943385203]) hull(){
+    translate([33,97]) sphere(0.01);
+    translate([45,75]) sphere(0.01);
+    translate([46,10]) sphere(0.01);
+}
+color([0.4201773127248388,0.6373251495517093,0.24998835023024624]) hull(){
+    translate([10,4]) sphere(0.01);
+    translate([40,84]) sphere(0.01);
+    translate([22,61]) sphere(0.01);
+}
+color([0.2175972434529918,0.4163783665321429,0.9098439236409347]) hull(){
+    translate([1,72]) sphere(0.01);
+    translate([62,35]) sphere(0.01);
+    translate([12,84]) sphere(0.01);
+}
+color([0.25914792931457187,0.2775326697655319,0.14650876268586432]) hull(){
+    translate([86,56]) sphere(0.01);
+    translate([2,80]) sphere(0.01);
+    translate([48,25]) sphere(0.01);
+}
+color([0.2095618258471844,0.3738458543605927,0.447538901354982]) hull(){
+    translate([68,8]) sphere(0.01);
+    translate([81,36]) sphere(0.01);
+    translate([19,76]) sphere(0.01);
+}
+color([0.5975531070482064,0.13355353318117502,0.38467783092185204]) hull(){
+    translate([13,94]) sphere(0.01);
+    translate([77,90]) sphere(0.01);
+    translate([57,79]) sphere(0.01);
+}
+color([0.6047482555434874,0.6921651308042475,0.7793726087290122]) hull(){
+    translate([31,0]) sphere(0.01);
+    translate([71,81]) sphere(0.01);
+    translate([89,12]) sphere(0.01);
+}
+color([0.3957676756885411,0.8998956753949915,0.19744914753727016]) hull(){
+    translate([74,40]) sphere(0.01);
+    translate([77,1]) sphere(0.01);
+    translate([55,23]) sphere(0.01);
+}
+color([0.044872440589686424,0.20282732922717495,0.47778002198978586]) hull(){
+    translate([87,87]) sphere(0.01);
+    translate([37,96]) sphere(0.01);
+    translate([88,30]) sphere(0.01);
+}
+color([0.7565823833812777,0.2079660995759225,0.10719977146924453]) hull(){
+    translate([75,4]) sphere(0.01);
+    translate([34,49]) sphere(0.01);
+    translate([40,2]) sphere(0.01);
+}
+color([0.12810772743771714,0.798813179036526,0.10112610105346276]) hull(){
+    translate([23,37]) sphere(0.01);
+    translate([44,37]) sphere(0.01);
+    translate([88,73]) sphere(0.01);
+}
+color([0.5974375438561572,0.8488323740985618,0.15852232646816133]) hull(){
+    translate([33,62]) sphere(0.01);
+    translate([51,82]) sphere(0.01);
+    translate([46,16]) sphere(0.01);
+}
+color([0.5978740169757398,0.8681420391372784,0.46112476133502645]) hull(){
+    translate([65,10]) sphere(0.01);
+    translate([31,92]) sphere(0.01);
+    translate([41,54]) sphere(0.01);
+}
+color([0.6314514919010058,0.19629053512755534,0.834937066345738]) hull(){
+    translate([62,82]) sphere(0.01);
+    translate([12,1]) sphere(0.01);
+    translate([22,80]) sphere(0.01);
+}
+color([0.4009670746604762,0.32173203192271393,0.553082009505837]) hull(){
+    translate([18,69]) sphere(0.01);
+    translate([22,8]) sphere(0.01);
+    translate([4,30]) sphere(0.01);
+}
+color([0.3256937881953724,0.9109963078438346,0.13412178984042844]) hull(){
+    translate([13,79]) sphere(0.01);
+    translate([90,87]) sphere(0.01);
+    translate([50,66]) sphere(0.01);
+}
+color([0.16837589335630898,0.8764134615484998,0.07351501458473586]) hull(){
+    translate([61,95]) sphere(0.01);
+    translate([77,70]) sphere(0.01);
+    translate([36,86]) sphere(0.01);
+}
+color([0.18861772816501654,0.2995636798725818,0.6373620141013281]) hull(){
+    translate([93,63]) sphere(0.01);
+    translate([16,83]) sphere(0.01);
+    translate([48,50]) sphere(0.01);
+}
+color([0.4415437475553168,0.7961450490178668,0.84634125377522]) hull(){
+    translate([67,12]) sphere(0.01);
+    translate([80,3]) sphere(0.01);
+    translate([26,38]) sphere(0.01);
+}
+color([0.8916592015510378,0.14182509993947134,0.48137274701024935]) hull(){
+    translate([52,21]) sphere(0.01);
+    translate([9,46]) sphere(0.01);
+    translate([49,24]) sphere(0.01);
+}
+color([0.5064966308665176,0.3611716642845566,0.4929690929227817]) hull(){
+    translate([30,95]) sphere(0.01);
+    translate([42,20]) sphere(0.01);
+    translate([77,24]) sphere(0.01);
+}
+color([0.33975835656900355,0.19140748203007008,0.9037004397118625]) hull(){
+    translate([41,80]) sphere(0.01);
+    translate([38,21]) sphere(0.01);
+    translate([40,53]) sphere(0.01);
+}
+color([0.22105114979588647,0.7119011916453704,0.13344329368444563]) hull(){
+    translate([58,15]) sphere(0.01);
+    translate([57,62]) sphere(0.01);
+    translate([51,53]) sphere(0.01);
+}
+color([0.4275590222113661,0.9470347016445155,0.3426119792791571]) hull(){
+    translate([21,24]) sphere(0.01);
+    translate([60,8]) sphere(0.01);
+    translate([44,26]) sphere(0.01);
+}
+color([0.3987605823857824,0.04971247072134921,0.27732972371438613]) hull(){
+    translate([95,53]) sphere(0.01);
+    translate([62,63]) sphere(0.01);
+    translate([82,16]) sphere(0.01);
+}
+color([0.9851647718611997,0.6384503739598667,0.3871269652437943]) hull(){
+    translate([74,6]) sphere(0.01);
+    translate([69,69]) sphere(0.01);
+    translate([97,69]) sphere(0.01);
+}
+color([0.2616500206534439,0.292388978519858,0.6822268022305197]) hull(){
+    translate([33,66]) sphere(0.01);
+    translate([78,91]) sphere(0.01);
+    translate([0,84]) sphere(0.01);
+}
+color([0.6793183354409675,0.052800824167059335,0.13687799840204007]) hull(){
+    translate([23,94]) sphere(0.01);
+    translate([64,65]) sphere(0.01);
+    translate([77,100]) sphere(0.01);
+}
+color([0.7511961766341985,0.08905517025934961,0.8809844539432513]) hull(){
+    translate([67,84]) sphere(0.01);
+    translate([71,86]) sphere(0.01);
+    translate([99,10]) sphere(0.01);
+}
+color([0.9000559978129854,0.24961533485301535,0.783578978277694]) hull(){
+    translate([16,1]) sphere(0.01);
+    translate([56,85]) sphere(0.01);
+    translate([91,36]) sphere(0.01);
+}
+color([0.719170536719719,0.7381890865001747,0.8253608447106495]) hull(){
+    translate([56,75]) sphere(0.01);
+    translate([56,40]) sphere(0.01);
+    translate([28,34]) sphere(0.01);
+}
+color([0.6617918474406483,0.8800476441724,0.35790415810623144]) hull(){
+    translate([74,38]) sphere(0.01);
+    translate([33,18]) sphere(0.01);
+    translate([95,76]) sphere(0.01);
+}
+color([0.9363814172793983,0.2462517128887105,0.011644640876006584]) hull(){
+    translate([74,91]) sphere(0.01);
+    translate([90,67]) sphere(0.01);
+    translate([11,30]) sphere(0.01);
+}
+color([0.10247217162955857,0.7702968435785551,0.28788811910423806]) hull(){
+    translate([90,13]) sphere(0.01);
+    translate([48,76]) sphere(0.01);
+    translate([93,18]) sphere(0.01);
+}
+color([0.9952493852126802,0.12179971100786202,0.9082224325049179]) hull(){
+    translate([14,17]) sphere(0.01);
+    translate([71,59]) sphere(0.01);
+    translate([22,81]) sphere(0.01);
+}
+color([0.7604013502803031,0.36709654039670725,0.09150984533575113]) hull(){
+    translate([37,14]) sphere(0.01);
+    translate([34,36]) sphere(0.01);
+    translate([6,22]) sphere(0.01);
+}
+color([0.16026851826125232,0.3746423444843098,0.9774569995361722]) hull(){
+    translate([69,67]) sphere(0.01);
+    translate([89,9]) sphere(0.01);
+    translate([77,94]) sphere(0.01);
+}
+color([0.8685774351498239,0.7661937228830613,0.42532976405352274]) hull(){
+    translate([90,71]) sphere(0.01);
+    translate([85,28]) sphere(0.01);
+    translate([71,95]) sphere(0.01);
+}
+color([0.2764056268645695,0.6797201475339729,0.22506561226119803]) hull(){
+    translate([52,67]) sphere(0.01);
+    translate([97,45]) sphere(0.01);
+    translate([11,68]) sphere(0.01);
+}
+color([0.43655746783060345,0.45514505994857224,0.35778199819129985]) hull(){
+    translate([34,30]) sphere(0.01);
+    translate([71,50]) sphere(0.01);
+    translate([58,64]) sphere(0.01);
+}
+color([0.8013469732493699,0.5205842977547843,0.2104084560025239]) hull(){
+    translate([80,72]) sphere(0.01);
+    translate([63,13]) sphere(0.01);
+    translate([1,21]) sphere(0.01);
+}
+color([0.3456837357261503,0.6294262108988959,0.8861540254011712]) hull(){
+    translate([0,32]) sphere(0.01);
+    translate([85,31]) sphere(0.01);
+    translate([82,31]) sphere(0.01);
+}
+color([0.4703183481199785,0.3254759962964807,0.32630252970221674]) hull(){
+    translate([2,45]) sphere(0.01);
+    translate([24,80]) sphere(0.01);
+    translate([41,15]) sphere(0.01);
+}
+color([0.6796714379674168,0.8437235939520528,0.8801077700011627]) hull(){
+    translate([6,95]) sphere(0.01);
+    translate([35,23]) sphere(0.01);
+    translate([80,58]) sphere(0.01);
+}
+color([0.04502428554169691,0.8748017228949428,0.8322560314319196]) hull(){
+    translate([60,74]) sphere(0.01);
+    translate([30,39]) sphere(0.01);
+    translate([23,13]) sphere(0.01);
+}
+color([0.8036923249655851,0.7430775137198646,0.5943313947956416]) hull(){
+    translate([26,9]) sphere(0.01);
+    translate([98,24]) sphere(0.01);
+    translate([88,27]) sphere(0.01);
+}
+color([0.6656226459778893,0.330749903774597,0.868479640316589]) hull(){
+    translate([38,21]) sphere(0.01);
+    translate([31,57]) sphere(0.01);
+    translate([21,4]) sphere(0.01);
+}
+color([0.9133558562455345,0.9328092830291573,0.965204480748708]) hull(){
+    translate([79,11]) sphere(0.01);
+    translate([100,12]) sphere(0.01);
+    translate([27,60]) sphere(0.01);
+}
+color([0.04941488832108687,0.9243989960853036,0.6796238522220975]) hull(){
+    translate([52,7]) sphere(0.01);
+    translate([37,97]) sphere(0.01);
+    translate([70,99]) sphere(0.01);
+}
+color([0.6165643145748532,0.9826833521119438,0.0255927122392261]) hull(){
+    translate([24,76]) sphere(0.01);
+    translate([13,28]) sphere(0.01);
+    translate([6,61]) sphere(0.01);
+}
+color([0.6460098231560203,0.7522484787761982,0.959270299831535]) hull(){
+    translate([5,5]) sphere(0.01);
+    translate([77,56]) sphere(0.01);
+    translate([60,76]) sphere(0.01);
+}
+color([0.1341133561002753,0.3957775621053963,0.2636741843460868]) hull(){
+    translate([91,27]) sphere(0.01);
+    translate([60,6]) sphere(0.01);
+    translate([17,20]) sphere(0.01);
+}
+color([0.0089931536744019,0.6293882137700114,0.10699193015934139]) hull(){
+    translate([70,24]) sphere(0.01);
+    translate([25,99]) sphere(0.01);
+    translate([39,18]) sphere(0.01);
+}
+color([0.7175713197745442,0.005780007793811381,0.39173693032620005]) hull(){
+    translate([11,12]) sphere(0.01);
+    translate([67,41]) sphere(0.01);
+    translate([98,56]) sphere(0.01);
+}
+color([0.2452081522136732,0.6267109108994009,0.6522834644017423]) hull(){
+    translate([51,96]) sphere(0.01);
+    translate([94,91]) sphere(0.01);
+    translate([41,97]) sphere(0.01);
+}
+color([0.9794507075148736,0.15836622274147494,0.5120520304374113]) hull(){
+    translate([71,29]) sphere(0.01);
+    translate([66,78]) sphere(0.01);
+    translate([29,52]) sphere(0.01);
+}
+color([0.2530044018495886,0.9503290425104016,0.5032765343031246]) hull(){
+    translate([84,100]) sphere(0.01);
+    translate([49,11]) sphere(0.01);
+    translate([93,64]) sphere(0.01);
+}
+color([0.3723307592388937,0.2687975496070053,0.5431010148318319]) hull(){
+    translate([87,54]) sphere(0.01);
+    translate([41,28]) sphere(0.01);
+    translate([6,44]) sphere(0.01);
+}
+color([0.3390737213020516,0.4953995731584907,0.47426568178825046]) hull(){
+    translate([67,93]) sphere(0.01);
+    translate([21,26]) sphere(0.01);
+    translate([65,27]) sphere(0.01);
+}
+color([0.7813281014383978,0.7049040060844236,0.6672020242354549]) hull(){
+    translate([4,5]) sphere(0.01);
+    translate([13,55]) sphere(0.01);
+    translate([35,84]) sphere(0.01);
+}
+color([0.59891321162433,0.20675941547323395,0.4989320496811215]) hull(){
+    translate([88,26]) sphere(0.01);
+    translate([23,8]) sphere(0.01);
+    translate([94,64]) sphere(0.01);
+}
+color([0.15860592767823745,0.24362692220537363,0.9223470492400727]) hull(){
+    translate([34,35]) sphere(0.01);
+    translate([86,25]) sphere(0.01);
+    translate([6,37]) sphere(0.01);
+}
+color([0.08125028632768871,0.08778967306208207,0.1566294178982881]) hull(){
+    translate([98,83]) sphere(0.01);
+    translate([26,14]) sphere(0.01);
+    translate([83,58]) sphere(0.01);
+}
+color([0.4881466097258217,0.9394993485091689,0.09483007936046162]) hull(){
+    translate([1,84]) sphere(0.01);
+    translate([78,51]) sphere(0.01);
+    translate([61,3]) sphere(0.01);
+}
+color([0.7496523094784379,0.698979968590827,0.8137974970319007]) hull(){
+    translate([66,38]) sphere(0.01);
+    translate([32,43]) sphere(0.01);
+    translate([89,5]) sphere(0.01);
+}
+color([0.2900989154375855,0.4799983707352583,0.7775393964930869]) hull(){
+    translate([53,98]) sphere(0.01);
+    translate([55,17]) sphere(0.01);
+    translate([59,42]) sphere(0.01);
+}
+color([0.9388082122897282,0.038854283444424764,0.9925655674013534]) hull(){
+    translate([37,90]) sphere(0.01);
+    translate([35,71]) sphere(0.01);
+    translate([47,4]) sphere(0.01);
+}
+color([0.44170260534215255,0.5087868714146372,0.3598719796518973]) hull(){
+    translate([80,36]) sphere(0.01);
+    translate([85,38]) sphere(0.01);
+    translate([48,82]) sphere(0.01);
+}
+color([0.18460354523301148,0.44970120413659875,0.6501993296624843]) hull(){
+    translate([65,58]) sphere(0.01);
+    translate([1,23]) sphere(0.01);
+    translate([56,46]) sphere(0.01);
+}
+color([0.3403487699834433,0.7817731397512809,0.9743292711922114]) hull(){
+    translate([59,38]) sphere(0.01);
+    translate([18,56]) sphere(0.01);
+    translate([72,14]) sphere(0.01);
+}
+color([0.5879067123776442,0.7644126763156446,0.4000601250473008]) hull(){
+    translate([18,98]) sphere(0.01);
+    translate([48,37]) sphere(0.01);
+    translate([16,32]) sphere(0.01);
+}
+color([0.36604355066630223,0.49574653220142006,0.2571489256046471]) hull(){
+    translate([45,72]) sphere(0.01);
+    translate([11,16]) sphere(0.01);
+    translate([72,4]) sphere(0.01);
+}
+color([0.8374632643388946,0.9805052880896761,0.7293080884755028]) hull(){
+    translate([76,17]) sphere(0.01);
+    translate([89,39]) sphere(0.01);
+    translate([94,14]) sphere(0.01);
+}
+color([0.7102462781470706,0.33116367429719706,0.8694016796882821]) hull(){
+    translate([55,51]) sphere(0.01);
+    translate([25,94]) sphere(0.01);
+    translate([55,30]) sphere(0.01);
+}
+color([0.15926942089300955,0.6020328264740608,0.3939291367673188]) hull(){
+    translate([4,24]) sphere(0.01);
+    translate([32,82]) sphere(0.01);
+    translate([14,13]) sphere(0.01);
+}
+color([0.17107948370632353,0.5511468417605202,0.6362547263976265]) hull(){
+    translate([40,74]) sphere(0.01);
+    translate([61,98]) sphere(0.01);
+    translate([64,36]) sphere(0.01);
+}
+color([0.4513488113702364,0.4273913195858777,0.7941595965619336]) hull(){
+    translate([11,72]) sphere(0.01);
+    translate([78,13]) sphere(0.01);
+    translate([33,35]) sphere(0.01);
+}
+color([0.250259319804494,0.668466334841109,0.9558425975622227]) hull(){
+    translate([95,88]) sphere(0.01);
+    translate([69,38]) sphere(0.01);
+    translate([11,35]) sphere(0.01);
+}
+color([0.8787840809996866,0.7297949922477387,0.6760701789099856]) hull(){
+    translate([8,30]) sphere(0.01);
+    translate([3,4]) sphere(0.01);
+    translate([6,85]) sphere(0.01);
+}
+color([0.12178286062576871,0.34347709882143906,0.3138882056823582]) hull(){
+    translate([42,28]) sphere(0.01);
+    translate([50,35]) sphere(0.01);
+    translate([87,80]) sphere(0.01);
+}
+color([0.8256958180770725,0.5497988063064695,0.5224418814286286]) hull(){
+    translate([26,78]) sphere(0.01);
+    translate([74,87]) sphere(0.01);
+    translate([76,64]) sphere(0.01);
+}
+color([0.8667571418796679,0.1657379622209173,0.34152302129198175]) hull(){
+    translate([7,7]) sphere(0.01);
+    translate([97,98]) sphere(0.01);
+    translate([66,25]) sphere(0.01);
+}
+color([0.4966795782970417,0.4682540107735893,0.7143441099210599]) hull(){
+    translate([38,89]) sphere(0.01);
+    translate([73,71]) sphere(0.01);
+    translate([61,95]) sphere(0.01);
+}
+color([0.6794769624286241,0.9778011538649698,0.6956985505223239]) hull(){
+    translate([75,36]) sphere(0.01);
+    translate([100,18]) sphere(0.01);
+    translate([98,93]) sphere(0.01);
+}
+color([0.049848449837082254,0.7040255102812552,0.23502660225710548]) hull(){
+    translate([54,62]) sphere(0.01);
+    translate([89,41]) sphere(0.01);
+    translate([32,39]) sphere(0.01);
+}
+color([0.2192232268137776,0.25394565558833193,0.7470066807227207]) hull(){
+    translate([5,97]) sphere(0.01);
+    translate([98,82]) sphere(0.01);
+    translate([100,31]) sphere(0.01);
+}
+color([0.4970273434949305,0.6457861570741659,0.6123610041545314]) hull(){
+    translate([13,62]) sphere(0.01);
+    translate([15,44]) sphere(0.01);
+    translate([36,11]) sphere(0.01);
+}
+color([0.3147608560008942,0.21779972321877228,0.08573673877399712]) hull(){
+    translate([7,47]) sphere(0.01);
+    translate([81,28]) sphere(0.01);
+    translate([62,92]) sphere(0.01);
+}
+color([0.7301345985439462,0.012122804887951477,0.9266572233595807]) hull(){
+    translate([23,73]) sphere(0.01);
+    translate([23,54]) sphere(0.01);
+    translate([33,55]) sphere(0.01);
+}
+color([0.6523783489196855,0.683096383465323,0.056707876426240755]) hull(){
+    translate([88,2]) sphere(0.01);
+    translate([7,7]) sphere(0.01);
+    translate([34,49]) sphere(0.01);
+}
+color([0.9202828421030393,0.6224283212809713,0.09884261478876644]) hull(){
+    translate([77,5]) sphere(0.01);
+    translate([28,88]) sphere(0.01);
+    translate([72,6]) sphere(0.01);
+}
+color([0.5566697210245537,0.9242411361984193,0.4493738479545202]) hull(){
+    translate([98,97]) sphere(0.01);
+    translate([49,86]) sphere(0.01);
+    translate([46,21]) sphere(0.01);
+}
+color([0.9159839408953577,0.5842491446465958,0.794562993834622]) hull(){
+    translate([73,15]) sphere(0.01);
+    translate([31,6]) sphere(0.01);
+    translate([82,96]) sphere(0.01);
+}
+color([0.7628318471167657,0.678963192096452,0.8649334958146554]) hull(){
+    translate([65,90]) sphere(0.01);
+    translate([34,74]) sphere(0.01);
+    translate([77,93]) sphere(0.01);
+}
+color([0.3186621910375238,0.8354161715679529,0.826829547153697]) hull(){
+    translate([78,93]) sphere(0.01);
+    translate([8,93]) sphere(0.01);
+    translate([98,11]) sphere(0.01);
+}
+color([0.11738075374887624,0.05498692879855205,0.6720606658768808]) hull(){
+    translate([29,61]) sphere(0.01);
+    translate([34,50]) sphere(0.01);
+    translate([63,6]) sphere(0.01);
+}
+color([0.48227079704185694,0.2633045439878229,0.7871728303492512]) hull(){
+    translate([28,93]) sphere(0.01);
+    translate([40,31]) sphere(0.01);
+    translate([35,86]) sphere(0.01);
+}
+color([0.4889110107686552,0.4598642681367189,0.3017002002562994]) hull(){
+    translate([40,31]) sphere(0.01);
+    translate([99,44]) sphere(0.01);
+    translate([70,56]) sphere(0.01);
+}
+color([0.7097667730124154,0.7732643589874595,0.6040908296302202]) hull(){
+    translate([6,63]) sphere(0.01);
+    translate([80,54]) sphere(0.01);
+    translate([57,46]) sphere(0.01);
+}
+color([0.4404602571783507,0.4387519946284576,0.3139475975701921]) hull(){
+    translate([97,45]) sphere(0.01);
+    translate([42,86]) sphere(0.01);
+    translate([79,95]) sphere(0.01);
+}
+color([0.7902430565580089,0.5929973639780046,0.11888070100193193]) hull(){
+    translate([22,88]) sphere(0.01);
+    translate([59,73]) sphere(0.01);
+    translate([92,87]) sphere(0.01);
+}
+color([0.8882067612786162,0.5183696497459783,0.37722276013901157]) hull(){
+    translate([24,82]) sphere(0.01);
+    translate([38,61]) sphere(0.01);
+    translate([40,32]) sphere(0.01);
+}
+color([0.34378061705655194,0.680122784193144,0.28765609338386733]) hull(){
+    translate([88,5]) sphere(0.01);
+    translate([87,93]) sphere(0.01);
+    translate([19,38]) sphere(0.01);
+}
+color([0.5132044160193727,0.948679865315508,0.5051172012919322]) hull(){
+    translate([18,44]) sphere(0.01);
+    translate([93,5]) sphere(0.01);
+    translate([5,10]) sphere(0.01);
+}
+color([0.24094793536178727,0.7348070855940613,0.6317801561016791]) hull(){
+    translate([85,96]) sphere(0.01);
+    translate([56,52]) sphere(0.01);
+    translate([96,48]) sphere(0.01);
+}
+color([0.4449433647546056,0.9178984262554764,0.13307521746456363]) hull(){
+    translate([19,64]) sphere(0.01);
+    translate([14,94]) sphere(0.01);
+    translate([19,64]) sphere(0.01);
+}
+color([0.7079100199767676,0.1836532406516047,0.9272673117871152]) hull(){
+    translate([85,79]) sphere(0.01);
+    translate([72,5]) sphere(0.01);
+    translate([21,69]) sphere(0.01);
+}
+color([0.9770711363883782,0.21964399595921047,0.7456964983989979]) hull(){
+    translate([90,26]) sphere(0.01);
+    translate([55,69]) sphere(0.01);
+    translate([56,21]) sphere(0.01);
+}
+color([0.7954513816773767,0.1942374150489241,0.9252283668735345]) hull(){
+    translate([57,20]) sphere(0.01);
+    translate([9,86]) sphere(0.01);
+    translate([64,86]) sphere(0.01);
+}
+color([0.24707526929440882,0.9142504937868682,0.12304511653468275]) hull(){
+    translate([35,39]) sphere(0.01);
+    translate([36,44]) sphere(0.01);
+    translate([5,43]) sphere(0.01);
+}
+color([0.9051447468246127,0.6595353734608235,0.039161747535802816]) hull(){
+    translate([24,42]) sphere(0.01);
+    translate([76,33]) sphere(0.01);
+    translate([1,79]) sphere(0.01);
+}
+color([0.6753764825819706,0.6126312841298749,0.5972284068954468]) hull(){
+    translate([24,37]) sphere(0.01);
+    translate([52,94]) sphere(0.01);
+    translate([19,34]) sphere(0.01);
+}
+color([0.575494251677081,0.6209062143421671,0.5607035836002754]) hull(){
+    translate([26,5]) sphere(0.01);
+    translate([52,28]) sphere(0.01);
+    translate([5,37]) sphere(0.01);
+}
+color([0.17543269760892544,0.41434670023132203,0.7958240628465897]) hull(){
+    translate([1,21]) sphere(0.01);
+    translate([59,68]) sphere(0.01);
+    translate([76,90]) sphere(0.01);
+}
+color([0.7910335349964853,0.16017955018330032,0.8282713893103373]) hull(){
+    translate([81,71]) sphere(0.01);
+    translate([67,79]) sphere(0.01);
+    translate([97,6]) sphere(0.01);
+}
+color([0.02874231659575055,0.6198272226183867,0.9531142770071671]) hull(){
+    translate([13,40]) sphere(0.01);
+    translate([55,22]) sphere(0.01);
+    translate([37,26]) sphere(0.01);
+}
+color([0.10717289908612082,0.14385998044930637,0.5108292542428827]) hull(){
+    translate([70,90]) sphere(0.01);
+    translate([93,78]) sphere(0.01);
+    translate([69,2]) sphere(0.01);
+}
+color([0.6837176448632236,0.4503879877864735,0.06420449988215415]) hull(){
+    translate([95,98]) sphere(0.01);
+    translate([7,14]) sphere(0.01);
+    translate([28,94]) sphere(0.01);
+}
+color([0.6576459769799449,0.9234736039323662,0.024408018859705116]) hull(){
+    translate([27,7]) sphere(0.01);
+    translate([14,17]) sphere(0.01);
+    translate([37,10]) sphere(0.01);
+}
+color([0.09372135915681845,0.7942898391427169,0.34045963298674053]) hull(){
+    translate([55,40]) sphere(0.01);
+    translate([55,13]) sphere(0.01);
+    translate([21,71]) sphere(0.01);
+}
+color([0.4209894644736104,0.3574198786721896,0.6090994516579821]) hull(){
+    translate([23,80]) sphere(0.01);
+    translate([17,34]) sphere(0.01);
+    translate([24,47]) sphere(0.01);
+}
+color([0.0923923227651805,0.47266878363478193,0.9309942603414847]) hull(){
+    translate([85,1]) sphere(0.01);
+    translate([9,62]) sphere(0.01);
+    translate([88,96]) sphere(0.01);
+}
+color([0.9977276694840341,0.9069382860841114,0.752885377253935]) hull(){
+    translate([94,81]) sphere(0.01);
+    translate([45,43]) sphere(0.01);
+    translate([39,51]) sphere(0.01);
+}
+color([0.520746155802809,0.04725125813756359,0.18048087530286439]) hull(){
+    translate([98,78]) sphere(0.01);
+    translate([32,13]) sphere(0.01);
+    translate([54,49]) sphere(0.01);
+}
+color([0.279146609325847,0.6102055741748027,0.39670447503247874]) hull(){
+    translate([33,5]) sphere(0.01);
+    translate([12,38]) sphere(0.01);
+    translate([1,21]) sphere(0.01);
+}
+color([0.5398093701291546,0.47318117291646,0.9266773754052889]) hull(){
+    translate([70,12]) sphere(0.01);
+    translate([69,18]) sphere(0.01);
+    translate([38,91]) sphere(0.01);
+}
+color([0.23506097187503494,0.8040830148288631,0.2008634644472187]) hull(){
+    translate([77,63]) sphere(0.01);
+    translate([95,25]) sphere(0.01);
+    translate([81,86]) sphere(0.01);
+}
+color([0.8938366490987587,0.7634543411243258,0.3869805182240993]) hull(){
+    translate([39,59]) sphere(0.01);
+    translate([48,8]) sphere(0.01);
+    translate([13,76]) sphere(0.01);
+}
+color([0.27496980898570345,0.6298301291940982,0.4467055632920188]) hull(){
+    translate([34,79]) sphere(0.01);
+    translate([6,22]) sphere(0.01);
+    translate([53,92]) sphere(0.01);
+}
+color([0.3562395935049174,0.14940859267975592,0.29874301096612654]) hull(){
+    translate([53,1]) sphere(0.01);
+    translate([83,31]) sphere(0.01);
+    translate([23,47]) sphere(0.01);
+}
+color([0.4890341539868497,0.11699910045014628,0.9951308109691033]) hull(){
+    translate([81,100]) sphere(0.01);
+    translate([29,57]) sphere(0.01);
+    translate([56,17]) sphere(0.01);
+}
+color([0.6419320662024643,0.7850314994284348,0.29833462166723235]) hull(){
+    translate([29,42]) sphere(0.01);
+    translate([47,15]) sphere(0.01);
+    translate([55,58]) sphere(0.01);
+}
+color([0.07221489892085164,0.9823648734955079,0.2833894005957228]) hull(){
+    translate([91,82]) sphere(0.01);
+    translate([81,82]) sphere(0.01);
+    translate([64,76]) sphere(0.01);
+}
+color([0.23366356168520142,0.05582615950015113,0.6291992476645164]) hull(){
+    translate([51,3]) sphere(0.01);
+    translate([76,5]) sphere(0.01);
+    translate([19,92]) sphere(0.01);
+}
+color([0.1960487218822251,0.22934504532088296,0.7297209283784855]) hull(){
+    translate([9,35]) sphere(0.01);
+    translate([46,38]) sphere(0.01);
+    translate([90,8]) sphere(0.01);
+}
+color([0.09007537128463339,0.36725244603113716,0.33392670060755225]) hull(){
+    translate([13,17]) sphere(0.01);
+    translate([56,80]) sphere(0.01);
+    translate([4,60]) sphere(0.01);
+}
+color([0.6672998092625457,0.014674730389278023,0.905682231610093]) hull(){
+    translate([92,76]) sphere(0.01);
+    translate([87,16]) sphere(0.01);
+    translate([38,28]) sphere(0.01);
+}
+color([0.0378219963806099,0.7029481726008181,0.16351369072377597]) hull(){
+    translate([8,95]) sphere(0.01);
+    translate([37,72]) sphere(0.01);
+    translate([93,67]) sphere(0.01);
+}
+color([0.733219042032234,0.32876933401851705,0.4772930807382819]) hull(){
+    translate([89,97]) sphere(0.01);
+    translate([85,5]) sphere(0.01);
+    translate([87,82]) sphere(0.01);
+}
+color([0.0578842528894723,0.45225724006306023,0.056837751717675467]) hull(){
+    translate([17,28]) sphere(0.01);
+    translate([67,35]) sphere(0.01);
+    translate([64,55]) sphere(0.01);
+}
+color([0.7107594392954276,0.48676273182321395,0.6566714523200008]) hull(){
+    translate([53,68]) sphere(0.01);
+    translate([45,1]) sphere(0.01);
+    translate([63,100]) sphere(0.01);
+}
+color([0.6885948228734763,0.2513161529628354,0.9109691914412653]) hull(){
+    translate([10,78]) sphere(0.01);
+    translate([79,45]) sphere(0.01);
+    translate([94,13]) sphere(0.01);
+}
+color([0.024823206041755252,0.3276407225082181,0.659767465727357]) hull(){
+    translate([78,0]) sphere(0.01);
+    translate([33,88]) sphere(0.01);
+    translate([24,83]) sphere(0.01);
+}
+color([0.7966087028202214,0.36472041661553856,0.5910668775360091]) hull(){
+    translate([82,80]) sphere(0.01);
+    translate([13,27]) sphere(0.01);
+    translate([84,31]) sphere(0.01);
+}
+color([0.9356802368850573,0.5663654554045319,0.5804201263330138]) hull(){
+    translate([54,97]) sphere(0.01);
+    translate([69,44]) sphere(0.01);
+    translate([94,49]) sphere(0.01);
+}
+color([0.3290464541044015,0.9625287089225846,0.23444509970785254]) hull(){
+    translate([15,100]) sphere(0.01);
+    translate([65,58]) sphere(0.01);
+    translate([51,12]) sphere(0.01);
+}
+color([0.9413646987375436,0.43712837899006296,0.350502990780161]) hull(){
+    translate([87,53]) sphere(0.01);
+    translate([100,96]) sphere(0.01);
+    translate([63,27]) sphere(0.01);
+}
+color([0.33002760213174276,0.41529094573804437,0.0572186332926633]) hull(){
+    translate([77,47]) sphere(0.01);
+    translate([43,38]) sphere(0.01);
+    translate([100,73]) sphere(0.01);
+}
+color([0.5034213229105413,0.9053968240767548,0.3608546670491388]) hull(){
+    translate([40,1]) sphere(0.01);
+    translate([72,24]) sphere(0.01);
+    translate([34,88]) sphere(0.01);
+}
+color([0.46272031540282366,0.9506861278970415,0.6338472338386114]) hull(){
+    translate([39,25]) sphere(0.01);
+    translate([93,50]) sphere(0.01);
+    translate([25,93]) sphere(0.01);
+}
+color([0.8921868948967921,0.6375650751810289,0.06130159049429473]) hull(){
+    translate([86,92]) sphere(0.01);
+    translate([12,67]) sphere(0.01);
+    translate([26,50]) sphere(0.01);
+}
+color([0.8955372994632418,0.8835517506489108,0.49221732664655016]) hull(){
+    translate([24,5]) sphere(0.01);
+    translate([25,95]) sphere(0.01);
+    translate([36,64]) sphere(0.01);
+}
+color([0.20255678599437765,0.754631697230507,0.00792717277597077]) hull(){
+    translate([68,8]) sphere(0.01);
+    translate([16,22]) sphere(0.01);
+    translate([65,12]) sphere(0.01);
+}
+color([0.21300016080048478,0.05730675146484543,0.7358339198887857]) hull(){
+    translate([37,92]) sphere(0.01);
+    translate([47,46]) sphere(0.01);
+    translate([25,13]) sphere(0.01);
+}
+color([0.8470920155264102,0.1492534443060285,0.26670911357342575]) hull(){
+    translate([71,61]) sphere(0.01);
+    translate([94,31]) sphere(0.01);
+    translate([13,1]) sphere(0.01);
+}
+color([0.061419498014823715,0.6629967425737544,0.7828225086812021]) hull(){
+    translate([82,59]) sphere(0.01);
+    translate([78,38]) sphere(0.01);
+    translate([97,92]) sphere(0.01);
+}
+color([0.7923710198041246,0.91094118158578,0.11425823942048041]) hull(){
+    translate([68,4]) sphere(0.01);
+    translate([51,66]) sphere(0.01);
+    translate([42,9]) sphere(0.01);
+}
+color([0.9728421136276428,0.10476329081288915,0.0367385675195151]) hull(){
+    translate([83,20]) sphere(0.01);
+    translate([30,95]) sphere(0.01);
+    translate([72,85]) sphere(0.01);
+}
+color([0.554316150673661,0.7316947656814083,0.8007680561792933]) hull(){
+    translate([55,86]) sphere(0.01);
+    translate([60,80]) sphere(0.01);
+    translate([85,72]) sphere(0.01);
+}
+color([0.7368288270222781,0.6680298997203925,0.7955394835930537]) hull(){
+    translate([45,31]) sphere(0.01);
+    translate([15,55]) sphere(0.01);
+    translate([85,50]) sphere(0.01);
+}
+color([0.22229274395033094,0.5094167315322454,0.5802502076969469]) hull(){
+    translate([90,50]) sphere(0.01);
+    translate([46,56]) sphere(0.01);
+    translate([4,67]) sphere(0.01);
+}
+color([0.2890123941524314,0.7645250565161372,0.4650966122227539]) hull(){
+    translate([50,13]) sphere(0.01);
+    translate([88,41]) sphere(0.01);
+    translate([82,25]) sphere(0.01);
+}
+color([0.9393067176700716,0.12989147274052548,0.8364119497691324]) hull(){
+    translate([69,86]) sphere(0.01);
+    translate([43,68]) sphere(0.01);
+    translate([92,61]) sphere(0.01);
+}
+color([0.0855554974933288,0.8187431197007419,0.316223856404825]) hull(){
+    translate([72,83]) sphere(0.01);
+    translate([89,5]) sphere(0.01);
+    translate([42,34]) sphere(0.01);
+}
+color([0.7440395094369696,0.9000057925114278,0.6898254945187012]) hull(){
+    translate([0,37]) sphere(0.01);
+    translate([43,2]) sphere(0.01);
+    translate([69,8]) sphere(0.01);
+}
+color([0.5066873600482819,0.4868217179106962,0.25081170062345637]) hull(){
+    translate([90,4]) sphere(0.01);
+    translate([18,58]) sphere(0.01);
+    translate([58,98]) sphere(0.01);
 }

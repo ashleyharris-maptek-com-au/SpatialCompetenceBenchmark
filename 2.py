@@ -17,47 +17,35 @@ You may also provide your reasoning in a seperate field, but it is not graded.
 """
 
 structure = {
-  "type": "object",
-  "properties": {
-    "reasoning": {
-      "type": "string"
-    },
-    "bricks": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "Centroid": {
+    "type": "object",
+    "properties": {
+        "reasoning": {
+            "type": "string"
+        },
+        "bricks": {
             "type": "array",
             "items": {
-              "type": "number"
+                "type": "object",
+                "properties": {
+                    "Centroid": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    },
+                    "RotationDegrees": {
+                        "type": "number"
+                    }
+                },
+                "propertyOrdering": ["Centroid", "RotationDegrees"],
+                "required": ["Centroid", "RotationDegrees"],
+                "additionalProperties": False
             }
-          },
-          "RotationDegrees": {
-            "type": "number"
-          }
-        },
-        "propertyOrdering": [
-          "Centroid",
-          "RotationDegrees"
-        ],
-        "required": [
-          "Centroid",
-          "RotationDegrees"
-        ],
-        "additionalProperties": False
-      }
-    }
-  },
-  "propertyOrdering": [
-    "reasoning",
-    "bricks"
-  ],
-  "required": [
-    "reasoning",
-    "bricks"
-  ],
-  "additionalProperties": False
+        }
+    },
+    "propertyOrdering": ["reasoning", "bricks"],
+    "required": ["reasoning", "bricks"],
+    "additionalProperties": False
 }
 
 referenceScad = """
@@ -77,35 +65,44 @@ module reference()
 promptChangeSummary = "Inner and outer radius parameters increase progressively across subpasses"
 
 subpassParamSummary = [
-  "4cm inner, 7cm outer. ~120 bricks", 
-  "8cm inner, 11cm outer. ~300 bricks", 
-  "15cm inner, 17cm outer ~400 bricks"]
+    "4cm inner, 7cm outer. ~120 bricks", "8cm inner, 11cm outer. ~300 bricks",
+    "15cm inner, 17cm outer ~400 bricks"
+]
+
 
 def prepareSubpassPrompt(index):
-    if index == 0: return prompt.replace("PARAM_A", "4").replace("PARAM_B", "7")
-    if index == 1: return prompt.replace("PARAM_A", "8").replace("PARAM_B", "11")
-    if index == 2: return prompt.replace("PARAM_A", "15").replace("PARAM_B", "17")
+    if index == 0:
+        return prompt.replace("PARAM_A", "4").replace("PARAM_B", "7")
+    if index == 1:
+        return prompt.replace("PARAM_A", "8").replace("PARAM_B", "11")
+    if index == 2:
+        return prompt.replace("PARAM_A", "15").replace("PARAM_B", "17")
     raise StopIteration
 
 
 def prepareSubpassReferenceScad(index):
-    if index == 0: return referenceScad.replace("PARAM_A", "4").replace("PARAM_B", "7")
-    if index == 1: return referenceScad.replace("PARAM_A", "8").replace("PARAM_B", "11")
-    if index == 2: return referenceScad.replace("PARAM_A", "15").replace("PARAM_B", "17")
+    if index == 0:
+        return referenceScad.replace("PARAM_A", "4").replace("PARAM_B", "7")
+    if index == 1:
+        return referenceScad.replace("PARAM_A", "8").replace("PARAM_B", "11")
+    if index == 2:
+        return referenceScad.replace("PARAM_A", "15").replace("PARAM_B", "17")
     raise StopIteration
+
 
 def resultToScad(result):
 
-  if len(result["bricks"]) == 0:
-    return ""
+    if len(result["bricks"]) == 0:
+        return ""
 
-  scad = "union() {"
-  for brick in result["bricks"]:
-    scad += "translate([" + str(brick["Centroid"][0]) + "," + \
-      str(brick["Centroid"][1]) + "," + str(brick["Centroid"][2]) + "]) rotate([0,0," + \
-      str(brick["RotationDegrees"]) + "]) cube([32,16,9.6], center=true);\n"
+    scad = "union() {"
+    for brick in result["bricks"]:
+        scad += "translate([" + str(brick["Centroid"][0]) + "," + \
+          str(brick["Centroid"][1]) + "," + str(brick["Centroid"][2]) + "]) rotate([0,0," + \
+          str(brick["RotationDegrees"]) + "]) cube([32,16,9.6], center=true);\n"
 
-  return "module result(){ " + scad + "}}\n\n"
+    return "module result(){ " + scad + "}}\n\n"
+
 
 """
 def volumeValidateDelta(result, resultVolume, referenceVolume, intersectionVolume, differenceVolume):
@@ -124,42 +121,85 @@ def volumeValidateDelta(result, resultVolume, referenceVolume, intersectionVolum
     return -0.5
 """
 
+
 def postProcessScore(score, subPassIndex):
-  # Packing efficincy of rectangle prism in sphere is about 75%. I couldn't find an exact figure
-  # but it's close enough for this test.
-  return min(1,score / 0.75)
+    # Packing efficincy of rectangle prism in sphere is about 75%. I couldn't find an exact figure
+    # but it's close enough for this test.
+    return min(1, score / 0.75)
+
 
 def earlyFailTest(result, subpass):
-  # Get sphere radii in mm (params are in cm, *10 in scad)
-  if subpass == 0: innerR, outerR = 40, 70
-  elif subpass == 1: innerR, outerR = 80, 110
-  else: innerR, outerR = 150, 170
+    # Get sphere radii in mm (params are in cm, *10 in scad)
+    if subpass == 0: innerR, outerR = 40, 70
+    elif subpass == 1: innerR, outerR = 80, 110
+    else: innerR, outerR = 150, 170
 
-  innerR2 = innerR * innerR
-  outerR2 = outerR * outerR
+    innerR2 = innerR * innerR
+    outerR2 = outerR * outerR
 
-  for brick in result["bricks"]:
+    for brick in result["bricks"]:
 
-    # A brick below ground is invalid. Since it's 9.6mm tall, anything below 4.8 intersects
-    # the ground.
-    if brick["Centroid"][2] < 4.8:
-      return "A brick " + str(brick) + " below ground is invalid"
+        # A brick below ground is invalid. Since it's 9.6mm tall, anything below 4.8 intersects
+        # the ground.
+        if brick["Centroid"][2] < 4.8:
+            return "A brick " + str(brick) + " below ground is invalid"
 
-    cornerPoints = [
-      [brick["Centroid"][0] - 16, brick["Centroid"][1] - 8, brick["Centroid"][2] - 4.8],
-      [brick["Centroid"][0] + 16, brick["Centroid"][1] - 8, brick["Centroid"][2] - 4.8],
-      [brick["Centroid"][0] + 16, brick["Centroid"][1] + 8, brick["Centroid"][2] - 4.8],
-      [brick["Centroid"][0] - 16, brick["Centroid"][1] + 8, brick["Centroid"][2] - 4.8],
-      [brick["Centroid"][0] - 16, brick["Centroid"][1] - 8, brick["Centroid"][2] + 4.8],
-      [brick["Centroid"][0] + 16, brick["Centroid"][1] - 8, brick["Centroid"][2] + 4.8],
-      [brick["Centroid"][0] + 16, brick["Centroid"][1] + 8, brick["Centroid"][2] + 4.8],
-      [brick["Centroid"][0] - 16, brick["Centroid"][1] + 8, brick["Centroid"][2] + 4.8]
-    ]
+        cornerPoints = [
+            [
+                brick["Centroid"][0] - 16, brick["Centroid"][1] - 8,
+                brick["Centroid"][2] - 4.8
+            ],
+            [
+                brick["Centroid"][0] + 16, brick["Centroid"][1] - 8,
+                brick["Centroid"][2] - 4.8
+            ],
+            [
+                brick["Centroid"][0] + 16, brick["Centroid"][1] + 8,
+                brick["Centroid"][2] - 4.8
+            ],
+            [
+                brick["Centroid"][0] - 16, brick["Centroid"][1] + 8,
+                brick["Centroid"][2] - 4.8
+            ],
+            [
+                brick["Centroid"][0] - 16, brick["Centroid"][1] - 8,
+                brick["Centroid"][2] + 4.8
+            ],
+            [
+                brick["Centroid"][0] + 16, brick["Centroid"][1] - 8,
+                brick["Centroid"][2] + 4.8
+            ],
+            [
+                brick["Centroid"][0] + 16, brick["Centroid"][1] + 8,
+                brick["Centroid"][2] + 4.8
+            ],
+            [
+                brick["Centroid"][0] - 16, brick["Centroid"][1] + 8,
+                brick["Centroid"][2] + 4.8
+            ]
+        ]
 
-    # A brick wholly inside the inner sphere is invalid (in the hollow part)
-    if all([p[0]*p[0] + p[1]*p[1] + p[2]*p[2] < innerR2 for p in cornerPoints]):
-      return "A brick " + str(brick) + " wholly inside the inner sphere is redundant"
+        # A brick wholly inside the inner sphere is invalid (in the hollow part)
+        if all([
+                p[0] * p[0] + p[1] * p[1] + p[2] * p[2] < innerR2
+                for p in cornerPoints
+        ]):
+            return "A brick " + str(
+                brick) + " wholly inside the inner sphere is redundant"
 
-    # A brick wholly outside the outer sphere is invalid
-    if all([p[0]*p[0] + p[1]*p[1] + p[2]*p[2] > outerR2 for p in cornerPoints]):
-      return "A brick " + str(brick) + " wholly outside the outer sphere is a waste"
+        # A brick wholly outside the outer sphere is invalid
+        if all([
+                p[0] * p[0] + p[1] * p[1] + p[2] * p[2] > outerR2
+                for p in cornerPoints
+        ]):
+            return "A brick " + str(
+                brick) + " wholly outside the outer sphere is a waste"
+
+
+highLevelSummary = """
+Lego bricks look like they'd benifet from voxelisation, but they really don't.
+<br><br>
+So most reasoning models try to voxelise the problem in Python, and then struggle to convert
+that back to Lego bricks.<br><br>They end up losing points for overlapping bricks or bricks
+entirely underground or outside of the hemispheres.
+"""

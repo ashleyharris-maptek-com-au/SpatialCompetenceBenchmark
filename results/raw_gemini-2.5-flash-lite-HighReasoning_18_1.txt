@@ -1,0 +1,81 @@
+```openscad
+// Define stone side length in millimeters
+// Each stone is a 50cm x 50cm x 50cm cube.
+S = 500; // mm
+
+// Calculate the maximum number of layers (N) for the pyramid based on the stone budget.
+// The pyramid structure implied by the placement rule (corners on midpoints)
+// results in layers of size N*N, (N-1)*(N-1), ..., 1*1.
+// Total number of stones = sum(k^2 for k from 1 to N) = N*(N+1)*(2*N+1)/6
+// Pharaoh has 150,000 stones budget.
+// We need to find the largest N such that N*(N+1)*(2*N+1)/6 <= 150000.
+// Approximating N*(N+1)*(2*N+1)/6 as N^3/3:
+// N^3/3 approx 150000 => N^3 approx 450000 => N approx cuberoot(450000) approx 76.6.
+// Let's test N=76:
+// Total stones = 76*(76+1)*(2*76+1)/6 = 76*77*153/6 = 148476 stones. This is within budget.
+// Let's test N=77:
+// Total stones = 77*(77+1)*(2*77+1)/6 = 77*78*155/6 = 154895 stones. This exceeds budget.
+// Therefore, the tallest pyramid uses N=76 layers.
+N = 76; // Maximum number of layers for the pyramid.
+
+// Total height of the pyramid
+total_height = N * S; // mm
+
+// Module to create a single stone block.
+// This represents a 50cm x 50cm x 50cm cube.
+module stone() {
+    cube([S, S, S]);
+}
+
+// Main module to generate the pyramid.
+// The pyramid is centered over the origin (0,0,0) at its base, and faces North (+y).
+module pyramid() {
+    // Iterate through each layer, from bottom (l=0) to top (l=N-1).
+    // Layer 0 is the largest base layer (N x N stones).
+    // Layer N-1 is the smallest top layer (1 x 1 stone).
+    for (l = [0 : N-1]) {
+        // 'k' is the number of stones along one side of the current layer.
+        // For the base layer (l=0), k=N. For the top layer (l=N-1), k=1.
+        k = N - l;
+
+        // 'z_base' is the z-coordinate of the bottom of the current layer.
+        // Layer 0 is at z=0, Layer 1 is at z=S, Layer 2 at z=2*S, and so on.
+        z_base = l * S;
+
+        // The problem states: "each stone must have all 4 base corners sitting in the middle of another stone."
+        // This implies a staggered or interlocking structure, where each layer is offset by half a stone width/depth (S/2)
+        // relative to the layer below it.
+        // For a pyramid centered at its base, layer 'l' is effectively shifted by 'l * S / 2.0' in both X and Y directions
+        // from the central axis (0,0).
+        layer_grid_offset = l * S / 2.0;
+
+        // Iterate through each stone within the current layer's k x k grid.
+        // 'i' and 'j' are the 0-based indices for the stones in the grid (0 to k-1).
+        for (i = [0 : k-1], j = [0 : k-1]) {
+
+            // Calculate the X and Y coordinates for the center of the current stone.
+            // The term '(i - (k-1)/2.0) * S' calculates the centered position of the i-th stone
+            // within a grid of 'k' stones spanning 'k*S' width. (k-1)/2.0 ensures correct centering for odd/even k.
+            // We then add 'layer_grid_offset' to shift the entire grid of stones for this layer.
+            x_center = (i - (k-1)/2.0) * S + layer_grid_offset;
+            y_center = (j - (k-1)/2.0) * S + layer_grid_offset;
+
+            // The Z-coordinate for the center of the stone is the base height of its layer plus half the stone's height.
+            z_center = z_base + S / 2.0;
+
+            // Position and render the stone.
+            // The 'stone()' module creates a cube with its corner at (0,0,0) extending to (S,S,S).
+            // Its center is at (S/2, S/2, S/2) relative to its own origin.
+            // To place the stone's center at (x_center, y_center, z_center), we must translate it.
+            // The translation vector is (center_coordinate - half_stone_size).
+            // For Z, the center is z_base + S/2, so the translation is (z_base + S/2) - S/2 = z_base.
+            translate([x_center - S/2, y_center - S/2, z_base]) {
+                stone();
+            }
+        }
+    }
+}
+
+// Call the pyramid module to generate the 3D model.
+pyramid();
+```

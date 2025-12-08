@@ -1,0 +1,177 @@
+```openscad
+// Pharaoh's Pyramid Plan
+// Units: Millimeters (mm)
+// Stone dimensions: 50cm x 50cm x 50cm = 500mm x 500mm x 500mm
+
+// Constants
+stone_size = 500; // mm
+stones_available = 20000;
+men_per_stone = 10;
+men_available = 100000;
+
+// --- Calculations ---
+
+// Maximum number of stones that can be moved by the army
+max_stones_by_men = floor(men_available / men_per_stone);
+
+// Actual number of stones to use is the minimum of available stones and those movable by men
+num_stones_to_use = min(stones_available, max_stones_by_men);
+
+// --- Pyramid Construction Logic ---
+// The constraint is that each stone must have its 4 base corners sitting in the middle of another stone.
+// This means each layer is smaller than the layer below it.
+// For a pyramid with a square base, this implies a specific reduction in the number of stones per layer.
+
+// Let's determine the height.
+// A layer n (starting from the base as layer 0) can support layer n+1.
+// Layer 0 (base) will have x * x stones.
+// Layer 1 will have (x-1) * (x-1) stones.
+// Layer 2 will have (x-2) * (x-2) stones.
+// ...
+// Layer h-1 will have (x - (h-1)) * (x - (h-1)) stones.
+// The top layer will have 1 stone, so x - (h-1) = 1, which means x = h.
+// So, a pyramid of height 'h' layers has a base of 'h' x 'h' stones.
+
+// The total number of stones in a pyramid of height 'h' is the sum of squares from 1 to h:
+// Sum(i^2) for i from 1 to h = h * (h + 1) * (2h + 1) / 6
+
+// We need to find the largest 'h' such that the total number of stones is less than or equal to num_stones_to_use.
+// We can use a loop or binary search for this. A loop is sufficient for this problem.
+
+max_height = 0;
+current_total_stones = 0;
+height_candidate = 1;
+
+while (true) {
+    stones_in_current_layer_base = height_candidate * height_candidate;
+    // The number of stones in a pyramid of height `height_candidate`
+    // is the sum of squares from 1 to `height_candidate`.
+    // However, the problem states "each external large stone is covered".
+    // This implies a more direct stacking where each layer is a square.
+    // For example, a 2-layer pyramid would have a 2x2 base and a 1x1 top. Total 4+1=5 stones.
+    // This fits the description: the corners of the 1x1 stone sit on the middle of 4 stones in the 2x2 layer.
+    // So, the total stones for height `h` is Sum(i*i) for i from 1 to h.
+
+    // Let's re-evaluate the stacking.
+    // If the base is N x N stones. The next layer must have its corners on the middle of base stones.
+    // This means the next layer will be (N-1) x (N-1) stones.
+    // So, a pyramid of height H has a base of HxH stones, and the top layer is 1x1 stone.
+    // Total stones = H^2 + (H-1)^2 + ... + 1^2
+    // Let's check this formula:
+    // H=1: 1^2 = 1 stone.
+    // H=2: 2^2 + 1^2 = 4 + 1 = 5 stones.
+    // H=3: 3^2 + 2^2 + 1^2 = 9 + 4 + 1 = 14 stones.
+
+    total_stones_for_height = 0;
+    for (h_level = 1; h_level <= height_candidate; h_level++) {
+        total_stones_for_height += h_level * h_level;
+    }
+
+    if (total_stones_for_height <= num_stones_to_use) {
+        max_height = height_candidate;
+        current_total_stones = total_stones_for_height;
+        height_candidate++;
+    } else {
+        break; // Cannot build a higher pyramid
+    }
+}
+
+// Calculate the size of the base layer for the tallest pyramid
+base_layer_size = max_height; // The base layer has base_layer_size * base_layer_size stones.
+
+// --- OpenSCAD Module for a Single Stone ---
+module stone(x, y, z) {
+    cube([x, y, z]);
+}
+
+// --- Main Pyramid Construction ---
+
+// Total height of the pyramid in mm
+total_pyramid_height_mm = max_height * stone_size;
+
+// The pyramid is centered over the tomb (origin).
+// North is +y.
+// The base of the pyramid will be centered at (0,0,0).
+
+// We build layer by layer, from top to bottom.
+// The top layer is 1x1. The next is 2x2, up to base_layer_size x base_layer_size.
+
+// The z-coordinate for each layer.
+// The base layer is at z=0. The layer above it is at z=stone_size, and so on.
+// Top layer (1x1) is at z = (max_height - 1) * stone_size.
+// Base layer (max_height x max_height) is at z = 0.
+
+// We need to translate the pyramid so its base is centered at (0,0) and its top is at height H * stone_size.
+// The pyramid's center of mass would be at 1/3 of the height.
+// To center the base at (0,0,0), we need to shift it.
+// A layer of N x N stones has its center at (0,0).
+// The x-coordinates for a layer of N stones would range from -(N-1)/2 to +(N-1)/2 * stone_size.
+// The y-coordinates would be similar.
+
+translate([0, 0, 0]) { // Overall pyramid translation, adjust if needed for tomb centering
+    for (layer_height = 0; layer_height < max_height; layer_height++) {
+        // layer_height = 0 corresponds to the base layer.
+        // layer_height = max_height - 1 corresponds to the top layer.
+
+        current_layer_stones_count_side = max_height - layer_height; // e.g., for H=3: layer 0=3, layer 1=2, layer 2=1
+
+        // Calculate the offset for centering the current layer.
+        // If current_layer_stones_count_side is N, the x and y offsets are (N-1)/2 * stone_size.
+        layer_offset_x = (current_layer_stones_count_side - 1) / 2.0 * stone_size;
+        layer_offset_y = (current_layer_stones_count_side - 1) / 2.0 * stone_size;
+
+        // The z position of the bottom of this layer
+        z_position = layer_height * stone_size;
+
+        translate([0, 0, z_position]) {
+            translate([-layer_offset_x, -layer_offset_y, 0]) {
+                for (i = 0; i < current_layer_stones_count_side; i++) {
+                    for (j = 0; j < current_layer_stones_count_side; j++) {
+                        // Translate each stone to its correct position within the layer
+                        translate([i * stone_size, j * stone_size, 0]) {
+                            stone(stone_size, stone_size, stone_size);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// --- Commentary ---
+// The pyramid is constructed with a base of `max_height` x `max_height` stones.
+// Each layer above decreases by one stone on each side, following the rule:
+// Layer N (from base, N=0) has (max_height - N) x (max_height - N) stones.
+// The total number of stones used is `current_total_stones`.
+// This is the tallest pyramid possible given the constraints.
+// The pyramid is centered over the origin (0,0,0) which represents the tomb.
+// The base layer of stones sits at z=0.
+// The orientation is such that +y is North.
+
+// For precise facade planning, the stonemason can analyze the outermost layer.
+// The outermost layer is the base layer (layer_height = 0).
+// It has `max_height` x `max_height` stones.
+// Each of these stones will require a marble wedge.
+// The shape of the wedge will depend on its position (corner, edge, center) and the pyramid's slope.
+// The slope of the pyramid is determined by the reduction in layer size per stone_size height.
+// The slope is approximately 1:1 (run:rise) in terms of stone units.
+// The angle of the face would be atan(stone_size / stone_size) = 45 degrees.
+// Each external stone's exposed face is a square of stone_size x stone_size.
+// The marble wedge will cover this face.
+// The calculation of the exact wedge shape is beyond the scope of this OpenSCAD generation,
+// but the placement of the large stones is precisely defined.
+
+// Total volume calculation (for verification)
+total_volume_mm3 = current_total_stones * (stone_size * stone_size * stone_size);
+// echo("Pharaoh's Pyramid Plan");
+// echo("Stone Size: ", stone_size, " mm");
+// echo("Max Stones Available: ", stones_available);
+// echo("Men Available: ", men_available);
+// echo("Men per Stone: ", men_per_stone);
+// echo("Max Stones by Men: ", max_stones_by_men);
+// echo("Number of Stones to Use: ", num_stones_to_use);
+// echo("Calculated Tallest Pyramid Height: ", max_height, " layers");
+// echo("Base Layer Stone Count (side): ", base_layer_size);
+// echo("Total Stones Used: ", current_total_stones);
+// echo("Total Pyramid Volume: ", total_volume_mm3, " mm^3");
+```

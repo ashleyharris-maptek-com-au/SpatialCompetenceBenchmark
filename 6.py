@@ -1,7 +1,6 @@
 import itertools
 import VolumeComparison as vc
 
-
 title = "Voxel Grid Projection - shadow coverage and no symmetries"
 
 prompt = """
@@ -12,42 +11,34 @@ solid (no holes in the projection), and there are no trivial symmetries (rotatio
 """
 
 structure = {
-  "type": "object",
-  "properties": {
-    "voxels": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "xyz": {
+    "type": "object",
+    "properties": {
+        "voxels": {
             "type": "array",
             "items": {
-              "type": "number"
+                "type": "object",
+                "properties": {
+                    "xyz": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "propertyOrdering": ["xyz"],
+                "additionalProperties": False,
+                "required": ["xyz"]
             }
-          }
-        },
-        "propertyOrdering": [
-          "xyz"
-        ],
-        "additionalProperties": False,
-        "required": [
-          "xyz"
-        ]
-      }
-    }
-  },
-  "propertyOrdering": [
-    "voxels"
-  ],
-  "additionalProperties": False,
-  "required": [
-    "voxels"
-  ]
+        }
+    },
+    "propertyOrdering": ["voxels"],
+    "additionalProperties": False,
+    "required": ["voxels"]
 }
 
 subpassParamSummary = [
     "Cover a 6x6x6 grid with 50 voxels",
-    "Cover a 8x8x8 grid with 100 voxels", 
+    "Cover a 8x8x8 grid with 100 voxels",
     "Cover a 12x12x12 grid with 200 voxels",
     "Cover a 16x16x16 grid with 400 voxels",
     "Cover a 24x24x24 grid with 1000 voxels",
@@ -56,14 +47,24 @@ subpassParamSummary = [
 
 promptChangeSummary = "Progressively larger grids with more voxels across subpasses"
 
+
 def prepareSubpassPrompt(index):
-    if index == 0: return prompt.replace("PARAM_A", "50").replace("PARAM_B", "6")
-    if index == 1: return prompt.replace("PARAM_A", "100").replace("PARAM_B", "8")
-    if index == 2: return prompt.replace("PARAM_A", "200").replace("PARAM_B", "12")
-    if index == 3: return prompt.replace("PARAM_A", "400").replace("PARAM_B", "16")
-    if index == 4: return prompt.replace("PARAM_A", "1000").replace("PARAM_B", "24")
-    if index == 5: return prompt.replace("PARAM_A", "500").replace("PARAM_B", "20") + "\nEnsure no voxels coordinate sum (x + y + z) has a 7 in it."
+    if index == 0:
+        return prompt.replace("PARAM_A", "50").replace("PARAM_B", "6")
+    if index == 1:
+        return prompt.replace("PARAM_A", "100").replace("PARAM_B", "8")
+    if index == 2:
+        return prompt.replace("PARAM_A", "200").replace("PARAM_B", "12")
+    if index == 3:
+        return prompt.replace("PARAM_A", "400").replace("PARAM_B", "16")
+    if index == 4:
+        return prompt.replace("PARAM_A", "1000").replace("PARAM_B", "24")
+    if index == 5:
+        return prompt.replace("PARAM_A", "500").replace(
+            "PARAM_B", "20"
+        ) + "\nEnsure no voxels coordinate sum (x + y + z) has a 7 in it."
     raise StopIteration
+
 
 def resultToNiceReport(result, subPass, aiEngineName):
     # Convert the result to a nice HTML report format
@@ -75,14 +76,16 @@ def resultToNiceReport(result, subPass, aiEngineName):
         x, y, z = xyz[0], xyz[1], xyz[2]
         scad_content += f'    translate([{x}, {y}, {z}]) cube([1, 1, 1]);\n'
     scad_content += "}\n"
-    
+
     import os
     os.makedirs("results", exist_ok=True)
-    output_path = "results/6_Visualization_" + aiEngineName + "_" + str(len(voxels)) + ".png"
+    output_path = "results/6_Visualization_" + aiEngineName + "_" + str(
+        len(voxels)) + ".png"
     vc.render_scadText_to_png(scad_content, output_path)
     print(f"Saved visualization to {output_path}")
 
     return f'<img src="{os.path.basename(output_path)}" alt="Voxel Grid Visualization" style="max-width: 100%;">'
+
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     sizes = [6, 8, 12, 16, 24, 24]
@@ -108,7 +111,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             if "xyz" in it:
                 xyz = it["xyz"]
                 if isinstance(xyz, (list, tuple)) and len(xyz) == 3:
-                    xi, yi, zi = to_int_coord(float(xyz[0])), to_int_coord(float(xyz[1])), to_int_coord(float(xyz[2]))
+                    xi, yi, zi = to_int_coord(float(xyz[0])), to_int_coord(
+                        float(xyz[1])), to_int_coord(float(xyz[2]))
                     if None in (xi, yi, zi):
                         return None
                     return (xi, yi, zi)
@@ -125,19 +129,23 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                         parts = [p.strip() for p in xyz.split(',')]
                         if len(parts) != 3:
                             return None
-                        xi, yi, zi = to_int_coord(float(parts[0])), to_int_coord(float(parts[1])), to_int_coord(float(parts[2]))
+                        xi, yi, zi = to_int_coord(float(
+                            parts[0])), to_int_coord(float(
+                                parts[1])), to_int_coord(float(parts[2]))
                         if None in (xi, yi, zi):
                             return None
                         return (xi, yi, zi)
                     except Exception:
                         return None
             if all(k in it for k in ("x", "y", "z")):
-                xi, yi, zi = to_int_coord(float(it["x"])), to_int_coord(float(it["y"])), to_int_coord(float(it["z"]))
+                xi, yi, zi = to_int_coord(float(it["x"])), to_int_coord(
+                    float(it["y"])), to_int_coord(float(it["z"]))
                 if None in (xi, yi, zi):
                     return None
                 return (xi, yi, zi)
         if isinstance(it, (list, tuple)) and len(it) == 3:
-            xi, yi, zi = to_int_coord(float(it[0])), to_int_coord(float(it[1])), to_int_coord(float(it[2]))
+            xi, yi, zi = to_int_coord(float(it[0])), to_int_coord(float(
+                it[1])), to_int_coord(float(it[2]))
             if None in (xi, yi, zi):
                 return None
             return (xi, yi, zi)
@@ -154,7 +162,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                 parts = [p.strip() for p in it.split(',')]
                 if len(parts) != 3:
                     return None
-                xi, yi, zi = to_int_coord(float(parts[0])), to_int_coord(float(parts[1])), to_int_coord(float(parts[2]))
+                xi, yi, zi = to_int_coord(float(parts[0])), to_int_coord(
+                    float(parts[1])), to_int_coord(float(parts[2]))
                 if None in (xi, yi, zi):
                     return None
                 return (xi, yi, zi)
@@ -177,8 +186,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     S = set(pts)
     if len(S) != expected:
         for i in range(len(pts)):
-            if pts[i] in pts[i+1:]:
-                return 0, "Duplicate voxel coordinates detected. Voxel " + str(pts[i]) + " is repeated."
+            if pts[i] in pts[i + 1:]:
+                return 0, "Duplicate voxel coordinates detected. Voxel " + str(
+                    pts[i]) + " is repeated."
 
     xy = {(x, y) for (x, y, z) in S}
     xz = {(x, z) for (x, y, z) in S}
@@ -191,6 +201,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
         return 0, "YZ projection has holes or gaps"
 
     def make_transform(perm, signs):
+
         def t(p):
             coords = [p[0], p[1], p[2]]
             out = []
@@ -200,6 +211,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                     v = (N - 1) - v
                 out.append(v)
             return (out[0], out[1], out[2])
+
         return t
 
     for perm in itertools.permutations((0, 1, 2), 3):
@@ -212,4 +224,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                 return 0, "Shape has a trivial symmetry (rotation/reflection)"
 
     return 1, f"Valid voxel configuration with {len(pts)} voxels, all projections solid, no symmetries"
-        
+
+
+highLevelSummary = """
+Laying out voxels in 3D with no symmetries is a solved problem. So is covering all 2D projections.
+<br><br>
+Lets do both at once for a bit more of a challenge. 
+And with more voxels requiring to be placed that either trivial solution to ensure that it
+can't just blindly run a known python algorithm.
+"""

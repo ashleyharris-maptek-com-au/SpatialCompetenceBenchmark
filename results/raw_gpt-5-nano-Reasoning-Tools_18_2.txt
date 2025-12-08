@@ -1,0 +1,71 @@
+// Pharaoh's Pyramid OpenSCAD plan
+// - Base: 30x30 stones, each 50 cm (500 mm) cube
+// - Stacking rule: each level is a square array of stones, next level reduced by 1 in both directions
+// - Budget: 10,000 stones can be moved -> maximum levels m such that sum_{k=1..m} k^2 <= 10000
+//   For m=30, total stones = 9455 (<= 10000). This is the tallest possible under the given constraint.
+// - Final veneer: outer smooth pyramid veneer (marble wedges) envelops the stepped inner pyramid
+// - All dimensions in millimeters (mm)
+
+m = 30;                 // number of levels (base is m x m stones)
+STONE = 500;            // stone side length in mm (50 cm)
+L = m * STONE;          // base side length of the footprint (mm)
+
+sumSquares = m*(m+1)*(2*m+1)/6;                 // sum_{t=1..m} t^2
+Vinner = STONE*STONE*STONE * sumSquares;       // total inner stone volume (mm^3)
+Houter = 3.0 * Vinner / (L*L);                  // apex height for outer veneer pyramid (mm)
+
+echo("Pharaoh's Pyramid plan");
+echo("Levels (m): ", m);
+echo("Stone size (mm): ", STONE);
+echo("Base side (mm): ", L);
+echo("Total inner-stone volume (mm^3): ", Vinner);
+echo("Outer veneer apex height (mm): ", Houter);
+
+//
+// Outer envelope: a square pyramid (base in plane z=0, apex at z=Houter)
+// Vertices: 0..3 are base corners, 4 is apex
+//
+module outer_pyramid() {
+    base = L;
+    apex = Houter;
+    points = [
+        [-base/2, -base/2, 0],   // 0
+        [ base/2, -base/2, 0],   // 1
+        [ base/2,  base/2, 0],   // 2
+        [-base/2,  base/2, 0],   // 3
+        [ 0,       0,     apex]  // 4
+    ];
+    faces = [
+        [0,1,2], [0,2,3],        // base (split into two triangles)
+        [0,1,4], [1,2,4], [2,3,4], [3,0,4]
+    ];
+    polyhedron(points=points, faces=faces, convexity=6);
+}
+
+//
+// Inner stepped pyramid built from 30 horizontal slabs (one slab per level)
+// Each slab is a square prism with side (m-k)*STONE, height STONE, offset to center above previous slab
+//
+module inner_slabs() {
+    for (k = [0 : m-1]) {
+        t = m - k;                      // number of stones along one side at this level
+        x0 = -L/2 + k*(STONE/2);        // left offset for this slab
+        y0 = -L/2 + k*(STONE/2);        // front offset for this slab
+        z0 = k*STONE;                   // height above ground
+        slab_size = [ t*STONE, t*STONE, STONE ]; // width, depth, height
+        translate([x0, y0, z0])
+            cube(slab_size, center=false);
+    }
+}
+
+//
+// Visualisation: render the outer veneer and the inner stepped pyramid as a single plan.
+// The veneer is a smooth-walled shell formed by the difference of the outer envelope and the inner slabs.
+// The plan is designed for direct import into a CAD workflow (mm precision).
+//
+difference() {
+    color("silver")
+        outer_pyramid();
+    color("peru")
+        inner_slabs();
+}

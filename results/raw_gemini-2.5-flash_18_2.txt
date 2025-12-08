@@ -1,75 +1,94 @@
 ```openscad
-// Pharaoh's Pyramid Plan
-// Generated based on stone budget and stacking rules.
+// OpenSCAD plan for the Pharaoh's pyramid
 
-// --- PARAMETERS ---
-STONE_SIZE = 500; // Side length of each cubic stone in millimeters (50cm)
+// --- Global Parameters ---
+stone_size = 0.5; // Each stone is a 50cm (0.5m) side-length cube. (Metric SI units)
+num_total_stones_budget = 600000; // Total number of available stones.
 
-// Calculate the maximum number of layers (N) for a step pyramid.
-// The total number of stones in a pyramid with N layers is given by the sum of squares:
-// Sum(k^2 for k=1 to N) = N * (N + 1) * (2*N + 1) / 6.
-// Given a budget of 600,000 stones:
-// For N=121: 121 * (121 + 1) * (2*121 + 1) / 6 = 121 * 122 * 243 / 6 = 598,341 stones (within budget)
-// For N=122: 122 * (122 + 1) * (2*122 + 1) / 6 = 122 * 123 * 245 / 6 = 613,105 stones (exceeds budget)
-// Therefore, the maximum number of layers (N) is 121.
-NUM_LAYERS = 121; 
+// --- Calculation for the Tallest Pyramid ---
+// The pyramid's structure follows a specific rule: "each stone must have all 4 base
+// corners sitting in the middle of another stone." This implies a step pyramid
+// where each layer steps back by half a stone length on each side compared to the layer below.
+//
+// If the base layer has 'N' stones per side, the layers above it will have (N-1), (N-2), ..., 1 stone per side.
+// The total number of stones in such a pyramid is the sum of squares from 1 to N:
+// Sum(j=1 to N) j^2 = N * (N + 1) * (2N + 1) / 6
+//
+// We need to find the largest 'N' (number of stones per side in the base layer)
+// such that the total number of stones required does not exceed the budget.
+//
+// Let's test values for N:
+// If N = 121: Total stones = 121 * (121 + 1) * (2 * 121 + 1) / 6
+//                           = 121 * 122 * 243 / 6
+//                           = 598,641 stones. (This is within the budget)
+//
+// If N = 122: Total stones = 122 * (122 + 1) * (2 * 122 + 1) / 6
+//                           = 122 * 123 * 245 / 6
+//                           = 613,845 stones. (This exceeds the budget)
+//
+// Therefore, the maximum number of stones per side for the base layer is 121.
+num_base_stones = 121; // The largest N that fits the budget.
+stones_used = 598641; // The actual number of stones used for this pyramid.
+stones_remaining = num_total_stones_budget - stones_used; // 1359 stones remaining.
 
-// Total width/length of the pyramid's base layer
-TOTAL_BASE_WIDTH = NUM_LAYERS * STONE_SIZE; // 121 * 500mm = 60500mm (60.5 meters)
+// --- Derived Dimensions ---
+// Total height of the pyramid (each layer adds one stone's height)
+total_pyramid_height = num_base_stones * stone_size; // 121 * 0.5m = 60.5m
 
-// Total height of the pyramid
-TOTAL_PYRAMID_HEIGHT = NUM_LAYERS * STONE_SIZE; // 121 * 500mm = 60500mm (60.5 meters)
+// Base width/depth of the pyramid (N stones wide)
+base_width = num_base_stones * stone_size; // 121 * 0.5m = 60.5m
 
-// --- MODULES ---
+// --- OpenSCAD Model Generation ---
+// The pyramid is centered over the origin [0,0,0] (the future tomb).
+// It faces north (+y).
+//
+// Each layer 'k' (0-indexed from the bottom, so k=0 is the base layer) is
+// represented as a single cube primitive for rendering efficiency.
+//
+// - The number of stones per side for layer 'k' is `num_base_stones - k`.
+// - The total width/depth of layer 'k' is `(num_base_stones - k) * stone_size`.
+// - Each layer is placed at a height of `k * stone_size`.
+// - To center the pyramid, the base layer's bottom-left corner is at `(-base_width/2, -base_width/2, 0)`.
+// - Each subsequent layer 'k' is offset inwards by `k * (stone_size / 2)` from the
+//   original base layer's edges on both X and Y axes.
+//   So, the bottom-left corner of layer 'k' is at `(-base_width/2 + k*stone_size/2, -base_width/2 + k*stone_size/2, k*stone_size)`.
 
-// Module for a single cubic stone
-// Using center=false means the origin (0,0,0) of the cube is its bottom-left-front corner.
-module stone() {
-    cube(STONE_SIZE, center=false);
-}
-
-// Module to build the entire pyramid structure
-// The pyramid is constructed layer by layer, starting from the base.
-module pyramid() {
-    // Translate the entire pyramid so its base is centered at (0,0,0) on the XY plane.
-    // This ensures the pyramid is centered over the future tomb.
-    translate([-TOTAL_BASE_WIDTH / 2, -TOTAL_BASE_WIDTH / 2, 0]) {
-        // Loop through each layer, where 'k' is the layer index (0 for base, NUM_LAYERS-1 for top).
-        for (k = [0 : NUM_LAYERS - 1]) {
-            // Calculate the number of stones along one side of the current layer.
-            // Each layer is one stone smaller in width/length than the layer below it.
-            num_stones_in_current_layer = NUM_LAYERS - k;
-            
-            // Calculate the horizontal (X and Y) offset for the current layer.
-            // According to the rule "each stone must have all 4 base corners sitting in the middle of another stone",
-            // each successive layer is shifted inwards by STONE_SIZE/2 on both X and Y axes
-            // relative to the layer directly below it.
-            x_layer_offset = k * STONE_SIZE / 2;
-            y_layer_offset = k * STONE_SIZE / 2;
-            
-            // Calculate the vertical (Z) position for the current layer.
-            // Each layer is placed directly on top of the previous, increasing height by STONE_SIZE.
-            z_layer_height = k * STONE_SIZE;
-            
-            // Loop to place individual stones within the current layer (k).
-            // 'i' and 'j' represent the stone's position within the current layer's grid.
-            for (i = [0 : num_stones_in_current_layer - 1]) {
-                for (j = [0 : num_stones_in_current_layer - 1]) {
-                    // Translate each stone to its precise location.
-                    // The offsets define the bottom-left corner of the current layer's footprint,
-                    // and 'i' and 'j' position the specific stone within that layer.
-                    translate([x_layer_offset + i * STONE_SIZE,
-                               y_layer_offset + j * STONE_SIZE,
-                               z_layer_height]) {
-                        stone(); // Place a single stone cube.
-                    }
-                }
-            }
+union() {
+    for (k = [0 : num_base_stones - 1]) {
+        // Calculate the number of stones per side for the current layer
+        current_layer_stones_per_side = num_base_stones - k;
+        
+        // Calculate the actual width and depth of the current layer
+        layer_width_depth = current_layer_stones_per_side * stone_size;
+        
+        // Calculate the inward offset for the current layer to ensure it's centered
+        // and steps back by stone_size/2 from the layer below on each side.
+        offset_xy = k * stone_size / 2;
+        
+        // Translate to the bottom-left-front corner of the current layer
+        // `cube(size, center=false)` creates a cube with its [0,0,0] corner at the origin.
+        // We calculate the required coordinates for this corner.
+        translate([ -base_width / 2 + offset_xy, 
+                     -base_width / 2 + offset_xy, 
+                     k * stone_size ]) {
+            // Create the cube for the current layer
+            cube([layer_width_depth, layer_width_depth, stone_size], center = false);
         }
     }
 }
 
-// --- MAIN EXECUTION ---
-// Build the pyramid.
-pyramid();
+// Optional: Display text information in the CAD viewer (commented out for strict output)
+/*
+color("green") translate([base_width/2 + 1, 0, total_pyramid_height/2]) rotate([90,0,0])
+text(str("Pyramid Height: ", total_pyramid_height, " m\n",
+         "Base Width: ", base_width, " m\n",
+         "Base Stones per Side: ", num_base_stones, "\n",
+         "Stones Used: ", stones_used, "\n",
+         "Stones Remaining: ", stones_remaining),
+         size=1, font="Arial:Bold", halign="left", valign="center");
+
+// North indicator (+Y direction)
+color("red") translate([0, base_width/2 + 2, 0]) cylinder(h=2, r=0.2, center=true);
+color("red") translate([0, base_width/2 + 3, 0]) text("N", size=1, halign="center", valign="center");
+*/
 ```

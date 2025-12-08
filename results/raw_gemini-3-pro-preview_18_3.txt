@@ -1,119 +1,132 @@
-```openscad
-// ----------------------------------------------------------------------------
-// PROJECT: PHARAOH'S TOMB PYRAMID
-// ----------------------------------------------------------------------------
-//
-// DESIGN SPECIFICATIONS:
-// 1. Orientation: North is +Y.
-// 2. Core Material: 50cm cubic stones (Limestone).
-// 3. Facade Material: Marble wedges.
-// 4. Structural Rule: 4 base corners of every stone must rest on the 
-//    centers of stones below (Standard 1/2 offset pyramidal stacking).
-// 5. Constraints: Maximize height within stone budget.
-//
-// CALCULATION OF MAX HEIGHT:
-// Available Stones: 2,500,000
-// Stones in layer n (where 1 is top): n^2
-// Total Stones for height h: Sum(i^2) for i=1 to h = (h(h+1)(2h+1))/6
-//
-// Solving for h where Sum <= 2,500,000:
-// h = 195 layers.
-// Used Stones: 195(196)(391)/6 = 2,490,670 stones.
-// Remaining Stones: 9,330 (Insufficient for layer 196 which needs 38,416).
-//
-// DIMENSIONS:
-// Block Size: 0.5m
-// Core Height: 195 * 0.5m = 97.5m
-// Core Base Width: 195 * 0.5m = 97.5m
-// Facade Slope: 2:1 (Angle ~63.4 deg)
-// Facade Base Width: 98.0m (Extends to ground from top block edge)
-//
-// ----------------------------------------------------------------------------
+// OpenSCAD Plan for the Pharaoh's Pyramid
+// -----------------------------------------------------------------------------
+// Parameters and Constraints:
+// Unit System: Metric (mm)
+// Stone Size: 50cm x 50cm x 50cm cube (500mm)
+// Stone Supply: 2,500,000 stones
+// Labor: 100,000 men (Contextual constraint satisfied by stone limit)
+// Orientation: Faces North (+y)
+// Structure: No internal voids. 
+// Stacking: 1-to-4 ratio (Corner over center) -> Sum of squares series.
+// Facade: Marble wedges covering the steps to form a smooth pyramid.
 
-// Use Metric SI Units (Meters)
-unit_scale = 1.0; 
+// -----------------------------------------------------------------------------
+// 1. Calculations
+// -----------------------------------------------------------------------------
 
-// Parameters
-block_size = 0.500; 
+/*
+   Stone Count Formula for N layers:
+   Sum(n^2) = n(n + 1)(2n + 1) / 6
+   
+   Solving for Sum <= 2,500,000:
+   N = 195
+   Stones Used = 195 * 196 * 391 / 6 = 2,490,670 stones
+   (Next layer 196 requires 38,416 stones, exceeding budget)
+*/
+
+stone_size_mm = 500; 
 num_layers = 195;
+stones_used = 2490670;
 
-// Calculated Dimensions
-core_height = num_layers * block_size;
-// The casing must align with the top edge of the top block (width 0.5)
-// and maintain the 2:1 slope (0.5 rise per 0.25 run) defined by the steps.
-// At z=0, the casing extends 0.25m beyond the bottom step on all sides.
-casing_base_width = (num_layers * block_size) + block_size; 
+// Dimensions of the Core (Stepped)
+core_base_width = num_layers * stone_size_mm; // 97,500 mm
+core_height = num_layers * stone_size_mm;     // 97,500 mm
 
-// Display Flags
-show_core = true;
-show_facade = true;
+// Dimensions of the Facade (Smooth)
+// To cover the stepped core where slope = 2 (Rise 1 unit per 0.5 unit offset),
+// and touching the top-outer edge of every stone to minimize marble usage:
+// The geometric apex must be one stone-height above the top stone's top face.
+// The geometric base must be 0.5 stone-widths wider on all sides than the bottom layer.
 
-// ----------------------------------------------------------------------------
-// MODULES
-// ----------------------------------------------------------------------------
+facade_apex_height = (num_layers + 1) * stone_size_mm; // 98,000 mm
+facade_base_width  = (num_layers + 1) * stone_size_mm; // 98,000 mm
 
+// Output Stats for the Stonemason
+echo("-------------------------------------------------------");
+echo("Pharaoh's Pyramid Plan");
+echo("-------------------------------------------------------");
+echo("Total Layers:", num_layers);
+echo("Total Height (m):", facade_apex_height / 1000);
+echo("Base Width (m):", facade_base_width / 1000);
+echo("Core Stones Used:", stones_used);
+echo("Stones Remaining:", 2500000 - stones_used);
+echo("Marble Volume approx (m3):", ((1/3) * pow(facade_base_width/1000, 2) * (facade_apex_height/1000)) - (stones_used * pow(stone_size_mm/1000, 3)));
+echo("-------------------------------------------------------");
+
+// -----------------------------------------------------------------------------
+// 2. Geometry Modules
+// -----------------------------------------------------------------------------
+
+// The inner structural core made of sandstone cubes
 module core_structure() {
-    color([0.8, 0.7, 0.5]) // Sandstone color
-    for (i = [1 : num_layers]) {
-        // Layer 1 is top, Layer 195 is bottom
-        // Width increases linearly
-        layer_width = i * block_size;
-        
-        // Z position: Top layer is at height (total - 1)*size
-        z_pos = (num_layers - i) * block_size;
-        
-        // Render layer
-        // translate to sit on top of the calculated Z plane
-        translate([0, 0, z_pos])
-            // Shift up by half height because cube centers Z
-            translate([0, 0, block_size/2])
-            cube([layer_width, layer_width, block_size], center=true);
+    color("SandyBrown") 
+    union() {
+        for (i = [1 : num_layers]) {
+            // Layer 1 is top, Layer N is bottom
+            // Width increases linearly
+            layer_w = i * stone_size_mm;
+            
+            // Calculate Elevation (Bottom of the pyramid is Z=0)
+            // Layer i sits on top of Layer i+1.
+            // Bottom layer (195) is at Z=0.
+            elevation = (num_layers - i) * stone_size_mm;
+            
+            translate([0, 0, elevation + stone_size_mm/2])
+                cube([layer_w, layer_w, stone_size_mm], center=true);
+        }
     }
 }
 
-module smooth_casing_shape() {
-    // Radius of the circumscribed circle for the square base
-    // Square side = casing_base_width
-    // r = (side / 2) * sqrt(2)
-    base_radius = (casing_base_width / 2) * sqrt(2);
+// The smooth outer shape defined by the casing
+module smooth_envelope() {
+    // A pyramid with 4 sides.
+    // Cylinder with $fn=4 creates a prism.
+    // By default, vertices align with X/Y axes at 0, 90, 180, 270.
+    // Flat faces are at 45 degrees.
+    // To have faces pointing North (+Y), East, South, West, we rotate 45 degrees.
     
-    rotate([0, 0, 45]) // Align faces to North (+Y)
-        cylinder(r1=base_radius, r2=0, h=core_height, $fn=4);
+    // Radius Calculation:
+    // For a square base of width W, the circumradius R (distance to corner) is W / sqrt(2).
+    R = facade_base_width / sqrt(2);
+    
+    color("White")
+    rotate([0, 0, 45])
+        cylinder(r1 = R, r2 = 0, h = facade_apex_height, $fn=4);
 }
 
+// The marble casing (Difference between smooth envelope and core)
 module marble_facade() {
-    color([0.95, 0.95, 1.0, 0.6]) // Marble White, slightly transparent for plans
+    color("White", 0.9)
     difference() {
-        smooth_casing_shape();
-        // We subtract the core to leave only the marble wedges
-        // Adding a tiny epsilon to the core subtraction to prevent Z-fighting 
-        // in visual preview, though strictly precise math is preserved in variables.
+        smooth_envelope();
+        // We extend the core slightly for the difference operation to avoid Z-fighting
+        // on the touching edges during rendering, though mathematically exact is 
+        // preferred for plans. We use the exact core here for precision.
         core_structure();
     }
 }
 
-// ----------------------------------------------------------------------------
-// ASSEMBLY
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 3. Assembly / Rendering
+// -----------------------------------------------------------------------------
 
-// Global orientation check: North is +Y. 
-// Cubes and Casing are aligned to XY axes.
+// To help the stonemason visualize, we render the core and the facade together.
+// The transparency in the marble_facade color helps visualize the covering.
 
-group() {
-    if (show_core) {
+union() {
+    core_structure();
+    marble_facade();
+}
+
+// Note: To view cross-section, un-comment the following block and comment out the union above:
+/*
+difference() {
+    union() {
         core_structure();
-    }
-    
-    if (show_facade) {
         marble_facade();
     }
+    // Cut out a quadrant to show the internal stacking
+    translate([0, -facade_base_width/2, 0])
+        cube([facade_base_width, facade_base_width, facade_apex_height]);
 }
-
-// ----------------------------------------------------------------------------
-// ENGINEERING DATA ECHO
-// ----------------------------------------------------------------------------
-echo(str("Total Pyramid Height: ", core_height, " meters"));
-echo(str("Base Width (with casing): ", casing_base_width, " meters"));
-echo(str("Core Stones Used: ", 2490670));
-echo(str("Layers: ", num_layers));
-```
+*/

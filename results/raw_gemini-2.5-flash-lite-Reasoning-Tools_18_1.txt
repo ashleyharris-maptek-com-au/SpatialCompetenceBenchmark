@@ -1,0 +1,83 @@
+```openscad
+// Pharaoh's Pyramid OpenSCAD Plan
+
+// --- Parameters ---
+// Stone size in millimeters (50cm = 500mm)
+// This value ensures the model uses metric SI units and provides precision to the millimeter.
+stone_size = 500;
+
+// Maximum number of layers for the pyramid.
+// This value is calculated based on the constraint of 150,000 available stones.
+// The pyramid structure follows the rule: "each stone must have all 4 base corners sitting in the middle of another stone."
+// This implies a stepped pyramid where each layer is offset by half a stone width from the layer below.
+// For a pyramid with N layers, where the top layer is 1x1 stone, the total number of stones required is the sum of squares from 1 to N,
+// calculated by the formula: N * (N + 1) * (2 * N + 1) / 6.
+// We need to find the largest integer N such that N * (N + 1) * (2 * N + 1) / 6 <= 150000.
+// Calculation shows that N=56 uses 148,716 stones, which is within the budget.
+// N=57 would require 151,965 stones, exceeding the budget.
+max_layers = 56;
+
+// --- Module for a single layer of the pyramid ---
+// layer_idx: The index of the current layer, starting from 0 for the base layer and increasing upwards.
+// num_layers: The total number of layers in the pyramid (determined by max_layers).
+// stone_sz: The size of a single cubic stone in millimeters.
+module pyramid_layer(layer_idx, num_layers, stone_sz) {
+    // The number of stones along one edge of the current layer.
+    // For example, layer 0 has 'num_layers' stones, layer 1 has 'num_layers-1', and so on, up to the top layer which has 1 stone.
+    num_stones_in_layer = num_layers - layer_idx;
+    
+    // The Z coordinate for the bottom surface of the current layer.
+    // Each layer contributes 'stone_sz' to the total height.
+    z_bottom = layer_idx * stone_sz;
+    
+    // The structural rule implies an offset between consecutive layers.
+    // Layer k+1 is placed such that its stones are offset by stone_sz/2 relative to the grid of layer k.
+    // This module centers the pyramid over the origin (0,0,0).
+    // 'layer_offset_val' determines the grid displacement of the current layer from the pyramid's central axis.
+    // Even-indexed layers (0, 2, 4...) are aligned in a standard grid pattern relative to the layer below (offset 0, S, 2S, ...).
+    // Odd-indexed layers (1, 3, 5...) are shifted by half a stone size (offset S/2, S+S/2, 2S+S/2, ...).
+    // This offset ensures that the base corners of stones in an upper layer sit on the center of stones in the layer below.
+    layer_offset_val = floor(layer_idx / 2) * stone_sz + (layer_idx % 2) * stone_sz / 2;
+    
+    // Iterate through each stone's position within the current layer's grid (using indices i and j).
+    for (i = 0; i < num_stones_in_layer; i = i + 1) {
+        for (j = 0; j < num_stones_in_layer; j = j + 1) {
+            
+            // Calculate the center coordinates (cx, cy) for the current stone (i, j).
+            // 'm' is the number of stones along one edge of the current layer.
+            // The term (m - 1) / 2 is used to center the stone indices around zero for the layer's grid.
+            // E.g., for m=3, indices 0,1,2 -> centers -1, 0, 1 relative to layer grid center.
+            // E.g., for m=4, indices 0,1,2,3 -> centers -1.5, -0.5, 0.5, 1.5 relative to layer grid center.
+            m = num_stones_in_layer;
+            stone_center_x_in_layer_grid = (i - (m - 1) / 2) * stone_sz;
+            stone_center_y_in_layer_grid = (j - (m - 1) / 2) * stone_sz;
+            
+            // Apply the calculated layer offset to get the global center coordinates (cx, cy) in the pyramid's coordinate system.
+            cx = stone_center_x_in_layer_grid + layer_offset_val;
+            cy = stone_center_y_in_layer_grid + layer_offset_val;
+            
+            // OpenSCAD's 'cube([sx, sy, sz])' primitive is positioned by its minimum corner (bottom-front-left).
+            // To place the stone centered at (cx, cy, z_bottom), we translate by (cx - stone_sz/2, cy - stone_sz/2, z_bottom).
+            translate([cx - stone_sz / 2, cy - stone_sz / 2, z_bottom]) {
+                cube([stone_sz, stone_sz, stone_sz]);
+            }
+        }
+    }
+}
+
+// --- Main Pyramid Assembly Module ---
+// This module instantiates all the layers to construct the complete pyramid.
+// The pyramid is centered over the origin (0,0,0), aligning its base with the Z=0 plane.
+// North is considered to be the +Y direction, which is standard in OpenSCAD's default coordinate system.
+module pharaoh_pyramid() {
+    // Iterate through each layer, from the base (layer_idx = 0) up to the top layer.
+    for (l = 0; l < max_layers; l = l + 1) {
+        pyramid_layer(l, max_layers, stone_size);
+    }
+}
+
+// --- Render the Pyramid ---
+// Execute the main module to generate the geometry of the pyramid.
+// This will produce the OpenSCAD model ready for rendering or export.
+pharaoh_pyramid();
+```

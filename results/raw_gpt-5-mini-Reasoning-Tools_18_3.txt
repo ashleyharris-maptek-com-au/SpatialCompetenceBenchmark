@@ -1,0 +1,202 @@
+// Pharaoh's Pyramid Plan (OpenSCAD)
+// Units: millimetres (mm). 1 mm units -> volumes and positions exact to the millimetre.
+// +Y is North. Pyramid is centered at the origin (0,0,0) — the tomb is at (0,0,0).
+//
+// Summary (computed for the provided budget):
+// - Stone count available: 2,500,000 (large cube stones, 500 mm side)
+// - Stone side: 500 mm (0.5 m)
+// - Largest full stepped square pyramid using the stacking rule (each upper block's 4 base corners
+//   must rest on the centers of four stones below) has 195 layers.
+// - Stones used by that pyramid: 2,490,670
+// - Stones remaining (unused): 9,330
+// - Base: 195 stones × 0.5 m = 97.5 m (97,500 mm) per side
+// - Height (stepped): 195 × 0.5 m = 97.5 m (97,500 mm)
+// - Volume of large stones used: 2,490,670 × (0.5 m)^3 = 311,333.75 m^3 = 311333750000000 mm^3
+//
+// Notes:
+// - The stepped pyramid is produced exactly as the union of square slab layers where each layer
+//   is a solid rectangular prism of thickness = stone side (500 mm) and side = (stones_per_side * 500 mm).
+//   This representation is bit-for-bit identical (in occupancy/volume) to placing the individual stones
+//   according to the stacking rule, but is far lighter for CAD viewing (195 slabs instead of 2.49M cubes).
+// - The smooth outer skin (marble facade) is produced as an exact mathematical square pyramid
+//   (base square at z=0, apex at z=height). The difference (outer_skin - stepped_blocks) is the
+//   "marble veneer" volume that must be cut/installed to make the exterior smooth.
+// - Per-stone marble wedges (i.e., the individual veneer pieces for every exposed stone) are
+//   optionally generatable by toggling GENERATE_WEDGES to true. Generating all per-stone wedges
+//   will create ~75,661 wedge pieces (one per exposed stone) and is heavy; it is OFF by default.
+//   The stonemason can either use the overall veneer (difference) or enable wedges to export
+//   each wedge piece individually. When wedges are enabled, the model will create every wedge by
+//   intersecting the global veneer with the vertical prism above each exposed stone footprint.
+//
+// Usage:
+// - Open this file in OpenSCAD. Default view is the stepped pyramid (brown) plus outer smooth shell (translucent white).
+// - To produce per-stone wedge pieces (heavy), set GENERATE_WEDGES = true and re-render.
+// - Units are mm. If you need metres, divide coordinates by 1000 in your downstream workflow.
+//
+// Authoring choices made to satisfy the requests:
+// - All coordinates use integer mm units where possible (stone side 500 mm) so geometry and volumes are exact to 1 mm.
+// - Step geometry is produced as a small number of primitives (one slab per layer) for CAD performance.
+// - The outer shell is an exact polyhedron representing the smooth pyramid surface.
+// - Option to generate wedge pieces per exposed stone for the stonemason is provided but disabled by default.
+
+//////////////////////////////////////////
+// Parameters (edit here if needed)
+//////////////////////////////////////////
+
+stone_side_mm = 500;         // 500 mm = 0.5 m
+total_stones_available = 2500000; // supplied in the problem
+
+// Precomputed optimal values for the given budget (see summary above).
+layers = 195;                // number of stacked layers (max with available stones)
+stones_used = 2490670;       // sum_{k=1..layers} k^2
+stones_remaining = total_stones_available - stones_used;
+
+base_n = layers;             // stones per side on the bottom layer
+base_width_mm = base_n * stone_side_mm; // total base side length in mm
+half_base_mm = base_width_mm / 2;
+height_mm = base_n * stone_side_mm;
+
+//////////////////////////////////////////
+// View / export toggles
+//////////////////////////////////////////
+
+SHOW_STEPS = true;           // show the stepped block (fast)
+SHOW_SHELL = true;           // show the smooth outer pyramid shell (fast)
+GENERATE_WEDGES = false;     // set true to generate per-stone marble wedge pieces (heavy)
+WEDGE_DISPLAY_ALPHA = 0.95;  // opacity for wedge pieces (1 = opaque, <1 = translucent)
+
+//////////////////////////////////////////
+// Convenience color definitions
+//////////////////////////////////////////
+
+// Colors in OpenSCAD accept either 0..1 floats or 0..255 ints. Using floats here.
+brown = [0.56,0.33,0.13,1];   // stepped stone color
+marble_white = [1,1,1,0.8];   // outer smooth shell color (slightly translucent)
+wedge_color = [0.95,0.96,0.98,WEDGE_DISPLAY_ALPHA]; // per-stone wedge color
+tomb_color = [0.8,0.1,0.1,1]; // tomb marker color (red)
+
+//////////////////////////////////////////
+// Modules
+//////////////////////////////////////////
+
+// Stepped pyramid as union of square slabs (one slab per layer).
+module stepped_pyramid() {
+    union() {
+        // Each layer i has k = base_n - i stones per side, side length = k * stone_side_mm.
+        // Layer i is placed with its bottom at z = i * stone_side_mm and centered at origin.
+        for (i = [0 : layers - 1]) {
+            k = base_n - i;
+            side_mm = k * stone_side_mm;
+            z_mm = i * stone_side_mm;
+            translate([-side_mm/2, -side_mm/2, z_mm])
+                cube([side_mm, side_mm, stone_side_mm], center = false);
+        }
+    }
+}
+
+// Outer smooth pyramid shell as single polyhedron (triangular faces).
+module outer_shell() {
+    // Base corners (CCW) and apex
+    p0 = [-half_base_mm, -half_base_mm, 0];
+    p1 = [ half_base_mm, -half_base_mm, 0];
+    p2 = [ half_base_mm,  half_base_mm, 0];
+    p3 = [-half_base_mm,  half_base_mm, 0];
+    apex = [0, 0, height_mm];
+
+    points = [p0, p1, p2, p3, apex];
+
+    // Triangular faces: four side triangles, two base triangles to close bottom
+    faces = [
+        [0,1,4], // side 0
+        [1,2,4], // side 1
+        [2,3,4], // side 2
+        [3,0,4], // side 3
+        [0,1,2], // base triangle 1
+        [0,2,3]  // base triangle 2
+    ];
+
+    polyhedron(points = points, faces = faces, convexity = 10);
+}
+
+// Marble veneer = outer shell minus stepped blocks.
+// This is the continuous veneer volume that fills the gaps between the stairs and the smooth shell.
+module marble_veneer() {
+    difference() {
+        outer_shell();
+        // subtract the stepped block (the union of slabs) to leave only the veneer
+        // Use the same slab representation as stepped_pyramid (cheap to compute).
+        stepped_pyramid();
+    }
+}
+
+// Generate individual wedge pieces for every exposed stone footprint.
+// Each wedge piece = intersection( vertical prism for stone footprint, marble_veneer )
+// Only stones that are on the perimeter of their layer (i.e., visible from outside) are considered.
+module generate_wedge_pieces() {
+    // We will iterate each layer and only produce wedge pieces for perimeter stones.
+    // This is heavy (about ~75k pieces) and is off by default.
+    // We build the vertical prism for each stone as height = height_mm (so it intersects the full veneer).
+    for (i = [0 : layers - 1]) {
+        k = base_n - i; // stones per side in this layer
+        layer_left_x = - (k * stone_side_mm) / 2;
+        layer_bottom_y = - (k * stone_side_mm) / 2;
+        for (jx = [0 : k - 1]) {
+            for (jy = [0 : k - 1]) {
+                // perimeter condition: exposed stone if on layer boundary
+                if ((jx == 0) || (jx == k - 1) || (jy == 0) || (jy == k - 1)) {
+                    x_min = layer_left_x + jx * stone_side_mm;
+                    y_min = layer_bottom_y + jy * stone_side_mm;
+                    // Prism exactly over the stone footprint from ground to apex (height_mm). The wedge is the intersection
+                    // of this prism with the marble_veneer (which already excludes inner stepped blocks).
+                    translate([x_min, y_min, 0])
+                        intersection() {
+                            // prism over single stone footprint
+                            cube([stone_side_mm, stone_side_mm, height_mm], center = false);
+                            // the veneer (global) - note: intersection will only take the veneer part inside this prism
+                            marble_veneer();
+                        }
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////
+// Main assembly
+//////////////////////////////////////////
+
+// Optional small marker at the tomb (origin) for reference (a small centered box at ground)
+module tomb_marker() {
+    translate([-stone_side_mm/8, -stone_side_mm/8, 0])
+        color(tomb_color)
+            cube([stone_side_mm/4, stone_side_mm/4, stone_side_mm/20], center = false);
+}
+
+// Render according to toggles
+// Steps
+if (SHOW_STEPS) {
+    color(brown)
+        stepped_pyramid();
+}
+
+// Smooth outer shell
+if (SHOW_SHELL) {
+    // render shell slightly translucent so you can see steps if both visible
+    color(marble_white)
+        outer_shell();
+}
+
+// Marble veneer (difference) - optionally shown semi-transparently:
+// The user can toggle SHOW_SHELL and SHOW_STEPS to view different combinations.
+// If the user wants to see the actual veneer as a single solid object, uncomment the following lines:
+// color([0.98,0.98,0.98,0.5]) marble_veneer();
+
+// Generate per-stone wedges if requested (VERY HEAVY).
+if (GENERATE_WEDGES) {
+    // color wedges and render them
+    color(wedge_color)
+        generate_wedge_pieces();
+}
+
+// Tomb marker
+tomb_marker();

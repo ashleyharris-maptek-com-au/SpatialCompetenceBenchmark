@@ -1,111 +1,119 @@
-// OpenSCAD Plan for Pharaoh's Pyramid
-// Units: Metric SI (Meters)
-// 1 Unit = 1 Meter
-
-/* 
-    --- ENGINEERING CALCULATION ---
-    
-    1. RESOURCE CONSTRAINTS:
-       - Total Men: 100,000
-       - Cost per Stone: 10 men
-       - Max Movable Stones = 100,000 / 10 = 10,000 stones.
-       - Available Inventory: 150,000 stones.
-       - LIMITING FACTOR: Manpower (10,000 stones max).
-
-    2. GEOMETRY & STRUCTURAL INTEGRITY:
-       - Stone Size: 0.5m x 0.5m x 0.5m.
-       - Rule: Each stone rests on 4 corners of stones below.
-       - This dictates a Square Pyramidal Number sequence (1, 4, 9, 16...).
-       - Layer n (from top) contains n^2 stones.
-       
-    3. MAX HEIGHT CALCULATION:
-       - Total Stones S = Sum(n^2) for n=1 to H.
-       - Formula: S = H(H+1)(2H+1)/6
-       - We need Max H where S <= 10,000.
-       - Try H=30: (30 * 31 * 61) / 6 = 9,455 stones.
-       - Try H=31: (31 * 32 * 63) / 6 = 10,416 stones (Exceeds Budget).
-       - MAX LAYERS = 30.
-       - Total Height = 30 * 0.5m = 15.0m.
-       - Base Width (Core) = 30 stones * 0.5m = 15.0m.
-
-    4. MARBLE FACADE DESIGN:
-       - Requirement: Smooth pyramid covering all external stones.
-       - To circumscribe the stepped core perfectly (touching the outer-top corners of every step):
-       - Slope Calculation:
-         - Top Stone (Layer 1): Width 0.5m, Top at Z=15.0m. (Corner at x=0.25).
-         - Bottom Stone (Layer 30): Width 15.0m, Top at Z=0.5m. (Corner at x=7.5).
-         - To create a continuous smooth slope covering these points, we extend the line connecting them.
-         - Slope = dz/dx = (15.0 - 0.5) / (7.5 - 0.25) = 14.5 / 7.25 = 2.
-       - Apex Height (Z_apex):
-         - Z = 15.0m at x = 0.25m.
-         - Z_apex = 15.0 + (Slope * 0.25) = 15.0 + 0.5 = 15.5m.
-       - Base Width (at Z=0):
-         - Z = 0.5m at x = 7.5m.
-         - X_base_edge = 7.5 + (0.5 / Slope) = 7.5 + 0.25 = 7.75m.
-         - Total Base Width = 7.75 * 2 = 15.5m.
-       - This results in a smooth pyramid base 15.5m wide and 15.5m high.
-*/
+// Pharaoh's Pyramid Project
+// Units: Metric (Meters)
+//
+// CONSTRAINTS ANALYSIS:
+// 1. Stone Budget: 150,000 stones.
+// 2. Stone Size: 0.5m x 0.5m x 0.5m cube.
+// 3. Support Logic: Layer N (counting from top=1) requires N*N grid of stones.
+//    Total Stones = Sum(n^2) for n=1 to H.
+//    Sum(n^2) = n(n+1)(2n+1)/6
+//
+// CALCULATIONS:
+// Target <= 150,000 stones.
+// Try H=76: 76(77)(153)/6 = 149,226 stones. (Fits)
+// Try H=77: 77(78)(155)/6 = 155,155 stones. (Exceeds budget)
+// -> Max Height in Layers = 76.
+//
+// DIMENSIONS:
+// Total Height = 76 layers * 0.5m = 38.0m.
+// Base Width (Core) = 76 stones * 0.5m = 38.0m.
+//
+// FACADE DESIGN:
+// To create a smooth pyramid that covers the stepped core exactly:
+// The plane must pass through the top-outer edge of the highest stone (Layer 1)
+// and the top-outer edge of the lowest stone (Layer 76).
+//
+// Layer 1 Top Edge: X = 0.25m, Z = 38.0m
+// Layer 76 Top Edge: X = 19.0m, Z = 0.5m
+// Slope = dZ/dX = (38.0 - 0.5) / (0.25 - 19.0) = 37.5 / -18.75 = -2.
+//
+// Intercept (Apex Height):
+// Z = -2X + C
+// 38 = -2(0.25) + C => 38 = -0.5 + C => C = 38.5m.
+//
+// Base Width (at Z=0):
+// 0 = -2X + 38.5 => 2X = 38.5 => X = 19.25m.
+// Full Base Width = 38.5m.
 
 // --- PARAMETERS ---
+stone_side = 0.500; // 50cm
+layers = 76;
+used_stones = 149226;
+core_base_width = layers * stone_side;
+core_height = layers * stone_side;
 
-stone_size = 0.500; // Meters
-num_layers = 30;    // Calculated max height
-base_core_width = num_layers * stone_size;
-facade_height = 15.5; 
-facade_base_width = 15.5;
+// Facade Parameters calculated to perfectly touch outer edges
+facade_height = core_height + (stone_side); // 38.5m
+facade_base_width = core_base_width + (stone_side); // 38.5m
 
-// Optimization: Instead of drawing 9,455 individual cubes, we draw 30 slabs.
-// This is geometrically identical for the exterior and vastly faster to render.
-// The Stonemason can inspect layers by using Difference or Transparency.
+// --- VIEW CONTROLS ---
+show_core = true;
+show_facade = true;
+cutaway_view = false; // Set to true to see internal stacking
 
-module core_stones() {
-    color([0.85, 0.75, 0.55]) // Sandstone color
-    for (i = [1 : num_layers]) {
-        // i is layer number from TOP (1 is single stone, 30 is base)
-        layer_width = i * stone_size;
-        // Z position: 
-        // Layer 30 (base) is at z=0..0.5
-        // Layer 1 (top) is at z=14.5..15.0
-        // Formula for bottom of layer i: (num_layers - i) * stone_size
-        translate([0, 0, (num_layers - i) * stone_size + (stone_size/2)])
-        cube([layer_width, layer_width, stone_size], center=true);
+module stone_core() {
+    color([0.6, 0.5, 0.4]) // Sandstone color
+    for (i = [1 : layers]) {
+        // Optimization: Instead of rendering n*n individual cubes,
+        // render one large slab per layer.
+        // i = 1 is the top layer.
+        layer_width = i * stone_side;
+        
+        // Z Position: 
+        // Layer 1 sits on top of Layer 2... Layer 76 is at bottom.
+        // Bottom of layer i is at Z = (total_layers - i) * size
+        z_pos = (layers - i) * stone_side;
+        
+        translate([0, 0, z_pos + stone_side/2])
+            cube([layer_width, layer_width, stone_side], center=true);
     }
-}
-
-module smooth_shell() {
-    // A 4-sided pyramid.
-    // Cylinder r is radius to corner. For a square of width W, r = W / sqrt(2).
-    radius = facade_base_width / sqrt(2);
-    
-    rotate([0, 0, 45]) // Align flat faces to X/Y axes (North is +Y)
-    cylinder(r1 = radius, r2 = 0, h = facade_height, $fn = 4);
 }
 
 module marble_facade() {
-    color([0.95, 0.95, 1.0, 0.4]) // White Marble, semi-transparent for planning view
+    // Smooth marble casing
+    color([0.95, 0.95, 1.0, 0.4]) // White Marble, slightly transparent
+    translate([0,0,0])
+        rotate([0,0,45]) // Rotate 45 to align cylinder($fn=4) with axes
+        cylinder(
+            h = facade_height, 
+            r1 = (facade_base_width / sqrt(2)), // Radius to corner
+            r2 = 0, 
+            $fn = 4
+        );
+}
+
+module project_assembly() {
     difference() {
-        smooth_shell();
-        core_stones();
+        union() {
+            if (show_core) stone_core();
+            if (show_facade) marble_facade();
+        }
+        
+        // Cutaway logic for inspection
+        if (cutaway_view) {
+            color([1,0,0])
+            translate([0, -facade_base_width, -1])
+                cube([facade_base_width*2, facade_base_width*2, facade_height+2]);
+        }
     }
 }
 
-// --- ASSEMBLY ---
+// --- RENDER ---
+// Note: Axis orientation: +Y is North.
+// Pyramid is centered on [0,0,0].
 
-// 1. Draw the internal limestone core
-core_stones();
+echo(str("Total Stones Used: ", used_stones));
+echo(str("Pyramid Height: ", core_height, "m (Core), ", facade_height, "m (Apex)"));
+echo(str("Base Width: ", core_base_width, "m (Core), ", facade_base_width, "m (Clad)"));
 
-// 2. Draw the marble cladding wedges
-// Note: This calculates the exact volume of marble required to fill the "steps"
-marble_facade();
+project_assembly();
 
-// --- ANNOTATIONS ---
-// (Visible in Console)
-echo("--- PHARAOH'S PYRAMID PLAN ---");
-echo("Total Layers:", num_layers);
-echo("Total Height (Stone):", num_layers * stone_size, "m");
-echo("Total Height (with Facade Apex):", facade_height, "m");
-echo("Base Width (Stone):", base_core_width, "m");
-echo("Base Width (Marble):", facade_base_width, "m");
-echo("Stones Used:", 9455);
-echo("Men Required:", 94550);
-echo("Orientation: +Y is NORTH");
+// Visualization of a single standard stone for reference (placed aside)
+translate([25, 0, 0.25]) 
+    color("red") 
+    cube([0.5, 0.5, 0.5], center=true);
+    
+// Text label for reference
+color("black")
+translate([25, 0, 1])
+    text("Ref. Stone (0.5m)", size=1, halign="center");

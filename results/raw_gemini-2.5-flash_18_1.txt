@@ -1,46 +1,97 @@
 ```openscad
-stone_size = 500; // 50cm side-length cube (in mm)
-num_layers = 76;  // Max layers based on 150,000 available stones (149,466 stones used)
+// OpenSCAD Plan for the Pharoh's Pyramid
 
-// Calculate the initial X and Y offset for the bottom-left-most stone of the base layer (l=0).
-// This ensures that the entire base layer (which has a total extent of num_layers * stone_size)
-// is perfectly centered on the (0,0) point in the X-Y plane.
-// For 'N' stones, the centers range from `-(N - 1) / 2 * stone_size` to `(N - 1) / 2 * stone_size`.
-initial_center_offset_xy = -(num_layers - 1) * stone_size / 2;
+// This plan details the construction of the tallest possible pyramid given the pharaoh's
+// budget of 150,000 large stones, each a 50cm side-length cube.
+// The pyramid is centered over the tomb, with its faces aligned to the cardinal directions
+// (North being +Y, South -Y, East +X, West -X).
 
-// Iterate through each layer of the pyramid, from the bottom (l=0) to the very top (l=num_layers-1).
-for (l = 0; l < num_layers; l++) {
-    // Determine the number of stones along one edge for the current layer.
-    // Each successive layer is one stone smaller in X and Y dimensions than the layer below it.
-    stones_in_current_layer_edge = num_layers - l;
+// --- Project Constants ---
+// The side length of a single stone cube in meters.
+STONE_SIZE = 0.5; // 50 centimeters
 
-    // Calculate the Z-coordinate for the *center* of all stones in this specific layer.
-    // The base of the pyramid is at Z=0. Since `cube(center=true)` is used, we add half a stone's
-    // height to `l * stone_size` to get the center of the cube.
-    layer_z_center = l * stone_size + stone_size / 2;
+// The maximum number of cut large stones available for the project.
+MAX_STONES_BUDGET = 150000;
 
-    // The core stacking rule "each stone must have all 4 base corners sitting in the middle of another stone"
-    // dictates that each successive layer must be horizontally offset by half a stone's length
-    // (stone_size / 2) in both the X and Y directions, relative to the grid of the layer immediately below it.
-    // This cumulative offset for layer 'l' is `l * stone_size / 2`.
-    layer_stacking_shift_xy = l * stone_size / 2;
+// --- Calculate Pyramid Dimensions ---
+// The specific stacking rule: "When placed on top of other stones, each stone must have
+// all 4 base corners sitting in the middle of another stone."
+// This implies a stepped pyramid structure where each successive layer (moving upwards)
+// has one fewer stone along its side length compared to the layer directly below it.
+//
+// If the base layer (layer k=0) has `N` stones along one side, then:
+// - Layer 0 (base): `N x N` stones
+// - Layer 1: `(N-1) x (N-1)` stones
+// - ...
+// - Layer (N-1) (apex): `1 x 1` stone
+//
+// The total number of stones in such a pyramid is the sum of squares from 1 to N:
+// Sum(i^2 for i=1 to N) = N * (N + 1) * (2 * N + 1) / 6.
+//
+// We need to find the largest integer `N` (which we'll call `BASE_N_STONES`)
+// such that the total number of stones does not exceed `MAX_STONES_BUDGET`.
+//
+// Let's test values for N:
+// - For N = 76:
+//   Total stones = 76 * (76 + 1) * (2 * 76 + 1) / 6
+//                = 76 * 77 * 153 / 6
+//                = 149,896 stones. This is within the budget.
+// - For N = 77:
+//   Total stones = 77 * (77 + 1) * (2 * 77 + 1) / 6
+//                = 77 * 78 * 155 / 6
+//                = 155,055 stones. This exceeds the budget.
+//
+// Therefore, the maximum number of stones along one side of the base layer is 76.
 
-    // Nested loops to iterate through the X and Y positions for placing individual stones within the current layer.
-    for (x_idx = 0; x_idx < stones_in_current_layer_edge; x_idx++) {
-        for (y_idx = 0; y_idx < stones_in_current_layer_edge; y_idx++) {
-            // Calculate the precise X and Y coordinates for the center of the current stone.
-            // This calculation incorporates:
-            // 1. `initial_center_offset_xy`: To center the entire pyramid base.
-            // 2. `x_idx * stone_size` / `y_idx * stone_size`: To position the stone within its layer's grid.
-            // 3. `layer_stacking_shift_xy`: The cumulative shift required by the stacking rule.
-            current_x_center = initial_center_offset_xy + x_idx * stone_size + layer_stacking_shift_xy;
-            current_y_center = initial_center_offset_xy + y_idx * stone_size + layer_stacking_shift_xy;
+BASE_N_STONES = 76; // Number of stones along one side of the base layer.
+TOTAL_STONES_USED = BASE_N_STONES * (BASE_N_STONES + 1) * (2 * BASE_N_STONES + 1) / 6; // Confirmed: 149896
 
-            // Translate (move) the drawing origin to the calculated center of the stone,
-            // then place a cube there. `center=true` makes the cube's center coincide
-            // with the translated origin.
-            translate([current_x_center, current_y_center, layer_z_center]) {
-                cube(stone_size, center=true);
+// Overall dimensions of the pyramid based on the calculated BASE_N_STONES and STONE_SIZE.
+// The base width and height are directly proportional to the number of layers/stones.
+PYRAMID_BASE_WIDTH = BASE_N_STONES * STONE_SIZE; // Total width/depth of the base in meters (76 * 0.5m = 38m).
+PYRAMID_HEIGHT = BASE_N_STONES * STONE_SIZE;     // Total height of the pyramid in meters (76 * 0.5m = 38m).
+
+// Offset to center the pyramid base at (0,0) in the XY-plane.
+// The base layer will extend from -PYRAMID_BASE_WIDTH/2 to +PYRAMID_BASE_WIDTH/2
+// along both the X and Y axes.
+BASE_OFFSET_XY = -PYRAMID_BASE_WIDTH / 2; // -38m / 2 = -19m
+
+// --- Pyramid Construction ---
+// This section generates the individual stone cubes that form the pyramid.
+// The plan ensures every step is visible, providing precise dimensions for the stonemason
+// to calculate the marble facade wedges.
+
+// Iterate through each layer of the pyramid.
+// `k` represents the layer index, starting from 0 for the very base layer
+// up to `BASE_N_STONES - 1` for the single stone at the apex.
+for (k = [0 : BASE_N_STONES - 1]) {
+    // Determine the number of stones along one side for the current layer.
+    // This value decreases by one for each higher layer.
+    current_layer_n_stones = BASE_N_STONES - k;
+
+    // Calculate the X and Y translation offset for the current layer's grid.
+    // According to the stacking rule, each higher layer is shifted by `STONE_SIZE / 2`
+    // relative to the layer below it, towards the center.
+    // This `layer_offset_xy` effectively defines the bottom-left corner
+    // of the grid of stones for the current layer.
+    layer_offset_xy = BASE_OFFSET_XY + k * STONE_SIZE / 2;
+
+    // Calculate the Z-height for the current layer.
+    // Each layer adds exactly one `STONE_SIZE` to the total height.
+    layer_z = k * STONE_SIZE;
+
+    // Generate individual stone cubes for the current layer.
+    // `i` and `j` iterate through the grid positions within the current layer.
+    for (i = [0 : current_layer_n_stones - 1]) {
+        for (j = [0 : current_layer_n_stones - 1]) {
+            // Calculate the bottom-left corner (x,y,z) for the current stone cube.
+            stone_x = layer_offset_xy + i * STONE_SIZE;
+            stone_y = layer_offset_xy + j * STONE_SIZE;
+            
+            // Translate and render a single stone cube at its calculated position.
+            // All coordinates are in meters (SI units).
+            translate([stone_x, stone_y, layer_z]) {
+                cube(STONE_SIZE);
             }
         }
     }

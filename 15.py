@@ -41,58 +41,53 @@ promptChangeSummary = "Increasing grid size and row target"
 
 subpassParamSummary = [
     "10x30 grid, remove 10 rows. <br> Apparently this matches the original 1980s game.",
-    "16x30 grid, remove 15 rows", 
-    "20x30 grid, remove 20 rows",
+    "16x30 grid, remove 15 rows", "20x30 grid, remove 20 rows",
     "40x30 grid, remove 30 rows"
 ]
 
 structure = {
-  "type": "object",
-  "properties": {
-    "moves": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "translationCount": {
-            "type": "number"
-          },
-          "rotationCount": {
-            "type": "number"
-          }
-        },
-        "propertyOrdering": [
-          "translationCount",
-          "rotationCount"
-        ],
-        "required": [
-          "translationCount",
-          "rotationCount"
-        ],
-        "additionalProperties": False
-      }
-    }
-  },
-  "propertyOrdering": [
-    "moves"
-  ],
-  "required": [
-    "moves"
-  ],
-  "additionalProperties": False
+    "type": "object",
+    "properties": {
+        "moves": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "translationCount": {
+                        "type": "number"
+                    },
+                    "rotationCount": {
+                        "type": "number"
+                    }
+                },
+                "propertyOrdering": ["translationCount", "rotationCount"],
+                "required": ["translationCount", "rotationCount"],
+                "additionalProperties": False
+            }
+        }
+    },
+    "propertyOrdering": ["moves"],
+    "required": ["moves"],
+    "additionalProperties": False
 }
 
 
 def prepareSubpassPrompt(index):
-    if index == 0: return prompt.replace("PARAM_A", "10").replace("PARAM_B", "10")
-    if index == 1: return prompt.replace("PARAM_A", "16").replace("PARAM_B", "15")
-    if index == 2: return prompt.replace("PARAM_A", "20").replace("PARAM_B", "20")
-    if index == 3: return prompt.replace("PARAM_A", "40").replace("PARAM_B", "30")
+    if index == 0:
+        return prompt.replace("PARAM_A", "10").replace("PARAM_B", "10")
+    if index == 1:
+        return prompt.replace("PARAM_A", "16").replace("PARAM_B", "15")
+    if index == 2:
+        return prompt.replace("PARAM_A", "20").replace("PARAM_B", "20")
+    if index == 3:
+        return prompt.replace("PARAM_A", "40").replace("PARAM_B", "30")
     raise StopIteration
+
 
 remainsOfLastRun = [None] * 4
 
-def gradeAnswer(answer : dict, subPassIndex : int, aiEngineName : str):
+
+def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
     global remainsOfLastRun
     remainsOfLastRun[subPassIndex] = None
     widths = [10, 16, 20, 40]
@@ -110,7 +105,10 @@ def gradeAnswer(answer : dict, subPassIndex : int, aiEngineName : str):
     # Ensure that we end with a pile of blocks up, as if a player walks away,
     # as tetris has no good ending.
     for _ in range(20):
-        moves.append({"translationCount": random.randint(0,W), "rotationCount": random.randint(0, 3)})
+        moves.append({
+            "translationCount": random.randint(0, W),
+            "rotationCount": random.randint(0, 3)
+        })
 
     shapes = [
         [(0, 0), (1, 0), (2, 0), (0, 1)],
@@ -196,25 +194,29 @@ def gradeAnswer(answer : dict, subPassIndex : int, aiEngineName : str):
         score = 0
     return score, f"Cleared {cleared}/{target} rows ({score*100:.1f}%) in {len(moves)} moves"
 
-def resultToNiceReport(result, subPassIndex, aiEngineName : str):
-    region_colours = {0 : [1,1,1]}
-    
+
+def resultToNiceReport(result, subPassIndex, aiEngineName: str):
+    region_colours = {0: [1, 1, 1]}
+
     # Use the grid from the grade answer pass, so we don't have to redo the entire game.
     grid = remainsOfLastRun[subPassIndex]
     size = len(grid)
-    
+
     out = "<span style='font-family: monospace;"
-    
+
     if size < 50: out += "font-size:32px; line-height:32px"
     else: out += "font-size:10px; line-height:10px"
 
     out += "'>"
-    
+
     for y in range(10, size):
         for x in range(len(grid[y])):
             cell = grid[y][x]
             if cell not in region_colours:
-                region_colours[cell] = [10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)]
+                region_colours[cell] = [
+                    10 * random.randint(0, 25), 10 * random.randint(0, 25),
+                    10 * random.randint(0, 25)
+                ]
             out += f"<span style='background-color: rgb({region_colours[cell][0]}, {region_colours[cell][1]}, {region_colours[cell][2]});'>"
             out += "#" if cell else "&nbsp;"
             out += "</span>"
@@ -223,3 +225,22 @@ def resultToNiceReport(result, subPassIndex, aiEngineName : str):
     out += "</span>"
     return out
 
+
+highLevelSummary = """
+Can you pre-plan a game of tetris, if you know that you'll only get the L piece?
+<br><br>
+This is infinitely solvable with a trivial algorithm, all the grids are multiples
+of 2 or 4, and the L peice infinitely tiles the tetris grid like so:
+
+<pre>
++-----------+---+
+| A   A   A | B |
++   +-------+   |
+| A | B   B   B |
++---+----------+
+</pre>
+
+When I first wrote this I thought I'd jsut be testing LLM focus, but no, they
+struggle to picture the rotations and translations.
+
+"""

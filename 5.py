@@ -22,28 +22,24 @@ Outputting anything else than the maze will obviously result in a score of 0.
 """
 
 structure = {
-    "type" : "object",
-    "properties" : {
-        "reasoning" : { "type" : "string"},
-        "maze" : { "type" : "string"}
+    "type": "object",
+    "properties": {
+        "reasoning": {
+            "type": "string"
+        },
+        "maze": {
+            "type": "string"
+        }
     },
     "additionalProperties": False,
-    "propertyOrdering": [
-        "reasoning",
-        "maze"
-    ],
-    "required": [
-        "reasoning",
-        "maze"
-    ]
+    "propertyOrdering": ["reasoning", "maze"],
+    "required": ["reasoning", "maze"]
 }
 
 subpassParamSummary = [
-    "16x16 maze",
-    "32x32 maze",
-    "64x64 maze",
-    "128x128 maze"
+    "16x16 maze", "32x32 maze", "64x64 maze", "128x128 maze"
 ]
+
 
 def prepareSubpassPrompt(index):
     if index == 0: return prompt.replace("PARAM_A", "16")
@@ -52,15 +48,16 @@ def prepareSubpassPrompt(index):
     if index == 3: return prompt.replace("PARAM_A", "128")
     raise StopIteration
 
-def gradeAnswer(answer : dict,subPass : int, aiEngineName : str):
+
+def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     answer = answer["maze"].strip()
     if answer.count("A") != 1 or answer.count("B") != 1:
         return 0, "Maze must have exactly one A and one B"
 
     spaces = answer.count(" ")
-    stepCount = answer.count(".") + 2 # +2 for A and B
+    stepCount = answer.count(".") + 2  # +2 for A and B
     walls = answer.count("#")
-    
+
     reasoning = f"Maze has {spaces} spaces, {stepCount} steps, and {walls} walls"
 
     if stepCount < spaces * 0.1:
@@ -106,7 +103,7 @@ def gradeAnswer(answer : dict,subPass : int, aiEngineName : str):
             continue
         if cells[y][x] == "o":
             continue
-        if cells[y][x] == " ": # Don't step off the path
+        if cells[y][x] == " ":  # Don't step off the path
             continue
         cells[y][x] = "o"
         if x > 0: stack.append((x - 1, y))
@@ -125,11 +122,12 @@ def gradeAnswer(answer : dict,subPass : int, aiEngineName : str):
 
     return 1, reasoning + "\nMaze is valid"
 
-def resultToNiceReport(result, subPass, aiEngineName : str):
+
+def resultToNiceReport(result, subPass, aiEngineName: str):
 
     if len(result["maze"].strip()) == 0:
         return "Empty maze"
-    
+
     charMap = {}
     for c in result["maze"]:
         if c not in charMap:
@@ -146,13 +144,13 @@ def resultToNiceReport(result, subPass, aiEngineName : str):
         return "Unknown characters in maze:\n" + str(charMap.keys())
 
     grid = result["maze"].strip().split("\n")
-    
+
     out = "<span style='font-family: monospace;"
-    
+
     if subPass < 2: out += "font-size:32px; line-height:32px"
     else: out += "font-size:10px; line-height:10px"
     out += "'>"
-    
+
     expectedRows = 16 if subPass == 0 else 32 if subPass == 1 else 64 if subPass == 2 else 128
     expectedColumns = expectedRows
 
@@ -185,7 +183,19 @@ def resultToNiceReport(result, subPass, aiEngineName : str):
     out += "</span>"
     return out
 
+
 if __name__ == "__main__":
-    print(resultToNiceReport(
-        {"maze": 
-        "################\n#A.....#########\n######.########\n######.###...###\n######.###.#.###\n######.###.#.###\n##.....###.#.###\n##.#######.#.###\n##.#######.#.###\n##.#######.#.###\n##.........#.###\n############.###\n###B.........###\n################\n################\n################"}, 0, "Test"))
+    print(
+        resultToNiceReport(
+            {
+                "maze":
+                "################\n#A.....#########\n######.########\n######.###...###\n######.###.#.###\n######.###.#.###\n##.....###.#.###\n##.#######.#.###\n##.#######.#.###\n##.#######.#.###\n##.........#.###\n############.###\n###B.........###\n################\n################\n################"
+            }, 0, "Test"))
+
+highLevelSummary = """
+Just a simple maze generation, more of a challenge than you'd expect.
+
+Most LLMs seem to get the idea roughly right, but fail at the minutiae,
+often missing rows, having coloumns of varying sizes, not being watertight,
+or having loops.
+"""

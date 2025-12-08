@@ -18,8 +18,7 @@ Responses API reference: https://platform.openai.com/docs/api-reference/response
 # Constants that fine tune which model, reasoning mode, and tools
 import hashlib
 
-
-MODEL = "gpt-5-nano" 
+MODEL = "gpt-5-nano"
 
 # REASONING controls reasoning mode:
 # - False or 0: No special reasoning (standard mode)
@@ -32,17 +31,20 @@ REASONING = False
 # - False: No tools available
 # - True: Enable ALL built-in tools (web_search, code_interpreter, file_search)
 # - List of function definitions: Enable specific custom tools
-# 
+#
 # Examples:
 #   TOOLS = False                    # No tools
 #   TOOLS = True                     # All built-in tools
 #   TOOLS = [function_def]           # Custom function only
 #   TOOLS = [func1, func2]           # Multiple custom functions
-# 
+#
 # Note: Built-in tools require specific API access/models
 TOOLS = False
 
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() + str(TOOLS).encode()).hexdigest()
+configAndSettingsHash = hashlib.sha256(MODEL.encode() +
+                                       str(REASONING).encode() +
+                                       str(TOOLS).encode()).hexdigest()
+
 
 def Configure(Model, Reasing, Tools):
     global MODEL
@@ -52,10 +54,14 @@ def Configure(Model, Reasing, Tools):
     MODEL = Model
     REASONING = Reasing
     TOOLS = Tools
-    configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() + str(TOOLS).encode()).hexdigest()
+    configAndSettingsHash = hashlib.sha256(MODEL.encode() +
+                                           str(REASONING).encode() +
+                                           str(TOOLS).encode()).hexdigest()
+
 
 import os
 import json
+
 
 def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     """
@@ -69,25 +75,26 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     Uses the OpenAI Responses API.
     """
     from openai import OpenAI
-    
+
     try:
         # Initialize the client - it will automatically use OPENAI_API_KEY environment variable
         client = OpenAI(timeout=3600)
-    
+
         # Determine model to use
         model_to_use = MODEL
-        
+
         # Override model if REASONING specifies an o1 model
-        if isinstance(REASONING, str) and REASONING in ["o1-preview", "o1-mini"]:
+        if isinstance(REASONING,
+                      str) and REASONING in ["o1-preview", "o1-mini"]:
             model_to_use = REASONING
-        
+
         # Build Responses API parameters
         response_params = {
             "model": model_to_use,
             "input": prompt,
             "service_tier": "flex"
         }
-        
+
         # Add reasoning effort
         if isinstance(REASONING, int) and REASONING > 0:
             # Map 1-10 scale to low/medium/high
@@ -99,7 +106,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
                 response_params["reasoning"] = {"effort": "high"}
 
             response_params["reasoning"]["summary"] = "auto"
-        
+
         # Handle structured output using the text.format parameter
         if structure is not None:
             response_params["text"] = {
@@ -110,15 +117,19 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
                     "strict": True
                 }
             }
-        
+
         # Add tools if specified
         if TOOLS is True:
             # Enable built-in hosted tools
             # Note: file_search requires a vector_store, so it's excluded
-            response_params["tools"] = [
-                {"type": "web_search"},
-                {"type": "code_interpreter", "container": {"type": "auto"}}
-            ]
+            response_params["tools"] = [{
+                "type": "web_search"
+            }, {
+                "type": "code_interpreter",
+                "container": {
+                    "type": "auto"
+                }
+            }]
         elif TOOLS and TOOLS is not False:
             # Convert function list to OpenAI tool format if needed
             tools_list = []
@@ -131,7 +142,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
                     import inspect
                     sig = inspect.signature(tool)
                     doc = inspect.getdoc(tool) or "No description"
-                    
+
                     properties = {}
                     required = []
                     for param_name, param in sig.parameters.items():
@@ -143,11 +154,11 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
                                 param_type = "number"
                             elif param.annotation == bool:
                                 param_type = "boolean"
-                        
+
                         properties[param_name] = {"type": param_type}
                         if param.default == inspect.Parameter.empty:
                             required.append(param_name)
-                    
+
                     tool_def = {
                         "type": "function",
                         "name": tool.__name__,
@@ -159,50 +170,53 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
                         }
                     }
                     tools_list.append(tool_def)
-            
+
             if tools_list:
                 response_params["tools"] = tools_list
-        
+
         # Make the API call using Responses API with streaming
-        stream = client.responses.create(stream=True, timeout=3600, **response_params)
-        
+        stream = client.responses.create(stream=True,
+                                         timeout=3600,
+                                         **response_params)
+
         chainOfThought = ""
         output_text = ""
         current_reasoning_line = ""
-        
+
         # Process streaming events
         for event in stream:
             event_type = event.type
-            
+
             # Handle reasoning summary deltas - print line by line as they arrive
             if event_type == "response.reasoning_summary_text.delta":
                 delta = event.delta
                 current_reasoning_line += delta
                 # Print complete lines as they arrive
                 while "\n" in current_reasoning_line:
-                    line, current_reasoning_line = current_reasoning_line.split("\n", 1)
+                    line, current_reasoning_line = current_reasoning_line.split(
+                        "\n", 1)
                     print(f"Thinking: {line}", flush=True)
                     chainOfThought += line + "\n"
-            
+
             # Handle reasoning summary done - flush any remaining text
             elif event_type == "response.reasoning_summary_text.done":
                 if current_reasoning_line:
                     print(f"Thinking: {current_reasoning_line}", flush=True)
                     chainOfThought += current_reasoning_line
                     current_reasoning_line = ""
-            
+
             # Handle output text deltas - accumulate silently
             elif event_type == "response.output_text.delta":
                 output_text += event.delta
-            
+
             # Handle completion
             elif event_type == "response.completed":
                 # Final response is available if needed
                 pass
-        
+
         # Strip trailing newline from chain of thought if present
         chainOfThought = chainOfThought.rstrip("\n")
-        
+
         print(output_text)
 
         # Extract content
@@ -214,7 +228,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
         else:
             # Return text response
             return output_text or "", chainOfThought
-            
+
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
         # Return appropriate empty response based on structure

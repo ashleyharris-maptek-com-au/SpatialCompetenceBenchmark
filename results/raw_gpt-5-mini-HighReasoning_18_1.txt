@@ -1,0 +1,111 @@
+// Pharaoh's Pyramid — OpenSCAD plan (units: millimetres)
+// - Stone: cube, side = 0.5 m = 500 mm
+// - Available stones: 150000
+// - Pyramid layers (largest full square pyramid using available stones):
+//     find largest n with sum_{k=1..n} k^2 <= 150000
+//     n = 76 -> total stones used = 149226
+// - Base footprint: 76 * 500 mm = 38000 mm (38.000 m) square
+// - Height (stone layers): 76 * 500 mm = 38000 mm (38.000 m)
+// - External (visible) stones on faces (perimeter stones per layer): 11,401
+//
+// This file models the full solid volume precisely to the millimetre as a stack of
+// full rectangular slabs for each stone layer (one slab per layer). It also
+// optionally draws the individual external stones (the visible peripheral cubes)
+// to assist the stonemason in cutting marble wedges for each external stone.
+//
+// Notes:
+// - +Y is North (as required). The pyramid is centered on the origin (0,0).
+// - All coordinates and sizes are integer multiples of 250 mm (half-stone offset
+//   for even/odd layers) and therefore exact in millimetre units.
+// - The model represents the physical stone volume exactly; external-cube overlay
+//   highlights every exposed stone on the stepped faces for masonry planning.
+
+// ========== PARAMETERS ==========
+s = 500;          // stone side length (mm)
+n = 76;           // number of layers (bottom layer has n x n stones)
+stones_used = (n*(n+1)*(2*n+1))/6; // 149226
+base_size = n * s;  // mm
+height_total = n * s; // mm
+
+// Visual / output options
+show_slabs = true;         // true: draw full slab layers (accurate solid volume)
+show_exposed = true;       // true: draw individual exposed stones (peripheral cubes)
+slab_color = [0.88, 0.86, 0.82];            // light limestone gray for slabs
+exposed_color = [1, 0.25, 0.1, 0.7];        // translucent red for exposed stones
+tomb_marker_color = [0,0,1];                // blue marker at origin (tomb center)
+
+// ========== MODULES ==========
+
+// Draw the stack as one slab per layer. This gives the exact solid volume (no voids).
+module slabs() {
+    // layer indices: 0 (ground / bottom) .. n-1 (top)
+    for (layer = [0 : 1 : n-1]) {
+        k = n - layer;            // number of stones along one side in this layer
+        W = k * s;               // slab footprint width (mm)
+        z = layer * s;           // bottom z coordinate for this layer
+        translate([-W/2, -W/2, z])
+            cube([W, W, s], center = false);
+    }
+}
+
+// Draw only the exposed peripheral stones (useful for cutting marble for each external stone).
+// This draws every stone that lies on the outer perimeter of its layer.
+// Count of these stones = 1 + 4 * sum_{m=1..(n-1)} m = 11401 for n=76
+module exposed_stones() {
+    // k iterates stone-count-per-side for layer: 1..n (top..bottom)
+    for (k = [1 : 1 : n]) {
+        z = (n - k) * s; // bottom z coordinate for this layer
+        // iterate grid indices i,j from 0..k-1; place only perimeter stones
+        for (i = [0 : 1 : k-1]) {
+            for (j = [0 : 1 : k-1]) {
+                if (i == 0 || i == k-1 || j == 0 || j == k-1) {
+                    // lower-left corner x0,y0 = (i - k/2) * s  (works for even/odd k)
+                    x0 = (i - k/2) * s;
+                    y0 = (j - k/2) * s;
+                    translate([x0, y0, z])
+                        cube([s, s, s], center = false);
+                }
+            }
+        }
+    }
+}
+
+// Small marker at the tomb center (origin). 100 mm square flush to ground.
+module tomb_marker() {
+    translate([-50, -50, 0])
+        cube([100, 100, 2], center = false);
+}
+
+// ========== RENDER ==========
+
+/*
+  Render order:
+   - slabs() draws the exact solid volume (one slab per layer) — this is the canonical model.
+   - exposed_stones() optionally overlays the external stones so each large stone on the exterior
+     is explicitly represented (helps the stonemason plan one marble wedge per external stone).
+   - tomb_marker() shows the tomb centre at the origin to confirm centering.
+*/
+
+if (show_slabs) {
+    color(slab_color)
+        slabs();
+}
+
+if (show_exposed) {
+    // draw exposed stones semi-transparently to aid extraction/selection
+    color(exposed_color)
+        exposed_stones();
+}
+
+// tomb marker (blue) at origin (centre)
+color(tomb_marker_color)
+    tomb_marker();
+
+// ========== ECHO (console) ==========
+echo("stone_side_mm=", s);
+echo("layers_n=", n);
+echo("stones_used=", stones_used);
+echo("base_size_mm=", base_size);
+echo("height_mm=", height_total);
+echo("show_slabs=", show_slabs);
+echo("show_exposed=", show_exposed);
