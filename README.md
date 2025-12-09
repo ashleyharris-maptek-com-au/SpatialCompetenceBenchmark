@@ -21,12 +21,38 @@ Some of the best results broken down by test:
 This benchmark evaluates how well AI models can "picture things" in working memeory, such as forseeing
 how objects fit together, interact, move, or flow.
 
-### Scoring
+## Example tests:
 
-- Tests return scores from 0.0 to 1.0 per subpass
-- Geometry tests use OpenSCAD volume comparison against reference shapes
-- Some tests have custom grading functions for specialized constraints
-- Final score is averaged across all subpasses and tests
+### Prompt:
+You have a building at the origin, axis aligned, 2 meters wide and deep, and 10 meters tall.
+
+A sniper is located at (100,100,20) and is looking at the building.
+
+Position a crowd of 4 people (represented by a 0.5*0.5*2m axis aligned bounding box resting on the z=0 plane)
+in such a way that:
+- the sniper can not see any of them due to the building blocking their line of sight.
+- the people must be positioned entirely on the ground (z=0).
+- the people must not overlap with the building or each other.
+- nobody is more than 30 meters away from the building's center.
+
+### LLM returns (structured JSON, following a provided schema)
+
+```json
+{
+    'people': [
+        {'xy': [-5, -5]}, 
+        {'xy': [-6, -5]}, 
+        {'xy': [-7, -5]}, 
+        {'xy': [-8, -5]}
+    ]
+}
+```
+
+### Which, using Python and OpenSCAD, is converted into:
+
+![Example test](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/images/13.png)
+
+Which we can check pixel colouring to see that, oops, someone is sticking out the side. Fail.
 
 ## Setup
 
