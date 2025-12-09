@@ -22,14 +22,17 @@ This benchmark evaluates how well AI models can "picture things" in working meme
 how objects fit together, interact, move, or flow.
 
 Examples include:
-- Playing 1 player visual games, such as Tetris(tm) or Bejewelled(tm)
-- Planning a rollercoaster ride that isn't lethal.
-- Creating a maze in 3D which requires jumps and stair climbs.
-- Catching and redirecting water within a voxel map.
-- Stacking 3D printable digits on top of each other without them sagging.
-- Travelling salesman but in orbit.
+- Playing 1 player visual games, such as [Tetris(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q15) or [Bejewelled(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q27)
+- Planning a [rollercoaster ride](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q21) that isn't lethal.
+- Creating a [maze in 3D](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q7) which requires jumps and stair climbs.
+- Catching and [redirecting water](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q23) within a voxel map.
+- [Stacking 3D printable digits](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q30) on top of each other without them sagging.
+- [Travelling salesman but in orbit](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q22).
 - Modelling shadows.
 - Working with quaternion rotations.
+- Concepts like "hidden behind" or "falling"
+- Designing interlocking parts.
+
 
 ## Example tests:
 
@@ -143,11 +146,15 @@ things, and that causes them to confidently spit out bad results to tasks requir
 
 Some that I personally saw:
 
-- ChatGPT deep resaerch planned a brick fireplace build for me that had inconsistant dimensions
+- ChatGPT deep resaerch planned a brick fireplace build for me that had inconsistant dimensions.
+- Claude code struggling with a block-model slicing algorithm.
 - Gemini Deep Research planned an arcology for a sci-fi setting that had support legs 500m apart each with a diameter of 3km.
 - Planning pipe-joiner projects (think a supermarket trolley bay) results in assembly instructions and BOMs that
 don't match.
-- Asking it for help with 3D printing part design always failed.
+- Asking it for help with 3D printing part design was a waste of time.
+
+As a C++ dev primarily worlding with 3D graphics, having a powerful AI assistant to help with coding is wonderful, but
+if it didn't have Aphantasia that would be excellent.
 
 ## License
 

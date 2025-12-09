@@ -960,7 +960,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
                 index_file.write(f"""
     <div class="graph-container" id="q{q_num}">
         <img src="../images/{q_num}.png" style="float:right; max-width:400px">
-        <h2 style="margin-top: 0;">Q{q_num}: {html.escape(q_data['title'])}</h2>
+        <a name="q{q_num}"><h2 style="margin-top: 0;">Q{q_num}: {html.escape(q_data['title'])}</h2></a>
         {g.get("highLevelSummary","")}
         <img src="{q_data['filename']}" alt="Question {q_num} Results">
     </div>
