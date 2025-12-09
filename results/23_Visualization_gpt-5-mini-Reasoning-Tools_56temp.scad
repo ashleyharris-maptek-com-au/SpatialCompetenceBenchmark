@@ -4570,7 +4570,6 @@ union() {
     translate([26, 51, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([26, 52, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([26, 52, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([26, 52, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([26, 53, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([26, 53, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([26, 53, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
@@ -4750,7 +4749,6 @@ union() {
     translate([27, 50, 7]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 51, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 51, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([27, 51, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([27, 52, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 52, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 52, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
@@ -4759,7 +4757,6 @@ union() {
     translate([27, 53, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([27, 54, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 54, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([27, 54, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([27, 55, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 55, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([27, 55, 2]) color("brown") cube([1, 1, 1],center=true);
@@ -4925,7 +4922,6 @@ union() {
     translate([28, 49, 7]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 50, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 50, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([28, 50, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([28, 50, 3]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 50, 4]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 50, 5]) color("brown") cube([1, 1, 1],center=true);
@@ -4939,7 +4935,6 @@ union() {
     translate([28, 52, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([28, 53, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 53, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([28, 53, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([28, 54, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 54, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([28, 54, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
@@ -5111,7 +5106,6 @@ union() {
     translate([29, 50, 7]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 51, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 51, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([29, 51, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([29, 52, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 52, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 52, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
@@ -5120,7 +5114,6 @@ union() {
     translate([29, 53, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([29, 54, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 54, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([29, 54, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([29, 55, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 55, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([29, 55, 2]) color("brown") cube([1, 1, 1],center=true);
@@ -5286,7 +5279,6 @@ union() {
     translate([30, 49, 7]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 50, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 50, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([30, 50, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([30, 50, 3]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 50, 4]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 50, 5]) color("brown") cube([1, 1, 1],center=true);
@@ -5300,7 +5292,6 @@ union() {
     translate([30, 52, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([30, 53, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 53, 1]) color("brown") cube([1, 1, 1],center=true);
-    translate([30, 53, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([30, 54, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 54, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([30, 54, 2]) color("blue") cube([0.9, 0.9, 0.9],center=true);

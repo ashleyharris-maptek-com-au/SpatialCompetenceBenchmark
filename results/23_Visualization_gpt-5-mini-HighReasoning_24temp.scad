@@ -1267,7 +1267,6 @@ union() {
     translate([14, 21, 4]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([14, 21, 5]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([14, 21, 6]) color("blue") cube([0.9, 0.9, 0.9],center=true);
-    translate([14, 21, 7]) color("blue") cube([0.9, 0.9, 0.9],center=true);
     translate([14, 22, 0]) color("brown") cube([1, 1, 1],center=true);
     translate([14, 22, 1]) color("brown") cube([1, 1, 1],center=true);
     translate([14, 22, 2]) color("brown") cube([1, 1, 1],center=true);
