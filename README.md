@@ -6,13 +6,15 @@ MESH stands for Model Evaluation of Spatial Hueristics.
 
 ## Results
 
-**[View Latest Benchmark Results →](results/index.html)**
+**[View Latest Benchmark Results →](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html)**
 
 ![Results](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/topLevelResults.png)
 
 Some of the best results broken down by test:
 - [Gemini 3 Pro (w/ reasoning, Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gemini-3-pro-preview-Reasoning-Tools.html)
 - [ChatGPT 5.1 High (w Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gpt-5.1-Reasoning-Tools.html)
+
+**[Breakdown by test and per-test details →](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html)**
 
 ## What We're Measuring
 
@@ -103,7 +105,7 @@ things, and that causes them to confidently spit out bad results to tasks requir
 Some that I personally saw:
 
 - ChatGPT deep resaerch planned a brick fireplace build for me that had inconsistant dimensions
-- Gemini Deep Research planned an arcology for a sci-fi setting that had intersecting support legs.
+- Gemini Deep Research planned an arcology for a sci-fi setting that had support legs 500m apart each with a diameter of 3km.
 - Planning pipe-joiner projects (think a supermarket trolley bay) results in assembly instructions and BOMs that
 don't match.
 - Asking it for help with 3D printing part design always failed.
