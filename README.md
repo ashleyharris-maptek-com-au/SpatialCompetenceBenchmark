@@ -169,3 +169,4 @@ it always lands on a 6.
 - Using pipes and offest crosses only, create a shape that supports a ragdoll in this pose.
 - Here is x renders of a scene of a ragdoll lying on the ground. Calculate his trajectory.
 - Here is 10 pictures of a maze taken from first-person. Draw a map and show the shortest path to the exit.
+- Here is a 3D mesh of a socket, design a connector that plugs into it.
