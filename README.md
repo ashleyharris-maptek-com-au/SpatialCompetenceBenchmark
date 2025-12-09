@@ -1,0 +1,113 @@
+# MeshBenchmark
+
+A benchmark suite for evaluating AI model performance on geometry and spatial reasoning tasks.
+
+MESH stands for Model Evaluation of Spatial Hueristics.
+
+## Results
+
+**[View Latest Benchmark Results →](results/index.html)**
+
+![Results](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/topLevelResults.png)
+
+Some of the best results broken down by test:
+- [Gemini 3 Pro (w/ reasoning, Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gemini-3-pro-preview-Reasoning-Tools.html)
+- [ChatGPT 5.1 High (w Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gpt-5.1-Reasoning-Tools.html)
+
+## What We're Measuring
+
+This benchmark evaluates how well AI models can "picture things" in working memeory, such as forseeing
+how objects fit together, interact, move, or flow.
+
+### Scoring
+
+- Tests return scores from 0.0 to 1.0 per subpass
+- Geometry tests use OpenSCAD volume comparison against reference shapes
+- Some tests have custom grading functions for specialized constraints
+- Final score is averaged across all subpasses and tests
+
+## Setup
+
+### Prerequisites
+
+- Python 3.10+
+- [OpenSCAD](https://openscad.org/) (required for 3D geometry tests)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/ashleyharris-maptek-com-au/MeshBenchmark.git
+cd MeshBenchmark
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### API Keys
+
+Set environment variables for the AI providers you want to test:
+
+```bash
+# OpenAI
+export OPENAI_API_KEY="your-openai-key"
+
+# Anthropic
+export ANTHROPIC_API_KEY="your-anthropic-key"
+
+# Google Gemini
+export GEMINI_API_KEY="your-google-genai-key"
+
+# XAI Grok
+export XAI_API_KEY="your-xai-grok-key"
+```
+
+## Running the Benchmark
+
+### Run all configured tests
+
+```bash
+python TestRunner.py --help
+```
+
+This will allow you to see available options, including model and test selections.
+
+```bash
+python TestRunner.py 
+```
+
+Will run EVERYTHING. This will:
+1. Run tests against all configured AI engines
+2. Generate HTML reports in `results/`
+3. Create comparison charts and a landing page at `results/index.html`
+
+Be warned this will cost at least $100 of API credits per run. To help keep costs down,
+caching is used to store responses from previous runs. These expire on the 1st of each month,
+and you can ignore the cache with --force argument.
+
+## Scoring guidelines
+- "Service not available", "Service over capacity", "Error 500 try again" is retried 3 times before declaring a failure.
+- Taking over an hour to respond to an API call 3 times (so 3 hours total) is considered a failure.
+- Violating JSON schemas is considered a failure, and after 3 retries it scores 0. This is why some LLMs degrade in performance when tools are added, as they loose structured validation. This is a weakness of the LLM and should be 
+reflected in the scoring.
+- "This violates our content policy" is considered a failure, as nothing in here is risque. If an LLM thinks "jumping near heights" (Q7, 3d maze) or "Planting explosives" (Q28, terrain flatterning) is banned, that's a well deserved 0 for it.
+- "Score of 1000/1" is used to indicate a test framework failure, as it should stand out in the graph clearly.
+- Not answering the question directly, but instead responding with clarification questions is considered a failure. 99% of the time when LLMs do this it's because they are either overwhelemed or not understanding the problem. Be alert to
+oppertunities to improve the prompt if confusion seems genuine however.
+
+## What motivated this benchmark.
+
+Trying to get AI to plan 3D builds has been fraught with failure, the reasoning loops can not "picture"
+things, and that causes them to confidently spit out bad results to tasks requiring spatial reasoning.
+
+Some that I personally saw:
+
+- ChatGPT deep resaerch planned a brick fireplace build for me that had inconsistant dimensions
+- Gemini Deep Research planned an arcology for a sci-fi setting that had intersecting support legs.
+- Planning pipe-joiner projects (think a supermarket trolley bay) results in assembly instructions and BOMs that
+don't match.
+- Asking it for help with 3D printing part design always failed.
+
+## License
+
+MIT
