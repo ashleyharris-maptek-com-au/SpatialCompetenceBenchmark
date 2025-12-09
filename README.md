@@ -21,6 +21,16 @@ Some of the best results broken down by test:
 This benchmark evaluates how well AI models can "picture things" in working memeory, such as forseeing
 how objects fit together, interact, move, or flow.
 
+Examples include:
+- Playing 1 player visual games, such as Tetris(tm) or Bejewelled(tm)
+- Planning a rollercoaster ride that isn't lethal.
+- Creating a maze in 3D which requires jumps and stair climbs.
+- Catching and redirecting water within a voxel map.
+- Stacking 3D printable digits on top of each other without them sagging.
+- Travelling salesman but in orbit.
+- Modelling shadows.
+- Working with quaternion rotations.
+
 ## Example tests:
 
 ### Prompt:
@@ -142,3 +152,13 @@ don't match.
 ## License
 
 MIT
+
+## Future tests for V2 of the benchmark:
+- Track / via routing on a PCB layout.
+- Driving a 3D printer head to create a shape.
+- A rotating cylinder of clay, and you control a laser beam that blasts clay away. Make a cube.
+- A fair dice is dropped from ... at an orientation and angular momentum of ..., position cubes such that
+it always lands on a 6.
+- Using pipes and offest crosses only, create a shape that supports a ragdoll in this pose.
+- Here is x renders of a scene of a ragdoll lying on the ground. Calculate his trajectory.
+- Here is 10 pictures of a maze taken from first-person. Draw a map and show the shortest path to the exit.
