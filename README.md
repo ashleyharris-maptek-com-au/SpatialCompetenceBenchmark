@@ -170,3 +170,6 @@ it always lands on a 6.
 - Here is x renders of a scene of a ragdoll lying on the ground. Calculate his trajectory.
 - Here is 10 pictures of a maze taken from first-person. Draw a map and show the shortest path to the exit.
 - Here is a 3D mesh of a socket, design a connector that plugs into it.
+- Here is a pile of 2020 aluminimum extrusions, sides labed A,B,C,D. Here is a pile
+  of 2,3, and 4 way right angle connectors. Design a (...) by specifying which socket
+  of what connector plugs into what extrusion, rotated with side orientation considered.
