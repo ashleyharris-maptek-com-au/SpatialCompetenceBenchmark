@@ -1,10 +1,12 @@
+import random
 import subprocess
 import tempfile
 import StlVolume
 import os
 import hashlib
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 openScadPath = R"C:\Program Files\OpenSCAD\openscad.exe"
 if not os.path.exists(openScadPath):
@@ -421,3 +423,56 @@ def render_scadText_to_png(
         print(f"Warning: OpenSCAD PNG rendering returned non-zero exit code")
         if result.stderr:
             print(f"Error output: {result.stderr}")
+
+
+def hit_tests(stlFile: str,
+              interceptStlStrings: List[str],
+              operation="intersection") -> List[bool]:
+    """
+    For each interceptor (specified as an OpenSCAD string), returns true if it intercepts the STL file.
+    These are calculated in parallel using concurrent calls to OpenSCAD and checking
+    if the intersection volume is non-zero.
+
+    Eg hit_tests("sphereOfRadius10.stl", [
+      "translate([-50,0,0]) cube([1,1,50], center=true)",
+      "translate([0,0,0]) cube([1,1,50], center=true)",
+      "translate([50,0,0]) cube([1,1,50], center=true)"
+     ]) will return [False, True, False]
+    """
+    temp_dir = tempfile.mkdtemp(prefix="hit_test_")
+    stlFile = os.path.abspath(stlFile)
+
+    def check_intersection(idx: int, interceptor: str) -> tuple:
+        scad_path = os.path.join(temp_dir,
+                                 f"intersect_{random.randint(0,10000)}.scad")
+        stl_path = os.path.join(temp_dir,
+                                f"intersect_{random.randint(0,10000)}.stl")
+
+        with open(scad_path, "w", encoding="utf-8") as f:
+            f.write(f'{operation}() {{\n')
+            f.write(f'    import("{stlFile.replace(os.sep, "/")}");\n')
+            f.write(f'    {interceptor}\n')
+            f.write(f'}}\n')
+
+        err = _run_openscad(scad_path, stl_path, timeout=120)
+        if err:
+            return idx, False
+
+        if not os.path.exists(stl_path) or os.path.getsize(stl_path) == 0:
+            return idx, False
+
+        volume = StlVolume.calculate_stl_volume(stl_path)
+        return idx, volume > 0
+
+    results = [False] * len(interceptStlStrings)
+
+    with ThreadPoolExecutor() as executor:
+        futures = {
+            executor.submit(check_intersection, i, interceptor): i
+            for i, interceptor in enumerate(interceptStlStrings)
+        }
+        for future in as_completed(futures):
+            idx, hit = future.result()
+            results[idx] = hit
+
+    return results

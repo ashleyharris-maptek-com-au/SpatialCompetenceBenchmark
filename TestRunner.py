@@ -65,39 +65,46 @@ def runTest(index: int, aiEngineHook: callable,
     else:
         prompts.append(g["prompt"])
 
-    # Parallelize AI engine calls
-    results = []
-    with ThreadPoolExecutor() as executor:
-        # Submit all prompts in parallel
-        future_to_index = {
-            executor.submit(aiEngineHook, prompt, structure): i
-            for i, prompt in enumerate(prompts)
-        }
+    # Helper to run a single prompt and save results
+    def run_single_prompt(idx, prompt):
+        try:
+            result, chainOfThought = aiEngineHook(prompt, structure)
+        except Exception as e:
+            print("Failed to get result for subpass " + str(idx) + " - " +
+                  str(e))
+            result = ""
+            chainOfThought = ""
 
-        # Collect results in the correct order
-        results = [None] * len(prompts)
-        for future in as_completed(future_to_index):
-            idx = future_to_index[future]
-            try:
-                results[idx], chainOfThought = future.result()
-            except Exception as e:
-                print("Failed to get result for subpass " + str(idx) + " - " +
-                      str(e))
-                results[idx] = ""
-                chainOfThought = ""
+        open("results/raw_" + aiEngineName + "_" + str(index) + "_" +
+             str(idx) + ".txt",
+             "w",
+             encoding="utf-8").write(str(result))
+        open("results/prompt_" + aiEngineName + "_" + str(index) + "_" +
+             str(idx) + ".txt",
+             "w",
+             encoding="utf-8").write(str(prompts[idx]))
+        open("results/cot_" + aiEngineName + "_" + str(index) + "_" +
+             str(idx) + ".txt",
+             "w",
+             encoding="utf-8").write(str(chainOfThought))
+        return result
 
-            open("results/raw_" + aiEngineName + "_" + str(index) + "_" +
-                 str(idx) + ".txt",
-                 "w",
-                 encoding="utf-8").write(str(results[idx]))
-            open("results/prompt_" + aiEngineName + "_" + str(index) + "_" +
-                 str(idx) + ".txt",
-                 "w",
-                 encoding="utf-8").write(str(prompts[idx]))
-            open("results/cot_" + aiEngineName + "_" + str(index) + "_" +
-                 str(idx) + ".txt",
-                 "w",
-                 encoding="utf-8").write(str(chainOfThought))
+    earlyFail = "earlyFail" in g
+    results = [None] * len(prompts)
+
+    if earlyFail and len(prompts) > 1:
+        # Run first prompt sequentially
+        results[0] = run_single_prompt(0, prompts[0])
+    else:
+        # Parallelize AI engine calls (original behavior)
+        with ThreadPoolExecutor() as executor:
+            future_to_index = {
+                executor.submit(run_single_prompt, i, prompt): i
+                for i, prompt in enumerate(prompts)
+            }
+            for future in as_completed(future_to_index):
+                idx = future_to_index[future]
+                results[idx] = future.result()
 
     # In placebo mode, make sure we test all the grading functions even if the questions are currently
     # too hard for me to create an answer.
@@ -106,7 +113,7 @@ def runTest(index: int, aiEngineHook: callable,
         if first_result is not None:
             results = [r if r is not None else first_result for r in results]
 
-    # Parallelize result processing and grading
+    # Result processing and grading helper
     def process_subpass(subPass, result):
         score = 0
         subpass_data = {
@@ -190,21 +197,71 @@ def runTest(index: int, aiEngineHook: callable,
         return score, subpass_data
 
     totalScore = 0
-    subpass_results = [None] * len(results)
+    subpass_results = [None] * len(prompts)
+    earlyFailTriggered = False
 
-    with ThreadPoolExecutor() as executor:
-        # Submit all subpass processing in parallel
-        future_to_subpass = {
-            executor.submit(process_subpass, subPass, result): subPass
-            for subPass, result in enumerate(results)
-        }
+    if earlyFail and len(prompts) > 1:
+        # Process first subpass sequentially
+        first_score, first_subpass_data = process_subpass(0, results[0])
+        totalScore += first_score
+        subpass_results[0] = first_subpass_data
 
-        # Collect results in the correct order
-        for future in as_completed(future_to_subpass):
-            subPass = future_to_subpass[future]
-            score, subpass_data = future.result()
-            totalScore += score
-            subpass_results[subPass] = subpass_data
+        if first_score == 0:
+            # Early fail: assume all other subpasses will also score 0
+            earlyFailTriggered = True
+            for subPass in range(1, len(prompts)):
+                subpass_results[subPass] = {
+                    "subpass":
+                    subPass,
+                    "score":
+                    0,
+                    "scoreExplantion":
+                    "Skipped due to earlyFail (first subpass scored 0)"
+                }
+        else:
+            # First subpass passed, run remaining prompts in parallel
+            with ThreadPoolExecutor() as executor:
+                future_to_index = {
+                    executor.submit(run_single_prompt, i, prompts[i]): i
+                    for i in range(1, len(prompts))
+                }
+                for future in as_completed(future_to_index):
+                    idx = future_to_index[future]
+                    results[idx] = future.result()
+
+            # In placebo mode, fill in missing results
+            if aiEngineName == "Placebo":
+                first_result = next((r for r in results if r is not None),
+                                    None)
+                if first_result is not None:
+                    results = [
+                        r if r is not None else first_result for r in results
+                    ]
+
+            # Process remaining subpasses in parallel
+            with ThreadPoolExecutor() as executor:
+                future_to_subpass = {
+                    executor.submit(process_subpass, subPass, results[subPass]):
+                    subPass
+                    for subPass in range(1, len(prompts))
+                }
+                for future in as_completed(future_to_subpass):
+                    subPass = future_to_subpass[future]
+                    score, subpass_data = future.result()
+                    totalScore += score
+                    subpass_results[subPass] = subpass_data
+    else:
+        # Original parallel behavior
+        with ThreadPoolExecutor() as executor:
+            future_to_subpass = {
+                executor.submit(process_subpass, subPass, result): subPass
+                for subPass, result in enumerate(results)
+            }
+            for future in as_completed(future_to_subpass):
+                subPass = future_to_subpass[future]
+                score, subpass_data = future.result()
+                totalScore += score
+                subpass_results[subPass] = subpass_data
 
     if "extraGradeAnswerRuns" in g:
         extraGradeAnswerRuns = g["extraGradeAnswerRuns"]
