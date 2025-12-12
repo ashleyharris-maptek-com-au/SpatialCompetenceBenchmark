@@ -16,7 +16,8 @@ of 400x400x50mm.
 
 The cage assembly should be held together by 4 x M6 threaded rods threaded through the middle
 of the 4 vertical corner bars. You do not need to carve a female thread or nut slots into your parts,
-but should ensure that a rod fits with adequete clearence into every hole. Use no additional connectors.
+but should ensure that a rod fits with adequete clearence into every hole. Use no additional connectors. Do not include
+a door or lid.
 
 Generate all parts that are needed for this project. They should be:
 - ready to slice
@@ -26,11 +27,12 @@ Generate all parts that are needed for this project. They should be:
 - not going to fall over during printing.
 - valid shapes - watertight, closed solids with no self intersections.
 - As few parts as possible.
+- Use as little build volume of the 3D printer as possible.
 
 For each part file, you may provide an STL file, or OpenSCAD file that generates it, or a python script that 
 generates either the OpenSCAD or the STL. Provide all parts in one go into the supplied output structure.
 
-For each part, include a rigid transform matrix that shows where the part sits in 3D space when assembled, in
+For each part, include a rigid transform matrix (4x4 row major) that shows where the part sits in 3D space when assembled, in
 your assembled 3D space, the cage sits on the z=0 plane and centred in x & y around 0,0.
 Take care to get this projection right as it will be used to test whether the parts fit together correctly. 
 
@@ -99,7 +101,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
         return 0, "Answer did not contain a 'parts' key."
 
     for partIndex, part in enumerate(answer["parts"]):
-        partName = "29_" + str(partIndex)
+        partName = "29_" + str(partIndex) + "_" + aiEngineName
 
         if not os.path.exists("results/" + partName + ".stl"):
             if part["fileType"] == "STL":
@@ -150,15 +152,49 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                     bugs += "OpenSCAD failed to generate STL for " + partName + " due to " + str(
                         e) + "<br>"
 
+            if not os.path.exists("results/" + partName + "_posed.stl"):
+                open("results/" + partName + "_posed.scad",
+                     "w",
+                     encoding="utf-8").write(f"""
+mulmatrix({part["transform"]}) import("{partName}.stl");
+                     """)
+
+                try:
+                    subprocess.run([
+                        vc.openScadPath, partName + "_posed.scad", "-o",
+                        partName + "_posed.stl"
+                    ],
+                                   cwd="results")
+                except Exception as e:
+                    bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
+                        e) + "<br>"
+
+            if not os.path.exists("results/29_" + str(aiEngineName) +
+                                  "_fullposed.stl"):
+                with open("results/29_" + str(aiEngineName) +
+                          "_fullposed.scad",
+                          "w",
+                          encoding="utf-8") as f:
+                    for partIndex, part in enumerate(answer["parts"]):
+                        partName = "29_" + str(partIndex)
+                        f.write(f"import(\"{partName}_posed.stl\");\n")
+
+                try:
+                    subprocess.run([
+                        vc.openScadPath,
+                        "29_" + str(aiEngineName) + "_fullposed.scad", "-o",
+                        "29_" + str(aiEngineName) + "_fullposed.stl"
+                    ],
+                                   cwd="results")
+                except Exception as e:
+                    bugs += "OpenSCAD failed to generate fullposed STL for " + str(
+                        aiEngineName) + " due to " + str(e) + "<br>"
+
     if subPass == 0:
         # Basic crap. Correct number of parts, and non-zero sized stl files.
-        score = 0
-        bugs = ""
         if len(answer["parts"]) != 10:
             bugs += "Expected 10 parts, got " + str(len(
                 answer["parts"])) + "<br>"
-        else:
-            score += 0.5
 
         for partIndex, part in enumerate(answer["parts"]):
             partName = "29_" + str(partIndex)
@@ -166,14 +202,156 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             # check file size is not 0
             if os.path.getsize("results/" + partName + ".stl") == 0:
                 bugs += "Part " + str(partIndex) + ".stl was empty<br>"
-            else:
-                score += 0.05
 
-        earlyFail = score < 0.9
-        return score, bugs
+                if vc.StlVolume.calculate_stl_volume(stlFile) == 0:
+                    bugs += "Part " + str(
+                        partIndex) + ".stl had a volume of 0<br>"
+
+        earlyFail = bugs != ""
+        return 0 if earlyFail else 1, bugs
 
     if earlyFail == True:
         return 0, "Failed as prerequestite test has failed."
+
+    if subPass == 1:
+        # Does it fit in the build volume?
+        score = 0
+        bugs = ""
+        for partIndex, part in enumerate(answer["parts"]):
+            partName = "29_" + str(partIndex)
+            stlFile = "results/" + partName + ".stl"
+
+            overFlowsFromBuildVolume = vc.hit_tests(
+                stlFile,
+                ["translate([0,0,25]) cube([400,400,50], center=true)"],
+                "difference")
+
+            if overFlowsFromBuildVolume[0] == True:
+                bugs += "Part " + str(
+                    partIndex
+                ) + ".stl does not fit in build volume or intersects with the floor<br>"
+            else:
+                score += 0.1
+
+        return score, bugs
+
+    if subPass == 2:
+        # Does it have the correct gap between bars?
+        tests4 = []
+        tests10 = []
+        for i in range(32):
+            tests4.append(
+                f"translate([{randomFloat(-350,350)},{randomFloat(-350,350)},0]) cube([40,40,40], center=true);"
+            )
+            tests10.append(
+                f"translate([{randomFloat(-350,350)},{randomFloat(-350,350)},0]) cube([101,101,40], center=true);"
+            )
+
+        for partIndex, part in enumerate(answer["parts"]):
+            partName = "29_" + str(partIndex)
+            stlFile = "results/" + partName + ".stl"
+            results4 = vc.hit_tests(stlFile, tests4)
+            results10 = vc.hit_tests(stlFile, tests10)
+
+            if all(results4):
+                bugs += "Part " + str(
+                    partIndex
+                ) + ".stl always intersected a randomly placed 40mm cube. Gap between bars should be 50mm or higher.<br>"
+            if not all(results10):
+                bugs += "Part " + str(
+                    partIndex
+                ) + ".stl allowed a 101mm cube to pass through. Gap between bars should be 100mm or lower.<br>"
+
+        return 1 if bugs == "" else 0, bugs
+
+    if subPass == 3:
+        # Are the transform matrices correct and the cage is about the right size?
+        tests = [
+            "translate([0,0,360]) cube([340,340,680], center=true);",
+            "translate([0,0,370]) difference() {cube([1000,1000,1000], center=true); cube([380,380,740], center=true);}",
+        ]
+
+        results = vc.hit_tests(
+            "results/29_" + str(aiEngineName) + "_fullposed.stl", tests)
+
+        if results[0] == True:
+            return 0, "Cage is too small or invalid transform matrices - a 350x350x700 needs to fit inside without intersecting the bars."
+        if results[1] == True:
+            return 0, "Cage is too large or invalid transform matrices - Cage must hold 350x350x700mm with 10mm thick bars"
+
+        return 1, ""
+
+    if subPass == 4:
+        tests = [
+            "translate([-180, -180, 0]) cylinder(r=5, h=360, center=true);",
+            "translate([180, -180, 0]) cylinder(r=5, h=360, center=true);",
+            "translate([-180, 180, 0]) cylinder(r=5, h=360, center=true);",
+            "translate([180, 180, 0]) cylinder(r=5, h=360, center=true);",
+            "translate([-180, -180, 0]) cylinder(r=8, h=360, center=true);",
+            "translate([180, -180, 0]) cylinder(r=8, h=360, center=true);",
+            "translate([-180, 180, 0]) cylinder(r=8, h=360, center=true);",
+            "translate([180, 180, 0]) cylinder(r=8, h=360, center=true);",
+        ]
+
+        results = vc.hit_tests(
+            "results/29_" + str(aiEngineName) + "_fullposed.stl", tests)
+
+        for i in enumerate(results[0:3]):
+            if i == True:
+                return 0, f"Error during simulated assembly: Unable to thread a 6mm rod through the cage segments (at {tests[i]}), it intersects the cage or bars."
+
+        for i in enumerate(results[3:]):
+            if i == False:
+                return 0, f"Error during simulated assembly: Unable to use a 6mm rod through the cage segments (at {tests[i]}), it has so much clearence that a nut would just slide right through."
+
+        return 1, ""
+
+    if subPass == 5:
+        for partIndexA, partA in enumerate(answer["parts"]):
+            partNameA = "29_" + str(partIndexA) + aiEngineName
+            stlFileA = "results/" + partNameA + "_posed.stl"
+            tests = []
+            for partIndexB, partB in enumerate(answer["parts"]):
+                if partIndexA >= partIndexB:
+                    continue
+
+                partNameB = "29_" + str(partIndexB) + aiEngineName
+                stlFileB = "results/" + partNameB + "_posed.stl"
+                tests.append("difference() {" + stlFileA + "; " + stlFileB +
+                             ";}")
+
+            results = vc.hit_tests(stlFileA, tests)
+            if any(results):
+                return 0, "When assembled, part " + str(
+                    partIndexA) + " intersects with part " + str(partIndexB)
+
+    if subPass == 6:
+        for partIndexA, partA in enumerate(answer["parts"]):
+            partNameA = "29_" + str(partIndexA) + aiEngineName
+            stlFileA = "results/" + partNameA + "_posed.stl"
+
+            tests = [
+                "translate([-180, -180, 0]) cylinder(r=8, h=360, center=true);",
+                "translate([180, -180, 0]) cylinder(r=8, h=360, center=true);",
+                "translate([-180, 180, 0]) cylinder(r=8, h=360, center=true);",
+                "translate([180, 180, 0]) cylinder(r=8, h=360, center=true);",
+            ]
+
+            results = vc.hit_tests(stlFileA, tests)
+            intersectionCount = sum(results)
+            if intersectionCount == 0:
+                return 0, "When assembled, part " + str(
+                    partIndexA
+                ) + " is not held in place by the threaded rods, and will fall out from the build when assembled."
+
+            if intersectionCount == 1:
+                return 0, "When assembled, part " + str(
+                    partIndexA
+                ) + " is only held in place by one threaded rod, allowing" \
+                " it to rotate around a rod. Since the design brief said no doors or lids," \
+                " such a part should not appear in the final design."
+
+        return 1, ""
 
     return 100, "Nobody has gotten this far before... Need to write more parts of the test."
 
@@ -206,16 +384,13 @@ highLevelSummary = """
 This is the hardest problem in here - turn a large 3D model into printable 
 parts that connect together without interfering.
 <br><br>
-No LLM has managed to even plan the split correctly yet, so this questions
-grading is still not yet implemented because every taker gets basically an early
-exit check at the "are the parts not zero bytes"? checks. If you see out of 
-bounds scores like 100/1, then you've advanced to the point where I need to implement
-the grading.
+No LLM has managed to even plan the split correctly yet.<br><br>
 
 A very suboptimal LLM might just divide the cage into 14 parts (as 700mm/50mm == 14),
 which gets an instant 0 for wasting 4 prints.
 <br><br>
 The optimal split is 10 parts - top, bottom, and 2 segments each for the 
 east, north, west and south. Each cage segment needs to make sure that the corner
-bars are not double printed on adjacent segments.
+bars are not double printed on adjacent segments, and each needs to make sure that the
+6mm threaded rod can pass through tight enough that a nut would not slide right through.
 """
