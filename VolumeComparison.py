@@ -53,7 +53,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
         resultAsScad = resultToScad(result)
     except Exception as e:
         return {
-            "score": 100,  # Not an AI failure, framework failure.
+            "score": 100000,  # Not an AI failure, framework failure.
             "output_image": None,
             "output_mouseover_image": None,
             "output_hyperlink": None,

@@ -165,13 +165,18 @@ module tetrahedron(){
 
 
 def resultToScad(result):
-    scad = "module result(){ "
-    scad += "linear_extrude(height=1){ projection() { minkowski(){cube(0.001); union() { "
-    for transform in result["tetrahedrons"]:
-        scad += "translate([" + str(transform["x"]) + "," + \
-            str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
+    try:
+        scad = "module result(){ "
+        scad += "linear_extrude(height=1){ projection() { minkowski(){cube(0.001); union() { "
+        for transform in result["tetrahedrons"]:
+            scad += "translate([" + str(transform["x"]) + "," + \
+                str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
             str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") tetrahedron();\n"
-    return scad + "}}}}}\n\n"
+
+        return scad + "}}}}}\n\n"
+    except Exception as e:
+        print("Error converting result to SCAD:", e)
+        return ""
 
 
 def _rotate_by_quaternion(point, q0, q1, q2, q3):

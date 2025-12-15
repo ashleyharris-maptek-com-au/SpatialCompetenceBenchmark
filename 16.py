@@ -200,10 +200,11 @@ def postProcessScore(score, subPassIndex):
 
 highLevelSummary = """
 Packing prime-numbered-dimensioned prisms into the smallest possible volume 
-requires a good deal of ingenuity, as you start exploring different rotations,
+to get a ~95% score is easy - greedy packing is a simple algorithm - but to get 
+a 100% score requires a good deal of ingenuity, as you start exploring different rotations,
 more novel solutions are possible.
 <br><br>
-I've only shown there to be perfect solutions for all of these, but do believe
+I've only shown there to be perfect solutions for 2 of these, but do believe
 all of these can be solved with 95% or more efficiency, so I renormalize the 
 scoring such that 95% or more is 100%.
 """
