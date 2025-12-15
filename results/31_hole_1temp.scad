@@ -1,1 +1,1 @@
-$fn=90; color([1,0,0]) projection() rotate([3.141592653589793,0.0,0.0]) cube([6,5,4], center=True);
+$fn=90; color([1,0,0]) projection() rotate([-2.5434682968591864,0.9629800231726547,1.0976278497064609]) cube([6,5,4], center=True);
