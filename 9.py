@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 import VolumeComparison as vc
 
 title = "Hamiltonian Path on Grid"
@@ -53,22 +54,36 @@ structure = {
 subpassParamSummary = [
     "4x4 grid", "8x8 grid", "12x12 grid", "16x16 grid",
     "16x16 grid with cells (3,3) and (3,4) removed",
-    "16x16 grid with cells(x,y) where x*y+1 is prime, are removed"
+    "16x16 grid with cells(x,y) where x * y + 100000 is prime, are removed"
 ]
 promptChangeSummary = "Grid size increases across subpasses, with a missing chunk in the final subpass"
 
-# All primes below 257:
-PRIMES = [
-    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
-    73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
-    157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233,
-    239, 241, 251
-]
+
+def isPrime(n):
+    if n <= 1:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+
 validSquaresForPass5 = 16 * 16
+validGridForPass5 = np.array([['.'] * 16] * 16, dtype=str)
+
 for x in range(1, 17):
     for y in range(1, 17):
-        if x * y + 1 in PRIMES:
+        if isPrime(x * y + 100000):
             validSquaresForPass5 -= 1
+            validGridForPass5[x - 1][y - 1] = "X"
+
+subpassParamSummary += "<br>\n<pre>\n"
+for r in validGridForPass5:
+    subpassParamSummary += "".join(r) + "\n"
+subpassParamSummary += "</pre>"
+
+subpassParamSummary += "<br>\n"
+subpassParamSummary += "Note that the path must start in the top left corner."
 
 
 def prepareSubpassPrompt(index):
@@ -94,7 +109,8 @@ def prepareSubpassPrompt(index):
     if index == 5:
         return prompt.replace("SIZE", "16").replace(
             "SQUARED", str(validSquaresForPass5)).replace(
-                "TWIST", "Cells where x * y + 1 is prime must be skipped.")
+                "TWIST",
+                "Cells where x * y + 100000 is prime must be skipped.")
     raise StopIteration
 
 
@@ -122,8 +138,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                              or step["xy"][0] == 3 and step["xy"][1] == 4):
             return 0, "You forgot to skip cell 3,3 or 3,4!"
 
-        if subPass == 5 and (step["xy"][0] * step["xy"][1] + 1 in PRIMES):
-            return 0, f"You visited an odd numbered cell {step['xy']}!"
+        if subPass == 5 and (isPrime(step["xy"][0] * step["xy"][1] + 100000)):
+            return 0, f"You visited an prime numbered cell {step['xy']}, x * y + 100000 = {step['xy'][0] * step['xy'][1] + 100000}!"
 
         # check that the step is side-adjacent to the previous step
         xDiff = abs(step["xy"][0] - location[0])

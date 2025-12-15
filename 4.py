@@ -282,7 +282,8 @@ def validatePostVolume(result, score, resultVolume, referenceVolume,
 
 
 def postProcessScore(score, subPassIndex):
-    if subPassIndex == 1: return score / 0.9  # Circle is impossible to cover.
+    if subPassIndex == 1:
+        return min(1, score / 0.9)  # Circle is impossible to cover.
     return score
 
 
