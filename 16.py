@@ -173,6 +173,9 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     return "<img src=\"" + os.path.basename(output_path) + "\" />"
 
 
+earlyFail = True
+
+
 def postProcessScore(score, subPassIndex):
     if score < 70:
         # It's really easy to get a decent score via dumb packing, especially

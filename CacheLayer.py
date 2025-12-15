@@ -18,7 +18,7 @@ class CacheLayer:
         self.temp_dir = tempfile.gettempdir()
         self.failCount = 0
 
-    def AIHook(self, prompt: str, structure):
+    def AIHook(self, prompt: str, structure, index, subPass):
         h = (hashlib.sha256(prompt.strip().encode()).hexdigest(),
              hashlib.sha256(str(structure).encode()).hexdigest(), self.hash,
              datetime.datetime.now().strftime("%b %Y"))

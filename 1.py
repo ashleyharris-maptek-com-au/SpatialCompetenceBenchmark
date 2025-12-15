@@ -103,3 +103,15 @@ X--XXXX - - - - - - -
 |  i  |                                 
 </pre>
 """
+
+
+def postProcessScore(score, subPassIndex):
+    # If you get it perfect, sometimes it reports 95% instead of 100%,
+    # so we round up to 100% if we get 95%
+    if score > 0.95: return 1
+
+    # If you mess up (and overlay your pipes), it reports a score in
+    # the mid 20s. Ew. No round down to 0.
+    if score < 0.3: return 0
+
+    return score

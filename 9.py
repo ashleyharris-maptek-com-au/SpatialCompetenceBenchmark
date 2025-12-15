@@ -53,9 +53,22 @@ structure = {
 subpassParamSummary = [
     "4x4 grid", "8x8 grid", "12x12 grid", "16x16 grid",
     "16x16 grid with cells (3,3) and (3,4) removed",
-    "16x16 grid with no odd numbered cells"
+    "16x16 grid with cells(x,y) where x*y+1 is prime, are removed"
 ]
 promptChangeSummary = "Grid size increases across subpasses, with a missing chunk in the final subpass"
+
+# All primes below 257:
+PRIMES = [
+    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+    73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
+    157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233,
+    239, 241, 251
+]
+validSquaresForPass5 = 16 * 16
+for x in range(1, 17):
+    for y in range(1, 17):
+        if x * y + 1 in PRIMES:
+            validSquaresForPass5 -= 1
 
 
 def prepareSubpassPrompt(index):
@@ -79,9 +92,9 @@ def prepareSubpassPrompt(index):
             "Cells 3,3 and 3,4 have been removed from the grid and must be skipped."
         )
     if index == 5:
-        return prompt.replace("SIZE", "16").replace("SQUARED", "256").replace(
-            "TWIST",
-            "No cells with both coordinates being odd can be visited.")
+        return prompt.replace("SIZE", "16").replace(
+            "SQUARED", str(validSquaresForPass5)).replace(
+                "TWIST", "Cells where x * y + 1 is prime must be skipped.")
     raise StopIteration
 
 
@@ -109,8 +122,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                              or step["xy"][0] == 3 and step["xy"][1] == 4):
             return 0, "You forgot to skip cell 3,3 or 3,4!"
 
-        if subPass == 5 and (step["xy"][0] % 2 == 1
-                             and step["xy"][1] % 2 == 1):
+        if subPass == 5 and (step["xy"][0] * step["xy"][1] + 1 in PRIMES):
             return 0, f"You visited an odd numbered cell {step['xy']}!"
 
         # check that the step is side-adjacent to the previous step

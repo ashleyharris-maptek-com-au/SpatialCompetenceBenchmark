@@ -1,7 +1,11 @@
 import math
 import random
+import hashlib
+import json
 import VolumeComparison as vc
 import numpy as np
+import os
+import tempfile
 
 title = "AI controlling explosives, what could possibly go wrong?"
 
@@ -104,6 +108,7 @@ heightMaps = []
 resultGrids = []
 
 sizes = [16, 20, 24, 32, 48]
+earlyFail = True
 
 
 class PerlinNoise:
@@ -218,8 +223,51 @@ def prepareSubpassPrompt(index: int):
 
 subpassBestRegion = [None] * len(sizes)
 
+# Cache for gradeAnswer results
+_grade_cache_path = os.path.join(tempfile.gettempdir(), "grade_cache_28.json")
+_grade_cache = None
+
+
+def _load_grade_cache():
+    global _grade_cache
+    if _grade_cache is None:
+        try:
+            with open(_grade_cache_path, 'r') as f:
+                _grade_cache = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            _grade_cache = {}
+    return _grade_cache
+
+
+def _save_grade_cache():
+    if _grade_cache is not None:
+        with open(_grade_cache_path, 'w') as f:
+            json.dump(dict(_grade_cache),
+                      f)  # Copy to avoid concurrent modification
+
+
+def _hash_blasting_plan(result):
+    """Create a stable hash of the blasting plan."""
+    # Sort blasts for consistent hashing regardless of order
+    blasts = result.get("blasts", [])
+    # Normalize to tuples for hashing
+    normalized = tuple(sorted((b["x"], b["y"], b["z"]) for b in blasts))
+    return hashlib.md5(json.dumps(normalized).encode()).hexdigest()
+
 
 def gradeAnswer(result, subPass, aiEngineName):
+    plan_hash = _hash_blasting_plan(result)
+    cache_key = f"{subPass}_{plan_hash}"
+
+    # Check cache first
+    cache = _load_grade_cache()
+    if cache_key in cache:
+        cached_data = cache[cache_key]
+        resultGrids[subPass] = np.array(cached_data['grid'])
+        subpassBestRegion[subPass] = [tuple(p) for p in cached_data['region']
+                                      ] if cached_data['region'] else None
+        return tuple(cached_data['result'])
+
     grid = np.array(heightMaps[subPass], dtype=float)
     rows, cols = grid.shape
 
@@ -227,12 +275,14 @@ def gradeAnswer(result, subPass, aiEngineName):
     visited = np.zeros_like(grid, dtype=bool)
     largestAreaStart = 0
 
+    roundedGrid = np.round(grid)
+
     for start_x in range(rows):
         for start_y in range(cols):
             if visited[start_x][start_y]:
                 continue
 
-            target_height = grid[start_x][start_y]
+            target_height = roundedGrid[start_x][start_y]
             area = 0
             queue = [(start_x, start_y)]
 
@@ -242,7 +292,7 @@ def gradeAnswer(result, subPass, aiEngineName):
                 cx, cy = queue.pop(0)
                 if visited[cx][cy]:
                     continue
-                if grid[cx][cy] != target_height:
+                if roundedGrid[cx][cy] != target_height:
                     continue
 
                 visited[cx][cy] = True
@@ -256,7 +306,7 @@ def gradeAnswer(result, subPass, aiEngineName):
                             continue
                         nx, ny = cx + dx, cy + dy
                         if 0 <= nx < rows and 0 <= ny < cols:
-                            if not visited[nx][ny] and grid[nx][
+                            if not visited[nx][ny] and roundedGrid[nx][
                                     ny] == target_height:
                                 queue.append((nx, ny))
 
@@ -288,7 +338,7 @@ def gradeAnswer(result, subPass, aiEngineName):
                      (1, 0), (1, 1)]
 
         # Simulate rock flow until all rocks settle
-        max_iterations = rows * cols  # Safety limit
+        max_iterations = int(10 * math.sqrt(rows * cols))  # Safety limit
         for _ in range(max_iterations):
             if delta.max() < 1e-9:
                 break
@@ -318,8 +368,13 @@ def gradeAnswer(result, subPass, aiEngineName):
                         # No lower neighbors - rock settles here permanently
                         grid[x][y] += rock_amount
                     else:
+                        if rock_amount > 0.01:
+                            grid[x][y] += 0.01
+                            rock_amount -= 0.01
+
                         # Split rock equally among all lower neighbors
-                        rock_per_neighbor = rock_amount / len(lower_neighbors)
+                        rock_per_neighbor = rock_amount / (
+                            len(lower_neighbors))
                         for nx, ny in lower_neighbors:
                             new_delta[nx][ny] += rock_per_neighbor
 
@@ -374,9 +429,21 @@ def gradeAnswer(result, subPass, aiEngineName):
                 subpassBestRegion[subPass] = region
             largestArea = max(largestArea, area)
 
-    return (
-        largestArea / (rows * cols - largestAreaStart)
+    return_value = ((largestArea - largestAreaStart) / (
+        rows * cols - largestAreaStart
     ), f"Largest flat area after blasting was {largestArea} cells, before blasting it was only {largestAreaStart} cells"
+                    )
+
+    # Cache the result
+    cache[cache_key] = {
+        'grid': resultGrids[subPass].tolist(),
+        'region':
+        subpassBestRegion[subPass] if subpassBestRegion[subPass] else None,
+        'result': list(return_value)
+    }
+    _save_grade_cache()
+
+    return return_value
 
 
 def resultToNiceReport(answer, subPass, aiEngineName):
@@ -448,175 +515,7 @@ translate([{x + 0.15}, {y + 0.15}, 0]) cube([0.15, 0.15, 10]);
 
 
 if __name__ == "__main__":
-    print(
-        gradeAnswer(
-            {
-                "blasts": [{
-                    "x": 0,
-                    "y": 8,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 9,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 10,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 11,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 8,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 7,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 12,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 10,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 9,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 8,
-                    "z": 1.6
-                }, {
-                    "x": 2,
-                    "y": 8,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 9,
-                    "z": 1.6
-                }, {
-                    "x": 3,
-                    "y": 9,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 7,
-                    "z": 1.6
-                }, {
-                    "x": 2,
-                    "y": 9,
-                    "z": 1.6
-                }, {
-                    "x": 3,
-                    "y": 8,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 11,
-                    "z": 1.6
-                }, {
-                    "x": 0,
-                    "y": 10,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 8,
-                    "z": 1.6
-                }, {
-                    "x": 1,
-                    "y": 10,
-                    "z": 1.6
-                }]
-            }, 0, "gpt-5-nano-Reasoning-Tools"))
-    resultToNiceReport(
-        {
-            "blasts": [{
-                "x": 0,
-                "y": 8,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 9,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 10,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 11,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 8,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 7,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 12,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 10,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 9,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 8,
-                "z": 1.6
-            }, {
-                "x": 2,
-                "y": 8,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 9,
-                "z": 1.6
-            }, {
-                "x": 3,
-                "y": 9,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 7,
-                "z": 1.6
-            }, {
-                "x": 2,
-                "y": 9,
-                "z": 1.6
-            }, {
-                "x": 3,
-                "y": 8,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 11,
-                "z": 1.6
-            }, {
-                "x": 0,
-                "y": 10,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 8,
-                "z": 1.6
-            }, {
-                "x": 1,
-                "y": 10,
-                "z": 1.6
-            }]
-        }, 0, "gpt-5-nano-Reasoning-Tools")
+    print(gradeAnswer({"blasts": []}, 0, "Blah"))
 
 highLevelSummary = """
 Can the LLM decide where to drill explosives in a 3D world such that it makes 

@@ -1,0 +1,98 @@
+/*******************************************************
+Tallest stable stepped pyramid from 50 cm cubic stones
+Units: millimeters (mm).  +Y is North.  Centered at (0,0).
+Stone budget: 20,000 cubes.  Stability rule => each layer is a full square.
+
+Computed result:
+- Layers (height in stones): 38
+- Stones used: 19,019  (981 unused)
+- Core height: 19,000 mm
+- Core base: 19,000 mm square
+
+Marble casing:
+A smooth, pointed outer pyramid is provided, plus the exact casing volume
+(outer pyramid minus stepped core). A small clearance is added so every
+exposed stone is fully covered (no zero-thickness contacts).
+*******************************************************/
+
+stone_side   = 500;     // mm (50 cm)
+stone_budget = 20000;   // stones available
+
+// Small clearance so casing fully covers all exposed stone (avoid coplanar booleans)
+marble_extra = 1;       // mm
+
+// View selection:
+// "assembly" = core + marble casing volume
+// "core"     = stepped stone core only
+// "casing"   = marble casing volume only (outer pyramid minus core)
+// "outer"    = smooth outer pyramid only
+mode = "assembly"; // ["assembly","core","casing","outer"]
+
+function sum_squares(n) = n*(n+1)*(2*n+1)/6;
+
+// Max N such that sum_squares(N) <= stone_budget
+function max_layers(n=1) =
+    (n < 1000 && sum_squares(n+1) <= stone_budget) ? max_layers(n+1) : n;
+
+layers        = max_layers();
+stones_used   = sum_squares(layers);
+stones_unused = stone_budget - stones_used;
+
+core_height    = layers * stone_side;
+core_base_side = layers * stone_side;
+
+// Outer pyramid sized to cover the stepped core (slope implied by 500 mm rise / 250 mm run)
+outer_base_half = core_base_side/2 + stone_side/2 + marble_extra;
+outer_height    = 2 * outer_base_half;
+
+module stepped_core(L=layers, s=stone_side) {
+    union() {
+        for (i = [0 : L-1]) {
+            let(n = L - i,
+                side = n*s)
+                translate([-side/2, -side/2, i*s])
+                    cube([side, side, s], center=false);
+        }
+    }
+}
+
+module smooth_outer_pyramid(bh=outer_base_half, h=outer_height) {
+    polyhedron(
+        points=[
+            [-bh,-bh,0],
+            [ bh,-bh,0],
+            [ bh, bh,0],
+            [-bh, bh,0],
+            [  0,  0,h]
+        ],
+        faces=[
+            [0,3,2,1], // base (normal -Z)
+            [0,1,4],   // South face (-Y)
+            [1,2,4],   // East  face (+X)
+            [2,3,4],   // North face (+Y)
+            [3,0,4]    // West  face (-X)
+        ],
+        convexity=10
+    );
+}
+
+module marble_casing() {
+    difference() {
+        smooth_outer_pyramid();
+        stepped_core();
+    }
+}
+
+module assembly() {
+    color([0.72, 0.63, 0.45, 1.0]) stepped_core();   // core stone
+    color([0.95, 0.95, 0.95, 1.0]) marble_casing();  // marble volume
+}
+
+if (mode == "core")
+    stepped_core();
+else if (mode == "outer")
+    smooth_outer_pyramid();
+else if (mode == "casing")
+    marble_casing();
+else
+    assembly();

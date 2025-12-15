@@ -1,3 +1,4 @@
+import subprocess
 import matplotlib
 
 matplotlib.use(
@@ -68,25 +69,41 @@ def runTest(index: int, aiEngineHook: callable,
     # Helper to run a single prompt and save results
     def run_single_prompt(idx, prompt):
         try:
-            result, chainOfThought = aiEngineHook(prompt, structure)
+            result, chainOfThought = aiEngineHook(prompt, structure, index,
+                                                  idx)
         except Exception as e:
             print("Failed to get result for subpass " + str(idx) + " - " +
                   str(e))
             result = ""
             chainOfThought = ""
 
-        open("results/raw_" + aiEngineName + "_" + str(index) + "_" +
-             str(idx) + ".txt",
-             "w",
-             encoding="utf-8").write(str(result))
-        open("results/prompt_" + aiEngineName + "_" + str(index) + "_" +
-             str(idx) + ".txt",
-             "w",
-             encoding="utf-8").write(str(prompts[idx]))
-        open("results/cot_" + aiEngineName + "_" + str(index) + "_" +
-             str(idx) + ".txt",
-             "w",
-             encoding="utf-8").write(str(chainOfThought))
+        try:
+            open("results/raw_" + aiEngineName + "_" + str(index) + "_" +
+                 str(idx) + ".txt",
+                 "w",
+                 encoding="utf-8").write(str(result))
+        except Exception as e:
+            print("Failed to save result for subpass " + str(idx) + " - " +
+                  str(e))
+
+        try:
+            open("results/prompt_" + aiEngineName + "_" + str(index) + "_" +
+                 str(idx) + ".txt",
+                 "w",
+                 encoding="utf-8").write(str(prompts[idx]))
+        except Exception as e:
+            print("Failed to save prompt for subpass " + str(idx) + " - " +
+                  str(e))
+
+        try:
+            open("results/cot_" + aiEngineName + "_" + str(index) + "_" +
+                 str(idx) + ".txt",
+                 "w",
+                 encoding="utf-8").write(str(chainOfThought))
+        except Exception as e:
+            print("Failed to save chain of thought for subpass " + str(idx) +
+                  " - " + str(e))
+
         return result
 
     earlyFail = "earlyFail" in g
@@ -279,7 +296,7 @@ def runTest(index: int, aiEngineHook: callable,
             subpass_results.append(subpass_data)
     return {
         "average_score": totalScore / len(results) if results else 0,
-        "total_score": totalScore,
+        "total_score": max(0, totalScore),
         "subpass_count": len(subpass_results),
         "subpass_results": subpass_results
     }
@@ -1054,7 +1071,7 @@ def get_all_model_configs():
     })
 
     # OpenAI models
-    openai_base_models = ["gpt-5-nano", "gpt-5-mini", "gpt-5.1"]
+    openai_base_models = ["gpt-5-nano", "gpt-5-mini", "gpt-5.1", "gpt-5.2"]
     for model in openai_base_models:
         configs.append({
             "name": model,
@@ -1187,9 +1204,7 @@ def run_model_config(config: dict, test_filter: Optional[Set[int]] = None):
 
     if engine == "placebo":
         import AiEnginePlacebo
-        cacheLayer = cl(AiEnginePlacebo.configAndSettingsHash,
-                        AiEnginePlacebo.PlaceboAIHook)
-        runAllTests(cacheLayer.AIHook, name, test_filter)
+        runAllTests(AiEnginePlacebo.PlaceboAIHook, name, test_filter)
 
     elif engine == "openai":
         import AiEngineOpenAiChatGPT
@@ -1244,6 +1259,7 @@ if __name__ == "__main__":
         epilog="""
 Examples:
   python TestRunner.py                          # Run all tests on all available models
+  python TestRunner.py --parallel               # Run all models in parallel
   python TestRunner.py --list-models            # List all available model names
   python TestRunner.py -t 1,2,3                 # Run only tests 1, 2, 3
   python TestRunner.py -t 5-10                  # Run tests 5 through 10
@@ -1274,6 +1290,10 @@ Examples:
         action="store_true",
         help="Bypass AI response cache (still saves new responses to cache)")
 
+    parser.add_argument("--parallel",
+                        action="store_true",
+                        help="Run all models in parallel")
+
     args = parser.parse_args()
 
     # Set force refresh flag in CacheLayer
@@ -1285,6 +1305,17 @@ Examples:
         )
 
     all_configs = get_all_model_configs()
+
+    if args.parallel:
+        import sys
+        tasks = []
+        for config in all_configs:
+            tasks.append(
+                subprocess.Popen(
+                    [sys.executable, __file__, "-m", config["name"]]))
+        for task in tasks:
+            task.wait()
+        exit(0)
 
     if args.list_models:
         print("Available models:")

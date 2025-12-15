@@ -1,13 +1,14 @@
+import random, math
 from textwrap import dedent
-import hashlib
+import hashlib, sys
 
 configAndSettingsHash = hashlib.sha256(b"Placebo").hexdigest()
 
 
-def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
-    h = hashlib.sha256(prompt.strip().encode()).hexdigest()
+def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
+                  subPass: int) -> dict | str:
 
-    if h == "8fcd5803eb9e781f9662e3554188f78ccbd6fd2edf13847226a6e33a25627730":
+    if questionNum == 1:
         # Question 1
         return {
             "pipes": [{
@@ -35,7 +36,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             "This was manually calculated. Half of 10cm is 5cm, so the 10cm wide pipes center is offset by 5cm."
         }, "Placebo thinking... hmmm..."
 
-    if h == "1a77d1817254df5c0d6a3d340d389744ab77e002685fd25578550a3da7f5482d":
+    if questionNum == 2 and subPass == 0:
         return {
             "bricks": [{
                 "Centroid": [0, 48, 4.8],
@@ -375,462 +376,45 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             "I generated this from the Gemini 2.5 pro API playground while developing the test. It's a bit 'meh'"
         }, "Placebo thinking... hmmm..."
 
-    if h == "b999904f5b38b765fa59ba4cf4ed3ad93fa77cdee60126375adca350bff8e55d":
-        # Question 2, subpass 1
-        return {
-            "bricks": [{
-                "Centroid": [96, 0, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-96, 0, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 96, 4.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -96, 4.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 64, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -64, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 64, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -64, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [80, 32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [80, -32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, 32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, -32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 80, 4.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, -80, 4.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 80, 4.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, -80, 4.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [96, 16, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-96, 16, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [96, -16, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-96, -16, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [16, 96, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -96, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 96, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -96, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 48, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -48, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 48, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -48, 14.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [48, 64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, -64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, -64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [96, 0, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-96, 0, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 96, 24.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -96, 24.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [80, 48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [80, -48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, 48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, -48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [48, 80, 24.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, -80, 24.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 80, 24.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, -80, 24.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [88, 24, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-88, 24, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [88, -24, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-88, -24, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [24, 88, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [24, -88, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-24, 88, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-24, -88, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 64, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -64, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 64, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -64, 33.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [80, 0, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, 0, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 80, 43.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -80, 43.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 48, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -48, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 48, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -48, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [48, 64, 43.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, -64, 43.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 64, 43.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, -64, 43.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [88, 16, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-88, 16, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [88, -16, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-88, -16, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [16, 88, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -88, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 88, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -88, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [56, 56, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [56, -56, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-56, 56, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-56, -56, 52.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [80, 32, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [80, -32, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, 32, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, -32, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 80, 62.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, -80, 62.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 80, 62.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, -80, 62.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 0, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 0, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 64, 62.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -64, 62.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 32, 72.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -32, 72.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 32, 72.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -32, 72.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 64, 72.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, -64, 72.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 64, 72.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, -64, 72.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [80, 0, 72.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-80, 0, 72.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 80, 72.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -80, 72.0],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 0, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 0, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 0, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 32, 81.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -32, 81.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, 48, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [48, -48, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-48, 48, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-48, -48, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, 16, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 16, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -16, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -16, 81.6],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [16, 64, 81.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -64, 81.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 64, 81.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -64, 81.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 0, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 16, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -16, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 16, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -16, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [16, 32, 91.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -32, 91.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 32, 91.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -32, 91.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, 0, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-48, 0, 91.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 48, 91.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -48, 91.2],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 0, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 0, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 0, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 32, 100.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -32, 100.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, 16, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [16, -16, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-16, 16, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-16, -16, 100.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 0, 110.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [16, 0, 110.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 0, 110.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 16, 110.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -16, 110.4],
-                "RotationDegrees": 0
-            }]
-        }, "Placebo thinking... hmmm..."
+    if questionNum == 2 and subPass == 1:
 
-    if h in [
-            "930c6e1538bb651872c517cb657ac56976cd08b940980c48be62da0a61a1f7a8",
-            "c0b2d0d5828f0fead1c361e8c0c0d3ed89007bcff1bd852af95104e423746e6d",
-            "01c34565f890e2d15661a4c03e6945d83bbb946718f573d6f4cfe3aba479f032"
-    ]:
-        # Question 3, subpass 0-2
+        bricks = []
+
+        for x in range(-120, 120, 32):
+            for y in range(-120, 120, 16):
+                for zBy10 in range(48, 1300, 96):
+                    z = zBy10 / 10
+                    dist = math.sqrt(x * x + y * y + z * z)
+                    if dist > 80 and dist < 110:
+                        bricks.append({
+                            "Centroid": [x, y, z],
+                            "RotationDegrees": 0
+                        })
+
+        return {
+            "bricks": bricks,
+        }, ""
+
+    if questionNum == 2 and subPass == 2:
+
+        bricks = []
+
+        for x in range(-200, 200, 32):
+            for y in range(-200, 200, 16):
+                for zBy10 in range(48, 2000, 96):
+                    z = zBy10 / 10
+                    dist = math.sqrt(x * x + y * y + z * z)
+                    if dist > 150 and dist < 170:
+                        bricks.append({
+                            "Centroid": [x, y, z],
+                            "RotationDegrees": 0
+                        })
+
+        return {
+            "bricks": bricks,
+        }, ""
+
+    if questionNum == 3 and subPass == 0:
 
         return {
             "polyhedron": {
@@ -905,497 +489,1351 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             "I generated this from the Gemini 2.5 API playground while developing the test.  It appears correct for the 1st test."
         }, "Placebo thinking... hmmm..."
 
-    if h in [
-            "9e73ddadee00ffc7691fc719f63c1f04e7c14e02250ae3204c7d900cbfde671e",
-            "c4ba3af199a7cee6f160152dc2e596b9b4aeda2bab8b3252170a03838bb1e343",
-            "daecbf3ef90e83d1cbbba06b9e0b82a04f06980fcefad4c810263baf660f1f72"
-    ]:
-        # Question 4
-        return [{
-            "x": -1.500000,
-            "y": 2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -0.500000,
-            "y": 2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.500000,
-            "y": 2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.500000,
-            "y": 2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 2.500000,
-            "y": 2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -2.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -1.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -1.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 0.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 1.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 2.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 2.000000,
-            "y": 1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -2.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -1.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -1.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -0.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -0.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 0.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 1.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 2.500000,
-            "y": 0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -2.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -2.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -1.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -1.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 0.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 1.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 2.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 2.000000,
-            "y": 0.000000,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -2.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -1.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -1.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -0.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -0.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 0.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 1.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 2.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 2.500000,
-            "y": -0.866025,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -2.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -1.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -1.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 0.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 1.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": 2.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 2.000000,
-            "y": -1.732051,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -1.500000,
-            "y": -2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": -1.500000,
-            "y": -2.598076,
-            "z": 0.000000,
-            "q0": 1.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 0.000000
-        }, {
-            "x": -0.500000,
-            "y": -2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 0.500000,
-            "y": -2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 1.500000,
-            "y": -2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }, {
-            "x": 2.500000,
-            "y": -2.598076,
-            "z": 0.000000,
-            "q0": 0.000000,
-            "q1": 0.000000,
-            "q2": 0.000000,
-            "q3": 1.000000
-        }], "Placebo thinking... hmmm..."
+    if questionNum == 3 and subPass == 1:
+        return {
+            'polyhedron': {
+                'vertex': [{
+                    'xyz': [5.0, -5.0, -10.0]
+                }, {
+                    'xyz': [15.0, -5.0, -10.0]
+                }, {
+                    'xyz': [15.0, 15.0, -10.0]
+                }, {
+                    'xyz': [5.0, 15.0, -10.0]
+                }, {
+                    'xyz': [5.0, -5.0, 20.0]
+                }, {
+                    'xyz': [15.0, -5.0, 20.0]
+                }, {
+                    'xyz': [15.0, 15.0, 20.0]
+                }, {
+                    'xyz': [5.0, 15.0, 20.0]
+                }, {
+                    'xyz': [-17.5, -12.5, -12.5]
+                }, {
+                    'xyz': [-2.5, -12.5, -12.5]
+                }, {
+                    'xyz': [-2.5, 2.5, -12.5]
+                }, {
+                    'xyz': [-17.5, 2.5, -12.5]
+                }, {
+                    'xyz': [-17.5, -12.5, 2.5]
+                }, {
+                    'xyz': [-2.5, -12.5, 2.5]
+                }, {
+                    'xyz': [-2.5, 2.5, 2.5]
+                }, {
+                    'xyz': [-17.5, 2.5, 2.5]
+                }],
+                'faces': [{
+                    'vertex': [3, 2, 1, 0]
+                }, {
+                    'vertex': [4, 5, 6, 7]
+                }, {
+                    'vertex': [0, 1, 5, 4]
+                }, {
+                    'vertex': [7, 6, 2, 3]
+                }, {
+                    'vertex': [3, 0, 4, 7]
+                }, {
+                    'vertex': [1, 2, 6, 5]
+                }, {
+                    'vertex': [11, 10, 9, 8]
+                }, {
+                    'vertex': [12, 13, 14, 15]
+                }, {
+                    'vertex': [8, 9, 13, 12]
+                }, {
+                    'vertex': [15, 14, 10, 11]
+                }, {
+                    'vertex': [11, 8, 12, 15]
+                }, {
+                    'vertex': [9, 10, 14, 13]
+                }]
+            }
+        }, ""
 
-    if h == '4ec098719613af4f77793beffc8324b8d5d561206c1edbb09175af5f13583c34':
+    if questionNum == 3 and subPass == 2:
+        return {
+            'polyhedron': {
+                'vertex': [{
+                    'xyz': [10.0, -5.0, -10.0]
+                }, {
+                    'xyz': [20.0, -5.0, -10.0]
+                }, {
+                    'xyz': [20.0, 15.0, -10.0]
+                }, {
+                    'xyz': [10.0, 15.0, -10.0]
+                }, {
+                    'xyz': [10.0, -5.0, 20.0]
+                }, {
+                    'xyz': [20.0, -5.0, 20.0]
+                }, {
+                    'xyz': [20.0, 15.0, 20.0]
+                }, {
+                    'xyz': [10.0, 15.0, 20.0]
+                }, {
+                    'xyz': [-22.5, -12.5, -12.5]
+                }, {
+                    'xyz': [-7.5, -12.5, -12.5]
+                }, {
+                    'xyz': [-7.5, 2.5, -12.5]
+                }, {
+                    'xyz': [-22.5, 2.5, -12.5]
+                }, {
+                    'xyz': [-22.5, -12.5, 2.5]
+                }, {
+                    'xyz': [-7.5, -12.5, 2.5]
+                }, {
+                    'xyz': [-7.5, 2.5, 2.5]
+                }, {
+                    'xyz': [-22.5, 2.5, 2.5]
+                }],
+                'faces': [{
+                    'vertex': [3, 2, 1, 0]
+                }, {
+                    'vertex': [4, 5, 6, 7]
+                }, {
+                    'vertex': [0, 1, 5, 4]
+                }, {
+                    'vertex': [7, 6, 2, 3]
+                }, {
+                    'vertex': [3, 0, 4, 7]
+                }, {
+                    'vertex': [1, 2, 6, 5]
+                }, {
+                    'vertex': [11, 10, 9, 8]
+                }, {
+                    'vertex': [12, 13, 14, 15]
+                }, {
+                    'vertex': [8, 9, 13, 12]
+                }, {
+                    'vertex': [15, 14, 10, 11]
+                }, {
+                    'vertex': [11, 8, 12, 15]
+                }, {
+                    'vertex': [9, 10, 14, 13]
+                }]
+            }
+        }, ""
+
+    if questionNum == 3 and subPass == 3:
+        return {
+            'polyhedron': {
+                'vertex': [{
+                    'xyz': [-2.5, 15.0, -10.0]
+                }, {
+                    'xyz': [7.5, 15.0, -10.0]
+                }, {
+                    'xyz': [7.5, -5.0, -10.0]
+                }, {
+                    'xyz': [-2.5, 15.0, 20.0]
+                }, {
+                    'xyz': [7.5, 15.0, 20.0]
+                }, {
+                    'xyz': [7.5, -5.0, 20.0]
+                }, {
+                    'xyz': [-2.5, -5.0, 20.0]
+                }, {
+                    'xyz': [-10.0, -12.5, -12.5]
+                }, {
+                    'xyz': [5.0, -12.5, -12.5]
+                }, {
+                    'xyz': [5.0, 2.5, -12.5]
+                }, {
+                    'xyz': [-10.0, 2.5, -12.5]
+                }, {
+                    'xyz': [-10.0, -12.5, 2.5]
+                }, {
+                    'xyz': [5.0, -12.5, 2.5]
+                }, {
+                    'xyz': [-10.0, 2.5, 2.5]
+                }, {
+                    'xyz': [5.0, -5.0, -10.0]
+                }, {
+                    'xyz': [5.0, 2.5, -10.0]
+                }, {
+                    'xyz': [-2.5, 2.5, -10.0]
+                }, {
+                    'xyz': [5.0, -5.0, 2.5]
+                }, {
+                    'xyz': [-2.5, -5.0, 2.5]
+                }, {
+                    'xyz': [-2.5, 2.5, 2.5]
+                }],
+                'faces': [{
+                    'vertex': [6, 3, 0, 16, 19, 18]
+                }, {
+                    'vertex': [2, 1, 4, 5]
+                }, {
+                    'vertex': [6, 18, 17, 14, 2, 5]
+                }, {
+                    'vertex': [1, 0, 3, 4]
+                }, {
+                    'vertex': [1, 2, 14, 15, 16, 0]
+                }, {
+                    'vertex': [5, 4, 3, 6]
+                }, {
+                    'vertex': [7, 11, 13, 10]
+                }, {
+                    'vertex': [8, 9, 15, 14, 17, 12]
+                }, {
+                    'vertex': [11, 7, 8, 12]
+                }, {
+                    'vertex': [15, 9, 10, 13, 19, 16]
+                }, {
+                    'vertex': [10, 9, 8, 7]
+                }, {
+                    'vertex': [12, 17, 18, 19, 13, 11]
+                }]
+            }
+        }, ""
+
+    if questionNum == 4 and subPass == 0:
+        # Question 4
+        return {
+            'tetrahedrons': [{
+                "x": -1.500000,
+                "y": 2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -0.500000,
+                "y": 2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.500000,
+                "y": 2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.500000,
+                "y": 2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 2.500000,
+                "y": 2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -2.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -1.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -1.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 0.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 1.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 2.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 2.000000,
+                "y": 1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -2.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -1.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -1.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -0.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -0.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 0.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 1.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 2.500000,
+                "y": 0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -2.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -2.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -1.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -1.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 0.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 1.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 2.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 2.000000,
+                "y": 0.000000,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -2.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -1.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -1.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -0.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -0.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 0.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 1.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 2.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 2.500000,
+                "y": -0.866025,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -2.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -1.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -1.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 0.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 1.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": 2.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 2.000000,
+                "y": -1.732051,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -1.500000,
+                "y": -2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": -1.500000,
+                "y": -2.598076,
+                "z": 0.000000,
+                "q0": 1.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 0.000000
+            }, {
+                "x": -0.500000,
+                "y": -2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 0.500000,
+                "y": -2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 1.500000,
+                "y": -2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }, {
+                "x": 2.500000,
+                "y": -2.598076,
+                "z": 0.000000,
+                "q0": 0.000000,
+                "q1": 0.000000,
+                "q2": 0.000000,
+                "q3": 1.000000
+            }]
+        }, "Placebo thinking... hmmm..."
+
+    if questionNum == 4 and subPass == 1:
+        # Cover a circle of diameter 4 (radius 2) with two non-intersecting spirals
+        # Shadows overlap to form a solid circle
+        import math as m
+
+        tetrahedrons = []
+        radius = 2.0  # Target circle radius
+
+        # Tetrahedron shadow centroid (NOT at origin!)
+        # Vertices: [0,0], [1,0], [0.5, sqrt(3)/2]
+        # Centroid: (0.5, sqrt(3)/6)
+        cx = 0.5
+        cy = m.sqrt(3) / 6  # ~0.289
+
+        # Quaternion for rotation around Z axis by angle theta
+        def quat_z(theta):
+            return (m.cos(theta / 2), 0, 0, m.sin(theta / 2))
+
+        def rotated_centroid(theta):
+            """Where the shadow centroid ends up after Z rotation."""
+            return (cx * m.cos(theta) - cy * m.sin(theta),
+                    cx * m.sin(theta) + cy * m.cos(theta))
+
+        def place_tet(target_x, target_y, rot_theta, z_height):
+            """Place tetrahedron so its shadow centroid is at (target_x, target_y)."""
+            rc_x, rc_y = rotated_centroid(rot_theta)
+            q0, q1, q2, q3 = quat_z(rot_theta)
+            return {
+                "x": target_x - rc_x,
+                "y": target_y - rc_y,
+                "z": z_height,
+                "q0": q0,
+                "q1": q1,
+                "q2": q2,
+                "q3": q3
+            }
+
+        # Outer spiral - place shadow centroids on circle of radius ~1.6
+        k_outer = 1.6
+        n_outer = 24
+        for i in range(n_outer):
+            theta = 2 * m.pi * i / n_outer
+            z = i
+            tx = k_outer * m.cos(theta)
+            ty = k_outer * m.sin(theta)
+            # Rotate tetrahedron to point inward
+            rot = theta + m.pi * 1.2
+            tetrahedrons.append(place_tet(tx, ty, rot, z))
+
+        # Inner spiral - smaller radius, opposite direction
+        k_inner = 0.6
+        n_inner = 12
+        for i in range(n_inner):
+            theta = -2 * m.pi * i / n_inner
+            z = i + 100
+            tx = k_inner * m.cos(theta)
+            ty = k_inner * m.sin(theta)
+            rot = theta  # Point outward
+            tetrahedrons.append(place_tet(tx, ty, rot, z))
+
+        # Middle ring to fill gaps
+        k_mid = 1.1
+        n_mid = 18
+        for i in range(n_mid):
+            theta = 2 * m.pi * i / n_mid + m.pi / n_mid
+            z = 200 + i
+            tx = k_mid * m.cos(theta)
+            ty = k_mid * m.sin(theta)
+            rot = theta + m.pi / 2
+            tetrahedrons.append(place_tet(tx, ty, rot, z))
+
+        return {"tetrahedrons": tetrahedrons}, "Placebo thinking... hmmm..."
+
+    if questionNum == 4 and subPass == 2:
+        return {
+            'tetrahedrons': [{
+                'x': -3,
+                'y': 1,
+                'z': 1,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': 1,
+                'z': 2,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.585786437626905,
+                'y': 1,
+                'z': 3,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.8786796564403574,
+                'y': 1,
+                'z': 4,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.1715728752538098,
+                'y': 1,
+                'z': 5,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 0.5355339059327378,
+                'y': 1,
+                'z': 6,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.2426406871192854,
+                'y': 1,
+                'z': 7,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.949747468305833,
+                'y': 1,
+                'z': 8,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': 1,
+                'z': 9,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': 1.7071067811865475,
+                'z': 10,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': 1.7071067811865475,
+                'z': 11,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.585786437626905,
+                'y': 1.7071067811865475,
+                'z': 12,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.8786796564403574,
+                'y': 1.7071067811865475,
+                'z': 13,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.1715728752538098,
+                'y': 1.7071067811865475,
+                'z': 14,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 0.5355339059327378,
+                'y': 1.7071067811865475,
+                'z': 15,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.2426406871192854,
+                'y': 1.7071067811865475,
+                'z': 16,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.949747468305833,
+                'y': 1.7071067811865475,
+                'z': 17,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': 1.7071067811865475,
+                'z': 18,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': 2.2928932188134525,
+                'z': 19,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': 2.2928932188134525,
+                'z': 20,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.585786437626905,
+                'y': 2.2928932188134525,
+                'z': 21,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.8786796564403574,
+                'y': 2.2928932188134525,
+                'z': 22,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.1715728752538098,
+                'y': 2.2928932188134525,
+                'z': 23,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 0.5355339059327378,
+                'y': 2.2928932188134525,
+                'z': 24,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.2426406871192854,
+                'y': 2.2928932188134525,
+                'z': 25,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.949747468305833,
+                'y': 2.2928932188134525,
+                'z': 26,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': 2.2928932188134525,
+                'z': 27,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': -3,
+                'z': 28,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': -3,
+                'z': 29,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.585786437626905,
+                'y': -3,
+                'z': 30,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.8786796564403574,
+                'y': -3,
+                'z': 31,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.1715728752538098,
+                'y': -3,
+                'z': 32,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 0.5355339059327378,
+                'y': -3,
+                'z': 33,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.2426406871192854,
+                'y': -3,
+                'z': 34,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.949747468305833,
+                'y': -3,
+                'z': 35,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': -3,
+                'z': 36,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': -2.2928932188134525,
+                'z': 37,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': -2.2928932188134525,
+                'z': 38,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.585786437626905,
+                'y': -2.2928932188134525,
+                'z': 39,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.8786796564403574,
+                'y': -2.2928932188134525,
+                'z': 40,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.1715728752538098,
+                'y': -2.2928932188134525,
+                'z': 41,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 0.5355339059327378,
+                'y': -2.2928932188134525,
+                'z': 42,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.2426406871192854,
+                'y': -2.2928932188134525,
+                'z': 43,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.949747468305833,
+                'y': -2.2928932188134525,
+                'z': 44,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': -2.2928932188134525,
+                'z': 45,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': -1.7071067811865475,
+                'z': 46,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': -1.7071067811865475,
+                'z': 47,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.585786437626905,
+                'y': -1.7071067811865475,
+                'z': 48,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.8786796564403574,
+                'y': -1.7071067811865475,
+                'z': 49,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -0.1715728752538098,
+                'y': -1.7071067811865475,
+                'z': 50,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 0.5355339059327378,
+                'y': -1.7071067811865475,
+                'z': 51,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.2426406871192854,
+                'y': -1.7071067811865475,
+                'z': 52,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.949747468305833,
+                'y': -1.7071067811865475,
+                'z': 53,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': -1.7071067811865475,
+                'z': 54,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': -1,
+                'z': 55,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': -1,
+                'z': 56,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.7071067811865475,
+                'y': -1,
+                'z': 57,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': -0.29289321881345254,
+                'z': 58,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': -0.29289321881345254,
+                'z': 59,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.7071067811865475,
+                'y': -0.29289321881345254,
+                'z': 60,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -3,
+                'y': 0.29289321881345254,
+                'z': 61,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -2.2928932188134525,
+                'y': 0.29289321881345254,
+                'z': 62,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': -1.7071067811865475,
+                'y': 0.29289321881345254,
+                'z': 63,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1,
+                'y': -1,
+                'z': 64,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.7071067811865475,
+                'y': -1,
+                'z': 65,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': -1,
+                'z': 66,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1,
+                'y': -0.29289321881345254,
+                'z': 67,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.7071067811865475,
+                'y': -0.29289321881345254,
+                'z': 68,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': -0.29289321881345254,
+                'z': 69,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1,
+                'y': 0.29289321881345254,
+                'z': 70,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 1.7071067811865475,
+                'y': 0.29289321881345254,
+                'z': 71,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }, {
+                'x': 2.2928932188134525,
+                'y': 0.29289321881345254,
+                'z': 72,
+                'q0': 0.8804762392132465,
+                'q1': -0.2798481423343618,
+                'q2': -0.3647051996326173,
+                'q3': -0.115916895959809
+            }]
+        }, "It's possible to rotate the tetrahedron to make it's projection a 1x1 square, but you need to make sure they don't intersect."
+
+    if questionNum == 5 and subPass == 0:
         # Question 5 subpass 0
-        return dedent("""
+        return {
+            'maze':
+            dedent("""
             ################
             #A..#...#.....##
             ###.#.#.#.###.##
@@ -1412,9 +1850,47 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             #   #...      ##
             ################
             ################
-                """).strip(), "Placebo thinking... hmmm..."
+                """).strip()
+        }, "Placebo thinking... hmmm..."
 
-    if h == "7ce26dc6b41137ef5598b8bd045ce675a714f89d93621640f781b231e22ebb30":
+    if questionNum == 5:
+        sizes = [16, 32, 64, 128]
+        size = sizes[subPass]
+        grid = [list("#" * size) for _ in range(size)]
+        x_min, x_max = 1, size - 2
+        y_min, y_max = 1, size - 2
+
+        path = []
+        y = y_min
+        go_right = True
+        while y <= y_max:
+            if go_right:
+                for x in range(x_min, x_max + 1):
+                    path.append((x, y))
+                if y + 2 <= y_max:
+                    path.append((x_max, y + 1))
+                    path.append((x_max, y + 2))
+            else:
+                for x in range(x_max, x_min - 1, -1):
+                    path.append((x, y))
+                if y + 2 <= y_max:
+                    path.append((x_min, y + 1))
+                    path.append((x_min, y + 2))
+            y += 2
+            go_right = not go_right
+
+        for (x, y) in path:
+            grid[y][x] = "."
+        if path:
+            ax, ay = path[0]
+            bx, by = path[-1]
+            grid[ay][ax] = "A"
+            grid[by][bx] = "B"
+
+        maze = "\n".join("".join(row) for row in grid)
+        return {"maze": maze}, "Placebo thinking... hmmm..."
+
+    if questionNum == 6 and subPass == 0:
         return {
             "voxels": [{
                 "xyz": [0, 0, 0]
@@ -1519,104 +1995,219 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             }]
         }, "Placebo thinking... hmmm..."
 
-    if h == "953c1a17d7a9c14cadd44942f291f6084308f5e29796984716d3c65b3f68b35e":
+    if questionNum == 6:
+        sizes = [6, 8, 12, 16, 24, 24]
+        counts = [50, 100, 200, 400, 1000, 500]
+        size = sizes[subPass]
+        count = counts[subPass]
+        voxels = []
+
+        for y in range(size):
+            for x in range(size):
+                for z in range(size):
+                    if x + y + z % size == 0:
+                        if subPass == 5 and "7" in str(x + y + z): continue
+                        voxels.append({"xyz": [x, y, z]})
+
+        while len(voxels) < count:
+            x = random.randint(0, size - 1)
+            y = random.randint(0, size - 1)
+            z = random.randint(0, size - 1)
+            if subPass == 5 and "7" in str(x + y + z): continue
+            element = {"xyz": [x, y, z]}
+            if element not in voxels:
+                voxels.append(element)
+
+        return {"voxels": voxels}, "Placebo thinking... hmmm..."
+
+    if questionNum == 7 and subPass == 0:
         return dedent("""
-            A5550
+            A5650
             2B201
             30150
-            45551
-            01010
-        """), "Placebo thinking... hmmm..."
+            45441
+            91912
+        """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if h == "4d38874bab4d3e2c1943216a7d2b75d8745a77387aa4bf18b3a8c9b64551d8ca":
+    if questionNum == 7 and subPass == 1:
         return dedent("""
+        A120234145
+        9876581206
+        8395062907
+        9012345094
+        7777777777
+        4321050432
+        7888888888
+        0123456029
+        9054321096
+        314205631B
+        """.strip("\n")), "Placebo thinking... hmmm..."
+
+    if questionNum == 7 and subPass == 2:
+        return dedent("""
+        789321505057893
+        21A789032150505
+        780932551789320
+        175058903217895
+        321708950505530
+        217859321789035
+        217809321750580
+        932150505708935
+        505217890352170
+        085932175809B05
+        530217890352178
+        095050505302178
+        593217893251789
+        032178932107893
+        505050505052178
+        """.strip("\n")), "Placebo thinking... hmmm..."
+
+    if questionNum == 7 and subPass == 3:
+        return dedent("""
+        A0505050505050505051
+        92939798919293979801
+        50505050505050505052
+        03979891929397989192
+        50505050505050505053
+        97989192939798919203
+        50505050505050505057
+        08919293979891929397
+        50505050505050505058
+        91929397989192939708
+        50505050505050505051
+        02939798919293979891
+        50505050505050505052
+        93979891929397989102
+        B0505050505050505053
+        78123781237812378123
+        78123781237812378123
+        78123781237812378123
+        78123781237812378123
+        78123781237812378123
+        """.strip("\n")), "Placebo thinking... hmmm..."
+
+    if questionNum == 7 and subPass == 4:
+        return dedent("""
+        A432234322345432234554322
+        7897897897897897897897890
+        2234554322345543223455432
+        0789789789789789789789789
+        2345543345543223455432234
+        7897897897897897897897890
+        3223455432234554322345554
+        0789789789789789789789789
+        3455432223455432234554322
+        7897897897897897897897890
+        2234554322345543223455432
+        0789789789789789789789789
+        2345543345543223455432234
+        7897897897897897897897890
+        3223455432234554322345554
+        0789789789789789789789789
+        3455432223455432234554322
+        7897897897897897897897890
+        2234554322345543223455432
+        0789789789789789789789789
+        2345543345543223455432234
+        7897897897897897897897890
+        3223455432234554322345554
+        0789789789789789789789789
+        345543222345543223455445B
+        """.strip("\n")), "Placebo thinking... hmmm..."
+
+    if questionNum == 7 and subPass == 5:
+        return dedent("""
+        A43223333344444444443333322222
+        778967896789678967896789678960
+        222223333344444444443333322222
+        078967896789678967896789678967
+        222223333344444444443333322222
+        678967896789678967896789678960
+        222223333344444444443333322222
+        078967896789678967896789678967
+        222223333344444444443333322222
+        678967896789678967896789678960
+        222223333344444444443333322222
+        078967896789678967896789678967
+        222223333344444444443333322222
+        678967896789678967896789678960
+        222223333344444444443333322222
+        078967896789678967896789678967
+        222223333344444444443333322222
+        678967896789678967896789678960
+        222223333344444444443333322222
+        078967896789678967896789678967
+        222223333344444444443333322222
+        678967896789678967896789678960
+        222223333344444444443333322222
+        078967896789678967896789678967
+        22222333334444444444333332221B
+        678967896789678967896789678967
+        678967896789678967896789678967
+        678967896789678967896789678967
+        678967896789678967896789678967
+        678967896789678967896789678967
+        """.strip("\n")), "Placebo thinking... hmmm..."
+
+    if questionNum == 8 and subPass == 0:
+        return {
+            'function':
+            dedent("""
             def f(x,y):
                 return -162*x*x*x - 854*x*x + 945*x + 653*y*y*y - 1881*y*y - 145*y + 2829
-        """.strip()), "Placebo thinking... hmmm..."
+        """.strip())
+        }, "Placebo thinking... hmmm..."
 
-    if h == "14de40d06d620c8e898c9aa289b6e8cefc28db5a0b77f47e35697aacbed0a667":
-        return dedent("""
+    if questionNum == 8 and subPass == 1:
+        return {
+            'function':
+            dedent("""
             def f(x,y):
                 return -5 * x - 4 * y + 30
-        """.strip()), "Placebo thinking... hmmm..."
-
-    if h == "b95339286451148c0cb2797d43a29a7560e2abf20f94238c14d84173e0bf0fe3":
-        return {
-            "steps": [{
-                "xy": [1, 1]
-            }, {
-                "xy": [2, 1]
-            }, {
-                "xy": [3, 1]
-            }, {
-                "xy": [4, 1]
-            }, {
-                "xy": [4, 2]
-            }, {
-                "xy": [4, 3]
-            }, {
-                "xy": [4, 4]
-            }, {
-                "xy": [3, 4]
-            }, {
-                "xy": [2, 4]
-            }, {
-                "xy": [1, 4]
-            }, {
-                "xy": [1, 3]
-            }, {
-                "xy": [2, 3]
-            }, {
-                "xy": [3, 3]
-            }, {
-                "xy": [3, 2]
-            }, {
-                "xy": [2, 2]
-            }, {
-                "xy": [1, 2]
-            }]
+        """.strip())
         }, "Placebo thinking... hmmm..."
 
-    if h == "a4b11c00377b6658bc85341c17bf29173a8db227048f47dc664be0000bc90de3":
+    if questionNum == 8 and subPass == 3:
         return {
-            "painting":
+            'function':
             dedent("""
-              ##
-             ####
-             "#''
-             ""''
-             ""''
-              "'
-                             ##
-                            ####
-                            "##'
-  #                         "#''
- ###                        ""''
-"###                        ""'
-""''          
-""''         
-"intentional 
- "mistake
-               
-
-
-
-
-                             #
-                            ###
-                           "###'
-        ##                 ""#''
-       ####                "\""''
-       ####'               "\""''
-       "##''                ""'
-       ""'''                 "
-       ""'''
-        "''
-         '
-        """.rstrip().lstrip("\n"))
+            def f(x,y):
+                return ((x-0)**2+(y-0)**2) * ((x-0)**2+(y-1)**2) * ((x-0)**2+(y-2)**2) * ((x-0)**2+(y-3)**2) * ((x-0)**2+(y-4)**2) * ((x-0)**2+(y-5)**2) * ((x-1)**2+(y-0)**2) * ((x-1)**2+(y-1)**2) * ((x-1)**2+(y-2)**2) * ((x-1)**2+(y-3)**2) * ((x-1)**2+(y-7)**2) * ((x-2)**2+(y-0)**2) * ((x-2)**2+(y-1)**2) * ((x-2)**2+(y-2)**2) * ((x-2)**2+(y-6)**2) * ((x-2)**2+(y-7)**2) * ((x-3)**2+(y-0)**2) * ((x-3)**2+(y-1)**2) * ((x-3)**2+(y-5)**2) * ((x-3)**2+(y-6)**2) * ((x-3)**2+(y-7)**2) * ((x-4)**2+(y-0)**2) * ((x-4)**2+(y-1)**2) * ((x-4)**2+(y-5)**2) * ((x-4)**2+(y-6)**2) * ((x-4)**2+(y-7)**2) * ((x-5)**2+(y-0)**2) * ((x-5)**2+(y-1)**2) * ((x-5)**2+(y-2)**2) * ((x-5)**2+(y-6)**2) * ((x-5)**2+(y-7)**2) * ((x-6)**2+(y-0)**2) * ((x-6)**2+(y-1)**2) * ((x-6)**2+(y-2)**2) * ((x-6)**2+(y-3)**2) * ((x-6)**2+(y-7)**2) * ((x-7)**2+(y-0)**2) * ((x-7)**2+(y-1)**2) * ((x-7)**2+(y-2)**2) * ((x-7)**2+(y-3)**2) * ((x-7)**2+(y-4)**2) * ((x-7)**2+(y-5)**2) - 1
+        """.strip())
         }, "Placebo thinking... hmmm..."
 
-    if h == "b6b9e8e242e9a29cba115d4421bb5baf5d3be9371e7bac10ef162ea3f7476b8e":
+    if questionNum == 9:
+        gridSizes = [4, 8, 12, 16, 16, 16]
+        gridSize = gridSizes[subPass]
+
+        steps = []
+        for y in range(gridSize):
+            if y % 2 == 0:
+                for x in range(1, gridSize):
+                    steps.append({"xy": [x + 1, y + 1]})
+            else:
+                for x in range(gridSize - 1, 0, -1):
+                    steps.append({"xy": [x + 1, y + 1]})
+        for y in range(gridSize - 1, -1, -1):
+            steps.append({"xy": [1, y + 1]})
+
+        return {"steps": steps}, "Placebo thinking... hmmm..."
+
+    if questionNum == 10:
+        g = {}
+        exec(open("10.py").read(), g)
+
+        sizes = [16, 32, 64, 128, 256]
+        size = sizes[subPass]
+
+        # I say this isn't cheating, as I wrote that code, and if an LLM wants to render
+        # an image in its internal reasoning loop to understand, that would help it
+        # answer many of these questions.
+        p = g["generateReferenceAscii"](size, "Placebo")
+
+        return {"painting": p}, "Placebo thinking... hmmm..."
+
+    if questionNum == 11 and subPass == 0:
         return {
             "path": [{
                 "pos": [0, 0, 0]
@@ -1749,7 +2340,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             }]
         }, "Placebo thinking... hmmm..."
 
-    if h == "3615798fb71a1ef05c70e7d3663d18dc2300ada153e259e7cc0001c712c901dc":
+    if questionNum == 12 and subPass == 0:
         return {
             "points": [{
                 "x": 0.0,
@@ -1763,20 +2354,2067 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             }]
         }, "Placebo thinking... hmmm..."
 
-    if h == "79b61603d0169c516ed73490f4a53fbe4de9fd3455986f639445428195ec6ea3":
+    if questionNum == 12 and subPass == 1:
         return {
-            "people": [{
-                "xy": [-10, -10]
+            'points': [{
+                'x': 0,
+                'y': 0
             }, {
-                "xy": [-11, -11]
+                'x': 1,
+                'y': 0
             }, {
-                "xy": [-10, -11]
+                'x': 2,
+                'y': 0
             }, {
-                "xy": [-10, -4.5]
+                'x': 3,
+                'y': 0
+            }, {
+                'x': 3,
+                'y': 1
+            }, {
+                'x': 2,
+                'y': 1
+            }, {
+                'x': 1,
+                'y': 1
+            }, {
+                'x': 1,
+                'y': 2
+            }, {
+                'x': 2,
+                'y': 2
+            }, {
+                'x': 3,
+                'y': 2
+            }, {
+                'x': 3,
+                'y': 3
+            }, {
+                'x': 2,
+                'y': 3
+            }, {
+                'x': 1,
+                'y': 3
+            }, {
+                'x': 0,
+                'y': 3
+            }, {
+                'x': 0,
+                'y': 2
+            }, {
+                'x': 0,
+                'y': 1
             }]
         }, "Placebo thinking... hmmm..."
 
-    if h == "da05bd008e3e50e15fbf80e05800a34677515723141985e41855b34ca5a87fd9":
+    if questionNum == 12 and subPass == 3:
+        return {
+            'points': [{
+                'x': 0.5,
+                'y': 2.5
+            }, {
+                'x': 1.5,
+                'y': 2.5
+            }, {
+                'x': 2.5,
+                'y': 2.5
+            }, {
+                'x': 3.5,
+                'y': 2.5
+            }, {
+                'x': 4.5,
+                'y': 2.5
+            }, {
+                'x': 5.5,
+                'y': 2.5
+            }, {
+                'x': 6.5,
+                'y': 2.5
+            }, {
+                'x': 7.5,
+                'y': 2.5
+            }, {
+                'x': 8.5,
+                'y': 2.5
+            }, {
+                'x': 9.5,
+                'y': 2.5
+            }, {
+                'x': 9.5,
+                'y': 3.5
+            }, {
+                'x': 8.5,
+                'y': 3.5
+            }, {
+                'x': 7.5,
+                'y': 3.5
+            }, {
+                'x': 6.5,
+                'y': 3.5
+            }, {
+                'x': 5.5,
+                'y': 3.5
+            }, {
+                'x': 4.5,
+                'y': 3.5
+            }, {
+                'x': 3.5,
+                'y': 3.5
+            }, {
+                'x': 2.5,
+                'y': 3.5
+            }, {
+                'x': 1.5,
+                'y': 3.5
+            }, {
+                'x': 1.5,
+                'y': 4.5
+            }, {
+                'x': 2.5,
+                'y': 4.5
+            }, {
+                'x': 3.5,
+                'y': 4.5
+            }, {
+                'x': 4.5,
+                'y': 4.5
+            }, {
+                'x': 5.5,
+                'y': 4.5
+            }, {
+                'x': 6.5,
+                'y': 4.5
+            }, {
+                'x': 7.5,
+                'y': 4.5
+            }, {
+                'x': 8.5,
+                'y': 4.5
+            }, {
+                'x': 9.5,
+                'y': 4.5
+            }, {
+                'x': 9.5,
+                'y': 5.5
+            }, {
+                'x': 8.5,
+                'y': 5.5
+            }, {
+                'x': 7.5,
+                'y': 5.5
+            }, {
+                'x': 6.5,
+                'y': 5.5
+            }, {
+                'x': 5.5,
+                'y': 5.5
+            }, {
+                'x': 4.5,
+                'y': 5.5
+            }, {
+                'x': 3.5,
+                'y': 5.5
+            }, {
+                'x': 2.5,
+                'y': 5.5
+            }, {
+                'x': 1.5,
+                'y': 5.5
+            }, {
+                'x': 1.5,
+                'y': 6.5
+            }, {
+                'x': 2.5,
+                'y': 6.5
+            }, {
+                'x': 3.5,
+                'y': 6.5
+            }, {
+                'x': 4.5,
+                'y': 6.5
+            }, {
+                'x': 5.5,
+                'y': 6.5
+            }, {
+                'x': 6.5,
+                'y': 6.5
+            }, {
+                'x': 7.5,
+                'y': 6.5
+            }, {
+                'x': 8.5,
+                'y': 6.5
+            }, {
+                'x': 9.5,
+                'y': 6.5
+            }, {
+                'x': 9.5,
+                'y': 7.5
+            }, {
+                'x': 8.5,
+                'y': 7.5
+            }, {
+                'x': 7.5,
+                'y': 7.5
+            }, {
+                'x': 6.5,
+                'y': 7.5
+            }, {
+                'x': 5.5,
+                'y': 7.5
+            }, {
+                'x': 4.5,
+                'y': 7.5
+            }, {
+                'x': 3.5,
+                'y': 7.5
+            }, {
+                'x': 2.5,
+                'y': 7.5
+            }, {
+                'x': 1.5,
+                'y': 7.5
+            }, {
+                'x': 0.5,
+                'y': 7.5
+            }, {
+                'x': 0.5,
+                'y': 6.5
+            }, {
+                'x': 0.5,
+                'y': 5.5
+            }, {
+                'x': 0.5,
+                'y': 4.5
+            }, {
+                'x': 0.5,
+                'y': 3.5
+            }]
+        }, "Placebo thinking... hmmm..."
+
+    if questionNum == 12 and subPass == 5:
+        return {
+            'points': [{
+                'x': 0,
+                'y': 0
+            }, {
+                'x': 1,
+                'y': 0
+            }, {
+                'x': 2,
+                'y': 0
+            }, {
+                'x': 3,
+                'y': 0
+            }, {
+                'x': 4,
+                'y': 0
+            }, {
+                'x': 5,
+                'y': 0
+            }, {
+                'x': 6,
+                'y': 0
+            }, {
+                'x': 7,
+                'y': 0
+            }, {
+                'x': 8,
+                'y': 0
+            }, {
+                'x': 9,
+                'y': 0
+            }, {
+                'x': 10,
+                'y': 0
+            }, {
+                'x': 11,
+                'y': 0
+            }, {
+                'x': 12,
+                'y': 0
+            }, {
+                'x': 13,
+                'y': 0
+            }, {
+                'x': 14,
+                'y': 0
+            }, {
+                'x': 15,
+                'y': 0
+            }, {
+                'x': 16,
+                'y': 0
+            }, {
+                'x': 17,
+                'y': 0
+            }, {
+                'x': 18,
+                'y': 0
+            }, {
+                'x': 19,
+                'y': 0
+            }, {
+                'x': 20,
+                'y': 0
+            }, {
+                'x': 21,
+                'y': 0
+            }, {
+                'x': 22,
+                'y': 0
+            }, {
+                'x': 23,
+                'y': 0
+            }, {
+                'x': 24,
+                'y': 0
+            }, {
+                'x': 25,
+                'y': 0
+            }, {
+                'x': 26,
+                'y': 0
+            }, {
+                'x': 27,
+                'y': 0
+            }, {
+                'x': 28,
+                'y': 0
+            }, {
+                'x': 29,
+                'y': 0
+            }, {
+                'x': 29,
+                'y': 1
+            }, {
+                'x': 28,
+                'y': 1
+            }, {
+                'x': 27,
+                'y': 1
+            }, {
+                'x': 26,
+                'y': 1
+            }, {
+                'x': 25,
+                'y': 1
+            }, {
+                'x': 24,
+                'y': 1
+            }, {
+                'x': 23,
+                'y': 1
+            }, {
+                'x': 22,
+                'y': 1
+            }, {
+                'x': 21,
+                'y': 1
+            }, {
+                'x': 20,
+                'y': 1
+            }, {
+                'x': 19,
+                'y': 1
+            }, {
+                'x': 18,
+                'y': 1
+            }, {
+                'x': 17,
+                'y': 1
+            }, {
+                'x': 16,
+                'y': 1
+            }, {
+                'x': 15,
+                'y': 1
+            }, {
+                'x': 14,
+                'y': 1
+            }, {
+                'x': 13,
+                'y': 1
+            }, {
+                'x': 12,
+                'y': 1
+            }, {
+                'x': 11,
+                'y': 1
+            }, {
+                'x': 10,
+                'y': 1
+            }, {
+                'x': 9,
+                'y': 1
+            }, {
+                'x': 8,
+                'y': 1
+            }, {
+                'x': 7,
+                'y': 1
+            }, {
+                'x': 6,
+                'y': 1
+            }, {
+                'x': 5,
+                'y': 1
+            }, {
+                'x': 4,
+                'y': 1
+            }, {
+                'x': 3,
+                'y': 1
+            }, {
+                'x': 2,
+                'y': 1
+            }, {
+                'x': 1,
+                'y': 1
+            }, {
+                'x': 1,
+                'y': 2
+            }, {
+                'x': 2,
+                'y': 2
+            }, {
+                'x': 3,
+                'y': 2
+            }, {
+                'x': 4,
+                'y': 2
+            }, {
+                'x': 5,
+                'y': 2
+            }, {
+                'x': 6,
+                'y': 2
+            }, {
+                'x': 7,
+                'y': 2
+            }, {
+                'x': 8,
+                'y': 2
+            }, {
+                'x': 9,
+                'y': 2
+            }, {
+                'x': 10,
+                'y': 2
+            }, {
+                'x': 11,
+                'y': 2
+            }, {
+                'x': 12,
+                'y': 2
+            }, {
+                'x': 13,
+                'y': 2
+            }, {
+                'x': 14,
+                'y': 2
+            }, {
+                'x': 15,
+                'y': 2
+            }, {
+                'x': 16,
+                'y': 2
+            }, {
+                'x': 17,
+                'y': 2
+            }, {
+                'x': 18,
+                'y': 2
+            }, {
+                'x': 19,
+                'y': 2
+            }, {
+                'x': 20,
+                'y': 2
+            }, {
+                'x': 21,
+                'y': 2
+            }, {
+                'x': 22,
+                'y': 2
+            }, {
+                'x': 23,
+                'y': 2
+            }, {
+                'x': 24,
+                'y': 2
+            }, {
+                'x': 25,
+                'y': 2
+            }, {
+                'x': 26,
+                'y': 2
+            }, {
+                'x': 27,
+                'y': 2
+            }, {
+                'x': 28,
+                'y': 2
+            }, {
+                'x': 29,
+                'y': 2
+            }, {
+                'x': 29,
+                'y': 3
+            }, {
+                'x': 28,
+                'y': 3
+            }, {
+                'x': 27,
+                'y': 3
+            }, {
+                'x': 26,
+                'y': 3
+            }, {
+                'x': 25,
+                'y': 3
+            }, {
+                'x': 24,
+                'y': 3
+            }, {
+                'x': 23,
+                'y': 3
+            }, {
+                'x': 22,
+                'y': 3
+            }, {
+                'x': 21,
+                'y': 3
+            }, {
+                'x': 20,
+                'y': 3
+            }, {
+                'x': 19,
+                'y': 3
+            }, {
+                'x': 18,
+                'y': 3
+            }, {
+                'x': 17,
+                'y': 3
+            }, {
+                'x': 16,
+                'y': 3
+            }, {
+                'x': 15,
+                'y': 3
+            }, {
+                'x': 14,
+                'y': 3
+            }, {
+                'x': 13,
+                'y': 3
+            }, {
+                'x': 12,
+                'y': 3
+            }, {
+                'x': 11,
+                'y': 3
+            }, {
+                'x': 10,
+                'y': 3
+            }, {
+                'x': 9,
+                'y': 3
+            }, {
+                'x': 8,
+                'y': 3
+            }, {
+                'x': 7,
+                'y': 3
+            }, {
+                'x': 6,
+                'y': 3
+            }, {
+                'x': 5,
+                'y': 3
+            }, {
+                'x': 4,
+                'y': 3
+            }, {
+                'x': 3,
+                'y': 3
+            }, {
+                'x': 2,
+                'y': 3
+            }, {
+                'x': 1,
+                'y': 3
+            }, {
+                'x': 1,
+                'y': 4
+            }, {
+                'x': 2,
+                'y': 4
+            }, {
+                'x': 3,
+                'y': 4
+            }, {
+                'x': 4,
+                'y': 4
+            }, {
+                'x': 5,
+                'y': 4
+            }, {
+                'x': 6,
+                'y': 4
+            }, {
+                'x': 7,
+                'y': 4
+            }, {
+                'x': 8,
+                'y': 4
+            }, {
+                'x': 9,
+                'y': 4
+            }, {
+                'x': 10,
+                'y': 4
+            }, {
+                'x': 11,
+                'y': 4
+            }, {
+                'x': 12,
+                'y': 4
+            }, {
+                'x': 13,
+                'y': 4
+            }, {
+                'x': 14,
+                'y': 4
+            }, {
+                'x': 15,
+                'y': 4
+            }, {
+                'x': 16,
+                'y': 4
+            }, {
+                'x': 17,
+                'y': 4
+            }, {
+                'x': 18,
+                'y': 4
+            }, {
+                'x': 19,
+                'y': 4
+            }, {
+                'x': 20,
+                'y': 4
+            }, {
+                'x': 21,
+                'y': 4
+            }, {
+                'x': 22,
+                'y': 4
+            }, {
+                'x': 23,
+                'y': 4
+            }, {
+                'x': 24,
+                'y': 4
+            }, {
+                'x': 25,
+                'y': 4
+            }, {
+                'x': 26,
+                'y': 4
+            }, {
+                'x': 27,
+                'y': 4
+            }, {
+                'x': 28,
+                'y': 4
+            }, {
+                'x': 29,
+                'y': 4
+            }, {
+                'x': 29,
+                'y': 5
+            }, {
+                'x': 28,
+                'y': 5
+            }, {
+                'x': 27,
+                'y': 5
+            }, {
+                'x': 26,
+                'y': 5
+            }, {
+                'x': 25,
+                'y': 5
+            }, {
+                'x': 24,
+                'y': 5
+            }, {
+                'x': 23,
+                'y': 5
+            }, {
+                'x': 22,
+                'y': 5
+            }, {
+                'x': 21,
+                'y': 5
+            }, {
+                'x': 20,
+                'y': 5
+            }, {
+                'x': 19,
+                'y': 5
+            }, {
+                'x': 18,
+                'y': 5
+            }, {
+                'x': 17,
+                'y': 5
+            }, {
+                'x': 16,
+                'y': 5
+            }, {
+                'x': 15,
+                'y': 5
+            }, {
+                'x': 14,
+                'y': 5
+            }, {
+                'x': 13,
+                'y': 5
+            }, {
+                'x': 12,
+                'y': 5
+            }, {
+                'x': 11,
+                'y': 5
+            }, {
+                'x': 10,
+                'y': 5
+            }, {
+                'x': 9,
+                'y': 5
+            }, {
+                'x': 8,
+                'y': 5
+            }, {
+                'x': 7,
+                'y': 5
+            }, {
+                'x': 6,
+                'y': 5
+            }, {
+                'x': 5,
+                'y': 5
+            }, {
+                'x': 4,
+                'y': 5
+            }, {
+                'x': 3,
+                'y': 5
+            }, {
+                'x': 2,
+                'y': 5
+            }, {
+                'x': 1,
+                'y': 5
+            }, {
+                'x': 1,
+                'y': 6
+            }, {
+                'x': 2,
+                'y': 6
+            }, {
+                'x': 3,
+                'y': 6
+            }, {
+                'x': 4,
+                'y': 6
+            }, {
+                'x': 5,
+                'y': 6
+            }, {
+                'x': 6,
+                'y': 6
+            }, {
+                'x': 7,
+                'y': 6
+            }, {
+                'x': 8,
+                'y': 6
+            }, {
+                'x': 9,
+                'y': 6
+            }, {
+                'x': 10,
+                'y': 6
+            }, {
+                'x': 11,
+                'y': 6
+            }, {
+                'x': 12,
+                'y': 6
+            }, {
+                'x': 13,
+                'y': 6
+            }, {
+                'x': 14,
+                'y': 6
+            }, {
+                'x': 15,
+                'y': 6
+            }, {
+                'x': 16,
+                'y': 6
+            }, {
+                'x': 17,
+                'y': 6
+            }, {
+                'x': 18,
+                'y': 6
+            }, {
+                'x': 19,
+                'y': 6
+            }, {
+                'x': 20,
+                'y': 6
+            }, {
+                'x': 21,
+                'y': 6
+            }, {
+                'x': 22,
+                'y': 6
+            }, {
+                'x': 23,
+                'y': 6
+            }, {
+                'x': 24,
+                'y': 6
+            }, {
+                'x': 25,
+                'y': 6
+            }, {
+                'x': 26,
+                'y': 6
+            }, {
+                'x': 27,
+                'y': 6
+            }, {
+                'x': 28,
+                'y': 6
+            }, {
+                'x': 29,
+                'y': 6
+            }, {
+                'x': 29,
+                'y': 7
+            }, {
+                'x': 28,
+                'y': 7
+            }, {
+                'x': 27,
+                'y': 7
+            }, {
+                'x': 26,
+                'y': 7
+            }, {
+                'x': 25,
+                'y': 7
+            }, {
+                'x': 24,
+                'y': 7
+            }, {
+                'x': 23,
+                'y': 7
+            }, {
+                'x': 22,
+                'y': 7
+            }, {
+                'x': 21,
+                'y': 7
+            }, {
+                'x': 20,
+                'y': 7
+            }, {
+                'x': 19,
+                'y': 7
+            }, {
+                'x': 18,
+                'y': 7
+            }, {
+                'x': 17,
+                'y': 7
+            }, {
+                'x': 16,
+                'y': 7
+            }, {
+                'x': 15,
+                'y': 7
+            }, {
+                'x': 14,
+                'y': 7
+            }, {
+                'x': 13,
+                'y': 7
+            }, {
+                'x': 12,
+                'y': 7
+            }, {
+                'x': 11,
+                'y': 7
+            }, {
+                'x': 10,
+                'y': 7
+            }, {
+                'x': 9,
+                'y': 7
+            }, {
+                'x': 8,
+                'y': 7
+            }, {
+                'x': 7,
+                'y': 7
+            }, {
+                'x': 6,
+                'y': 7
+            }, {
+                'x': 5,
+                'y': 7
+            }, {
+                'x': 4,
+                'y': 7
+            }, {
+                'x': 3,
+                'y': 7
+            }, {
+                'x': 2,
+                'y': 7
+            }, {
+                'x': 1,
+                'y': 7
+            }, {
+                'x': 1,
+                'y': 8
+            }, {
+                'x': 2,
+                'y': 8
+            }, {
+                'x': 3,
+                'y': 8
+            }, {
+                'x': 4,
+                'y': 8
+            }, {
+                'x': 5,
+                'y': 8
+            }, {
+                'x': 6,
+                'y': 8
+            }, {
+                'x': 7,
+                'y': 8
+            }, {
+                'x': 8,
+                'y': 8
+            }, {
+                'x': 9,
+                'y': 8
+            }, {
+                'x': 10,
+                'y': 8
+            }, {
+                'x': 11,
+                'y': 8
+            }, {
+                'x': 12,
+                'y': 8
+            }, {
+                'x': 13,
+                'y': 8
+            }, {
+                'x': 14,
+                'y': 8
+            }, {
+                'x': 15,
+                'y': 8
+            }, {
+                'x': 16,
+                'y': 8
+            }, {
+                'x': 17,
+                'y': 8
+            }, {
+                'x': 18,
+                'y': 8
+            }, {
+                'x': 19,
+                'y': 8
+            }, {
+                'x': 20,
+                'y': 8
+            }, {
+                'x': 21,
+                'y': 8
+            }, {
+                'x': 22,
+                'y': 8
+            }, {
+                'x': 23,
+                'y': 8
+            }, {
+                'x': 24,
+                'y': 8
+            }, {
+                'x': 25,
+                'y': 8
+            }, {
+                'x': 26,
+                'y': 8
+            }, {
+                'x': 27,
+                'y': 8
+            }, {
+                'x': 28,
+                'y': 8
+            }, {
+                'x': 29,
+                'y': 8
+            }, {
+                'x': 29,
+                'y': 9
+            }, {
+                'x': 28,
+                'y': 9
+            }, {
+                'x': 27,
+                'y': 9
+            }, {
+                'x': 26,
+                'y': 9
+            }, {
+                'x': 25,
+                'y': 9
+            }, {
+                'x': 24,
+                'y': 9
+            }, {
+                'x': 23,
+                'y': 9
+            }, {
+                'x': 22,
+                'y': 9
+            }, {
+                'x': 21,
+                'y': 9
+            }, {
+                'x': 20,
+                'y': 9
+            }, {
+                'x': 19,
+                'y': 9
+            }, {
+                'x': 18,
+                'y': 9
+            }, {
+                'x': 17,
+                'y': 9
+            }, {
+                'x': 16,
+                'y': 9
+            }, {
+                'x': 15,
+                'y': 9
+            }, {
+                'x': 14,
+                'y': 9
+            }, {
+                'x': 13,
+                'y': 9
+            }, {
+                'x': 12,
+                'y': 9
+            }, {
+                'x': 11,
+                'y': 9
+            }, {
+                'x': 10,
+                'y': 9
+            }, {
+                'x': 9,
+                'y': 9
+            }, {
+                'x': 8,
+                'y': 9
+            }, {
+                'x': 7,
+                'y': 9
+            }, {
+                'x': 6,
+                'y': 9
+            }, {
+                'x': 5,
+                'y': 9
+            }, {
+                'x': 4,
+                'y': 9
+            }, {
+                'x': 3,
+                'y': 9
+            }, {
+                'x': 2,
+                'y': 9
+            }, {
+                'x': 1,
+                'y': 9
+            }, {
+                'x': 1,
+                'y': 10
+            }, {
+                'x': 2,
+                'y': 10
+            }, {
+                'x': 3,
+                'y': 10
+            }, {
+                'x': 4,
+                'y': 10
+            }, {
+                'x': 5,
+                'y': 10
+            }, {
+                'x': 6,
+                'y': 10
+            }, {
+                'x': 7,
+                'y': 10
+            }, {
+                'x': 8,
+                'y': 10
+            }, {
+                'x': 9,
+                'y': 10
+            }, {
+                'x': 10,
+                'y': 10
+            }, {
+                'x': 11,
+                'y': 10
+            }, {
+                'x': 12,
+                'y': 10
+            }, {
+                'x': 13,
+                'y': 10
+            }, {
+                'x': 14,
+                'y': 10
+            }, {
+                'x': 15,
+                'y': 10
+            }, {
+                'x': 16,
+                'y': 10
+            }, {
+                'x': 17,
+                'y': 10
+            }, {
+                'x': 18,
+                'y': 10
+            }, {
+                'x': 19,
+                'y': 10
+            }, {
+                'x': 20,
+                'y': 10
+            }, {
+                'x': 21,
+                'y': 10
+            }, {
+                'x': 22,
+                'y': 10
+            }, {
+                'x': 23,
+                'y': 10
+            }, {
+                'x': 24,
+                'y': 10
+            }, {
+                'x': 25,
+                'y': 10
+            }, {
+                'x': 26,
+                'y': 10
+            }, {
+                'x': 27,
+                'y': 10
+            }, {
+                'x': 28,
+                'y': 10
+            }, {
+                'x': 29,
+                'y': 10
+            }, {
+                'x': 29,
+                'y': 11
+            }, {
+                'x': 28,
+                'y': 11
+            }, {
+                'x': 27,
+                'y': 11
+            }, {
+                'x': 26,
+                'y': 11
+            }, {
+                'x': 25,
+                'y': 11
+            }, {
+                'x': 24,
+                'y': 11
+            }, {
+                'x': 23,
+                'y': 11
+            }, {
+                'x': 22,
+                'y': 11
+            }, {
+                'x': 21,
+                'y': 11
+            }, {
+                'x': 20,
+                'y': 11
+            }, {
+                'x': 19,
+                'y': 11
+            }, {
+                'x': 18,
+                'y': 11
+            }, {
+                'x': 17,
+                'y': 11
+            }, {
+                'x': 16,
+                'y': 11
+            }, {
+                'x': 15,
+                'y': 11
+            }, {
+                'x': 14,
+                'y': 11
+            }, {
+                'x': 13,
+                'y': 11
+            }, {
+                'x': 12,
+                'y': 11
+            }, {
+                'x': 11,
+                'y': 11
+            }, {
+                'x': 10,
+                'y': 11
+            }, {
+                'x': 9,
+                'y': 11
+            }, {
+                'x': 8,
+                'y': 11
+            }, {
+                'x': 7,
+                'y': 11
+            }, {
+                'x': 6,
+                'y': 11
+            }, {
+                'x': 5,
+                'y': 11
+            }, {
+                'x': 4,
+                'y': 11
+            }, {
+                'x': 3,
+                'y': 11
+            }, {
+                'x': 2,
+                'y': 11
+            }, {
+                'x': 1,
+                'y': 11
+            }, {
+                'x': 1,
+                'y': 12
+            }, {
+                'x': 2,
+                'y': 12
+            }, {
+                'x': 3,
+                'y': 12
+            }, {
+                'x': 4,
+                'y': 12
+            }, {
+                'x': 5,
+                'y': 12
+            }, {
+                'x': 6,
+                'y': 12
+            }, {
+                'x': 7,
+                'y': 12
+            }, {
+                'x': 8,
+                'y': 12
+            }, {
+                'x': 9,
+                'y': 12
+            }, {
+                'x': 10,
+                'y': 12
+            }, {
+                'x': 11,
+                'y': 12
+            }, {
+                'x': 12,
+                'y': 12
+            }, {
+                'x': 13,
+                'y': 12
+            }, {
+                'x': 14,
+                'y': 12
+            }, {
+                'x': 15,
+                'y': 12
+            }, {
+                'x': 16,
+                'y': 12
+            }, {
+                'x': 17,
+                'y': 12
+            }, {
+                'x': 18,
+                'y': 12
+            }, {
+                'x': 19,
+                'y': 12
+            }, {
+                'x': 20,
+                'y': 12
+            }, {
+                'x': 21,
+                'y': 12
+            }, {
+                'x': 22,
+                'y': 12
+            }, {
+                'x': 23,
+                'y': 12
+            }, {
+                'x': 24,
+                'y': 12
+            }, {
+                'x': 25,
+                'y': 12
+            }, {
+                'x': 26,
+                'y': 12
+            }, {
+                'x': 27,
+                'y': 12
+            }, {
+                'x': 28,
+                'y': 12
+            }, {
+                'x': 29,
+                'y': 12
+            }, {
+                'x': 29,
+                'y': 13
+            }, {
+                'x': 28,
+                'y': 13
+            }, {
+                'x': 27,
+                'y': 13
+            }, {
+                'x': 26,
+                'y': 13
+            }, {
+                'x': 25,
+                'y': 13
+            }, {
+                'x': 24,
+                'y': 13
+            }, {
+                'x': 23,
+                'y': 13
+            }, {
+                'x': 22,
+                'y': 13
+            }, {
+                'x': 21,
+                'y': 13
+            }, {
+                'x': 20,
+                'y': 13
+            }, {
+                'x': 19,
+                'y': 13
+            }, {
+                'x': 18,
+                'y': 13
+            }, {
+                'x': 17,
+                'y': 13
+            }, {
+                'x': 16,
+                'y': 13
+            }, {
+                'x': 15,
+                'y': 13
+            }, {
+                'x': 14,
+                'y': 13
+            }, {
+                'x': 13,
+                'y': 13
+            }, {
+                'x': 12,
+                'y': 13
+            }, {
+                'x': 11,
+                'y': 13
+            }, {
+                'x': 10,
+                'y': 13
+            }, {
+                'x': 9,
+                'y': 13
+            }, {
+                'x': 8,
+                'y': 13
+            }, {
+                'x': 7,
+                'y': 13
+            }, {
+                'x': 6,
+                'y': 13
+            }, {
+                'x': 5,
+                'y': 13
+            }, {
+                'x': 4,
+                'y': 13
+            }, {
+                'x': 3,
+                'y': 13
+            }, {
+                'x': 2,
+                'y': 13
+            }, {
+                'x': 1,
+                'y': 13
+            }, {
+                'x': 1,
+                'y': 14
+            }, {
+                'x': 2,
+                'y': 14
+            }, {
+                'x': 3,
+                'y': 14
+            }, {
+                'x': 4,
+                'y': 14
+            }, {
+                'x': 5,
+                'y': 14
+            }, {
+                'x': 6,
+                'y': 14
+            }, {
+                'x': 7,
+                'y': 14
+            }, {
+                'x': 8,
+                'y': 14
+            }, {
+                'x': 9,
+                'y': 14
+            }, {
+                'x': 10,
+                'y': 14
+            }, {
+                'x': 11,
+                'y': 14
+            }, {
+                'x': 12,
+                'y': 14
+            }, {
+                'x': 13,
+                'y': 14
+            }, {
+                'x': 14,
+                'y': 14
+            }, {
+                'x': 15,
+                'y': 14
+            }, {
+                'x': 16,
+                'y': 14
+            }, {
+                'x': 17,
+                'y': 14
+            }, {
+                'x': 18,
+                'y': 14
+            }, {
+                'x': 19,
+                'y': 14
+            }, {
+                'x': 20,
+                'y': 14
+            }, {
+                'x': 21,
+                'y': 14
+            }, {
+                'x': 22,
+                'y': 14
+            }, {
+                'x': 23,
+                'y': 14
+            }, {
+                'x': 24,
+                'y': 14
+            }, {
+                'x': 25,
+                'y': 14
+            }, {
+                'x': 26,
+                'y': 14
+            }, {
+                'x': 27,
+                'y': 14
+            }, {
+                'x': 28,
+                'y': 14
+            }, {
+                'x': 29,
+                'y': 14
+            }, {
+                'x': 29,
+                'y': 15
+            }, {
+                'x': 28,
+                'y': 15
+            }, {
+                'x': 27,
+                'y': 15
+            }, {
+                'x': 26,
+                'y': 15
+            }, {
+                'x': 25,
+                'y': 15
+            }, {
+                'x': 24,
+                'y': 15
+            }, {
+                'x': 23,
+                'y': 15
+            }, {
+                'x': 22,
+                'y': 15
+            }, {
+                'x': 21,
+                'y': 15
+            }, {
+                'x': 20,
+                'y': 15
+            }, {
+                'x': 19,
+                'y': 15
+            }, {
+                'x': 18,
+                'y': 15
+            }, {
+                'x': 17,
+                'y': 15
+            }, {
+                'x': 16,
+                'y': 15
+            }, {
+                'x': 15,
+                'y': 15
+            }, {
+                'x': 14,
+                'y': 15
+            }, {
+                'x': 13,
+                'y': 15
+            }, {
+                'x': 12,
+                'y': 15
+            }, {
+                'x': 11,
+                'y': 15
+            }, {
+                'x': 10,
+                'y': 15
+            }, {
+                'x': 9,
+                'y': 15
+            }, {
+                'x': 8,
+                'y': 15
+            }, {
+                'x': 7,
+                'y': 15
+            }, {
+                'x': 6,
+                'y': 15
+            }, {
+                'x': 5,
+                'y': 15
+            }, {
+                'x': 4,
+                'y': 15
+            }, {
+                'x': 3,
+                'y': 15
+            }, {
+                'x': 2,
+                'y': 15
+            }, {
+                'x': 1,
+                'y': 15
+            }, {
+                'x': 1,
+                'y': 16
+            }, {
+                'x': 2,
+                'y': 16
+            }, {
+                'x': 3,
+                'y': 16
+            }, {
+                'x': 4,
+                'y': 16
+            }, {
+                'x': 5,
+                'y': 16
+            }, {
+                'x': 6,
+                'y': 16
+            }, {
+                'x': 7,
+                'y': 16
+            }, {
+                'x': 8,
+                'y': 16
+            }, {
+                'x': 9,
+                'y': 16
+            }, {
+                'x': 10,
+                'y': 16
+            }, {
+                'x': 11,
+                'y': 16
+            }, {
+                'x': 12,
+                'y': 16
+            }, {
+                'x': 13,
+                'y': 16
+            }, {
+                'x': 14,
+                'y': 16
+            }, {
+                'x': 15,
+                'y': 16
+            }, {
+                'x': 16,
+                'y': 16
+            }, {
+                'x': 17,
+                'y': 16
+            }, {
+                'x': 18,
+                'y': 16
+            }, {
+                'x': 19,
+                'y': 16
+            }, {
+                'x': 20,
+                'y': 16
+            }, {
+                'x': 21,
+                'y': 16
+            }, {
+                'x': 22,
+                'y': 16
+            }, {
+                'x': 23,
+                'y': 16
+            }, {
+                'x': 24,
+                'y': 16
+            }, {
+                'x': 25,
+                'y': 16
+            }, {
+                'x': 26,
+                'y': 16
+            }, {
+                'x': 27,
+                'y': 16
+            }, {
+                'x': 28,
+                'y': 16
+            }, {
+                'x': 29,
+                'y': 16
+            }, {
+                'x': 29,
+                'y': 17
+            }, {
+                'x': 28,
+                'y': 17
+            }, {
+                'x': 27,
+                'y': 17
+            }, {
+                'x': 26,
+                'y': 17
+            }, {
+                'x': 25,
+                'y': 17
+            }, {
+                'x': 24,
+                'y': 17
+            }, {
+                'x': 23,
+                'y': 17
+            }, {
+                'x': 22,
+                'y': 17
+            }, {
+                'x': 21,
+                'y': 17
+            }, {
+                'x': 20,
+                'y': 17
+            }, {
+                'x': 19,
+                'y': 17
+            }, {
+                'x': 18,
+                'y': 17
+            }, {
+                'x': 17,
+                'y': 17
+            }, {
+                'x': 16,
+                'y': 17
+            }, {
+                'x': 15,
+                'y': 17
+            }, {
+                'x': 14,
+                'y': 17
+            }, {
+                'x': 13,
+                'y': 17
+            }, {
+                'x': 12,
+                'y': 17
+            }, {
+                'x': 11,
+                'y': 17
+            }, {
+                'x': 10,
+                'y': 17
+            }, {
+                'x': 9,
+                'y': 17
+            }, {
+                'x': 8,
+                'y': 17
+            }, {
+                'x': 7,
+                'y': 17
+            }, {
+                'x': 6,
+                'y': 17
+            }, {
+                'x': 5,
+                'y': 17
+            }, {
+                'x': 4,
+                'y': 17
+            }, {
+                'x': 3,
+                'y': 17
+            }, {
+                'x': 2,
+                'y': 17
+            }, {
+                'x': 1,
+                'y': 17
+            }, {
+                'x': 1,
+                'y': 18
+            }, {
+                'x': 2,
+                'y': 18
+            }, {
+                'x': 3,
+                'y': 18
+            }, {
+                'x': 4,
+                'y': 18
+            }, {
+                'x': 5,
+                'y': 18
+            }, {
+                'x': 6,
+                'y': 18
+            }, {
+                'x': 7,
+                'y': 18
+            }, {
+                'x': 8,
+                'y': 18
+            }, {
+                'x': 9,
+                'y': 18
+            }, {
+                'x': 10,
+                'y': 18
+            }, {
+                'x': 11,
+                'y': 18
+            }, {
+                'x': 12,
+                'y': 18
+            }, {
+                'x': 13,
+                'y': 18
+            }, {
+                'x': 14,
+                'y': 18
+            }, {
+                'x': 15,
+                'y': 18
+            }, {
+                'x': 16,
+                'y': 18
+            }, {
+                'x': 17,
+                'y': 18
+            }, {
+                'x': 18,
+                'y': 18
+            }, {
+                'x': 19,
+                'y': 18
+            }, {
+                'x': 20,
+                'y': 18
+            }, {
+                'x': 21,
+                'y': 18
+            }, {
+                'x': 22,
+                'y': 18
+            }, {
+                'x': 23,
+                'y': 18
+            }, {
+                'x': 24,
+                'y': 18
+            }, {
+                'x': 25,
+                'y': 18
+            }, {
+                'x': 26,
+                'y': 18
+            }, {
+                'x': 27,
+                'y': 18
+            }, {
+                'x': 28,
+                'y': 18
+            }, {
+                'x': 29,
+                'y': 18
+            }, {
+                'x': 29,
+                'y': 19
+            }, {
+                'x': 28,
+                'y': 19
+            }, {
+                'x': 27,
+                'y': 19
+            }, {
+                'x': 26,
+                'y': 19
+            }, {
+                'x': 25,
+                'y': 19
+            }, {
+                'x': 24,
+                'y': 19
+            }, {
+                'x': 23,
+                'y': 19
+            }, {
+                'x': 22,
+                'y': 19
+            }, {
+                'x': 21,
+                'y': 19
+            }, {
+                'x': 20,
+                'y': 19
+            }, {
+                'x': 19,
+                'y': 19
+            }, {
+                'x': 18,
+                'y': 19
+            }, {
+                'x': 17,
+                'y': 19
+            }, {
+                'x': 16,
+                'y': 19
+            }, {
+                'x': 15,
+                'y': 19
+            }, {
+                'x': 14,
+                'y': 19
+            }, {
+                'x': 13,
+                'y': 19
+            }, {
+                'x': 12,
+                'y': 19
+            }, {
+                'x': 11,
+                'y': 19
+            }, {
+                'x': 10,
+                'y': 19
+            }, {
+                'x': 9,
+                'y': 19
+            }, {
+                'x': 8,
+                'y': 19
+            }, {
+                'x': 7,
+                'y': 19
+            }, {
+                'x': 6,
+                'y': 19
+            }, {
+                'x': 5,
+                'y': 19
+            }, {
+                'x': 4,
+                'y': 19
+            }, {
+                'x': 3,
+                'y': 19
+            }, {
+                'x': 2,
+                'y': 19
+            }, {
+                'x': 1,
+                'y': 19
+            }, {
+                'x': 0,
+                'y': 19
+            }, {
+                'x': 0,
+                'y': 18
+            }, {
+                'x': 0,
+                'y': 17
+            }, {
+                'x': 0,
+                'y': 16
+            }, {
+                'x': 0,
+                'y': 15
+            }, {
+                'x': 0,
+                'y': 14
+            }, {
+                'x': 0,
+                'y': 13
+            }, {
+                'x': 0,
+                'y': 12
+            }, {
+                'x': 0,
+                'y': 11
+            }, {
+                'x': 0,
+                'y': 10
+            }, {
+                'x': 0,
+                'y': 9
+            }, {
+                'x': 0,
+                'y': 8
+            }, {
+                'x': 0,
+                'y': 7
+            }, {
+                'x': 0,
+                'y': 6
+            }, {
+                'x': 0,
+                'y': 5
+            }, {
+                'x': 0,
+                'y': 4
+            }, {
+                'x': 0,
+                'y': 3
+            }, {
+                'x': 0,
+                'y': 2
+            }, {
+                'x': 0,
+                'y': 1
+            }]
+        }, "Placebo thinking... hmmm..."
+
+    if questionNum == 13:
+        import numpy as np
+        peopleCounts = [4, 20, 40, 80, 150, 200]
+        peopleCount = peopleCounts[subPass]
+
+        xDiff = math.sqrt(peopleCount) / 3
+        yDiff = math.sqrt(peopleCount) / 3
+        people = []
+        for i in np.arange(-xDiff, xDiff, 0.6):
+            for j in np.arange(-yDiff, yDiff, 0.6):
+                people.append({"xy": [i - 12, j - 12]})
+                if len(people) == peopleCount:
+                    break
+            if len(people) == peopleCount:
+                break
+        return {"people": people}, "Placebo thinking... hmmm..."
+
+    if questionNum == 14 and subPass == 0:
         # Question 14 _ 0
         return {
             "lines": [{
@@ -1788,7 +4426,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             }]
         }, "Placebo thinking... hmmm..."
 
-    if h == "e15cd2f415bc44a301fab0fcbadbe397a46575c70361a8f5df47d9a40a3b76c9":
+    if questionNum == 14 and subPass == 1:
         # Question 14 _ 1 Just test we can do squares
         return {
             "lines": [
@@ -1803,216 +4441,437 @@ def PlaceboAIHook(prompt: str, structure: dict | None) -> dict | str:
             ]
         }, "Placebo thinking... hmmm..."
 
-    if h in [
-            "65005dd7285e22ba61db002a6e82cfc43b7525b27eea14655f7967f4460b8d86",
-            "54d67aa2d94ee2a1391ecbf9b0f2de2a7bd4d1348f60a128fc723f786814f5c2",
-            "af992743cffd7d15428baf290509378504f9360423fd0e287df590280ca19bc5",
-            "fb8463620dd03e3aff518f77e41308d3adf20631684df87d215e30f34f437ff6"
-    ]:
+    if questionNum == 15:
         # A rather poor tetris run:
+
+        def block(x):
+            b = [
+                {
+                    "translationCount": x,
+                    "rotationCount": 3
+                },
+                {
+                    "translationCount": x + 1,
+                    "rotationCount": 1
+                },
+            ]
+            b.extend(b)
+            b.extend(b)
+            return b
+
+        basicBlocks = block(0) + block(2) + block(4) + block(6) + block(8)
+
+        if subPass == 1:
+            basicBlocks.extend([
+                {
+                    "translationCount": 13,
+                    "rotationCount": 2
+                },
+                {
+                    "translationCount": 10,
+                    "rotationCount": 0
+                },
+            ] * 6)
+            basicBlocks.extend(block(14))
+
+        if subPass >= 2:
+            basicBlocks.extend(block(10))
+            basicBlocks.extend(block(12))
+            basicBlocks.extend(block(14))
+            basicBlocks.extend(block(16))
+            basicBlocks.extend(block(18))
+
+        if subPass >= 3:
+            basicBlocks.extend(block(20))
+            basicBlocks.extend(block(22))
+            basicBlocks.extend(block(24))
+            basicBlocks.extend(block(26))
+            basicBlocks.extend(block(28))
+            basicBlocks.extend(block(30))
+            basicBlocks.extend(block(32))
+            basicBlocks.extend(block(34))
+            basicBlocks.extend(block(36))
+            basicBlocks.extend(block(38))
+
+        return {"moves": basicBlocks}, "Placebo thinking... hmmm..."
+
+    if questionNum == 16:
+        g = {}
+        exec(open("16.py").read(), g)
+
+        prismList = g["prismList"][0:subPass + 1]
+
+        # Expand prismList into individual prisms with all rotation variants
+        prisms = []
+        for count, x, y, z in prismList:
+            dims = sorted([x, y, z], reverse=True)
+            for _ in range(count):
+                prisms.append(tuple(dims))
+
+        # Sort prisms by volume (largest first) for better packing
+        prisms.sort(key=lambda p: p[0] * p[1] * p[2], reverse=True)
+
+        def get_rotations(dims):
+            """Get all unique rotations of a prism."""
+            x, y, z = dims
+            rotations = set()
+            for perm in [(x, y, z), (x, z, y), (y, x, z), (y, z, x), (z, x, y),
+                         (z, y, x)]:
+                rotations.add(perm)
+            return list(rotations)
+
+        def boxes_overlap(b1, b2):
+            """Check if two boxes overlap."""
+            return (b1['XyzMin'][0] < b2['XyzMax'][0]
+                    and b1['XyzMax'][0] > b2['XyzMin'][0]
+                    and b1['XyzMin'][1] < b2['XyzMax'][1]
+                    and b1['XyzMax'][1] > b2['XyzMin'][1]
+                    and b1['XyzMin'][2] < b2['XyzMax'][2]
+                    and b1['XyzMax'][2] > b2['XyzMin'][2])
+
+        def can_place(placed, new_box):
+            """Check if new_box can be placed without overlap."""
+            for box in placed:
+                if boxes_overlap(box, new_box):
+                    return False
+            return True
+
+        def get_candidate_positions(placed, max_coord):
+            """Get candidate positions (corners of existing boxes + origin)."""
+            positions = [(0, 0, 0)]
+            for box in placed:
+                # Add corners of existing boxes as candidates
+                for x in [box['XyzMin'][0], box['XyzMax'][0]]:
+                    for y in [box['XyzMin'][1], box['XyzMax'][1]]:
+                        for z in [box['XyzMin'][2], box['XyzMax'][2]]:
+                            if x <= max_coord and y <= max_coord and z <= max_coord:
+                                positions.append((x, y, z))
+            return list(set(positions))
+
+        def bounding_volume(placed):
+            """Calculate bounding box volume of placed boxes."""
+            if not placed:
+                return 0
+            max_x = max(b['XyzMax'][0] for b in placed)
+            max_y = max(b['XyzMax'][1] for b in placed)
+            max_z = max(b['XyzMax'][2] for b in placed)
+            return max_x * max_y * max_z
+
+        def pack_greedy(prisms_to_place):
+            """Greedy bottom-left-back packing with rotation."""
+            placed = []
+            max_coord = sum(max(p) for p in prisms_to_place)  # Upper bound
+
+            for dims in prisms_to_place:
+                best_pos = None
+                best_rot = None
+                best_score = float('inf')
+
+                candidates = get_candidate_positions(placed, max_coord)
+                # Sort candidates by (z, y, x) for bottom-left-back preference
+                candidates.sort(key=lambda p: (p[2], p[1], p[0]))
+
+                for rot in get_rotations(dims):
+                    dx, dy, dz = rot
+                    for px, py, pz in candidates:
+                        new_box = {
+                            'XyzMin': [px, py, pz],
+                            'XyzMax': [px + dx, py + dy, pz + dz]
+                        }
+                        if can_place(placed, new_box):
+                            # Score by resulting bounding volume
+                            test_placed = placed + [new_box]
+                            score = bounding_volume(test_placed)
+                            if score < best_score:
+                                best_score = score
+                                best_pos = (px, py, pz)
+                                best_rot = rot
+
+                if best_pos is None:
+                    # Fallback: stack on top
+                    max_z = max((b['XyzMax'][2]
+                                 for b in placed), default=0) if placed else 0
+                    best_pos = (0, 0, max_z)
+                    best_rot = dims
+
+                px, py, pz = best_pos
+                dx, dy, dz = best_rot
+                placed.append({
+                    'XyzMin': [px, py, pz],
+                    'XyzMax': [px + dx, py + dy, pz + dz]
+                })
+
+            return placed
+
+        packings = pack_greedy(prisms)
+
         return {
-            "moves": [
+            'boxes': packings
+        }, "Calculated with greedy bottom-left-back packing"
+
+    if questionNum == 17 and subPass == 0:
+        return """
+cylinder(r=4.572, h=1.29789304);
+translate([0,0,1.29789304]) cylinder(r1=4.572, r2=0002, h=2.929842426);
+        """, "Manually calculated."
+
+    if questionNum == 18 and subPass == 0:
+        g = {}
+        exec(open("18.py").read(), g)
+        return g["prepareSubpassReferenceScad"](
+            subPass), "I had to solve this for the reference implementation."
+
+    if questionNum == 19 and subPass == 0:
+        return {
+            "tetrahedra": [
                 {
-                    "translationCount": 8,
-                    "rotationCount": 2
-                },
-                {
-                    "translationCount": 5,
-                    "rotationCount": 2
-                },
-                {
-                    "translationCount": 2,
-                    "rotationCount": 2
-                },
-                {
-                    "translationCount": 9,
-                    "rotationCount": 1
-                },
-                # And that's one row! Yay!. Now do a few random ones:
-                {
-                    "translationCount": 5,
-                    "rotationCount": 0
-                },
-                {
-                    "translationCount": 1,
-                    "rotationCount": 1
-                },
-                {
-                    "translationCount": 6,
-                    "rotationCount": 2
-                },
-                {
-                    "translationCount": 4,
-                    "rotationCount": 3
-                },
-                {
-                    "translationCount": 9,
-                    "rotationCount": 0
-                },
-                {
-                    "translationCount": 1,
-                    "rotationCount": 1
-                },
-                {
-                    "translationCount": 2,
-                    "rotationCount": 2
-                },
-                {
-                    "translationCount": 3,
-                    "rotationCount": 3
-                },
-                {
-                    "translationCount": 5,
-                    "rotationCount": 0
-                },
-                {
-                    "translationCount": 1,
-                    "rotationCount": 1
+                    "x": -1.500000,
+                    "y": 2.598076,
+                    "z": 0.000000,
+                    "q0": 0.000000,
+                    "q1": 0.000000,
+                    "q2": 0.000000,
+                    "q3": 1.000000
                 },
             ]
         }, "Placebo thinking... hmmm..."
 
-    if h == "01956a7a56f56435c831265792360719e0b05c155160bf0eaf3d7a1f92873efe":
-        # ChatGPT 5.1 Thinking returned this, this is wrong, the volume is correct, but:
-        # - The cone goes all the way to the ground/wall intersection. The cone should rest a bit up the wall.
-        # - The angle of repose is way too steep. This isn't 33 degrees.
-        # - The cone is not supposed to be pin-prick sharp, the pipe diameter is 25NB, which is 33.7mm ID,
-        #   how is that 33.7mm wide circle of sand supposed to end up so sharp?
+    if questionNum == 20:
+        import base64
+        g = {}
+        exec(open("20.py").read(), g)
+        image = g["loadReferenceImage"]()
+        sys.set_int_max_str_digits(1000000)
+        gridSize = [256, 128, 64, 32, 8][subPass]
+        sampleSize = image.size[0] // gridSize
+        data = 0
+        for y in range(gridSize):
+            for x in range(gridSize):
+                px = x * sampleSize + sampleSize // 2
+                py = y * sampleSize + sampleSize // 2
+                if image.getpixel((px, py)) == 0:
+                    data |= (1 << (y * gridSize + x))
 
-        return """
-            cylinder(h=6.981743147997059, r1=4.533997014063981, r2=0, $fn=50);
-        """, "Placebo thinking... hmmm..."
+        codeBook = [
+            "0" * 16, "f" * 16, "0" * 8, "f" * 8, "0000", "ffff", "00", "ff"
+        ]
 
-    if h in [
-            "91ccb279941937df81a302c117e67586a1d63c477f92585abbc540883e9b16a7",
-            "afda666b86b1fa2f9bab7816db7786fbe563f079bf440944b7631f07579c5743",
-            "f3cbb75532fd330657e6238f603ce84b325ca322eba2342c4947e7e703329f7b",
-            "86cd0c5e1fd11a405cc027d4db50f91c4d27f7d9c81d8d12f8613624536636ff"
-    ]:
-        return "rotate([0,0,45]) cylinder(r1=30, r2=0,h=30, $fn=4);", "Placebo thinking... hmmm..."
+        # So I actually tried getting AI engines to write this RLE encoder and
+        # they all failed in various ways... like ChatGPT5.1pro's would work
+        # unless it hit a run of 256 or more, then it'd corrupt. Some made
+        # encodings that needed base64ing and utf-8 encoding and stuff and
+        # that added way too many characters.
 
-    if h == "780ac9d70a12589ad9dcff02a5d50a6d5ce94ef42d05fc312044d6b91e58ccbb":
+        def compressor(n: int) -> str:
+            n = hex(n)[2:]
+            o = ""
+
+            def realIndex(big: str, small: str) -> int:
+                try:
+                    return big.index(small)
+                except ValueError:
+                    return len(big) + 1  # Not found = beyond end
+
+            while n:
+                for k, v in enumerate(codeBook):
+                    if n.startswith(v):
+                        o += str(k)
+                        n = n[len(v):]
+                        break
+                else:
+                    nextRun = min(realIndex(n, "ffff"), realIndex(n, "0000"))
+
+                    bytesToWrite = max(1, min(len(n), nextRun, 8))
+                    o += hex(bytesToWrite + 7)[2:]
+                    o += n[:bytesToWrite]
+                    n = n[bytesToWrite:]
+
+            return o
+
+        def decompressor(n: str) -> str:
+            r = ""
+            while n:
+                o = int(n[0], 16)
+                if o < 8:
+                    r += codeBook[o]
+                    n = n[1:]
+                else:
+                    bytesToRead = o - 7
+                    r += n[1:bytesToRead + 1]
+                    n = n[bytesToRead + 1:]
+
+            return r
+
+        compressed = compressor(data)
+        decompressCheck = decompressor(compressed)
+
+        #print("Data going in:")
+        #print(hex(data))
+
+        #print("\n\n Compressed:")
+        #print(compressed)
+
+        #print("\n\n Decompressed:")
+        #print(decompressCheck)
+
+        #print("\n\n\n\n")
+
+        uncompressedSize = len(str(data))
+        compressedSize = len(compressed)
+
+        print(f"Uncompressed size: {uncompressedSize}")
+        print(f"Compressed size: {compressedSize} + decompressorSize")
+
+        if uncompressedSize < compressedSize + 300:
+            return {
+                "minifiedCode":
+                dedent(f"""
+           def f(x,y):
+            d = {data}
+            i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
+            return (d >> i) & 1
+            """)
+            }, ""
+        else:
+            code = dedent(f"""
+           def l(n: str) -> str:
+            r = ""
+            while n:
+             o = int(n[0], 16)
+             if o < 8:
+              r += ["0"*16,"f"*16,"0"*8,"f"*8,"0000","ffff","00","ff"][o]
+              n = n[1:]
+             else:
+              b = o - 7
+              r += n[1:b + 1]
+              n = n[b + 1:]
+
+            return r
+           d = int(l("{compressed}"),16)
+           def f(x,y):
+            i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
+            return (d >> i) & 1
+            """)
+            #print(code)
+            return {"minifiedCode": code}, ""
+
+    if questionNum == 24:
+        g = {}
+        exec(open("24.py").read(), g)
+        count = g["pointsCount"][subPass]
+        pts = g["points"][:count]
+
+        from scipy.spatial import ConvexHull
+        hull = ConvexHull(pts)
         return {
-            "boxes": [
-                {
-                    "XyzMin": [0, 0, 0],
-                    "XyzMax": [5, 3, 2]
-                },
-                {
-                    "XyzMin": [0, 0, 2],
-                    "XyzMax": [5, 3, 4]
-                },
-                {
-                    "XyzMin": [0, 0, 4],
-                    "XyzMax": [5, 3, 6]
-                },
-                {
-                    "XyzMin": [0, 0, 6],
-                    "XyzMax": [5, 3, 8]
-                },
-                {
-                    "XyzMin": [0, 0, 8],
-                    "XyzMax": [5, 3, 10]
-                },
-                {
-                    "XyzMin": [0, 0, 10],
-                    "XyzMax": [5, 3, 12]
-                },
-                {
-                    "XyzMin": [0, 0, 12],
-                    "XyzMax": [5, 3, 14]
-                },
+            "pointSequence": hull.vertices.tolist(),
+            "reasoning": "SciPy is a tool."
+        }, ""
+
+    if questionNum == 25:
+        # Numpy and sciPy are tools, and this test is "human with tools, so..."
+        g = {}
+        exec(open("25.py").read(), g)
+        count = g["pointsCount"][subPass]
+        pts = g["points"][:count]
+        triangles = g["referenceDelaunay"](pts)
+
+        return {"reasoning": "SciPy is a tool", "triangles": triangles}, ""
+
+    if questionNum == 26 and subPass == 1:
+        return {
+            'nodes': [
+                '0000011101', '0000011111', '0000101011', '0000101111',
+                '0001000110', '0001000111', '0001001110', '0001001111',
+                '0010101001', '0010101101', '0011000100', '0011000101',
+                '0011001100', '0011001101', '0100011001', '0100011011',
+                '0101000010', '0101000011', '0101001010', '0101001011',
+                '0111000000', '0111000001', '0111001000', '0111001001',
+                '1000010100', '1000010110', '1000100010', '1000100110',
+                '1010100000', '1010100100', '1100010000', '1100010010'
             ]
-        }, "Placebo thinking... hmmm..."
+        }, ""
 
-    if h == "23a9783ba0a22a989fe8de2436a8a5435f7406da2774969d4b3a433d7c59a7fd":
-        return [
-            {
-                "x": -1.500000,
-                "y": 2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            },
-        ], "Placebo thinking... hmmm..."
+    if questionNum == 26 and subPass == 2:
+        return {'nodes': ['001010101101', '101010001001']}
 
-    if h == "0fbf410f5c365dbc0e05c62d5c9651f94a8f218ea98f601adadbf013ea97ae4e":
-        return """
-def m(l,b):
- r=math.radians
- return (l+180)/360,.5-math.log(math.tan(math.pi/4+r(b)/2))/(2*math.pi)
-A=[(114,-35),(135,-35),(150,-37),(153,-28),(143,-11),(129,-14),(114,-22)]
-T=[(144,-44),(147,-44),(148,-42),(146,-41),(144,-42)]
-PA=[m(l,b)for l,b in A];PT=[m(l,b)for l,b in T];C=PA+PT
-mx=min(p[0]for p in C);Mx=max(p[0]for p in C);my=min(p[1]for p in C);My=max(p[1]for p in C)
-def s(P):return[((x-mx)/(Mx-mx),(y-my)/(My-my))for x,y in P]
-PA,PT=s(PA),s(PT)
-def h(x,y,P):
- c=False
- for i in range(len(P)):
-  x1,y1=P[i-1];x2,y2=P[i]
-  if((y1>y)!=(y2>y))and(x<(x2-x1)*(y-y1)/(y2-y1)+x1):c=not c
- return c
-def f(x,y):return 1 if h(x,y,PA)or h(x,y,PT)else-1
-""", "Placebo thinking... hmmm... Ash opens ChatGPT website and copy/pasted this... hmmm..."
-
-    if h == "9de73558fd26633642b603790929dd6a15c468bf2170e03ea02f48da160b00a5":
-        # Question 24
+    if questionNum == 26 and subPass == 4:
         return {
-            "pointSequence": [4, 10, 14, 15],
-            "reasoning": "Ash is just typing random numbers in."
-        }, "They looked nice."
+            'nodes': [
+                '0000000000000001', '0000000000000010', '0000000000000100',
+                '0010010010010000', '0010010010010011', '0010010010010110',
+                '0100100100100000', '0100100100100101', '0100100100100110',
+                '0110110110110010', '0110110110110100', '0110110110110111',
+                '1001001001001000', '1001001001001011', '1001001001001101',
+                '1011011011011001', '1011011011011010', '1011011011011111',
+                '1101101101101001', '1101101101101100', '1101101101101111',
+                '1111111111111011', '1111111111111101', '1111111111111110'
+            ]
+        }, ""
 
-    if h == "a94fc81dfc2c2952ae38febdb9a0d2f14848e43b66ff40b15faf567606b3ab89":
-        # Question 25
-        return {
-            "reasoning":
-            "Ash is just guessing",
-            "triangles": [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11],
-                          [12, 13, 14], [15, 0, 1]]
-        }, "Placebo thinking... hmmm..."
-
-    if h == "c55ce2dea0508481f4643a0461798fe7b0e89b220473f7b9953da8cc02fd2f3f":
-        # Question 26
+    if questionNum == 26:
         return {
             "reasoning":
             "Ash is not even trying here. Sorry it's late and I have a meeting in the morning.",
             "nodes": ["000000", "111111"]
         }, "Placebo thinking... hmmm..."
 
-    if h == "":
-        # Question 27
+    if questionNum == 27:
         moves = []
-        for i in range(100):
+        gridSize = [[32, 8], [48, 12], [56, 16], [64, 24], [72, 32]]
+
+        for i in range(1000):
             moves.append({
                 "cellX":
-                random.randint(1, 29),
+                random.randint(1, gridSize[subPass][0] - 2),
                 "cellY":
-                random.randint(1, 5),
+                random.randint(1, gridSize[subPass][1] // 2),
                 "direction":
                 random.choice(["up", "down", "left", "right"])
             })
         return {"moves": moves}, "Placebo thinking... hmmm..."
 
-    if h == "":
-        # Question 29
+    if questionNum == 28:
+        g = {}
+        exec(open("28.py").read(), g)
+        sizes = g["sizes"]
+        size = sizes[subPass]
 
-        corePart = """
-union()
-{
-    for (x = [-370/2+5:72:220])
-    {
-        translate([x,0,0]) cube([10, 370, 10],center=true);
-    }
+        heightMap = g["heightMaps"][subPass]
 
-    for (y = [-370/2+5:72:220])
-    {
-        translate([0,y,0]) cube([370, 10, 10],center=true);
-    }
-}
-        """
+        averageHeight = sum(map(sum, heightMap)) / (size * size)
+
+        blasts = []
+        for x in range(size):
+            for y in range(size):
+                if heightMap[x][y] > averageHeight + 1:
+                    blasts.append({
+                        "x": x,
+                        "y": y,
+                        "z": heightMap[x][y] - averageHeight
+                    })
+
+        blasts.sort(key=lambda b: b["z"], reverse=False)
+
+        return {
+            "blasts": blasts
+        }, "Blast our way up the hillsides from the middle"
+
+    if questionNum == 29 and subPass == 0:
+        corePart = dedent("""
+            union()
+            {
+                for (x = [-370/2+5:72:220])
+                {
+                    translate([x,0,0]) cube([10, 370, 10],center=true);
+                }
+
+                for (y = [-370/2+5:72:220])
+                {
+                    translate([0,y,0]) cube([370, 10, 10],center=true);
+                }
+            }
+                    """)
 
         def corePartMinus(s: str):
             return "translate([0,0,5]) difference(){" + corePart + s + "}"
@@ -2045,7 +4904,7 @@ union()
             
             translate([0,180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
             translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
-""")
+        """)
 
         eastAndWestLower = corePartMinus("""
             translate([364,0,0]) cube([380,380,20], center=true);
@@ -2070,7 +4929,7 @@ union()
             
             translate([0,180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
             translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
-""")
+        """)
 
         return {
             "parts": [
@@ -2170,3 +5029,37 @@ union()
             "reasoning":
             "Ash spent an hour messing about in OpenSCAD and created it."
         }, "They looked nice."
+
+    if questionNum == 30 and subPass == 0:
+        result = []
+        for i in str(888_999_6969_666_333_777_11):
+            result.append({
+                "digit": int(i),
+                "orientation": "flat" if i != 6 else "rotate180Z"
+            })
+
+        result.append({"digit": 7, "orientation": "rotate90X"})
+
+        result.append({"digit": 1, "orientation": "rotate90X"})
+
+        result.append({"digit": 1, "orientation": "rotate90X"})
+
+        return {"numberSequence": result}, "Placebo thinking... hmmm..."
+
+    if questionNum == 31 and subPass == 0:
+        return {
+            "hole": {
+                "transform": [
+                    math.sqrt(0.25),
+                    math.sqrt(0.25),
+                    math.sqrt(0.25),
+                    math.sqrt(0.5)
+                ]
+            },
+            "solid": {
+                "transform": [0, 0, 0, 1]
+            }
+        }, "Placebo thinking... hmmm..."
+
+
+#PlaceboAIHook("", {}, 20, 0)

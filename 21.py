@@ -411,6 +411,8 @@ hull() {{
 """
 
 
+earlyFail = True
+
 highLevelSummary = """
 Can an LLM build a rollercoaster track that wont kill it's users?
 <br><br>

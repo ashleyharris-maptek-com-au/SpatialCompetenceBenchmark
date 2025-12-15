@@ -1,5 +1,4 @@
 union() {
-    translate([0, 0, 0]) cube([1, 1, 1]);
     translate([0, 0, 1]) cube([1, 1, 1]);
     translate([0, 0, 2]) cube([1, 1, 1]);
     translate([0, 0, 3]) cube([1, 1, 1]);
@@ -998,5 +997,6 @@ union() {
     translate([9, 9, 6]) cube([1, 1, 1]);
     translate([9, 9, 7]) cube([1, 1, 1]);
     translate([9, 9, 8]) cube([1, 1, 1]);
+    translate([9, 9, 9]) cube([1, 1, 1]);
     translate([10, 0, 0]) cube([1, 1, 1]);
 }

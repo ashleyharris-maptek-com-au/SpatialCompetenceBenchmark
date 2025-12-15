@@ -104,22 +104,20 @@ def resultToScad(result):
     return "module result(){ " + scad + "}}\n\n"
 
 
-"""
-def volumeValidateDelta(result, resultVolume, referenceVolume, intersectionVolume, differenceVolume):
+def validatePostVolume(result, score, resultVolume, referenceVolume,
+                       intersectionVolume, differenceVolume):
     brickCount = len(result["bricks"])
     expectedBrickCount = referenceVolume / 9.6 / 16 / 32
 
     delta = abs(brickCount - expectedBrickCount)
-    
+
     if delta < 2:
-        return 0.0
-    
-    print("50% penalty due to bricks overlapping: " + str(delta))
+        return score, ""
+
     print("Structure has " + str(brickCount) + \
         " bricks, but the union of the bricks created a volume of " + str(resultVolume) + " mm^3," +\
              " the expected volume is " + str(expectedBrickCount * 9.6 * 16 * 32))
-    return -0.5
-"""
+    return score - 0.5, "50% penalty due to bricks overlapping: " + str(delta)
 
 
 def postProcessScore(score, subPassIndex):

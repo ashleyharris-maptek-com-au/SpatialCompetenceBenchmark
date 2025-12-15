@@ -212,26 +212,26 @@ hull(){
 }
 hull(){
     translate([9.0, 6.0]) sphere(0.01);
-    translate([9.0, 7.0]) sphere(0.01);
+    translate([8.0, 6.0]) sphere(0.01);
 }
 hull(){
-    translate([9.0, 7.0]) sphere(0.01);
-    translate([9.0, 8.0]) sphere(0.01);
+    translate([8.0, 6.0]) sphere(0.01);
+    translate([7.0, 6.0]) sphere(0.01);
 }
 hull(){
-    translate([9.0, 8.0]) sphere(0.01);
-    translate([8.0, 8.0]) sphere(0.01);
+    translate([7.0, 6.0]) sphere(0.01);
+    translate([6.0, 6.0]) sphere(0.01);
 }
 hull(){
-    translate([8.0, 8.0]) sphere(0.01);
-    translate([7.0, 8.0]) sphere(0.01);
+    translate([6.0, 6.0]) sphere(0.01);
+    translate([5.0, 6.0]) sphere(0.01);
 }
 hull(){
-    translate([7.0, 8.0]) sphere(0.01);
-    translate([6.0, 8.0]) sphere(0.01);
+    translate([5.0, 6.0]) sphere(0.01);
+    translate([4.0, 6.0]) sphere(0.01);
 }
 hull(){
-    translate([6.0, 8.0]) sphere(0.01);
-    translate([5.0, 8.0]) sphere(0.01);
+    translate([4.0, 6.0]) sphere(0.01);
+    translate([3.4, 6.8]) sphere(0.01);
 }
 translate([0,0,-0.01]) color([0.1,0.1,0.1]) cube([10,10,0.01]);

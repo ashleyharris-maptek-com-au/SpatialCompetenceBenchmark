@@ -71,6 +71,8 @@ structure = {
     "additionalProperties": False
 }
 
+earlyFail = True
+
 
 def prepareSubpassPrompt(index):
     if index == 0:

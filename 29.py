@@ -1,5 +1,6 @@
 #skip = True
 import subprocess, sys, os, VolumeComparison as vc
+import random
 
 title = "Cage match. Can LLMs design interlocking parts for 3D printing?"
 
@@ -152,11 +153,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                     bugs += "OpenSCAD failed to generate STL for " + partName + " due to " + str(
                         e) + "<br>"
 
-            if not os.path.exists("results/" + partName + "_posed.stl"):
+            if not os.path.exists("results/" + partName +
+                                  "_posed.stl") and bugs == "":
                 open("results/" + partName + "_posed.scad",
                      "w",
                      encoding="utf-8").write(f"""
-mulmatrix({part["transform"]}) import("{partName}.stl");
+multmatrix({part["transform"]}) import("{partName}.stl");
                      """)
 
                 try:
@@ -169,26 +171,24 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
                     bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
                         e) + "<br>"
 
-            if not os.path.exists("results/29_" + str(aiEngineName) +
-                                  "_fullposed.stl"):
-                with open("results/29_" + str(aiEngineName) +
-                          "_fullposed.scad",
-                          "w",
-                          encoding="utf-8") as f:
-                    for partIndex, part in enumerate(answer["parts"]):
-                        partName = "29_" + str(partIndex)
-                        f.write(f"import(\"{partName}_posed.stl\");\n")
+    if not os.path.exists("results/29_" + str(aiEngineName) +
+                          "_fullposed.stl") and bugs == "":
+        with open("results/29_" + str(aiEngineName) + "_fullposed.scad",
+                  "w",
+                  encoding="utf-8") as f:
+            for partIndex, part in enumerate(answer["parts"]):
+                partName = "29_" + str(partIndex)
+                f.write(f"import(\"{partName}_posed.stl\");\n")
 
-                try:
-                    subprocess.run([
-                        vc.openScadPath,
-                        "29_" + str(aiEngineName) + "_fullposed.scad", "-o",
-                        "29_" + str(aiEngineName) + "_fullposed.stl"
-                    ],
-                                   cwd="results")
-                except Exception as e:
-                    bugs += "OpenSCAD failed to generate fullposed STL for " + str(
-                        aiEngineName) + " due to " + str(e) + "<br>"
+        try:
+            subprocess.run([
+                vc.openScadPath, "29_" + str(aiEngineName) + "_fullposed.scad",
+                "-o", "29_" + str(aiEngineName) + "_fullposed.stl"
+            ],
+                           cwd="results")
+        except Exception as e:
+            bugs += "OpenSCAD failed to generate fullposed STL for " + str(
+                aiEngineName) + " due to " + str(e) + "<br>"
 
     if subPass == 0:
         # Basic crap. Correct number of parts, and non-zero sized stl files.
@@ -197,10 +197,15 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
                 answer["parts"])) + "<br>"
 
         for partIndex, part in enumerate(answer["parts"]):
-            partName = "29_" + str(partIndex)
+            partName = "29_" + str(partIndex) + "_" + aiEngineName
+            stlFile = "results/" + partName + ".stl"
+
+            if not os.path.exists(stlFile):
+                bugs += "Part " + str(partIndex) + ".stl does not exist<br>"
+                continue
 
             # check file size is not 0
-            if os.path.getsize("results/" + partName + ".stl") == 0:
+            if os.path.getsize(stlFile) == 0:
                 bugs += "Part " + str(partIndex) + ".stl was empty<br>"
 
                 if vc.StlVolume.calculate_stl_volume(stlFile) == 0:
@@ -218,7 +223,7 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
         score = 0
         bugs = ""
         for partIndex, part in enumerate(answer["parts"]):
-            partName = "29_" + str(partIndex)
+            partName = "29_" + str(partIndex) + "_" + aiEngineName
             stlFile = "results/" + partName + ".stl"
 
             overFlowsFromBuildVolume = vc.hit_tests(
@@ -239,6 +244,10 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
         # Does it have the correct gap between bars?
         tests4 = []
         tests10 = []
+
+        def randomFloat(min, max):
+            return random.uniform(min, max)
+
         for i in range(32):
             tests4.append(
                 f"translate([{randomFloat(-350,350)},{randomFloat(-350,350)},0]) cube([40,40,40], center=true);"
@@ -248,7 +257,7 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
             )
 
         for partIndex, part in enumerate(answer["parts"]):
-            partName = "29_" + str(partIndex)
+            partName = "29_" + str(partIndex) + "_" + aiEngineName
             stlFile = "results/" + partName + ".stl"
             results4 = vc.hit_tests(stlFile, tests4)
             results10 = vc.hit_tests(stlFile, tests10)
@@ -308,14 +317,14 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
 
     if subPass == 5:
         for partIndexA, partA in enumerate(answer["parts"]):
-            partNameA = "29_" + str(partIndexA) + aiEngineName
+            partNameA = "29_" + str(partIndexA) + "_" + aiEngineName
             stlFileA = "results/" + partNameA + "_posed.stl"
             tests = []
             for partIndexB, partB in enumerate(answer["parts"]):
                 if partIndexA >= partIndexB:
                     continue
 
-                partNameB = "29_" + str(partIndexB) + aiEngineName
+                partNameB = "29_" + str(partIndexB) + "_" + aiEngineName
                 stlFileB = "results/" + partNameB + "_posed.stl"
                 tests.append("difference() {" + stlFileA + "; " + stlFileB +
                              ";}")
@@ -327,7 +336,7 @@ mulmatrix({part["transform"]}) import("{partName}.stl");
 
     if subPass == 6:
         for partIndexA, partA in enumerate(answer["parts"]):
-            partNameA = "29_" + str(partIndexA) + aiEngineName
+            partNameA = "29_" + str(partIndexA) + "_" + aiEngineName
             stlFileA = "results/" + partNameA + "_posed.stl"
 
             tests = [

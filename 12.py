@@ -25,6 +25,8 @@ subpassParamSummary = [
 
 promptChangeSummary = "Increasing pipe length and square size."
 
+earlyFail = True
+
 structure = {
     "type": "object",
     "properties": {

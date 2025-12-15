@@ -1,1 +1,1 @@
-$fn=90;color([0,1,0]) projection() rotate([1.5707964267266064,0.0,0.7853983455163582]) hull() linear_extrude(height=0.2) text("G", font="Arial", size=5, halign="center", valign="center");
+$fn=90;color([0,1,0]) projection() rotate([1.5707963234388336,0.0,0.0]) hull() linear_extrude(height=0.2) text("G", font="Arial", size=5, halign="center", valign="center");

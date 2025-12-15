@@ -72,6 +72,8 @@ subpassParamSummary = [
     "there are 2 lakes, each over 200 voxels in volume"
 ]
 
+earlyFail = True
+
 structure = {
     "type": "object",
     "properties": {

@@ -36,6 +36,8 @@ def prepareSubpassPrompt(index):
 
 structure = None
 
+earlyFail = True
+
 promptChangeSummary = """
 Hundreds of thousands of stones, then millions. 
 The AI needs to merge adjacent stones and work with merged

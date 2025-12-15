@@ -251,7 +251,7 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
 
     gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
 
-    if "def f(x, y):" not in answer:
+    if "def f(x,y):" not in answer.replace(", ", ""):
         return 0.0, f"Invalid function signature in answer: {answer}. It must contain \"def f(x, y):\". Score is 0"
 
     if "return" not in answer:

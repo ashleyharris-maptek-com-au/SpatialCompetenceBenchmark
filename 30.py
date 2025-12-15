@@ -271,7 +271,7 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
         height += 1.5
 
         if item["orientation"] == "rotate90X":
-            d = "translate([0,0,10]) rotate([90,0,0])" + d
+            d = "translate([5,0,10]) rotate([90,0,90])" + d
             height += 20
         if item["orientation"] == "rotate90Y":
             d = "translate([5,4,0]) rotate([0,90,0])" + d
@@ -290,7 +290,8 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
     os.makedirs("results", exist_ok=True)
     output_path = "results/30_Visualization_" + aiEngineName + "_" + str(
         len(answer["numberSequence"])) + ".png"
-    vc.render_scadText_to_png(scad, output_path)
+    vc.render_scadText_to_png(scad, output_path,
+                              "--camera=-10,-10,10,55,0,25,100")
     print(f"Saved visualization to {output_path}")
 
     scadFile = "results/30_Visualization_" + aiEngineName + "_" + str(

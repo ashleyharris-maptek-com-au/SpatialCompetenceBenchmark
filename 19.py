@@ -1,22 +1,23 @@
 import math
 
-title = "Tetrahedron Packing in 3D"
+title = "Hill Tetrahedron Packing in 3D"
 
 prompt = """
-Here is the points and faces of a regular tetrahedron with all sides equal 1, resting on the Z=0 plane and with an edge along the X=0 plane:
+Here is the points and faces of a tetrahedron
+It has three edges of length 1 along the axes, and three edges of length sqrt(2) on the diagonals.
 
 polyhedron(
     points = [
-        [0, 0, 0],                               // 0
-        [1, 0, 0],                               // 1
-        [0.5, sqrt(3)/2, 0],                     // 2
-        [0.5, sqrt(3)/6, sqrt(2/3)]              // 3 (apex)
+        [0, 0, 0],                               // 0 (origin corner)
+        [1, 0, 0],                               // 1 (along X)
+        [0, 1, 0],                               // 2 (along Y)
+        [0, 0, 1]                                // 3 (along Z)
     ],
     faces = [
-        [0, 2, 1],   // base (oriented outward)
-        [0, 1, 3],
-        [1, 2, 3],
-        [2, 0, 3]
+        [0, 2, 1],   // XY plane face (Z=0)
+        [0, 1, 3],   // XZ plane face (Y=0)
+        [0, 3, 2],   // YZ plane face (X=0)
+        [1, 2, 3]    // slanted face (x+y+z=1)
     ],
     convexity = 4
 );
@@ -69,6 +70,8 @@ structure = {
     "required": ["tetrahedra"],
     "additionalProperties": False
 }
+
+earlyFail = True
 
 subpassParamSummary = [
     "Create a sphere of radius 4",
@@ -182,22 +185,22 @@ def quaternionToPitchRollYawInDegrees(q0, q1, q2, q3):
 
 scadModules = """
 module tetrahedron(){
+    // Hill tetrahedron (trirectangular) - 1/6 of a unit cube, tiles 3D space
     polyhedron(
         points = [
-            [0, 0, 0],                               // 0
-            [1, 0, 0],                               // 1
-            [0.5, sqrt(3)/2, 0],                     // 2
-            [0.5, sqrt(3)/6, sqrt(2/3)]              // 3 (apex)
+            [0, 0, 0],                               // 0 (origin corner)
+            [1, 0, 0],                               // 1 (along X)
+            [0, 1, 0],                               // 2 (along Y)
+            [0, 0, 1]                                // 3 (along Z)
         ],
         faces = [
-            [0, 2, 1],   // base (oriented outward)
-            [0, 1, 3],
-            [1, 2, 3],
-            [2, 0, 3]
+            [0, 2, 1],   // XY plane face (Z=0)
+            [0, 1, 3],   // XZ plane face (Y=0)
+            [0, 3, 2],   // YZ plane face (X=0)
+            [1, 2, 3]    // slanted face (x+y+z=1)
         ],
         convexity = 4
     );
-  
 }
 """
 
@@ -239,12 +242,11 @@ def resultToScad(result):
 
 
 highLevelSummary = """
-Can the LLM create complex shapes out of tetrahedra?
+Can the LLM create complex shapes out of Hill tetrahedra?
 <br><br>
-This is a very hard test for it, as it needs to fill entire volumes with non-overlapping
-tetrahedra.
+Hill tetrahedra (trirectangular tetrahedra) are special because they can tile 3D space
+perfectly - 6 of them combine to form a cube. This makes the problem solvable.
 <br><br>
-Very few LLMs are even able to figure out the quaternions to rotate the tetrahedra into
-correct positons, let alone fill the volumes with them, with most non-tooling
-LLMs failing due unnormalised quaternions.
+The LLM needs to figure out the correct rotations and translations to pack these
+tetrahedra into the target shapes without gaps or overlaps.
 """

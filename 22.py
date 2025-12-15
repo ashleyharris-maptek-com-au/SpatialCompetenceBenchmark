@@ -40,6 +40,8 @@ def _save_to_cache(cache_key: str, cache_type: str, result):
         pass
 
 
+earlyFail = True
+
 title = "Oribital rendenvous travelling salesman problem"
 prompt = """
 You are an AI in charge of navigating a spaceship in orbit.
@@ -873,6 +875,18 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
         if heightAboveEarth > 10000:
             return 0, "Spacecraft is planning a rendezvous at an altitude of " + \
                 str(heightAboveEarth) + "km above mean sea level, which is well above LEO orbit and higher than any of these stations get."
+
+        if len(r["position"]) != 3:
+            return 0, "Invalid position - expected [x,y,z] vector, got " + str(
+                r["position"])
+
+        if len(r["velocity"]) != 3:
+            return 0, "Invalid velocity - expected [x,y,z] vector, got " + str(
+                r["velocity"])
+
+        if r["station"] not in range(0, MISSION_LENGTHS[subPass]):
+            return 0, "Invalid rendezvous station - expected integer between 0 and " + str(
+                MISSION_LENGTHS[subPass] - 1) + ", got " + str(r["station"])
 
     # Before we start the complex simulation, try to estimate the delta-v used
     roughDeltaV = 0

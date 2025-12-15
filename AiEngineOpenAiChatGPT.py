@@ -45,15 +45,19 @@ configAndSettingsHash = hashlib.sha256(MODEL.encode() +
                                        str(REASONING).encode() +
                                        str(TOOLS).encode()).hexdigest()
 
+forcedFailure = False
+
 
 def Configure(Model, Reasing, Tools):
     global MODEL
     global REASONING
     global TOOLS
     global configAndSettingsHash
+    global forcedFailure
     MODEL = Model
     REASONING = Reasing
     TOOLS = Tools
+    forcedFailure = False
     configAndSettingsHash = hashlib.sha256(MODEL.encode() +
                                            str(REASONING).encode() +
                                            str(TOOLS).encode()).hexdigest()
@@ -74,6 +78,12 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     
     Uses the OpenAI Responses API.
     """
+    global forcedFailure
+
+    if forcedFailure:
+        return {
+            "error": "Forced failure"
+        }, "Forced failure due to API instability"
     from openai import OpenAI
 
     try:
@@ -102,6 +112,8 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
                 response_params["reasoning"] = {"effort": "low"}
             elif REASONING <= 7:
                 response_params["reasoning"] = {"effort": "medium"}
+            elif REASONING == 10 and model_to_use == "gpt-5.2":
+                response_params["reasoning"] = {"effort": "xhigh"}
             else:
                 response_params["reasoning"] = {"effort": "high"}
 
@@ -229,8 +241,15 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
             # Return text response
             return output_text or "", chainOfThought
 
+    except JSONDecodeError:
+        print(
+            "Error decoding JSON response. OpenAI has schema validation that's failing. Consider the whole service down when this is encountered."
+        )
+        forcedFailure = True
+        return {"unacceptableFailure": True}, ""  # to ensure we don't retry.
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
+
         # Return appropriate empty response based on structure
         if structure is not None:
             return {}

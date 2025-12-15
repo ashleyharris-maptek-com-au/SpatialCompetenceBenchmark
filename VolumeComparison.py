@@ -258,16 +258,13 @@ minkowski(){
     else:
         score = intersectionVolume / referenceVolume
 
-        if "volumeValidateDelta" in testGlobals:
-            scoreDelta = testGlobals["volumeValidateDelta"](result,
-                                                            resultVolume,
-                                                            referenceVolume,
-                                                            intersectionVolume,
-                                                            differenceVolume)
+        if "validatePostVolume" in testGlobals:
+            score, explanation = testGlobals["validatePostVolume"](
+                result, score, resultVolume, referenceVolume,
+                intersectionVolume, differenceVolume)
 
-            if scoreDelta != 0:
-                scoreExplantion += f"Score was weighted from raw volume similarity, +: {scoreDelta:.2f}\n"
-                score += scoreDelta
+            if explanation:
+                scoreExplantion += explanation
 
         score -= (differenceVolume / referenceVolume) * 0.5
 
@@ -365,8 +362,7 @@ def _run_openscad(input_scad: str,
                                 timeout=timeout)
     except subprocess.TimeoutExpired:
         print(f"OpenSCAD timed out after {timeout}s for {input_scad}")
-        raise TimeoutError(
-            f"OpenSCAD render timed out after {timeout} seconds")
+        return f"OpenSCAD render timed out after {timeout} seconds"
     if result.returncode != 0:
         print(
             f"Warning: OpenSCAD returned non-zero exit code for {input_scad}")
@@ -407,18 +403,22 @@ def render_scadText_to_png(
     # Use off-axis camera: positioned at (10, 10, 10) looking at origin
     # Format: --camera=x,y,z,rot_x,rot_y,rot_z,distance
     # We'll use auto-center and a good viewing angle
-    result = subprocess.run([
-        openScadPath, "--autocenter", "--viewall", cameraArg,
-        "--imgsize=800,600", "--colorscheme=Starnight", "-o",
-        os.path.basename(png_path),
-        os.path.basename(temp_scad)
-    ],
-                            capture_output=True,
-                            text=True,
-                            encoding="utf-8",
-                            errors="replace",
-                            cwd=os.path.dirname(png_path),
-                            timeout=600)
+    try:
+        result = subprocess.run([
+            openScadPath, "--autocenter", "--viewall", cameraArg,
+            "--imgsize=800,600", "--colorscheme=Starnight", "-o",
+            os.path.basename(png_path),
+            os.path.basename(temp_scad)
+        ],
+                                capture_output=True,
+                                text=True,
+                                encoding="utf-8",
+                                errors="replace",
+                                cwd=os.path.dirname(png_path),
+                                timeout=600)
+    except subprocess.TimeoutExpired:
+        print(f"OpenSCAD timed out after 600s for {png_path}")
+        return
     if result.returncode != 0:
         print(f"Warning: OpenSCAD PNG rendering returned non-zero exit code")
         if result.stderr:

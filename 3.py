@@ -136,3 +136,8 @@ Most LLMs fail to output a closed mesh or correct winding order,
 and this shows up with OpenSCAD throwing errors when it tries to intersect the result
 with a reference model.
 """
+
+
+def postProcessScore(score, subPassIndex):
+    if score > 0.95: return 1
+    return score

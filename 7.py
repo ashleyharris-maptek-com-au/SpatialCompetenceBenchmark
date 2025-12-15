@@ -68,6 +68,8 @@ Your output must be PARAM_A rows long, and every row must be PARAM_A characters 
 The maze must be your only output - Extra text above or below the maze itself corrupt your work.
 """
 
+earlyFail = True
+
 subpassParamSummary = [
     "Cover a 5x5 grid with A at level 5 and B at level 0, requiring at least 2 jumps",
     "Cover a 10x10 grid with A at level 0 and B at level 9, requiring at least 4 jumps",

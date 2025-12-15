@@ -32,13 +32,15 @@ remove the "import" statement before submission.
 """.replace("PYTHON_VERSION", str(sys.version_info))
 
 PREFIX = """
-import math, numpy, scipy, cmath, decimal, fractions, random, statistics, itertools
+import math, numpy, scipy, cmath, decimal, fractions, random, statistics, itertools, base64
 """
 
 subpassParamSummary = [
-    "Max data size 1024 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
-    "Max data size 2048 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
     "Max data size 4096 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
+    "Max data size 2048 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
+    "Max data size 1024 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
+    "Max data size 384 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
+    "Max data size 100 bytes. Note the reference image is 512x512 pixels and ~4kb compressed PNG.",
 ]
 
 structure = {
@@ -64,7 +66,7 @@ def prepareSubpassPrompt(index):
         return (prompt.replace(
             "THING_TO_RETURN",
             "shape representing Australia's land mass, including at least Tasmania"
-        ).replace("PREFIX", PREFIX).replace("CODE_SIZE", "1024 bytes"))
+        ).replace("PREFIX", PREFIX).replace("CODE_SIZE", "4096 bytes"))
 
     if index == 1:
         return (prompt.replace(
@@ -76,7 +78,19 @@ def prepareSubpassPrompt(index):
         return (prompt.replace(
             "THING_TO_RETURN",
             "shape representing Australia's land mass, including at least Tasmania"
-        ).replace("PREFIX", PREFIX).replace("CODE_SIZE", "4096 bytes"))
+        ).replace("PREFIX", PREFIX).replace("CODE_SIZE", "1024 bytes"))
+
+    if index == 3:
+        return (prompt.replace(
+            "THING_TO_RETURN",
+            "shape representing Australia's land mass, including at least Tasmania"
+        ).replace("PREFIX", PREFIX).replace("CODE_SIZE", "384 bytes"))
+
+    if index == 4:
+        return (prompt.replace(
+            "THING_TO_RETURN",
+            "shape representing Australia's land mass, including at least Tasmania"
+        ).replace("PREFIX", PREFIX).replace("CODE_SIZE", "100 bytes"))
 
     raise StopIteration
 
@@ -126,12 +140,16 @@ def safeToRun(str: str):
 
 def gradeAnswer(result: dict, subPass: int, aiEngineName: str):
     answer = result["minifiedCode"]
-    if subPass == 0 and len(answer) > 1024:
-        return 0, f"Code too long: {len(answer)} bytes (max 1024)"
+    if subPass == 0 and len(answer) > 4096:
+        return 0, f"Code too long: {len(answer)} bytes (max 4096)"
     if subPass == 1 and len(answer) > 2048:
         return 0, f"Code too long: {len(answer)} bytes (max 2048)"
-    if subPass == 2 and len(answer) > 4096:
-        return 0, f"Code too long: {len(answer)} bytes (max 4096)"
+    if subPass == 2 and len(answer) > 1024:
+        return 0, f"Code too long: {len(answer)} bytes (max 1024)"
+    if subPass == 3 and len(answer) > 384:
+        return 0, f"Code too long: {len(answer)} bytes (max 384)"
+    if subPass == 4 and len(answer) > 100:
+        return 0, f"Code too long: {len(answer)} bytes (max 100)"
 
     if not safeToRun(answer):
         return 0, "Banned word found"
@@ -153,13 +171,25 @@ def gradeAnswer(result: dict, subPass: int, aiEngineName: str):
 
     raw_accuracy = correct / (size * size)
 
-    score = raw_accuracy**10
+    curves = [0.995, 0.99, 0.982, 0.968, 0.88]
 
-    if subPass == 0: score *= 1.75
-    if subPass == 1: score *= 1.4
-    if subPass == 2: score *= 1.25
+    score = raw_accuracy
 
-    return score, f"Matched {correct}/{size*size} pixels ({raw_accuracy*100:.1f}% accuracy, score: {score:.4f})"
+    score /= curves[subPass]
+    beforeCurve = score
+
+    score = score**5
+
+    score = min(score, 1)
+
+    return score, f"""
+    Matched {correct}/{size*size} pixels<br>
+    {raw_accuracy*100:.1f}% accuracy<br>
+    score: {score:.4f}.<br>
+    Code length {len(answer)} bytes.<br>
+    Graded as if max possible accuracy was {curves[subPass]*100:.1f}%.<br>
+    Before curve grading: {beforeCurve*100:.1f}%.<br>
+    """
 
 
 def resultToImage(result, subPass, aiEngineName: str):
