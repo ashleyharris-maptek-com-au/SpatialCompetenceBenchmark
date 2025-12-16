@@ -1,0 +1,83 @@
+// Tallest stable stepped pyramid core from 50cm (500mm) stone cubes,
+// with a smooth outer marble facade envelope.
+//
+// Units: millimeters (mm)
+// North: +Y
+// Centered over tomb at (0,0).
+//
+// Stone budget: 20,000 cubes (50cm each). Tallest full solid stepped pyramid:
+// layers = 38, stones_used = 19,019, stones_unused = 981.
+
+stone_size_mm = 500;        // 50cm cube side length
+stone_budget  = 20000;
+
+function stones_needed_for_layers(n) = (n*(n+1)*(2*n+1))/6;
+
+max_search_layers = 200;  // safe upper bound for this budget
+layers = max([for (i = [1:max_search_layers]) if (stones_needed_for_layers(i) <= stone_budget) i]);
+
+stones_used   = stones_needed_for_layers(layers);
+stones_unused = stone_budget - stones_used;
+
+core_height_mm    = layers * stone_size_mm;
+core_base_side_mm = layers * stone_size_mm;
+
+// Minimal smooth pyramid envelope that encloses the stepped core while keeping each facade planar.
+// This envelope's faces pass through the outer top edge of every stone layer.
+// Derived: outer_base_side = (layers + 1) * stone_size, outer_height = outer_base_side
+outer_base_side_mm = (layers + 1) * stone_size_mm;
+outer_height_mm    = outer_base_side_mm;
+
+// View toggles
+show_stone_core     = true;
+show_marble_facade  = true;
+show_outer_envelope = false;
+
+module stone_core(n = layers, s = stone_size_mm) {
+    union() {
+        for (k = [0:n-1])
+            let(size_xy = (n - k) * s,
+                zc      = (k * s) + (s/2))
+                translate([0, 0, zc])
+                    cube([size_xy, size_xy, s], center = true);
+    }
+}
+
+module smooth_outer_pyramid(base_side = outer_base_side_mm, height = outer_height_mm) {
+    b = base_side / 2;
+
+    polyhedron(
+        points = [
+            [-b, -b, 0],
+            [ b, -b, 0],
+            [ b,  b, 0],
+            [-b,  b, 0],
+            [ 0,  0, height]
+        ],
+        faces = [
+            [0, 3, 2, 1],  // base (normal -Z)
+            [0, 1, 4],     // south (-Y)
+            [1, 2, 4],     // east  (+X)
+            [2, 3, 4],     // north (+Y)
+            [3, 0, 4]      // west  (-X)
+        ],
+        convexity = 10
+    );
+}
+
+module marble_facade() {
+    difference() {
+        smooth_outer_pyramid();
+        stone_core();
+    }
+}
+
+// Assembly
+if (show_marble_facade)
+    color([1, 1, 1, 0.85]) marble_facade();
+
+if (show_outer_envelope)
+    color([1, 1, 1, 0.20]) smooth_outer_pyramid();
+
+if (show_stone_core)
+    color([0.70, 0.55, 0.40, 1.00]) stone_core();

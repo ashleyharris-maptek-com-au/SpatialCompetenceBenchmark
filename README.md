@@ -11,6 +11,7 @@ MESH stands for Model Evaluation of Spatial Hueristics.
 ![Results](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/topLevelResults.png)
 
 Some of the best results broken down by test:
+
 - [Gemini 3 Pro (w/ reasoning, Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gemini-3-pro-preview-Reasoning-Tools.html)
 - [ChatGPT 5.1 High (w Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gpt-5.1-Reasoning-Tools.html)
 
@@ -22,6 +23,7 @@ This benchmark evaluates how well AI models can "picture things" in working meme
 how objects fit together, interact, move, or flow.
 
 Examples include:
+
 - Playing 1 player visual games, such as [Tetris(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q15) or [Bejewelled(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q27)
 - Planning a [rollercoaster ride](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q21) that isn't lethal.
 - Creating a [maze in 3D](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q7) which requires jumps and stair climbs.
@@ -33,10 +35,9 @@ Examples include:
 - Concepts like "hidden behind" or "falling"
 - Designing interlocking parts.
 
+## Example tests
 
-## Example tests:
-
-### Prompt:
+### Prompt
 
 ```
 You have a building at the origin, axis aligned, 2 meters wide and deep, and 5 meters tall.
@@ -64,7 +65,7 @@ in such a way that:
 }
 ```
 
-### Which, using Python and OpenSCAD, is converted into:
+### Which, using Python and OpenSCAD, is converted into
 
 ![Example test](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/images/13.png)
 
@@ -116,30 +117,36 @@ python TestRunner.py --help
 
 This will allow you to see available options, including model and test selections.
 
+To run EVERYTHING:
+
 ```bash
-python TestRunner.py 
+python TestRunner.py --parallel
 ```
 
-Will run EVERYTHING. This will:
+THIS Will run EVERYTHING. This will:
+
 1. Run tests against all configured AI engines
 2. Generate HTML reports in `results/`
 3. Create comparison charts and a landing page at `results/index.html`
+4. Take at least 24 hours. Or 7-10 days without "--parallel"
+5. Struggle if your machine has less than 128gb of RAM.
+6. Burn a $250 minimum hole in your wallet.
 
-Be warned this will cost at least $100 of API credits per run. To help keep costs down,
-caching is used to store responses from previous runs. These expire on the 1st of each month,
+To help keep costs down, caching is used to store responses from previous runs. These expire on the 1st of each month,
 and you can ignore the cache with --force argument.
 
 ## Scoring guidelines
+
 - "Service not available", "Service over capacity", "Error 500 try again" is retried 3 times before declaring a failure.
 - Taking over an hour to respond to an API call 3 times (so 3 hours total) is considered a failure.
-- Violating JSON schemas is considered a failure, and after 3 retries it scores 0. This is why some LLMs degrade in performance when tools are added, as they loose structured validation. This is a weakness of the LLM and should be 
+- Violating JSON schemas is considered a failure, and after 3 retries it scores 0. This is why some LLMs degrade in performance when tools are added, as they loose structured validation. This is a weakness of the LLM and should be
 reflected in the scoring.
 - "This violates our content policy" is considered a failure, as nothing in here is risque. If an LLM thinks "jumping near heights" (Q7, 3d maze) or "Planting explosives" (Q28, terrain flatterning) is banned, that's a well deserved 0 for it.
 - "Score of 1000/1" is used to indicate a test framework failure, as it should stand out in the graph clearly.
 - Not answering the question directly, but instead responding with clarification questions is considered a failure. 99% of the time when LLMs do this it's because they are either overwhelemed or not understanding the problem. Be alert to
 oppertunities to improve the prompt if confusion seems genuine however.
 
-## What motivated this benchmark.
+## What motivated this benchmark
 
 Trying to get AI to plan 3D builds has been fraught with failure, the reasoning loops can not "picture"
 things, and that causes them to confidently spit out bad results to tasks requiring spatial reasoning.
@@ -160,7 +167,8 @@ if it didn't have Aphantasia that would be excellent.
 
 MIT
 
-## Future tests for V2 of the benchmark:
+## Future tests for V2 of the benchmark
+
 - Track / via routing on a PCB layout.
 - Driving a 3D printer head to create a shape.
 - A rotating cylinder of clay, and you control a laser beam that blasts clay away. Make a cube.
@@ -173,3 +181,5 @@ it always lands on a 6.
 - Here is a pile of 2020 aluminimum extrusions, sides labed A,B,C,D. Here is a pile
   of 2,3, and 4 way right angle connectors. Design a (...) by specifying which socket
   of what connector plugs into what extrusion, rotated with side orientation considered.
+- Partition a standford bunny into two peices, both that can be 3D printed, and when
+  assembled, click together with a snap with no visible seam.

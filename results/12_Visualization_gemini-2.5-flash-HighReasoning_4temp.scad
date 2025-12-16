@@ -1,113 +1,113 @@
 hull(){
-    translate([0.1, 0.1]) sphere(0.01);
-    translate([1.1, 0.1]) sphere(0.01);
-}
-hull(){
-    translate([1.1, 0.1]) sphere(0.01);
-    translate([1.9, 0.7]) sphere(0.01);
-}
-hull(){
-    translate([1.9, 0.7]) sphere(0.01);
-    translate([2.9, 0.7]) sphere(0.01);
-}
-hull(){
-    translate([2.9, 0.7]) sphere(0.01);
-    translate([3.7, 1.3]) sphere(0.01);
-}
-hull(){
-    translate([3.7, 1.3]) sphere(0.01);
-    translate([3.7, 2.3]) sphere(0.01);
-}
-hull(){
-    translate([3.7, 2.3]) sphere(0.01);
-    translate([2.9, 2.3]) sphere(0.01);
-}
-hull(){
-    translate([2.9, 2.3]) sphere(0.01);
-    translate([1.9, 2.9]) sphere(0.01);
-}
-hull(){
-    translate([1.9, 2.9]) sphere(0.01);
-    translate([1.1, 2.9]) sphere(0.01);
-}
-hull(){
-    translate([1.1, 2.9]) sphere(0.01);
-    translate([0.3, 3.5]) sphere(0.01);
-}
-hull(){
-    translate([0.3, 3.9]) sphere(0.01);
-    translate([1.3, 3.9]) sphere(0.01);
-}
-hull(){
-    translate([1.3, 3.9]) sphere(0.01);
-    translate([2.1, 3.3]) sphere(0.01);
-}
-hull(){
-    translate([2.1, 3.3]) sphere(0.01);
-    translate([3.1, 3.3]) sphere(0.01);
-}
-hull(){
-    translate([3.1, 3.3]) sphere(0.01);
-    translate([3.9, 2.7]) sphere(0.01);
-}
-hull(){
-    translate([3.9, 2.7]) sphere(0.01);
-    translate([3.9, 1.7]) sphere(0.01);
-}
-hull(){
-    translate([3.9, 1.7]) sphere(0.01);
-    translate([3.1, 1.7]) sphere(0.01);
-}
-hull(){
-    translate([3.1, 1.7]) sphere(0.01);
-    translate([2.1, 1.1]) sphere(0.01);
-}
-hull(){
-    translate([2.1, 1.1]) sphere(0.01);
-    translate([1.3, 1.1]) sphere(0.01);
-}
-hull(){
-    translate([1.3, 1.1]) sphere(0.01);
-    translate([0.5, 0.5]) sphere(0.01);
-}
-hull(){
     translate([0.5, 0.5]) sphere(0.01);
     translate([1.5, 0.5]) sphere(0.01);
 }
 hull(){
     translate([1.5, 0.5]) sphere(0.01);
-    translate([1.5, 1.5]) sphere(0.01);
-}
-hull(){
-    translate([1.5, 1.5]) sphere(0.01);
-    translate([0.5, 1.5]) sphere(0.01);
-}
-hull(){
-    translate([0.5, 1.5]) sphere(0.01);
-    translate([0.5, 2.5]) sphere(0.01);
-}
-hull(){
-    translate([0.5, 2.5]) sphere(0.01);
-    translate([1.5, 2.5]) sphere(0.01);
-}
-hull(){
-    translate([1.5, 2.5]) sphere(0.01);
-    translate([2.5, 2.5]) sphere(0.01);
-}
-hull(){
-    translate([2.5, 2.5]) sphere(0.01);
-    translate([2.5, 1.5]) sphere(0.01);
-}
-hull(){
-    translate([2.5, 1.5]) sphere(0.01);
-    translate([3.5, 1.5]) sphere(0.01);
-}
-hull(){
-    translate([3.5, 1.5]) sphere(0.01);
-    translate([3.5, 0.5]) sphere(0.01);
-}
-hull(){
-    translate([3.5, 0.5]) sphere(0.01);
     translate([2.5, 0.5]) sphere(0.01);
+}
+hull(){
+    translate([2.5, 0.5]) sphere(0.01);
+    translate([3.5, 0.5]) sphere(0.01);
+}
+hull(){
+    translate([3.5, 0.5]) sphere(0.01);
+    translate([3.5, 1.5]) sphere(0.01);
+}
+hull(){
+    translate([3.5, 1.5]) sphere(0.01);
+    translate([3.5, 2.5]) sphere(0.01);
+}
+hull(){
+    translate([3.5, 2.5]) sphere(0.01);
+    translate([3.5, 3.5]) sphere(0.01);
+}
+hull(){
+    translate([3.5, 3.5]) sphere(0.01);
+    translate([2.5, 3.5]) sphere(0.01);
+}
+hull(){
+    translate([2.5, 3.5]) sphere(0.01);
+    translate([1.5, 3.5]) sphere(0.01);
+}
+hull(){
+    translate([1.5, 3.5]) sphere(0.01);
+    translate([0.5, 3.5]) sphere(0.01);
+}
+hull(){
+    translate([0.5, 3.5]) sphere(0.01);
+    translate([0.5, 2.5]) sphere(0.01);
+}
+hull(){
+    translate([0.5, 2.5]) sphere(0.01);
+    translate([0.5, 1.5]) sphere(0.01);
+}
+hull(){
+    translate([0.5, 1.5]) sphere(0.01);
+    translate([1.5, 1.5]) sphere(0.01);
+}
+hull(){
+    translate([1.5, 1.5]) sphere(0.01);
+    translate([2.5, 1.5]) sphere(0.01);
+}
+hull(){
+    translate([2.5, 1.5]) sphere(0.01);
+    translate([2.5, 2.5]) sphere(0.01);
+}
+hull(){
+    translate([2.5, 2.5]) sphere(0.01);
+    translate([1.5, 2.5]) sphere(0.01);
+}
+hull(){
+    translate([1.5, 2.5]) sphere(0.01);
+    translate([1.5, 1.8660254037844386]) sphere(0.01);
+}
+hull(){
+    translate([1.5, 1.8660254037844386]) sphere(0.01);
+    translate([2.133974596215561, 1.8660254037844386]) sphere(0.01);
+}
+hull(){
+    translate([2.133974596215561, 1.8660254037844386]) sphere(0.01);
+    translate([2.133974596215561, 1.2320508103688537]) sphere(0.01);
+}
+hull(){
+    translate([2.133974596215561, 1.2320508103688537]) sphere(0.01);
+    translate([1.5, 1.2320508103688537]) sphere(0.01);
+}
+hull(){
+    translate([1.5, 0.8660254037844386]) sphere(0.01);
+    translate([0.8660254037844386, 0.8660254037844386]) sphere(0.01);
+}
+hull(){
+    translate([0.8660254037844386, 0.8660254037844386]) sphere(0.01);
+    translate([0.8660254037844386, 1.5]) sphere(0.01);
+}
+hull(){
+    translate([0.8660254037844386, 1.5]) sphere(0.01);
+    translate([0.8660254037844386, 2.5]) sphere(0.01);
+}
+hull(){
+    translate([0.8660254037844386, 2.5]) sphere(0.01);
+    translate([0.8660254037844386, 3.133974596215561]) sphere(0.01);
+}
+hull(){
+    translate([0.8660254037844386, 3.133974596215561]) sphere(0.01);
+    translate([1.5, 3.133974596215561]) sphere(0.01);
+}
+hull(){
+    translate([1.5, 3.133974596215561]) sphere(0.01);
+    translate([2.5, 3.133974596215561]) sphere(0.01);
+}
+hull(){
+    translate([2.5, 3.133974596215561]) sphere(0.01);
+    translate([3.133974596215561, 3.133974596215561]) sphere(0.01);
+}
+hull(){
+    translate([3.133974596215561, 3.133974596215561]) sphere(0.01);
+    translate([3.133974596215561, 2.5]) sphere(0.01);
+}
+hull(){
+    translate([3.133974596215561, 2.5]) sphere(0.01);
+    translate([3.133974596215561, 1.5]) sphere(0.01);
 }
 translate([0,0,-0.01]) color([0.1,0.1,0.1]) cube([4,4,0.01]);

@@ -141,6 +141,9 @@ def runTest(index: int, aiEngineHook: callable,
 
         if isinstance(result, dict) and "reasoning" in result:
             subpass_data["reasoning"] = result["reasoning"]
+        elif isinstance(result, dict) and "reasoningAndDiscussion" in result:
+            subpass_data["reasoningAndDiscussion"] = result[
+                "reasoningAndDiscussion"]
 
         if not result:
             print(f"No answer generated for subpass {subPass}")
@@ -956,8 +959,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
 </head>
 <body>
     <div class="header">
-        <h1>🔺 Mesh Benchmark Results</h1>
-        <p class="subtitle">Spatial reasoning test results for LLMs</p>
+        <h1>Mesh Benchmark Results</h1>
+        <p class="subtitle">Model Evaluation of Spatial Hueristics.</p>
+        <p>Can LLMs use internal visualisation or spatial reasoning to solve problems?</p>
     </div>
     
     <div class="graph-container">
@@ -1128,37 +1132,47 @@ def get_all_model_configs():
             "env_key": "GEMINI_API_KEY"
         })
 
-    # XAI/Grok models
-    xai_models = [
-        "grok-4-1-fast-non-reasoning", "grok-4-1-fast-reasoning", "grok-4-0709"
-    ]
-    for model in xai_models:
-        if "non-reasoning" in model:
-            configs.append({
-                "name": model,
-                "engine": "xai",
-                "base_model": model,
-                "reasoning": False,
-                "tools": False,
-                "env_key": "XAI_API_KEY"
-            })
-        if "non-reasoning" not in model:
-            configs.append({
-                "name": f"{model}",
-                "engine": "xai",
-                "base_model": model,
-                "reasoning": 10,
-                "tools": False,
-                "env_key": "XAI_API_KEY"
-            })
-        # configs.append({
-        #     "name": f"{model}-Tools",
-        #     "engine": "xai",
-        #     "base_model": model,
-        #     "reasoning": 10,
-        #     "tools": True,
-        #     "env_key": "XAI_API_KEY"
-        #})
+    # XAI/Grok models. These are a bit weird with their reasoning support.
+    configs.append({
+        "name": "grok-4-1-fast-non-reasoning",
+        "engine": "xai",
+        "base_model": "grok-4-1-fast-non-reasoning",
+        "reasoning": False,
+        "tools": False,
+        "env_key": "XAI_API_KEY"
+    })
+    configs.append({
+        "name": "grok-4-1-fast-reasoning",
+        "engine": "xai",
+        "base_model": "grok-4-1-fast-reasoning",
+        "reasoning": 10,
+        "tools": False,
+        "env_key": "XAI_API_KEY"
+    })
+    configs.append({
+        "name": "grok-4-0709-HighReasoning",
+        "engine": "xai",
+        "base_model": "grok-4-0709",
+        "reasoning": 10,
+        "tools": False,
+        "env_key": "XAI_API_KEY"
+    })
+    configs.append({
+        "name": "grok-4-0709",
+        "engine": "xai",
+        "base_model": "grok-4-0709",
+        "reasoning": False,
+        "tools": False,
+        "env_key": "XAI_API_KEY"
+    })
+    configs.append({
+        "name": "grok-2-vision-1212",
+        "engine": "xai",
+        "base_model": "grok-2-vision-1212",
+        "reasoning": False,
+        "tools": False,
+        "env_key": "XAI_API_KEY"
+    })
 
     # Anthropic models
     anthropic_base_models = ["claude-sonnet-4-5"]
@@ -1290,6 +1304,11 @@ Examples:
         action="store_true",
         help="Bypass AI response cache (still saves new responses to cache)")
 
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Only used cached results. Do not make any API calls.")
+
     parser.add_argument("--parallel",
                         action="store_true",
                         help="Run all models in parallel")
@@ -1303,6 +1322,11 @@ Examples:
         print(
             "Force mode: AI response cache will be bypassed (new responses still cached)"
         )
+
+    if args.offline:
+        import CacheLayer
+        CacheLayer.OFFLINE_MODE = True
+        print("Offline mode: No API calls will be made, cache only.")
 
     all_configs = get_all_model_configs()
 

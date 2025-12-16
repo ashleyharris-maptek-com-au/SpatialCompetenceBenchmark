@@ -78,6 +78,8 @@ subpassParamSummary = [
     "300m cube, start at 250m, 3000m length. Must include 3 loops."
 ]
 
+earlyFail = True
+
 
 def prepareSubpassPrompt(index: int) -> str:
     if index == 0:
@@ -223,7 +225,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             p1, p2 = points[i], points[j]
             xy_dist = math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
             z_diff = abs(p1[2] - p2[2])
-            if xy_dist < 1.0 and z_diff < CROSSING_CLEARANCE:
+            if xy_dist < 1.0 and z_diff < CROSSING_CLEARANCE - 0.1:
                 errors.append(
                     f"Crossing violation: points {i} and {j} too close (XY:{xy_dist:.1f}m, Z:{z_diff:.1f}m)"
                 )

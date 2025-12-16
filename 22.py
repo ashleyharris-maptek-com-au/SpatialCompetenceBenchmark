@@ -818,7 +818,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     cached = _load_from_cache(cache_key, "grade")
     if cached is not None:
         print(
-            f"Using cached grade result for {aiEngineName} subpass {subPass}")
+            f"Using cached grade result for {aiEngineName} subpass {subPass}. {_cache_dir}\\grade_{cache_key}.json"
+        )
         return tuple(cached)
 
     result = _gradeAnswerImpl(answer, subPass, aiEngineName)
@@ -996,7 +997,8 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
 
     # Now calculate the optimal delta-V
     bestDeltaV = float('inf')
-    for ordering in itertools.permutations(MISSION_LENGTHS[subPass],
+    bestPath = None
+    for ordering in itertools.permutations(range(MISSION_LENGTHS[subPass]),
                                            MISSION_LENGTHS[subPass]):
         currentOrbit = ORBITS[-1]
         deltaVUsed = 0
@@ -1005,14 +1007,24 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
             deltaVUsed += general_transfer_delta_v(currentOrbit[0:3],
                                                    currentOrbit[3:6],
                                                    ORBITS[destination][0:3],
-                                                   ORBITS[destination][3:6])
+                                                   ORBITS[destination][3:6])[2]
             currentOrbit = ORBITS[destination]
 
         if deltaVUsed < bestDeltaV:
             bestDeltaV = deltaVUsed
+            bestPath = ordering
 
-    return bestDeltaV / deltaVUsed, "Used " + str(
-        deltaVUsed) + " km/s, best possible " + str(bestDeltaV) + " km/s"
+    bestPath = " -> ".join(map(str, bestPath))
+    takenPath = ""
+    for rendezvous in answer.get("rendevouses", []):
+        takenPath += str(rendezvous["station"]) + " -> "
+    takenPath = takenPath[:-4]
+
+    return bestDeltaV / deltaVUsed, f"""
+    Used {deltaVUsed:.2f} km/s, best possible {bestDeltaV:.2f} km/s
+    Best path: (start) -> {bestPath}
+    Taken path: (start) -> {takenPath}
+    """
 
 
 def resultToNiceReport(answer, subPass, aiEngineName):
@@ -1156,26 +1168,68 @@ if __name__ == "__main__":
     print(
         gradeAnswer(
             {
-                "engineBurns": [{
-                    "time": 285,
-                    "acceleration": [0.617, 0.002, 0.001]
+                'reasoning':
+                'Two-body Earth model used (μ = 398600.4418 km^3/s^2, R_earth = 6371 km; keep r>6471 km).\n\nOrder choice: Station 0 first, then Station 1. A 2-impulse Lambert rendezvous from the initial (higher, slightly-elliptic) orbit to Station 0 is far cheaper than going to Station 1 first.\n\nLeg 1 (Ship → Station 0): optimized over departure time and time-of-flight using Lambert’s problem between propagated endpoints (selecting the long-way solution). This yields rendezvous at t=23613.901890524 s with total ΔV = 4.776104821 km/s.\n\nLeg 2 (Station 0 → Station 1): the orbital planes differ by ~58.069824°; a direct plane change in LEO is very expensive, so a 3-impulse bi-elliptic plane-change is used with an apogee ~116,329.919 km. Departure is timed at the Station0/Station1 plane-intersection node so the return to perigee coincides with Station 1 at the same node; total ΔV for this leg is 6.251952826 km/s.\n\nTotal mission ΔV (sum of impulse magnitudes) = 11.028057647 km/s. Rendezvous conditions are satisfied with large margin (final position error < 1 m, relative speed ~0).\n\nNote: burn “acceleration” vectors are treated as instantaneous impulses (i.e., ΔV vectors; if your executor applies them for 1 second, they are numerically the same in km/s^2).',
+                'engineBurns': [{
+                    'time':
+                    20582.022244909625,
+                    'acceleration': [
+                        2.161953462390292, -1.4158801629098832,
+                        2.6101910756863274
+                    ]
                 }, {
-                    "time": 300,
-                    "acceleration": [0.02, 0.8100, 0.001]
+                    'time':
+                    23613.90189052424,
+                    'acceleration': [
+                        -0.3245410646290168, -0.07623436157152885,
+                        -1.05139099426692
+                    ]
                 }, {
-                    "time": 310,
-                    "acceleration": [0.003, 0.001, 0.5655]
+                    'time':
+                    24812.784570637923,
+                    'acceleration': [
+                        -1.4958037516969735, -2.3512102067044354,
+                        -0.4558913566699118
+                    ]
+                }, {
+                    'time':
+                    100989.66204111118,
+                    'acceleration': [
+                        -0.3175178627123487, -0.05110284112839847,
+                        -0.5118411341269526
+                    ]
+                }, {
+                    'time':
+                    177166.53951158444,
+                    'acceleration': [
+                        0.05607970619826402, 2.119493761257245,
+                        -1.864954039213095
+                    ]
                 }],
-                "rendevouses": [{
-                    "position": [1610.213, 7608.353, -10414.022],
-                    "velocity": [0.00617, 0, 0],
-                    "time": 570,
-                    "station": 0
+                'rendevouses': [{
+                    'position':
+                    [2076.140202954626, 6377.106619378575, 1927.834847385278],
+                    'velocity': [
+                        -6.8331185342812395, 1.3357140613547784,
+                        2.940355270917821
+                    ],
+                    'time':
+                    23613.90189052424,
+                    'station':
+                    0
                 }, {
-                    "position": [7734.157, 7089.379, -10414.022],
-                    "velocity": [1.612607, 4.72754, -5.671965],
-                    "time": 1500,
-                    "station": 1
+                    'position': [
+                        -5518.105221163893, 2903.000016662302,
+                        3133.2872139530073
+                    ],
+                    'velocity': [
+                        -0.150100378297656, -5.672939167827783,
+                        4.991649922769491
+                    ],
+                    'time':
+                    177166.53951158444,
+                    'station':
+                    1
                 }]
             }, 0, "Placebo"))
     print(

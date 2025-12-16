@@ -334,6 +334,8 @@ multmatrix({part["transform"]}) import("{partName}.stl");
                 return 0, "When assembled, part " + str(
                     partIndexA) + " intersects with part " + str(partIndexB)
 
+        return 1, ""
+
     if subPass == 6:
         for partIndexA, partA in enumerate(answer["parts"]):
             partNameA = "29_" + str(partIndexA) + "_" + aiEngineName
@@ -362,7 +364,7 @@ multmatrix({part["transform"]}) import("{partName}.stl");
 
         return 1, ""
 
-    return 100, "Nobody has gotten this far before... Need to write more parts of the test."
+    return 10000, "Nobody has gotten this far before... Need to write more parts of the test."
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
@@ -390,10 +392,12 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
 
 highLevelSummary = """
-This is the hardest problem in here - turn a large 3D model into printable 
+This is the hardest problem in here - turn a description of a large 3D model into printable 
 parts that connect together without interfering.
 <br><br>
-No LLM has managed to even plan the split correctly yet.<br><br>
+Only one LLM has managed to even plan the split correctly yet.<br><br>
+
+To be nice to the LLMs, we accept python, OpenSCAD, or STL format for the parts.<br><br>
 
 A very suboptimal LLM might just divide the cage into 14 parts (as 700mm/50mm == 14),
 which gets an instant 0 for wasting 4 prints.

@@ -126,10 +126,10 @@ def canPrintOnTop(num):
     if num == 3: return [1, 3, 7], [1, 3, 7]
     if num == 4: return [1, 4], [1, 3, 7]
     if num == 5: return [2, 5], []
-    if num == 6: return [1, 3, 6, 7, 9, 4], [1, 3, 7]
+    if num == 6: return [1, 3, 5, 6, 7, 9, 4], [1, 3, 7]
     if num == 7: return [1, 7], [1, 3, 7]
     if num == 8: return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 3, 7]
-    if num == 9: return [1, 3, 6, 7, 9], [1, 3, 7]
+    if num == 9: return [1, 3, 5, 6, 7, 9], [1, 3, 7]
 
 
 def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
@@ -204,15 +204,16 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
             continue
 
         if next_orientation == "rotate90X":
-            assert (next_digit in [1, 3, 7])
-            if current_digit in [2, 5]:
-                return 0, f"Digit {current_digit} (orientation: {current_orientation}) cannot be printed on top of digit {next_digit} (orientation: {next_orientation})<br>Stack is not printable."
+            assert (next_digit in [1, 3, 7])  # Should've been caught earlier.
+            # This can go on top of anything.
             i += 1
             continue
 
         if next_orientation == "rotate90Y":
             assert (next_digit in [1, 7])
-            # This can go on top of anything.
+            # This can go on top of anything except a 2 and a 5
+            if current_digit in [2, 5]:
+                return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
             i += 1
             continue
 
@@ -307,7 +308,7 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 <a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
 <img src="{os.path.basename(output_path)}" alt="Stacked digets Visualization" style="max-width: 100%; float:left">
 </a>
-<p><div style="float:right">Ai suggested {number}.<br>The correct answer is 24 digits long.</div></p>
+<p><div style="float:right">Ai suggested {number} ({len(answer["numberSequence"])} digits).<br>The correct answer is 24 digits long.</div></p>
 """
 
 

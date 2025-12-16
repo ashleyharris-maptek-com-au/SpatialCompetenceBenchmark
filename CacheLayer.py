@@ -9,6 +9,9 @@ import random
 # Global flag to bypass cache reading (still writes to cache)
 FORCE_REFRESH = False
 
+# Global flag to keep us offline.
+OFFLINE_MODE = False
+
 
 class CacheLayer:
 
@@ -48,6 +51,10 @@ class CacheLayer:
                     pass
 
         print("API Call: " + prompt[:100].replace("\n", " ") + "...")
+
+        if OFFLINE_MODE:
+            print("Offline mode: No API calls will be made, cache only.")
+            return {}, ""
 
         print("Started at " + str(datetime.datetime.now()))
         result = self.aiEngineHook(prompt, structure)

@@ -163,4 +163,8 @@ lot of requirements that make delany the optimal choice.
 <br><br>
 I'm actually surprised the number of LLMs, even with code exeuction, that can't
 solve this when it gets up to the 1000 point mark.
+<br><br>
+'human with tools' is me using SciPy, as scipy is a tool. Many of these LLMs
+seem to have access to scipy in their internal python environment is seems, so
+the imperfect results as the complications increase is interesting.
 """

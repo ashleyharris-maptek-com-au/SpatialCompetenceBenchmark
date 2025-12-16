@@ -241,7 +241,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
             # Return text response
             return output_text or "", chainOfThought
 
-    except JSONDecodeError:
+    except json.JSONDecodeError:
         print(
             "Error decoding JSON response. OpenAI has schema validation that's failing. Consider the whole service down when this is encountered."
         )

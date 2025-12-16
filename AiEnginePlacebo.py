@@ -4610,16 +4610,18 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
         }, "Calculated with greedy bottom-left-back packing"
 
     if questionNum == 17 and subPass == 0:
-        return """
-cylinder(r=4.572, h=1.29789304);
-translate([0,0,1.29789304]) cylinder(r1=4.572, r2=0002, h=2.929842426);
-        """, "Manually calculated."
+        g = {}
+        exec(open("17.py").read(), g)
+        code = g["referenceScad"]
+        code = code.replace("module reference", "union")
+        return code, "I had to solve this for the reference implementation."
 
-    if questionNum == 18 and subPass == 0:
+    if questionNum == 18:
         g = {}
         exec(open("18.py").read(), g)
-        return g["prepareSubpassReferenceScad"](
-            subPass), "I had to solve this for the reference implementation."
+        code = g["prepareSubpassReferenceScad"](subPass)
+        code = code.replace("module reference", "union")
+        return code, "I had to solve this for the reference implementation."
 
     if questionNum == 19 and subPass == 0:
         return {

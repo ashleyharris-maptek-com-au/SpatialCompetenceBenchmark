@@ -226,8 +226,12 @@ Given a tight budget of 1024 bytes, for both data and decompressor, how accurate
 can an LLM recreate Australia's coastline?
 <br><br>
 This really shows of LLM creativity, as I don't think I've seen the same approach
-twice. Encoding polygon via delta in ASCII strings seems to be the best approach.
+twice. Encoding polygon via delta in ASCII strings seems to be the best approach,
+although for the "human with tools" control test I just pack the data using bit operations
+and then use RLE to compress it.
 <br><br>
 At 4kb, you can just zip a png of the border at 512x512, so there's not much point
-testing higher than that.
+testing higher than that. The reference implementation used in HumanWithTools is just
+me packing the data using bit operations as a giant integer, which is how to get good results at 100 and 384 bytes,
+the then for the higher sizes I use a hardcoded dictionary to decompress it in a huffman-ish manner.
 """
