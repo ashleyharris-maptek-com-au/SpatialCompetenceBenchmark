@@ -1,1 +1,1 @@
-import("29_0_posed.stl");
+import("29_0_gpt-5.1_posed.stl");

@@ -400,6 +400,8 @@ hull() {{
     scadFile = "results/21_Visualization_" + aiEngineName + "_" + str(
         len(answer["trackPoints"])) + "temp.scad"
 
+    open(scadFile, "w").write(scadOutput)
+
     import zipfile
     with zipfile.ZipFile(output_path.replace(".png", ".zip"), 'w') as zipf:
         zipf.write(scadFile, os.path.basename(scadFile))

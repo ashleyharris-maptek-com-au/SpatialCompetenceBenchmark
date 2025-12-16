@@ -298,6 +298,8 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
     scadFile = "results/30_Visualization_" + aiEngineName + "_" + str(
         len(answer["numberSequence"])) + "temp.scad"
 
+    open(scadFile, "w").write(scad)
+
     import zipfile
     with zipfile.ZipFile(output_path.replace(".png", ".zip"), 'w') as zipf:
         zipf.write(scadFile, os.path.basename(scadFile))

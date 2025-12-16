@@ -93,6 +93,26 @@ extraGradeAnswerRuns = [1, 2, 3, 4, 5, 6]
 earlyFail = False
 
 
+def _file_content_changed(filepath: str, new_content: str) -> bool:
+    """Check if file doesn't exist or has different content than new_content."""
+    if not os.path.exists(filepath):
+        return True
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read() != new_content
+    except Exception:
+        return True
+
+
+def _write_if_changed(filepath: str, content: str) -> bool:
+    """Write content to file only if it changed. Returns True if file was written."""
+    if _file_content_changed(filepath, content):
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+        return True
+    return False
+
+
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     global earlyFail
     score = 0
@@ -101,48 +121,63 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     if "parts" not in answer:
         return 0, "Answer did not contain a 'parts' key."
 
-    for partIndex, part in enumerate(answer["parts"]):
-        partName = "29_" + str(partIndex) + "_" + aiEngineName
+    if len(answer["parts"]) > 10:
+        return 0, "Answer contained too many parts."
 
-        if not os.path.exists("results/" + partName + ".stl"):
+    if subPass == 0:
+        for partIndex, part in enumerate(answer["parts"]):
+            partName = "29_" + str(partIndex) + "_" + aiEngineName
+            needs_regenerate = False
+
+            # Determine source file path and check if content changed
             if part["fileType"] == "STL":
-                open("results/" + partName + ".stl", "w",
-                     encoding="utf-8").write(part["fileContents"])
+                source_path = "results/" + partName + ".stl"
+                needs_regenerate = _write_if_changed(source_path,
+                                                     part["fileContents"])
 
             elif part["fileType"] == "OpenSCAD":
-                open("results/" + partName + ".scad", "w",
-                     encoding="utf-8").write(part["fileContents"])
+                source_path = "results/" + partName + ".scad"
+                needs_regenerate = _write_if_changed(source_path,
+                                                     part["fileContents"])
 
             elif part["fileType"] == "Python Generating OpenSCAD":
-                open("results/" + partName + ".py", "w",
-                     encoding="utf-8").write(part["fileContents"])
+                source_path = "results/" + partName + ".py"
+                needs_regenerate = _write_if_changed(source_path,
+                                                     part["fileContents"])
 
-                try:
-                    subprocess.run(sys.executable, [partName + ".py"],
-                                   stdout=open("results/" + partName + ".scad",
-                                               "w",
-                                               encoding="utf-8"),
-                                   cwd="results")
-                except Exception as e:
-                    bugs += "Python generating OpenSCAD for " + partName + " failed due to " + str(
-                        e) + "<br>"
+                if needs_regenerate:
+                    try:
+                        subprocess.run(sys.executable, [partName + ".py"],
+                                       stdout=open("results/" + partName +
+                                                   ".scad",
+                                                   "w",
+                                                   encoding="utf-8"),
+                                       cwd="results")
+                    except Exception as e:
+                        bugs += "Python generating OpenSCAD for " + partName + " failed due to " + str(
+                            e) + "<br>"
 
             elif part["fileType"] == "Python Generating STL":
-                open("results/" + partName + ".py",
-                     "w").write(part["fileContents"])
+                source_path = "results/" + partName + ".py"
+                needs_regenerate = _write_if_changed(source_path,
+                                                     part["fileContents"])
 
-                try:
-                    subprocess.run(sys.executable,
-                                   ["results/" + partName + ".py"],
-                                   stdout=open("results/" + partName + ".stl",
-                                               "w",
-                                               encoding="utf-8"),
-                                   cwd="results")
-                except Exception as e:
-                    bugs += "Python generating STL for " + partName + " failed due to " + str(
-                        e) + "<br>"
+                if needs_regenerate:
+                    try:
+                        subprocess.run(
+                            sys.executable, ["results/" + partName + ".py"],
+                            stdout=open("results/" + partName + ".stl",
+                                        "w",
+                                        encoding="utf-8"),
+                            cwd="results")
+                    except Exception as e:
+                        bugs += "Python generating STL for " + partName + " failed due to " + str(
+                            e) + "<br>"
 
-            if os.path.exists("results/" + partName + ".scad"):
+            # Generate STL from OpenSCAD if needed
+            if os.path.exists("results/" + partName + ".scad") and (
+                    needs_regenerate
+                    or not os.path.exists("results/" + partName + ".stl")):
                 try:
                     subprocess.run([
                         vc.openScadPath, partName + ".scad", "-o",
@@ -153,14 +188,22 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                     bugs += "OpenSCAD failed to generate STL for " + partName + " due to " + str(
                         e) + "<br>"
 
-            if not os.path.exists("results/" + partName +
-                                  "_posed.stl") and bugs == "":
-                open("results/" + partName + "_posed.scad",
-                     "w",
-                     encoding="utf-8").write(f"""
-multmatrix({part["transform"]}) import("{partName}.stl");
-                     """)
+            # Generate posed STL if needed
+            posed_scad_content = f"""
+    multmatrix([{part["transform"][0:4]}, 
+                {part["transform"][4:8]}, 
+                {part["transform"][8:12]}, 
+                {part["transform"][12:16]}]) import("{partName}.stl");
+                        """
+            posed_scad_path = "results/" + partName + "_posed.scad"
+            posed_changed = _write_if_changed(posed_scad_path,
+                                              posed_scad_content)
 
+            if os.path.exists("results/" + partName +
+                              ".stl") and bugs == "" and (
+                                  needs_regenerate or posed_changed
+                                  or not os.path.exists("results/" + partName +
+                                                        "_posed.stl")):
                 try:
                     subprocess.run([
                         vc.openScadPath, partName + "_posed.scad", "-o",
@@ -171,33 +214,38 @@ multmatrix({part["transform"]}) import("{partName}.stl");
                     bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
                         e) + "<br>"
 
-    if not os.path.exists("results/29_" + str(aiEngineName) +
-                          "_fullposed.stl") and bugs == "":
-        with open("results/29_" + str(aiEngineName) + "_fullposed.scad",
-                  "w",
-                  encoding="utf-8") as f:
-            for partIndex, part in enumerate(answer["parts"]):
-                partName = "29_" + str(partIndex)
-                f.write(f"import(\"{partName}_posed.stl\");\n")
+        # Generate fullposed assembly
+        any_posed_changed = False
+        fullposed_scad_content = ""
+        for partIndex, part in enumerate(answer["parts"]):
+            partName = "29_" + str(partIndex) + "_" + str(aiEngineName)
+            fullposed_scad_content += f"import(\"{partName}_posed.stl\");\n"
 
-        try:
-            subprocess.run([
-                vc.openScadPath, "29_" + str(aiEngineName) + "_fullposed.scad",
-                "-o", "29_" + str(aiEngineName) + "_fullposed.stl"
-            ],
-                           cwd="results")
-        except Exception as e:
-            bugs += "OpenSCAD failed to generate fullposed STL for " + str(
-                aiEngineName) + " due to " + str(e) + "<br>"
+        fullposed_scad_path = "results/29_" + str(
+            aiEngineName) + "_fullposed.scad"
+        any_posed_changed = _write_if_changed(fullposed_scad_path,
+                                              fullposed_scad_content)
 
-    if subPass == 0:
-        # Basic crap. Correct number of parts, and non-zero sized stl files.
+        if bugs == "" and (any_posed_changed or not os.path.exists(
+                "results/29_" + str(aiEngineName) + "_fullposed.stl")):
+            try:
+                subprocess.run([
+                    vc.openScadPath,
+                    "29_" + str(aiEngineName) + "_fullposed.scad", "-o",
+                    "29_" + str(aiEngineName) + "_fullposed.stl"
+                ],
+                               cwd="results")
+            except Exception as e:
+                bugs += "OpenSCAD failed to generate fullposed STL for " + str(
+                    aiEngineName) + " due to " + str(e) + "<br>"
+
+        # Basic validation: Correct number of parts, and non-zero sized stl files.
         if len(answer["parts"]) != 10:
             bugs += "Expected 10 parts, got " + str(len(
                 answer["parts"])) + "<br>"
 
         for partIndex, part in enumerate(answer["parts"]):
-            partName = "29_" + str(partIndex) + "_" + aiEngineName
+            partName = "29_" + str(partIndex) + "_" + str(aiEngineName)
             stlFile = "results/" + partName + ".stl"
 
             if not os.path.exists(stlFile):
@@ -208,9 +256,10 @@ multmatrix({part["transform"]}) import("{partName}.stl");
             if os.path.getsize(stlFile) == 0:
                 bugs += "Part " + str(partIndex) + ".stl was empty<br>"
 
-                if vc.StlVolume.calculate_stl_volume(stlFile) == 0:
-                    bugs += "Part " + str(
-                        partIndex) + ".stl had a volume of 0<br>"
+            volume = vc.StlVolume.calculate_stl_volume(stlFile)
+            print(partName + " Volume: " + str(volume))
+            if volume == 0:
+                bugs += "Part " + str(partIndex) + ".stl had a volume of 0<br>"
 
         earlyFail = bugs != ""
         return 0 if earlyFail else 1, bugs
@@ -373,13 +422,29 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
                "Some particully clueless AIs might generate 14 files (as 700mm/50mm == 14), which gets an instant 0 for wasting 4 prints"
 
     if subPass == 1:
-        return "Check to see if the parts are printable - resting on the z=0 plane, watertight, and within print bounds"
+        out = "Check to see if the parts are printable - resting on the z=0 plane, watertight, and within print bounds:<br>"
+        for partIndex in range(10):
+            partName = "29_" + str(partIndex) + "_" + aiEngineName
+            stlFile = "results/" + partName + ".stl"
+            if os.path.exists(stlFile):
+                vc._render_stl_to_png(stlFile, "results/" + partName + ".png")
+                out += "<img src='" + partName + ".png' width=320/>"
+        return out
 
     if subPass == 2:
         return "Check to see if the bars in cage segments are correctly sized and spaced."
 
     if subPass == 3:
-        return "Check to see if the part transform matrices are correct and the cage is correctly sized."
+        out = "Check to see if the part transform matrices are correct and the cage is correctly sized."
+
+        if os.path.exists("results/29_" + aiEngineName + "_fullposed.stl"):
+            vc._render_stl_to_png(
+                "results/29_" + aiEngineName + "_fullposed.stl",
+                "results/29_" + aiEngineName + "_fullposed.png")
+
+            out += "<img src='29_" + aiEngineName + "_fullposed.png' width=640/>"
+
+        return out
 
     if subPass == 4:
         return "Check to see if a 6mm threaded rod can fit through the cage segments."

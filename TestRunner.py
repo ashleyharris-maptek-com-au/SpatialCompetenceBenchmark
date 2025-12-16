@@ -78,7 +78,7 @@ def runTest(index: int, aiEngineHook: callable,
             chainOfThought = ""
 
         try:
-            open("results/raw_" + aiEngineName + "_" + str(index) + "_" +
+            open("results/raw/" + aiEngineName + "_" + str(index) + "_" +
                  str(idx) + ".txt",
                  "w",
                  encoding="utf-8").write(str(result))
@@ -87,7 +87,7 @@ def runTest(index: int, aiEngineHook: callable,
                   str(e))
 
         try:
-            open("results/prompt_" + aiEngineName + "_" + str(index) + "_" +
+            open("results/prompts/" + aiEngineName + "_" + str(index) + "_" +
                  str(idx) + ".txt",
                  "w",
                  encoding="utf-8").write(str(prompts[idx]))
@@ -96,7 +96,7 @@ def runTest(index: int, aiEngineHook: callable,
                   str(e))
 
         try:
-            open("results/cot_" + aiEngineName + "_" + str(index) + "_" +
+            open("results/cot/" + aiEngineName + "_" + str(index) + "_" +
                  str(idx) + ".txt",
                  "w",
                  encoding="utf-8").write(str(chainOfThought))
@@ -316,9 +316,11 @@ def runAllTests(aiEngineHook: callable,
         aiEngineName: Name of the AI engine
         test_filter: Optional set of test indices to run. If None, runs all tests.
     """
-    # Create a results directory if it doesn't exist
-    if not os.path.exists("results"):
-        os.makedirs("results")
+    # Create results directory and subdirectories
+    os.makedirs("results", exist_ok=True)
+    os.makedirs("results/raw", exist_ok=True)
+    os.makedirs("results/prompts", exist_ok=True)
+    os.makedirs("results/cot", exist_ok=True)
 
     # Create a results file for the html results of this engines test run
     results_file = open("results/" + aiEngineName + ".html",
@@ -540,15 +542,15 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
             else:
                 results_file.write("Same as typical prompt")
 
-            results_file.write("<a href=\"prompt_" + aiEngineName + "_" +
+            results_file.write("<a href=\"prompts/" + aiEngineName + "_" +
                                str(testIndex - 1) + "_" +
                                str(subpass['subpass']) +
                                ".txt\">View exact prompt</a><br>")
-            results_file.write("<a href=\"raw_" + aiEngineName + "_" +
+            results_file.write("<a href=\"raw/" + aiEngineName + "_" +
                                str(testIndex - 1) + "_" +
                                str(subpass['subpass']) +
                                ".txt\">View raw AI output</a><br>")
-            results_file.write("<a href=\"cot_" + aiEngineName + "_" +
+            results_file.write("<a href=\"cot/" + aiEngineName + "_" +
                                str(testIndex - 1) + "_" +
                                str(subpass['subpass']) +
                                ".txt\">View chain of thought</a><br>")
@@ -1331,12 +1333,16 @@ Examples:
     all_configs = get_all_model_configs()
 
     if args.parallel:
+        if args.models: print("--parallel and --model aren't compatable")
         import sys
+        args = sys.argv[1:]
+        args.remove("--parallel")
+
         tasks = []
         for config in all_configs:
             tasks.append(
                 subprocess.Popen(
-                    [sys.executable, __file__, "-m", config["name"]]))
+                    [sys.executable, __file__, "-m", config["name"], *args]))
         for task in tasks:
             task.wait()
         exit(0)

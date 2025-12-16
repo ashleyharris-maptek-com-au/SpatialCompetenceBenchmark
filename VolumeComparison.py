@@ -418,11 +418,20 @@ def render_scadText_to_png(
                                 timeout=600)
     except subprocess.TimeoutExpired:
         print(f"OpenSCAD timed out after 600s for {png_path}")
+        try:
+            os.unlink(temp_scad)
+        except:
+            pass
         return
     if result.returncode != 0:
         print(f"Warning: OpenSCAD PNG rendering returned non-zero exit code")
         if result.stderr:
             print(f"Error output: {result.stderr}")
+
+    try:
+        os.unlink(temp_scad)
+    except:
+        pass
 
 
 def hit_tests(stlFile: str,
@@ -451,7 +460,7 @@ def hit_tests(stlFile: str,
         with open(scad_path, "w", encoding="utf-8") as f:
             f.write(f'{operation}() {{\n')
             f.write(f'    import("{stlFile.replace(os.sep, "/")}");\n')
-            f.write(f'    {interceptor}\n')
+            f.write(f'    {interceptor};\n')
             f.write(f'}}\n')
 
         err = _run_openscad(scad_path, stl_path, timeout=120)

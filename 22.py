@@ -1148,6 +1148,8 @@ def _resultToNiceReportImpl(answer, subPass, aiEngineName):
     scadFile = "results/22_Visualization_" + aiEngineName + "_" + str(
         subPass) + "temp.scad"
 
+    open(scadFile, "w").write(scadOutput)
+
     import zipfile
     with zipfile.ZipFile(output_path.replace(".png", ".zip"), 'w') as zipf:
         zipf.write(scadFile, os.path.basename(scadFile))

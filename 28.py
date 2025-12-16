@@ -473,6 +473,8 @@ translate([{x}, {y}, 0]) cube([1, 1, {cell}]);
     scadFile1 = "results/28_Visualization_" + aiEngineName + "_" + str(
         subPass) + "1temp.scad"
 
+    open(scadFile1, "w").write(scadOutput)
+
     #################
 
     scadOutput = ""
@@ -497,6 +499,8 @@ translate([{x + 0.15}, {y + 0.15}, 0]) cube([0.15, 0.15, 10]);
 
     scadFile2 = "results/28_Visualization_" + aiEngineName + "_" + str(
         subPass) + "2temp.scad"
+
+    open(scadFile2, "w").write(scadOutput)
 
     import zipfile
     with zipfile.ZipFile(output_path1.replace(".png", ".zip"), 'w') as zipf:
