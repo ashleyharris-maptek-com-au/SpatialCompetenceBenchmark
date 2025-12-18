@@ -23,6 +23,9 @@ except ImportError:
     )
     exit(1)
 
+global UNSKIP
+UNSKIP = False
+
 
 def runTest(index: int, aiEngineHook: callable,
             aiEngineName: str) -> Dict[str, Any]:
@@ -43,7 +46,7 @@ def runTest(index: int, aiEngineHook: callable,
 
     exec(open("" + str(index) + ".py", encoding="utf-8").read(), g)
 
-    if "skip" in g:
+    if "skip" in g and not UNSKIP:
         return {
             "average_score": 0,
             "total_score": 0,
@@ -1311,6 +1314,10 @@ Examples:
         action="store_true",
         help="Only used cached results. Do not make any API calls.")
 
+    parser.add_argument("--unskip",
+                        action="store_true",
+                        help="Run tests that are currently skipped.")
+
     parser.add_argument("--parallel",
                         action="store_true",
                         help="Run all models in parallel")
@@ -1329,6 +1336,8 @@ Examples:
         import CacheLayer
         CacheLayer.OFFLINE_MODE = True
         print("Offline mode: No API calls will be made, cache only.")
+
+    if args.unskip: UNSKIP = True
 
     all_configs = get_all_model_configs()
 

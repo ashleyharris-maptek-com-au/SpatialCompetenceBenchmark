@@ -84,8 +84,18 @@ unwise, and justify your chocies for which to adopt.
     ]
 }]
 
+structure = None
+
 
 def prepareSubpassPrompt(index):
     if index == len(questions): raise StopIteration
 
     return questions[index]["question"]
+
+
+def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
+    return 0, "NYI"
+
+
+def resultToNiceReport(answer, subPass, aiEngineName):
+    return "<p>NYI</p>"
