@@ -171,7 +171,7 @@ MIT
 
 - Track / via routing on a PCB layout.
 - Driving a 3D printer head to create a shape.
-- A rotating cylinder of clay, and you control a laser beam that blasts clay away. Make a cube.
+- A rotating cylinder of wood, and you control a laser beam that blasts wood away. Make a hollow lampshade. (Only possible if you build it at a 90 degree angle.)
 - A fair dice is dropped from ... at an orientation and angular momentum of ..., position cubes such that
 it always lands on a 6.
 - Using pipes and offest crosses only, create a shape that supports a ragdoll in this pose.
@@ -183,3 +183,6 @@ it always lands on a 6.
   of what connector plugs into what extrusion, rotated with side orientation considered.
 - Partition a standford bunny into two peices, both that can be 3D printed, and when
   assembled, click together with a snap with no visible seam.
+- Arrange 500 dominos so that when pushing over a single one, in a direction you
+  choose, they fall over in a pattern that resembles a unit hypercube
+  projected into 2D from the 4D camera location 10,10,10,10.

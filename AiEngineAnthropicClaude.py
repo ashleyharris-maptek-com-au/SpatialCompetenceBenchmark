@@ -32,7 +32,7 @@ PROMPT_CACHING = True
 # - False: No tools available
 # - True: Enable ALL built-in tools (web_search)
 # - List of tool definitions: Enable specific custom tools
-# 
+#
 # Examples:
 #   TOOLS = False                    # No tools
 #   TOOLS = True                     # All built-in tools (web search)
@@ -41,8 +41,57 @@ PROMPT_CACHING = True
 TOOLS = False
 
 import os, json, hashlib
+import PromptImageTagging as pit
 
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() + str(TOOLS).encode()).hexdigest()
+
+def build_anthropic_message_content(prompt: str) -> list[dict]:
+    prompt_parts = pit.parse_prompt_parts(prompt)
+    content_blocks: list[dict] = []
+    for part_type, part_value in prompt_parts:
+        if part_type == "text":
+            if part_value:
+                content_blocks.append({"type": "text", "text": part_value})
+        elif part_type == "image":
+            if pit.is_url(part_value):
+                content_blocks.append({
+                    "type": "image",
+                    "source": {
+                        "type": "url",
+                        "url": part_value
+                    }
+                })
+            elif pit.is_data_uri(part_value):
+                mime_type, b64 = pit.data_uri_to_base64(part_value)
+                content_blocks.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime_type,
+                        "data": b64
+                    }
+                })
+            else:
+                local_path = pit.resolve_local_path(part_value)
+                mime_type, b64 = pit.file_to_base64(local_path)
+                content_blocks.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime_type,
+                        "data": b64
+                    }
+                })
+
+    if not content_blocks:
+        content_blocks = [{"type": "text", "text": ""}]
+
+    return content_blocks
+
+
+configAndSettingsHash = hashlib.sha256(MODEL.encode() +
+                                       str(REASONING).encode() +
+                                       str(TOOLS).encode()).hexdigest()
+
 
 def Configure(Model, Reasing, Tools):
     global MODEL
@@ -52,7 +101,10 @@ def Configure(Model, Reasing, Tools):
     MODEL = Model
     REASONING = Reasing
     TOOLS = Tools
-    configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() + str(TOOLS).encode()).hexdigest()
+    configAndSettingsHash = hashlib.sha256(MODEL.encode() +
+                                           str(REASONING).encode() +
+                                           str(TOOLS).encode()).hexdigest()
+
 
 def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
     """
@@ -64,16 +116,16 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
     There is no memory between calls to this function, the 'conversation' doesn't persist.
     """
     from anthropic import Anthropic
-    
+
     # Initialize the client - it will automatically use ANTHROPIC_API_KEY environment variable
     client = Anthropic()
-    
+
     # Get the model's max tokens
     if "claude-sonnet-4-5" in MODEL:
         max_tokens = 64000
     else:
         max_tokens = 6400000
-    
+
     try:
         betas = []
         if TOOLS:
@@ -81,38 +133,39 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
         if structure:
             betas.append("structured-outputs-2025-11-13")
 
+        content_blocks = build_anthropic_message_content(prompt)
 
         # Build message parameters
         message_params = {
             "model": MODEL,
             "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{
+                "role": "user",
+                "content": content_blocks
+            }],
             "stream": True
         }
-        
+
         if len(betas) > 0:
             message_params["betas"] = betas
 
         # Add tools if specified
         if TOOLS is True:
             # Enable all built-in tools
-            message_params["tools"] = [
-                {
-                    "type": "web_search_20250305",
-                    "name": "web_search"
-                },
-                {
-                    "type": "code_execution_20250825",
-                    "name": "code_execution"
-                }
-            ]
+            message_params["tools"] = [{
+                "type": "web_search_20250305",
+                "name": "web_search"
+            }, {
+                "type": "code_execution_20250825",
+                "name": "code_execution"
+            }]
         elif TOOLS and TOOLS is not False:
             # Custom tools provided
             message_params["tools"] = TOOLS
-        
+
         # Handle structured output using tools (Claude's approach)
         if structure is not None:
-  
+
             # For some stupid reason, OpenAI requires "PropertyOrdering",
             # but Anthropic rejects it completely. Grrr
             def remove_property_ordering(schema):
@@ -132,7 +185,6 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
                 "schema": structure
             }
 
-        
         # Add thinking configuration if enabled (for supported models)
         if REASONING:
             # Extended thinking is enabled via model selection or beta headers
@@ -141,17 +193,18 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
                 "type": "enabled",
                 "budget_tokens": 32768 * REASONING // 10
             }
-        
+
         # Handle prompt caching if enabled
         if PROMPT_CACHING:
             # Mark content for caching - last content block is typically cached
             # This requires modifying the content structure
-            content_block = [{"type": "text", "text": prompt, "cache_control": {"type": "ephemeral"}}]
-            message_params["messages"][0]["content"] = content_block
-        
+            message_params["messages"][0]["content"][-1]["cache_control"] = {
+                "type": "ephemeral"
+            }
+
         # Make the API call
         responseStream = client.beta.messages.create(**message_params)
-        
+
         chainOfThought = ""
         textOutput = ""
         thinkingBuffer = ""
@@ -183,22 +236,30 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
         else:
             return "", str(e)
 
+
 if __name__ == "__main__":
     Configure("claude-sonnet-4-5-20250929", False, False)
     print(ClaudeAIHook("What's the 7th prime number after 101?", None))
 
     Configure("claude-sonnet-4-5-20250929", True, True)
-    print(ClaudeAIHook("What is the closest Australian city to New York?", None))
+    print(
+        ClaudeAIHook("What is the closest Australian city to New York?", None))
 
-    print(ClaudeAIHook("What is the furtherest Australian city from New York?", 
-    {
-        "type": "object",
-        "properties": {
-            "cityName": {"type": "string"},
-            "longitude": {"type": "number"},
-            "latitude": {"type": "number"}
-        },
-        "required": ["cityName", "longitude", "latitude"],
-        "additionalProperties": False
-    }
-    ))
+    print(
+        ClaudeAIHook(
+            "What is the furtherest Australian city from New York?", {
+                "type": "object",
+                "properties": {
+                    "cityName": {
+                        "type": "string"
+                    },
+                    "longitude": {
+                        "type": "number"
+                    },
+                    "latitude": {
+                        "type": "number"
+                    }
+                },
+                "required": ["cityName", "longitude", "latitude"],
+                "additionalProperties": False
+            }))

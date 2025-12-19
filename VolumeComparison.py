@@ -390,10 +390,10 @@ def _render_stl_to_png(stl_path: str, png_path: str) -> None:
         pass
 
 
-def render_scadText_to_png(
-        scad_content: str,
-        png_path: str,
-        cameraArg: str = "--camera=10,10,10,55,0,25,100") -> None:
+def render_scadText_to_png(scad_content: str,
+                           png_path: str,
+                           cameraArg: str = "--camera=10,10,10,55,0,25,100",
+                           extraScadArgs: List[str] = []) -> None:
     """Render SCAD content to PNG using OpenSCAD with an off-axis camera."""
     # Create a temporary SCAD file with the provided content
     temp_scad = png_path.replace(".png", "temp.scad")
@@ -404,12 +404,19 @@ def render_scadText_to_png(
     # Format: --camera=x,y,z,rot_x,rot_y,rot_z,distance
     # We'll use auto-center and a good viewing angle
     try:
-        result = subprocess.run([
+        args = [
             openScadPath, "--autocenter", "--viewall", cameraArg,
             "--imgsize=800,600", "--colorscheme=Starnight", "-o",
-            os.path.basename(png_path),
+            os.path.basename(png_path), *extraScadArgs,
             os.path.basename(temp_scad)
-        ],
+        ]
+
+        if extraScadArgs:
+            args.remove("--autocenter")
+            args.remove("--viewall")
+
+        print(args)
+        result = subprocess.run(args,
                                 capture_output=True,
                                 text=True,
                                 encoding="utf-8",

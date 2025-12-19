@@ -63,9 +63,11 @@ def Configure(Model, Reasoning, Tools):
 
 import os
 import json
+import PromptImageTagging as pit
 import time
 import threading
 import queue
+from urllib.request import Request, urlopen
 from typing import Any, List, Optional
 from google import genai
 from google.genai import types
@@ -119,6 +121,59 @@ def json_schema_to_pydantic(schema: dict,
             field_definitions[prop_name] = (Optional[python_type], None)
 
     return create_model(name, **field_definitions)
+
+
+def build_gemini_contents(prompt: str, structure: dict | None) -> list[Any]:
+    prompt_parts = pit.parse_prompt_parts(prompt)
+    contents: list[Any] = []
+    for part_type, part_value in prompt_parts:
+        if part_type == "text":
+            if part_value:
+                contents.append(part_value)
+        elif part_type == "image":
+            if pit.is_url(part_value):
+                req = Request(part_value,
+                              headers={"User-Agent": "MeshBenchmark/1.0"})
+                with urlopen(req, timeout=30) as resp:
+                    content_type = resp.headers.get("Content-Type")
+                    image_bytes = resp.read()
+
+                mime_type = None
+                if content_type:
+                    mime_type = content_type.split(";", 1)[0].strip().lower()
+                if not mime_type:
+                    mime_type = pit.guess_image_mime_type_from_ref(part_value)
+
+                contents.append(
+                    types.Part.from_bytes(data=image_bytes,
+                                          mime_type=mime_type))
+            elif pit.is_data_uri(part_value):
+                mime_type, image_bytes = pit.decode_data_uri(part_value)
+                contents.append(
+                    types.Part.from_bytes(data=image_bytes,
+                                          mime_type=mime_type))
+            else:
+                local_path = pit.resolve_local_path(part_value)
+                mime_type = pit.guess_image_mime_type_from_path(local_path)
+                image_bytes = pit.read_file_bytes(local_path)
+                contents.append(
+                    types.Part.from_bytes(data=image_bytes,
+                                          mime_type=mime_type))
+
+    if structure is not None and TOOLS:
+        schema_json = json.dumps(structure, indent=2)
+        contents.append(f"""
+
+You MUST respond with valid JSON that matches this exact schema:
+{schema_json}
+
+Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation."""
+                        )
+
+    if not contents:
+        contents = [""]
+
+    return contents
 
 
 def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
@@ -227,16 +282,56 @@ def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
         config = types.GenerateContentConfig(
             **config_params) if config_params else None
 
-        # When tools are enabled, append schema to prompt since we can't use structured output
-        actual_prompt = prompt
+        prompt_parts = pit.parse_prompt_parts(prompt)
+        contents: list[Any] = []
+        for part_type, part_value in prompt_parts:
+            if part_type == "text":
+                if part_value:
+                    contents.append(part_value)
+            elif part_type == "image":
+                if pit.is_url(part_value):
+                    req = Request(part_value,
+                                  headers={"User-Agent": "MeshBenchmark/1.0"})
+                    with urlopen(req, timeout=30) as resp:
+                        content_type = resp.headers.get("Content-Type")
+                        image_bytes = resp.read()
+
+                    mime_type = None
+                    if content_type:
+                        mime_type = content_type.split(";",
+                                                       1)[0].strip().lower()
+                    if not mime_type:
+                        mime_type = pit.guess_image_mime_type_from_ref(
+                            part_value)
+
+                    contents.append(
+                        types.Part.from_bytes(data=image_bytes,
+                                              mime_type=mime_type))
+                elif pit.is_data_uri(part_value):
+                    mime_type, image_bytes = pit.decode_data_uri(part_value)
+                    contents.append(
+                        types.Part.from_bytes(data=image_bytes,
+                                              mime_type=mime_type))
+                else:
+                    local_path = pit.resolve_local_path(part_value)
+                    mime_type = pit.guess_image_mime_type_from_path(local_path)
+                    image_bytes = pit.read_file_bytes(local_path)
+                    contents.append(
+                        types.Part.from_bytes(data=image_bytes,
+                                              mime_type=mime_type))
+
         if structure is not None and TOOLS:
             schema_json = json.dumps(structure, indent=2)
-            actual_prompt = f"""{prompt}
+            contents.append(f"""
 
 You MUST respond with valid JSON that matches this exact schema:
 {schema_json}
 
 Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation."""
+                            )
+
+        if not contents:
+            contents = [""]
 
         # Generate content with streaming to capture thinking in real-time
         chainOfThought = ""
@@ -244,7 +339,7 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
         current_thinking_line = ""
 
         stream = client.models.generate_content_stream(model=MODEL,
-                                                       contents=actual_prompt,
+                                                       contents=contents,
                                                        config=config)
 
         # Use a thread + queue to enable hard timeout on frozen streams

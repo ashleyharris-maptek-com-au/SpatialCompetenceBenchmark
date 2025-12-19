@@ -65,6 +65,29 @@ def Configure(Model, Reasing, Tools):
 
 import os
 import json
+import PromptImageTagging as pit
+
+
+def build_openai_input(prompt: str):
+    prompt_parts = pit.parse_prompt_parts(prompt)
+    has_images = any(part_type == "image" for part_type, _ in prompt_parts)
+    if not has_images:
+        return prompt
+
+    content: list[dict] = []
+    for part_type, part_value in prompt_parts:
+        if part_type == "text":
+            if part_value:
+                content.append({"type": "input_text", "text": part_value})
+        elif part_type == "image":
+            if pit.is_url(part_value) or pit.is_data_uri(part_value):
+                image_url = part_value
+            else:
+                image_url = pit.file_to_data_uri(
+                    pit.resolve_local_path(part_value))
+            content.append({"type": "input_image", "image_url": image_url})
+
+    return [{"role": "user", "content": content}]
 
 
 def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
@@ -99,9 +122,11 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
             model_to_use = REASONING
 
         # Build Responses API parameters
+        input_value = build_openai_input(prompt)
+
         response_params = {
             "model": model_to_use,
-            "input": prompt,
+            "input": input_value,
             "service_tier": "flex"
         }
 

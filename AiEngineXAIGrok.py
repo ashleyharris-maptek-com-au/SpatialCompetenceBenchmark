@@ -61,6 +61,7 @@ def Configure(Model, Reasoning, Tools):
 
 import os
 import json
+import PromptImageTagging as pit
 from typing import Any, List, Optional
 from pydantic import BaseModel, create_model
 
@@ -110,6 +111,42 @@ def json_schema_to_pydantic(schema: dict,
             field_definitions[prop_name] = (Optional[python_type], None)
 
     return create_model(name, **field_definitions)
+
+
+def build_xai_user_args(prompt: str, structure: dict | None) -> list[Any]:
+    from xai_sdk.chat import image
+
+    prompt_parts = pit.parse_prompt_parts(prompt)
+    user_args: list[Any] = []
+    for part_type, part_value in prompt_parts:
+        if part_type == "text":
+            if part_value:
+                user_args.append(part_value)
+        elif part_type == "image":
+            if pit.is_url(part_value):
+                user_args.append(image(part_value))
+            elif pit.is_data_uri(part_value):
+                _, b64 = pit.data_uri_to_base64(part_value)
+                user_args.append(image(b64))
+            else:
+                local_path = pit.resolve_local_path(part_value)
+                _, b64 = pit.file_to_base64(local_path)
+                user_args.append(image(b64))
+
+    if structure is not None:
+        schema_json = json.dumps(structure, indent=2)
+        user_args.append(f"""
+
+You MUST respond with valid JSON that matches this exact schema:
+{schema_json}
+
+Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation."""
+                         )
+
+    if not user_args:
+        user_args = [""]
+
+    return user_args
 
 
 def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
@@ -174,18 +211,9 @@ def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
         # Create chat and add user message
         chat = client.chat.create(**chat_params)
 
-        # If structured output requested, add schema to prompt
-        if pydantic_model is not None:
-            schema_json = json.dumps(structure, indent=2)
-            structured_prompt = f"""{prompt}
-
-You MUST respond with valid JSON that matches this exact schema:
-{schema_json}
-
-Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation."""
-            chat.append(user(structured_prompt))
-        else:
-            chat.append(user(prompt))
+        user_args = build_xai_user_args(
+            prompt, structure if pydantic_model is not None else None)
+        chat.append(user(*user_args))
 
         # Stream response and accumulate (works for both structured and unstructured)
         chainOfThought = ""
