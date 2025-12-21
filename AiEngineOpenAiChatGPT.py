@@ -85,7 +85,11 @@ def build_openai_input(prompt: str):
             else:
                 image_url = pit.file_to_data_uri(
                     pit.resolve_local_path(part_value))
-            content.append({"type": "input_image", "image_url": image_url})
+            content.append({
+                "type": "input_image",
+                "image_url": image_url,
+                "detail": "high"
+            })
 
     return [{"role": "user", "content": content}]
 
@@ -254,7 +258,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
         # Strip trailing newline from chain of thought if present
         chainOfThought = chainOfThought.rstrip("\n")
 
-        print(output_text)
+        #print(output_text)
 
         # Extract content
         if structure is not None:

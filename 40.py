@@ -1,9 +1,8 @@
 import math
 import random
 
-skip = True
-
-title = "Mirror Reflection - What do you see in the mirror?"
+earlyFail = True
+title = "Mirror Reflection."
 
 prompt = """
 You are in a room with mirrors on some walls. Objects are placed at various positions.
@@ -15,13 +14,6 @@ For each mirror visible from your position:
 1. What objects can you see reflected in that mirror?
 2. Where does each object appear to be located (as seen in the mirror)?
 
-Remember: In a mirror, objects appear at the same perpendicular distance behind the mirror 
-as they are in front of it. The mirror image is laterally inverted.
-
-For a flat mirror on the YZ plane at X=0:
-- An object at (3, 5, 2) appears at (-3, 5, 2) in the mirror
-- You can see an object in the mirror if the line from your eye to the mirror image 
-  intersects the mirror surface AND doesn't pass through any obstacles.
 """
 
 structure = {
@@ -155,6 +147,7 @@ Room: 10m x 10m x 3m (X: 0-10, Y: 0-10, Z: 0-3)
 
 Mirror: On the wall at X=0, covering Y: 2-8, Z: 0.5-2.5
   - Normal pointing in +X direction
+  - Named "Wall Mirror"
 
 Objects:
 - Red Ball at (3, 5, 1)
@@ -247,6 +240,7 @@ Room: 10m x 10m x 5m
 
 Mirror: On the floor at Z=0, covering X: 3-7, Y: 3-7
   - Normal pointing in +Z direction (upward)
+  - Named "Floor Mirror"
 
 Objects:
 - Chandelier at (5, 5, 4) (hanging from ceiling)
@@ -285,6 +279,7 @@ Room with an angled mirror at 45 degrees.
 
 Mirror: Plane through (5, 0, 0) with normal (0.707, 0.707, 0) - angled 45° between +X and +Y
   - Bounded: Y: 0-5, Z: 0-3
+  - Named "Angled Mirror"
 
 Objects:
 - Vase at (2, 2, 1)
@@ -364,6 +359,10 @@ def generate_mirror_problem(num_mirrors, num_objects, seed):
             lo = random.uniform(2, 8)
             hi = random.uniform(lo + 3, min(lo + 10, room_size - 2))
             bounds[axis] = [lo, hi]
+
+        if "z" in bounds:
+            # Mirrors high up on the wall are trivial to solve.
+            bounds["z"][0] = max(bounds["z"][0], random.uniform(0, 2))
 
         mirrors.append({
             "name": f"Mirror {chr(65+i)}",
@@ -651,6 +650,7 @@ promptChangeSummary = "Various mirror configurations"
 
 
 def prepareSubpassPrompt(index: int) -> str:
+
     if index >= len(problems):
         raise StopIteration
     return prompt.replace("ROOM_DESCRIPTION", problems[index]["description"])
@@ -679,9 +679,16 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                 break
 
         if ans_view is None:
-            details.append(f"Missing view for {mirror_name}")
-            max_points += len(exp_view["visibleObjects"]) + 1
-            continue
+            for v in views:
+                if v.get("mirrorName",
+                         "").lower().startswith(mirror_name.lower()):
+                    ans_view = v
+                    details.append(f"Assuming '{v}' is {mirror_name}")
+                    break
+            else:
+                details.append(f"Missing view for {mirror_name}")
+                max_points += len(exp_view["visibleObjects"]) + 1
+                continue
 
         # Check visible objects
         exp_objects = {
@@ -735,13 +742,203 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return min(1, score), "<br>".join(details)
 
 
+def generate_room_scad(prob):
+    """Generate OpenSCAD code for room visualization."""
+    import random
+    random.seed(hash(prob["name"]))
+
+    scad = "// Room visualization\n"
+
+    # Draw room floor as a thin box (estimate room size from mirrors/objects)
+    all_x = [obj["pos"][0] for obj in prob["objects"]] + [prob["viewer"][0]]
+    all_y = [obj["pos"][1] for obj in prob["objects"]] + [prob["viewer"][1]]
+
+    for mirror in prob["mirrors"]:
+        if "bounds" in mirror:
+            if "x" in mirror["bounds"]:
+                all_x.extend(mirror["bounds"]["x"])
+            if "y" in mirror["bounds"]:
+                all_y.extend(mirror["bounds"]["y"])
+
+    room_x = max(all_x) + 2
+    room_y = max(all_y) + 2
+
+    # Floor
+    scad += f"color([0.8, 0.8, 0.8, 0.3]) translate([0, 0, -0.05]) cube([{room_x}, {room_y}, 0.05]);\n"
+
+    # Draw mirrors as semi-transparent blue rectangles
+    for mirror in prob["mirrors"]:
+        import math
+        normal = mirror["normal"]
+        bounds = mirror.get("bounds", {})
+        point = mirror["point"]
+
+        scad += f"// {mirror['name']}\n"
+
+        # Check if axis-aligned or angled
+        num_nonzero = sum(1 for n in normal if abs(n) > 0.01)
+
+        if num_nonzero == 1:
+            # Axis-aligned mirror - use simple cube approach
+            if abs(normal[0]) > 0.5:  # YZ plane (wall at X=const)
+                x_pos = point[0]
+                y_min = bounds.get("y", [0, room_y])[0]
+                y_max = bounds.get("y", [0, room_y])[1]
+                z_min = bounds.get("z", [0, 3])[0]
+                z_max = bounds.get("z", [0, 3])[1]
+                scad += f"color([0.3, 0.5, 1.0, 0.5]) translate([{x_pos}, {y_min}, {z_min}]) cube([0.05, {y_max - y_min}, {z_max - z_min}]);\n"
+            elif abs(normal[1]) > 0.5:  # XZ plane (wall at Y=const)
+                y_pos = point[1]
+                x_min = bounds.get("x", [0, room_x])[0]
+                x_max = bounds.get("x", [0, room_x])[1]
+                z_min = bounds.get("z", [0, 3])[0]
+                z_max = bounds.get("z", [0, 3])[1]
+                scad += f"color([0.3, 0.5, 1.0, 0.5]) translate([{x_min}, {y_pos}, {z_min}]) cube([{x_max - x_min}, 0.05, {z_max - z_min}]);\n"
+            elif abs(normal[2]) > 0.5:  # XY plane (floor/ceiling mirror)
+                z_pos = point[2]
+                x_min = bounds.get("x", [0, room_x])[0]
+                x_max = bounds.get("x", [0, room_x])[1]
+                y_min = bounds.get("y", [0, room_y])[0]
+                y_max = bounds.get("y", [0, room_y])[1]
+                scad += f"color([0.3, 0.5, 1.0, 0.5]) translate([{x_min}, {y_min}, {z_pos}]) cube([{x_max - x_min}, {y_max - y_min}, 0.05]);\n"
+        else:
+            # Angled mirror - need to rotate and position properly
+            # For a plane with normal (nx, ny, nz) through point (px, py, pz)
+            # We'll create a rectangle and rotate it to align with the normal
+
+            # Normalize the normal vector
+            mag = math.sqrt(sum(n * n for n in normal))
+            norm = [n / mag for n in normal]
+
+            # Calculate rotation angles to align Z-axis with normal
+            # Angle in XY plane (rotation around Z)
+            angle_z = math.degrees(math.atan2(norm[1], norm[0]))
+            # Angle from Z-axis
+            angle_from_z = math.degrees(math.acos(norm[2])) if abs(
+                norm[2]) <= 1 else 0
+
+            # Determine size based on bounds
+            z_min = bounds.get("z", [0, 3])[0]
+            z_max = bounds.get("z", [0, 3])[1]
+            z_size = z_max - z_min
+
+            # For angled mirror in XY plane (normal has z=0), estimate width
+            # The mirror passes through point and extends in the plane
+            width = 10  # default width
+
+            # Create a thin rectangle and rotate it
+            # Start with rectangle in XY plane, then rotate to align with normal
+            scad += f"color([0.3, 0.5, 1.0, 0.5]) translate([{point[0]}, {point[1]}, {z_min + z_size/2}]) "
+            scad += f"rotate([0, 0, {angle_z - 90}]) "  # Rotate in XY plane
+            scad += f"cube([0.05, {width}, {z_size}], center=true);\n"
+
+    # Object colors
+    obj_colors = {
+        "red": [1, 0.2, 0.2],
+        "blue": [0.2, 0.2, 1],
+        "green": [0.2, 0.8, 0.2],
+        "yellow": [1, 1, 0.2],
+        "purple": [0.7, 0.2, 0.9],
+        "orange": [1, 0.5, 0.1],
+        "pink": [1, 0.5, 0.7],
+        "white": [0.9, 0.9, 0.9],
+        "black": [0.2, 0.2, 0.2],
+    }
+
+    # Draw objects
+    for obj in prob["objects"]:
+        pos = obj["pos"]
+        name = obj["name"].lower()
+
+        # Determine color from name
+        color = [0.6, 0.6, 0.6]  # default gray
+        for color_name, rgb in obj_colors.items():
+            if color_name in name:
+                color = rgb
+                break
+
+        scad += f"// {obj['name']}\n"
+        scad += f"color([{color[0]}, {color[1]}, {color[2]}]) "
+
+        # Determine shape from name
+        if "ball" in name or "sphere" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]}]) sphere(r=0.3, $fn=24);\n"
+        elif "cube" in name or "box" in name:
+            scad += f"translate([{pos[0]-0.25}, {pos[1]-0.25}, {pos[2]-0.25}]) cube([0.5, 0.5, 0.5]);\n"
+        elif "cone" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.3}]) cylinder(r1=0.3, r2=0, h=0.6, $fn=24);\n"
+        elif "cylinder" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.3}]) cylinder(r=0.2, h=0.6, $fn=24);\n"
+        elif "pyramid" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.3}]) cylinder(r1=0.35, r2=0, h=0.6, $fn=4);\n"
+        elif "torus" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]}]) rotate_extrude($fn=24) translate([0.25, 0, 0]) circle(r=0.1, $fn=16);\n"
+        elif "lamp" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.4}]) cylinder(r=0.1, h=0.5, $fn=16);\n"
+            scad += f"color([1, 1, 0.8]) translate([{pos[0]}, {pos[1]}, {pos[2]+0.1}]) sphere(r=0.2, $fn=16);\n"
+        elif "vase" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.3}]) cylinder(r1=0.15, r2=0.25, h=0.6, $fn=24);\n"
+        elif "chair" in name:
+            # Simple chair shape
+            scad += f"translate([{pos[0]-0.2}, {pos[1]-0.2}, {pos[2]}]) cube([0.4, 0.4, 0.05]);\n"  # seat
+            scad += f"color([{color[0]}, {color[1]}, {color[2]}]) translate([{pos[0]-0.2}, {pos[1]+0.15}, {pos[2]}]) cube([0.4, 0.05, 0.4]);\n"  # back
+        elif "statue" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.4}]) cylinder(r=0.15, h=0.8, $fn=24);\n"
+            scad += f"color([{color[0]}, {color[1]}, {color[2]}]) translate([{pos[0]}, {pos[1]}, {pos[2]+0.4}]) sphere(r=0.2, $fn=16);\n"
+        elif "plant" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]-0.3}]) cylinder(r1=0.2, r2=0.15, h=0.3, $fn=16);\n"
+            scad += f"color([0.2, 0.7, 0.2]) translate([{pos[0]}, {pos[1]}, {pos[2]}]) sphere(r=0.35, $fn=16);\n"
+        elif "clock" in name:
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]}]) cylinder(r=0.3, h=0.05, $fn=24);\n"
+        elif "painting" in name or "picture" in name:
+            scad += f"translate([{pos[0]-0.3}, {pos[1]}, {pos[2]-0.2}]) cube([0.6, 0.02, 0.4]);\n"
+        else:
+            # Default: small sphere
+            scad += f"translate([{pos[0]}, {pos[1]}, {pos[2]}]) sphere(r=0.25, $fn=16);\n"
+
+        # Add label
+        scad += f"color([1, 0, 0]) translate([{pos[0]}, {pos[1]}, {pos[2]+0.5}]) linear_extrude(0.01) text(\"{obj['name']}\", size=1, halign=\"center\");\n"
+
+    # Draw viewer as a person-like shape
+    viewer = prob["viewer"]
+    scad += f"// Viewer\n"
+    scad += f"color([0.9, 0.7, 0.5]) translate([{viewer[0]}, {viewer[1]}, 0]) cylinder(r=0.15, h={viewer[2]-0.3}, $fn=16);\n"  # body
+    scad += f"color([0.9, 0.7, 0.5]) translate([{viewer[0]}, {viewer[1]}, {viewer[2]-0.1}]) sphere(r=0.2, $fn=16);\n"  # head
+    scad += f"color([1, 0, 0]) translate([{viewer[0]}, {viewer[1]}, {viewer[2]+0.2}]) linear_extrude(0.01) text(\"YOU\", size=1, halign=\"center\");\n"
+
+    return scad
+
+
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
+    import VolumeComparison as vc
+    import os
+
     prob = problems[subPass]
 
-    html = "<b>Problem:</b><br>"
-    html += prob["description"].replace("\n", "<br>")
+    # Generate visualization
+    vis_html = ""
+    try:
+        scad = generate_room_scad(prob)
+        output_path = f"results/40_{subPass}_{aiEngineName}_room.png"
 
-    html += "<br><br><b>Your answer:</b><br>"
+        # Calculate camera position based on room size
+        all_x = [obj["pos"][0]
+                 for obj in prob["objects"]] + [prob["viewer"][0]]
+        all_y = [obj["pos"][1]
+                 for obj in prob["objects"]] + [prob["viewer"][1]]
+        center_x = sum(all_x) / len(all_x)
+        center_y = sum(all_y) / len(all_y)
+        room_size = max(max(all_x), max(all_y))
+        cam_dist = room_size * 2
+
+        camera_arg = f"--camera={center_x + cam_dist},{center_y - cam_dist},{cam_dist},{center_x},{center_y},1"
+        vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
+        vis_html = f'<img src="{os.path.basename(output_path)}" />'
+    except Exception as e:
+        vis_html = f"<i>Visualization error: {e}</i>"
+
+    # Text content in left column
+    html = "<td><b>Your answer:</b><br>"
     for view in answer.get("mirrorViews", []):
         html += f"<b>{view.get('mirrorName', '?')}</b>:<br>"
         html += f"  Can see yourself: {view.get('canSeeYourself', '?')}<br>"
@@ -754,6 +951,8 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
         html += f"  Can see yourself: {view['canSeeYourself']}<br>"
         for obj in view["visibleObjects"]:
             html += f"  - {obj['objectName']} at {obj['apparentPosition']}<br>"
+
+    html += f"</td><td>{vis_html}</td>"
 
     return html
 

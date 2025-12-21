@@ -29,188 +29,163 @@ rotation but before projection.
 """
 
 structure = {
-    "type": "object",
-    "properties": {
-        "hole": {
-            "type": "object",
-            "properties": {
-                "transform": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-            },
-            "required": ["transform"],
-            "additionalProperties": False,
-            "propertyOrdering": ["transform"]
-        },
-        "solid": {
-            "type": "object",
-            "properties": {
-                "transform": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                }
-            },
-            "required": ["transform"],
-            "additionalProperties": False,
-            "propertyOrdering": ["transform"]
-        }
-    },
-    "required": ["hole", "solid"],
-    "additionalProperties": False,
-    "propertyOrdering": ["hole", "solid"]
+  "type": "object", "properties": {
+    "hole": {
+      "type": "object", "properties": {
+        "transform": {"type": "array", "items": {"type": "number"}},
+      }, "required": ["transform"], "additionalProperties": False, "propertyOrdering":
+      ["transform"]
+    }, "solid": {
+      "type": "object", "properties": {"transform": {"type": "array", "items": {"type": "number"}}},
+      "required": ["transform"], "additionalProperties": False, "propertyOrdering": ["transform"]
+    }
+  }, "required": ["hole", "solid"], "additionalProperties": False, "propertyOrdering":
+  ["hole", "solid"]
 }
 
 solidNames = [
-    "unit cube", "rectangular prism (6,5,4)",
-    "letter G in Arial, 5 units high, linearly extruded 0.2 units, wrapped in a convex hull"
+  "unit cube", "rectangular prism (6,5,4)",
+  "letter G in Arial, 5 units high, linearly extruded 0.2 units, wrapped in a convex hull"
 ]
 
 subpassParamSummary = ["Unit cube", "Rectangular prism", "Hull of Letter G"]
 
 
 def prepareSubpassPrompt(index: int) -> str:
-    if index == 0:
-        return prompt.format(PROMPT_A=solidNames[0])
-    if index == 1:
-        return prompt.format(PROMPT_A=solidNames[1])
-    if index == 2:
-        return prompt.format(PROMPT_A=solidNames[2])
-    raise StopIteration
+  if index == 0:
+    return prompt.format(PROMPT_A=solidNames[0])
+  if index == 1:
+    return prompt.format(PROMPT_A=solidNames[1])
+  if index == 2:
+    return prompt.format(PROMPT_A=solidNames[2])
+  raise StopIteration
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
-    openScadShape = ""
-    if subPass == 0:
-        openScadShape = "cube([1,1,1], center=True);"
-    elif subPass == 1:
-        openScadShape = "cube([6,5,4], center=True);"
-    elif subPass == 2:
-        openScadShape = 'hull() linear_extrude(height=0.2) text("G", font="Arial", size=5, halign="center", valign="center");'
+  openScadShape = ""
+  if subPass == 0:
+    openScadShape = "cube([1,1,1], center=True);"
+  elif subPass == 1:
+    openScadShape = "cube([6,5,4], center=True);"
+  elif subPass == 2:
+    openScadShape = 'hull() linear_extrude(height=0.2) text("G", font="Arial", size=5, halign="center", valign="center");'
 
-    if "solid" not in answer or "hole" not in answer:
-        return 0, "Answer must contain both solid and hole"
+  if "solid" not in answer or "hole" not in answer:
+    return 0, "Answer must contain both solid and hole"
 
-    if "transform" not in answer["solid"] or "transform" not in answer["hole"]:
-        return 0, "Answer must contain both solid and hole transforms"
+  if "transform" not in answer["solid"] or "transform" not in answer["hole"]:
+    return 0, "Answer must contain both solid and hole transforms"
 
-    solidTransform = answer["solid"]["transform"]
-    holeTransform = answer["hole"]["transform"]
+  solidTransform = answer["solid"]["transform"]
+  holeTransform = answer["hole"]["transform"]
 
-    if len(solidTransform) != 4 and len(solidTransform) != 7:
-        return 0, "Solid transform must be 4 or 7 elements"
+  if len(solidTransform) != 4 and len(solidTransform) != 7:
+    return 0, "Solid transform must be 4 or 7 elements"
 
-    if len(holeTransform) != 4 and len(holeTransform) != 7:
-        return 0, "Hole transform must be 4 or 7 elements"
+  if len(holeTransform) != 4 and len(holeTransform) != 7:
+    return 0, "Hole transform must be 4 or 7 elements"
 
-    if holeTransform == solidTransform:
-        return 0, "Hole and solid transforms must be different"
+  if holeTransform == solidTransform:
+    return 0, "Hole and solid transforms must be different"
 
-    holeTransformMagnitude = math.sqrt(holeTransform[0]**2 +
-                                       holeTransform[1]**2 +
-                                       holeTransform[2]**2 +
-                                       holeTransform[3]**2)
-    if holeTransformMagnitude - 1 > 0.01:
-        return 0, "Hole transform must be normalised"
+  holeTransformMagnitude = math.sqrt(holeTransform[0]**2 + holeTransform[1]**2 +
+                                     holeTransform[2]**2 + holeTransform[3]**2)
+  if holeTransformMagnitude - 1 > 0.01:
+    return 0, "Hole transform must be normalised"
 
-    solidTransformMagnitude = math.sqrt(solidTransform[0]**2 +
-                                        solidTransform[1]**2 +
-                                        solidTransform[2]**2 +
-                                        solidTransform[3]**2)
-    if solidTransformMagnitude - 1 > 0.01:
-        return 0, "Solid transform must be normalised"
+  solidTransformMagnitude = math.sqrt(solidTransform[0]**2 + solidTransform[1]**2 +
+                                      solidTransform[2]**2 + solidTransform[3]**2)
+  if solidTransformMagnitude - 1 > 0.01:
+    return 0, "Solid transform must be normalised"
 
-    solidRotation = quaternion_to_euler_angles(solidTransform[0:4])
-    solidPrefix = "rotate([" + ",".join([str(x)
-                                         for x in solidRotation]) + "]) "
+  solidRotation = quaternion_to_euler_angles(solidTransform[0:4])
+  solidPrefix = "rotate([" + ",".join([str(x) for x in solidRotation]) + "]) "
 
-    holeRotation = quaternion_to_euler_angles(holeTransform[0:4])
-    holePrefix = "rotate([" + ",".join([str(x) for x in holeRotation]) + "]) "
+  holeRotation = quaternion_to_euler_angles(holeTransform[0:4])
+  holePrefix = "rotate([" + ",".join([str(x) for x in holeRotation]) + "]) "
 
-    if len(solidTransform) == 7:
-        solidPrefix = "translate([" + ",".join(
-            [str(x) for x in solidTransform[4:]]) + "]) " + solidPrefix
-    if len(holeTransform) == 7:
-        holePrefix = "translate([" + ",".join(
-            [str(x) for x in holeTransform[4:]]) + "]) " + holePrefix
+  if len(solidTransform) == 7:
+    solidPrefix = "translate([" + ",".join([str(x)
+                                            for x in solidTransform[4:]]) + "]) " + solidPrefix
+  if len(holeTransform) == 7:
+    holePrefix = "translate([" + ",".join([str(x) for x in holeTransform[4:]]) + "]) " + holePrefix
 
-    solidPrefix = "color([0,1,0]) projection() " + solidPrefix
-    holePrefix = " color([1,0,0]) projection() " + holePrefix
+  solidPrefix = "color([0,1,0]) projection() " + solidPrefix
+  holePrefix = " color([1,0,0]) projection() " + holePrefix
 
-    vc.render_scadText_to_png("$fn=90;" + solidPrefix + openScadShape,
-                              "results/31_solid_" + str(subPass) + ".png",
-                              "--camera=0,0,50,0,0,0")
-    vc.render_scadText_to_png("$fn=90;" + holePrefix + openScadShape,
-                              "results/31_hole_" + str(subPass) + ".png",
-                              "--camera=0,0,50,0,0,0")
+  vc.render_scadText_to_png("$fn=90;" + solidPrefix + openScadShape,
+                            "results/31_solid_" + str(subPass) + ".png", "--camera=0,0,50,0,0,0")
+  vc.render_scadText_to_png("$fn=90;" + holePrefix + openScadShape,
+                            "results/31_hole_" + str(subPass) + ".png", "--camera=0,0,50,0,0,0")
 
-    import PIL
+  import PIL
 
-    solidImage = PIL.Image.open("results/31_solid_" + str(subPass) + ".png")
-    holeImage = PIL.Image.open("results/31_hole_" + str(subPass) + ".png")
+  solidImage = PIL.Image.open("results/31_solid_" + str(subPass) + ".png")
+  holeImage = PIL.Image.open("results/31_hole_" + str(subPass) + ".png")
 
-    overlay = PIL.Image.new("RGB", solidImage.size, (0, 0, 0))
+  overlay = PIL.Image.new("RGB", solidImage.size, (0, 0, 0))
 
-    solidP = solidImage.load()
-    holeP = holeImage.load()
+  solidP = solidImage.load()
+  holeP = holeImage.load()
 
-    solidInHole = 0
-    solidMissedHole = 0
+  solidInHole = 0
+  solidMissedHole = 0
 
-    for x in range(solidImage.width):
-        for y in range(solidImage.height):
-            sp = solidP[x, y]
-            hp = holeP[x, y]
+  for x in range(solidImage.width):
+    for y in range(solidImage.height):
+      sp = solidP[x, y]
+      hp = holeP[x, y]
 
-            solidPixel = sp[1] > 50 and sp[0] < 50 and sp[2] < 50
-            holePixel = hp[1] < 50 and hp[0] > 50 and hp[2] < 50
+      solidPixel = sp[1] > 50 and sp[0] < 50 and sp[2] < 50
+      holePixel = hp[1] < 50 and hp[0] > 50 and hp[2] < 50
 
-            if solidPixel and not holePixel:
-                solidMissedHole += 1
-                overlay.putpixel((x, y), (255, 0, 0))
-            elif holePixel and solidPixel:
-                solidInHole += 1
-                overlay.putpixel((x, y), (0, 255, 0))
-            elif holePixel:
-                overlay.putpixel((x, y), (0, 0, 255))
+      if solidPixel and not holePixel:
+        solidMissedHole += 1
+        overlay.putpixel((x, y), (255, 0, 0))
+      elif holePixel and solidPixel:
+        solidInHole += 1
+        overlay.putpixel((x, y), (0, 255, 0))
+      elif holePixel:
+        overlay.putpixel((x, y), (0, 0, 255))
 
-    overlay.save("results/31_overlay_" + str(subPass) + ".png")
+  overlay.save("results/31_overlay_" + str(subPass) + ".png")
 
-    if solidMissedHole == 0:
-        return 1.0, "Solid fits through the hole!"
+  if solidMissedHole == 0:
+    return 1.0, "Solid fits through the hole!"
 
-    if solidMissedHole < 10:
-        return 1.0 - solidMissedHole / 10, "Solid is VERY close to fitting through the hole, was off with a margin of " + str(
-            solidMissedHole) + " pixels"
+  if solidMissedHole < 10:
+    return 1.0 - solidMissedHole / 10, "Solid is VERY close to fitting through the hole, was off with a margin of " + str(
+      solidMissedHole) + " pixels"
 
-    return 0.0, "Solid is too far from fitting through the hole, was off by " + str(
-        solidMissedHole) + " pixels"
+  return 0.0, "Solid is too far from fitting through the hole, was off by " + str(
+    solidMissedHole) + " pixels"
 
 
 def quaternion_to_euler_angles(quaternion):
-    x, y, z, w = quaternion
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    X = math.atan2(t0, t1)
+  x, y, z, w = quaternion
+  t0 = +2.0 * (w * x + y * z)
+  t1 = +1.0 - 2.0 * (x * x + y * y)
+  X = math.atan2(t0, t1)
 
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    Y = math.asin(t2)
+  t2 = +2.0 * (w * y - z * x)
+  t2 = +1.0 if t2 > +1.0 else t2
+  t2 = -1.0 if t2 < -1.0 else t2
+  Y = math.asin(t2)
 
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    Z = math.atan2(t3, t4)
+  t3 = +2.0 * (w * z + x * y)
+  t4 = +1.0 - 2.0 * (y * y + z * z)
+  Z = math.atan2(t3, t4)
 
-    return X, Y, Z
+  return math.degrees(X), math.degrees(Y), math.degrees(Z)
 
 
 def resultToNiceReport(result: dict, subPass: int, aiEngineName: str):
-    return "<img src='31_overlay_" + str(subPass) + ".png'/>"
+  return """
+Green = solid and hole lining up<br>
+Red = Excess object not fitting through the hole<br>
+Blue = Unused hole.<br>
+    
+    <img src='31_overlay_""" + str(subPass) + ".png'/>"
 
 
 highLevelSummary = """

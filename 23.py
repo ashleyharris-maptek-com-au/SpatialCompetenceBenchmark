@@ -414,7 +414,9 @@ def resultToNiceReport(result, subPass, aiEngineName):
     cached = _load_from_cache(cache_key, "report")
 
     # Also check if LastVoxelWorld is populated (from grading) and output file exists
-    if cached is not None:
+    if cached is not None and os.path.exists("results/23_Visualization_" +
+                                             aiEngineName + "_" +
+                                             str(subPass) + ".png"):
         # Extract output path from cached HTML to verify file exists
         if "23_Visualization_" in cached:
             print(f"Using cached report for {aiEngineName} subpass {subPass}")
@@ -451,7 +453,7 @@ def _resultToNiceReportImpl(result, subPass, aiEngineName):
     import os
     os.makedirs("results", exist_ok=True)
     output_path = "results/23_Visualization_" + aiEngineName + "_" + str(
-        len(voxels)) + ".png"
+        subPass) + ".png"
     vc.render_scadText_to_png(scad_content, output_path)
     print(f"Saved visualization to {output_path}")
 

@@ -256,7 +256,8 @@ minkowski(){
     if referenceVolume == 0:
         score = 0.0
     else:
-        score = intersectionVolume / referenceVolume
+        score = min(intersectionVolume / referenceVolume,
+                    resultVolume / referenceVolume)
 
         if "validatePostVolume" in testGlobals:
             score, explanation = testGlobals["validatePostVolume"](

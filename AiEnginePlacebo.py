@@ -8,1832 +8,741 @@ configAndSettingsHash = hashlib.sha256(b"Placebo").hexdigest()
 def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
                   subPass: int) -> dict | str:
 
-    if questionNum == 1:
-        # Question 1
-        return {
-            "pipes": [{
-                "xCentre": 0,
-                "yCentre": 0,
-                "rotationDegrees": 0
-            }, {
-                "xCentre": -2.55,
-                "yCentre": 2.5,
-                "rotationDegrees": 90
-            }, {
-                "xCentre": 2.55,
-                "yCentre": 2.5,
-                "rotationDegrees": 90
-            }, {
-                "xCentre": -2.55,
-                "yCentre": -2.5,
-                "rotationDegrees": 90
-            }, {
-                "xCentre": 2.55,
-                "yCentre": -2.5,
-                "rotationDegrees": 90
-            }],
-            "Reasoning":
-            "This was manually calculated. Half of 10cm is 5cm, so the 10cm wide pipes center is offset by 5cm."
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 1:
+    # Question 1
+    return {
+        "pipes": [{"xCentre": 0, "yCentre": 0, "rotationDegrees":
+                   0}, {"xCentre": -2.55, "yCentre": 2.5, "rotationDegrees":
+                        90}, {"xCentre": 2.55, "yCentre": 2.5, "rotationDegrees":
+                              90}, {"xCentre": -2.55, "yCentre": -2.5, "rotationDegrees": 90},
+                  {"xCentre": 2.55, "yCentre": -2.5, "rotationDegrees": 90}], "Reasoning":
+        "This was manually calculated. Half of 10cm is 5cm, so the 10cm wide pipes center is offset by 5cm."
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 2 and subPass == 0:
-        return {
-            "bricks": [{
-                "Centroid": [0, 48, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -48, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 64, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -64, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 48, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -48, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 48, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -32, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -48, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, 0, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 0, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, 16, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, -16, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 16, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, -16, 4.8],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [48, 0, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 0, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [64, 0, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-64, 0, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, 32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, -32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, -32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, 32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, -32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, -32, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, 64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -64, 14.4],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 32, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -32, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 64, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -64, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 0, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 0, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 16, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -16, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 16, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -16, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 32, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -32, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 32, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -32, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -48, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [64, 0, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-64, 0, 24.0],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 0, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 0, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, 0, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 0, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [48, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, 32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-48, -32, 33.6],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 0, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 16, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -16, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 32, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -32, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 48, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -48, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 0, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 0, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 16, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -16, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 16, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -16, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, 32, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [32, -32, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, 32, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [-32, -32, 43.2],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 0, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, 0, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 0, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, 0, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 0, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, -32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, 32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [16, -32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, 32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-16, -32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, 32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [32, -32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, 32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [-32, -32, 52.8],
-                "RotationDegrees": 90
-            }, {
-                "Centroid": [0, 0, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, 16, 62.4],
-                "RotationDegrees": 0
-            }, {
-                "Centroid": [0, -16, 62.4],
-                "RotationDegrees": 0
-            }],
-            "Reasoning":
-            "I generated this from the Gemini 2.5 pro API playground while developing the test. It's a bit 'meh'"
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 2 and subPass == 0:
+    return {
+        "bricks": [{"Centroid": [0, 48, 4.8], "RotationDegrees":
+                    0}, {"Centroid": [0, -48, 4.8], "RotationDegrees":
+                         0}, {"Centroid": [0, 64, 4.8], "RotationDegrees":
+                              0}, {"Centroid": [0, -64, 4.8], "RotationDegrees":
+                                   0}, {"Centroid": [32, 32, 4.8], "RotationDegrees":
+                                        0}, {"Centroid": [32, 48, 4.8], "RotationDegrees":
+                                             0}, {"Centroid": [32, -32, 4.8], "RotationDegrees": 0},
+                   {"Centroid": [32, -48, 4.8], "RotationDegrees":
+                    0}, {"Centroid": [-32, 32, 4.8], "RotationDegrees":
+                         0}, {"Centroid": [-32, 48, 4.8], "RotationDegrees":
+                              0}, {"Centroid": [-32, -32, 4.8], "RotationDegrees":
+                                   0}, {"Centroid": [-32, -48, 4.8], "RotationDegrees":
+                                        0}, {"Centroid": [64, 0, 4.8], "RotationDegrees":
+                                             0}, {"Centroid": [-64, 0, 4.8], "RotationDegrees": 0},
+                   {"Centroid": [64, 16, 4.8], "RotationDegrees":
+                    0}, {"Centroid": [64, -16, 4.8], "RotationDegrees":
+                         0}, {"Centroid": [-64, 16, 4.8], "RotationDegrees":
+                              0}, {"Centroid": [-64, -16, 4.8], "RotationDegrees":
+                                   0}, {"Centroid": [48, 0, 14.4], "RotationDegrees":
+                                        90}, {"Centroid": [-48, 0, 14.4], "RotationDegrees": 90},
+                   {"Centroid": [64, 0, 14.4], "RotationDegrees":
+                    90}, {"Centroid": [-64, 0, 14.4], "RotationDegrees":
+                          90}, {"Centroid": [32, 32, 14.4], "RotationDegrees":
+                                90}, {"Centroid": [32, -32, 14.4], "RotationDegrees":
+                                      90}, {"Centroid": [-32, 32, 14.4], "RotationDegrees": 90},
+                   {"Centroid": [-32, -32, 14.4], "RotationDegrees":
+                    90}, {"Centroid": [48, 32, 14.4], "RotationDegrees":
+                          90}, {"Centroid": [48, -32, 14.4], "RotationDegrees":
+                                90}, {"Centroid": [-48, 32, 14.4], "RotationDegrees":
+                                      90}, {"Centroid": [-48, -32, 14.4], "RotationDegrees":
+                                            90}, {"Centroid": [0, 64, 14.4], "RotationDegrees": 90},
+                   {"Centroid": [0, -64, 14.4], "RotationDegrees":
+                    90}, {"Centroid": [16, 64, 14.4], "RotationDegrees":
+                          90}, {"Centroid": [16, -64, 14.4], "RotationDegrees":
+                                90}, {"Centroid": [-16, 64, 14.4], "RotationDegrees":
+                                      90}, {"Centroid": [-16, -64, 14.4], "RotationDegrees":
+                                            90}, {"Centroid": [0, 32, 24.0], "RotationDegrees": 0},
+                   {"Centroid": [0, -32, 24.0], "RotationDegrees":
+                    0}, {"Centroid": [0, 48, 24.0], "RotationDegrees":
+                         0}, {"Centroid": [0, -48, 24.0], "RotationDegrees":
+                              0}, {"Centroid": [0, 64, 24.0], "RotationDegrees":
+                                   0}, {"Centroid": [0, -64, 24.0], "RotationDegrees":
+                                        0}, {"Centroid": [32, 0, 24.0], "RotationDegrees":
+                                             0}, {"Centroid": [-32, 0, 24.0], "RotationDegrees": 0},
+                   {"Centroid": [32, 16, 24.0], "RotationDegrees":
+                    0}, {"Centroid": [32, -16, 24.0], "RotationDegrees":
+                         0}, {"Centroid": [-32, 16, 24.0], "RotationDegrees":
+                              0}, {"Centroid": [-32, -16, 24.0], "RotationDegrees":
+                                   0}, {"Centroid": [32, 32, 24.0], "RotationDegrees":
+                                        0}, {"Centroid": [32, -32, 24.0], "RotationDegrees": 0},
+                   {"Centroid": [-32, 32, 24.0], "RotationDegrees":
+                    0}, {"Centroid": [-32, -32, 24.0], "RotationDegrees":
+                         0}, {"Centroid": [32, 48, 24.0], "RotationDegrees":
+                              0}, {"Centroid": [32, -48, 24.0], "RotationDegrees":
+                                   0}, {"Centroid": [-32, 48, 24.0], "RotationDegrees":
+                                        0}, {"Centroid": [-32, -48, 24.0], "RotationDegrees":
+                                             0}, {"Centroid": [64, 0, 24.0], "RotationDegrees": 0},
+                   {"Centroid": [-64, 0, 24.0], "RotationDegrees":
+                    0}, {"Centroid": [32, 0, 33.6], "RotationDegrees":
+                         90}, {"Centroid": [-32, 0, 33.6], "RotationDegrees":
+                               90}, {"Centroid": [48, 0, 33.6], "RotationDegrees":
+                                     90}, {"Centroid": [-48, 0, 33.6], "RotationDegrees":
+                                           90}, {"Centroid": [0, 32, 33.6], "RotationDegrees": 90},
+                   {"Centroid": [0, -32, 33.6], "RotationDegrees":
+                    90}, {"Centroid": [16, 32, 33.6], "RotationDegrees":
+                          90}, {"Centroid": [16, -32, 33.6], "RotationDegrees":
+                                90}, {"Centroid": [-16, 32, 33.6], "RotationDegrees":
+                                      90}, {"Centroid": [-16, -32, 33.6], "RotationDegrees": 90
+                                            }, {"Centroid": [32, 32, 33.6], "RotationDegrees": 90},
+                   {"Centroid": [32, -32, 33.6], "RotationDegrees":
+                    90}, {"Centroid": [-32, 32, 33.6], "RotationDegrees":
+                          90}, {"Centroid": [-32, -32, 33.6], "RotationDegrees":
+                                90}, {"Centroid": [48, 32, 33.6], "RotationDegrees":
+                                      90}, {"Centroid": [48, -32, 33.6], "RotationDegrees": 90
+                                            }, {"Centroid": [-48, 32, 33.6], "RotationDegrees": 90},
+                   {"Centroid": [-48, -32, 33.6], "RotationDegrees":
+                    90}, {"Centroid": [0, 0, 43.2], "RotationDegrees":
+                          0}, {"Centroid": [0, 16, 43.2], "RotationDegrees":
+                               0}, {"Centroid": [0, -16, 43.2], "RotationDegrees":
+                                    0}, {"Centroid": [0, 32, 43.2], "RotationDegrees":
+                                         0}, {"Centroid": [0, -32, 43.2], "RotationDegrees":
+                                              0}, {"Centroid": [0, 48, 43.2], "RotationDegrees": 0},
+                   {"Centroid": [0, -48, 43.2], "RotationDegrees":
+                    0}, {"Centroid": [32, 0, 43.2], "RotationDegrees":
+                         0}, {"Centroid": [-32, 0, 43.2], "RotationDegrees":
+                              0}, {"Centroid": [32, 16, 43.2], "RotationDegrees":
+                                   0}, {"Centroid": [32, -16, 43.2], "RotationDegrees":
+                                        0}, {"Centroid": [-32, 16, 43.2], "RotationDegrees": 0},
+                   {"Centroid": [-32, -16, 43.2], "RotationDegrees":
+                    0}, {"Centroid": [32, 32, 43.2], "RotationDegrees":
+                         0}, {"Centroid": [32, -32, 43.2], "RotationDegrees":
+                              0}, {"Centroid": [-32, 32, 43.2], "RotationDegrees":
+                                   0}, {"Centroid": [-32, -32, 43.2], "RotationDegrees":
+                                        0}, {"Centroid": [0, 0, 52.8], "RotationDegrees": 90},
+                   {"Centroid": [16, 0, 52.8], "RotationDegrees":
+                    90}, {"Centroid": [-16, 0, 52.8], "RotationDegrees":
+                          90}, {"Centroid": [32, 0, 52.8], "RotationDegrees":
+                                90}, {"Centroid": [-32, 0, 52.8], "RotationDegrees":
+                                      90}, {"Centroid": [0, 32, 52.8], "RotationDegrees": 90},
+                   {"Centroid": [0, -32, 52.8], "RotationDegrees":
+                    90}, {"Centroid": [16, 32, 52.8], "RotationDegrees":
+                          90}, {"Centroid": [16, -32, 52.8], "RotationDegrees":
+                                90}, {"Centroid": [-16, 32, 52.8], "RotationDegrees":
+                                      90}, {"Centroid": [-16, -32, 52.8], "RotationDegrees": 90
+                                            }, {"Centroid": [32, 32, 52.8], "RotationDegrees": 90},
+                   {"Centroid": [32, -32, 52.8], "RotationDegrees":
+                    90}, {"Centroid": [-32, 32, 52.8], "RotationDegrees":
+                          90}, {"Centroid": [-32, -32, 52.8], "RotationDegrees":
+                                90}, {"Centroid": [0, 0, 62.4], "RotationDegrees":
+                                      0}, {"Centroid": [0, 16, 62.4], "RotationDegrees":
+                                           0}, {"Centroid": [0, -16, 62.4], "RotationDegrees": 0}],
+        "Reasoning":
+        "I generated this from the Gemini 2.5 pro API playground while developing the test. It's a bit 'meh'"
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 2 and subPass == 1:
+  if questionNum == 2 and subPass == 1:
 
-        bricks = []
+    bricks = []
 
-        for x in range(-120, 120, 32):
-            for y in range(-120, 120, 16):
-                for zBy10 in range(48, 1300, 96):
-                    z = zBy10 / 10
-                    dist = math.sqrt(x * x + y * y + z * z)
-                    if dist > 80 and dist < 110:
-                        bricks.append({
-                            "Centroid": [x, y, z],
-                            "RotationDegrees": 0
-                        })
+    for x in range(-120, 120, 32):
+      for y in range(-120, 120, 16):
+        for zBy10 in range(48, 1300, 96):
+          z = zBy10 / 10
+          dist = math.sqrt(x * x + y * y + z * z)
+          if dist > 80 and dist < 110:
+            bricks.append({"Centroid": [x, y, z], "RotationDegrees": 0})
 
-        return {
-            "bricks": bricks,
-        }, ""
+    return {
+        "bricks": bricks,
+    }, ""
 
-    if questionNum == 2 and subPass == 2:
+  if questionNum == 2 and subPass == 2:
 
-        bricks = []
+    bricks = []
 
-        for x in range(-200, 200, 32):
-            for y in range(-200, 200, 16):
-                for zBy10 in range(48, 2000, 96):
-                    z = zBy10 / 10
-                    dist = math.sqrt(x * x + y * y + z * z)
-                    if dist > 150 and dist < 170:
-                        bricks.append({
-                            "Centroid": [x, y, z],
-                            "RotationDegrees": 0
-                        })
+    for x in range(-200, 200, 32):
+      for y in range(-200, 200, 16):
+        for zBy10 in range(48, 2000, 96):
+          z = zBy10 / 10
+          dist = math.sqrt(x * x + y * y + z * z)
+          if dist > 150 and dist < 170:
+            bricks.append({"Centroid": [x, y, z], "RotationDegrees": 0})
 
-        return {
-            "bricks": bricks,
-        }, ""
+    return {
+        "bricks": bricks,
+    }, ""
 
-    if questionNum == 3 and subPass == 0:
+  if questionNum == 3 and subPass == 0:
 
-        return {
-            "polyhedron": {
-                "vertex": [{
-                    "xyz": [10.0, -5.0, -10.0]
-                }, {
-                    "xyz": [10.0, 15.0, -10.0]
-                }, {
-                    "xyz": [10.0, 15.0, 20.0]
-                }, {
-                    "xyz": [10.0, -5.0, 20.0]
-                }, {
-                    "xyz": [0.0, -5.0, 20.0]
-                }, {
-                    "xyz": [0.0, 15.0, 20.0]
-                }, {
-                    "xyz": [0.0, 15.0, -10.0]
-                }, {
-                    "xyz": [-12.5, -12.5, -12.5]
-                }, {
-                    "xyz": [2.5, -12.5, -12.5]
-                }, {
-                    "xyz": [2.5, 2.5, -12.5]
-                }, {
-                    "xyz": [-12.5, 2.5, -12.5]
-                }, {
-                    "xyz": [-12.5, -12.5, 2.5]
-                }, {
-                    "xyz": [2.5, -12.5, 2.5]
-                }, {
-                    "xyz": [-12.5, 2.5, 2.5]
-                }, {
-                    "xyz": [2.5, 2.5, -10.0]
-                }, {
-                    "xyz": [2.5, -5.0, -10.0]
-                }, {
-                    "xyz": [2.5, -5.0, 2.5]
-                }, {
-                    "xyz": [0.0, 2.5, 2.5]
-                }, {
-                    "xyz": [0.0, 2.5, -10.0]
-                }, {
-                    "xyz": [0.0, -5.0, 2.5]
-                }],
-                "faces": [{
-                    "vertex": [0, 1, 2, 3]
-                }, {
-                    "vertex": [8, 9, 14, 15, 16, 12]
-                }, {
-                    "vertex": [13, 10, 7, 11]
-                }, {
-                    "vertex": [6, 18, 17, 19, 4, 5]
-                }, {
-                    "vertex": [2, 1, 6, 5]
-                }, {
-                    "vertex": [9, 10, 13, 17, 18, 14]
-                }, {
-                    "vertex": [7, 8, 12, 11]
-                }, {
-                    "vertex": [0, 3, 4, 19, 16, 15]
-                }, {
-                    "vertex": [4, 3, 2, 5]
-                }, {
-                    "vertex": [11, 12, 16, 19, 17, 13]
-                }, {
-                    "vertex": [7, 10, 9, 8]
-                }, {
-                    "vertex": [0, 15, 14, 18, 6, 1]
-                }]
-            },
-            "Reasoning":
-            "I generated this from the Gemini 2.5 API playground while developing the test.  It appears correct for the 1st test."
-        }, "Placebo thinking... hmmm..."
+    return {
+        "polyhedron": {
+            "vertex":
+            [{"xyz": [10.0, -5.0, -10.0]}, {"xyz": [10.0, 15.0, -10.0]},
+             {"xyz": [10.0, 15.0, 20.0]}, {"xyz": [10.0, -5.0, 20.0]}, {"xyz": [0.0, -5.0, 20.0]},
+             {"xyz": [0.0, 15.0, 20.0]}, {"xyz": [0.0, 15.0,
+                                                  -10.0]}, {"xyz": [-12.5, -12.5, -12.5]},
+             {"xyz": [2.5, -12.5, -12.5]}, {"xyz": [2.5, 2.5, -12.5]}, {"xyz": [-12.5, 2.5, -12.5]},
+             {"xyz": [-12.5, -12.5, 2.5]}, {"xyz": [2.5, -12.5, 2.5]}, {"xyz": [-12.5, 2.5, 2.5]},
+             {"xyz": [2.5, 2.5, -10.0]}, {"xyz": [2.5, -5.0, -10.0]}, {"xyz": [2.5, -5.0, 2.5]},
+             {"xyz": [0.0, 2.5, 2.5]}, {"xyz": [0.0, 2.5, -10.0]}, {"xyz": [0.0, -5.0,
+                                                                            2.5]}], "faces":
+            [{"vertex": [0, 1, 2, 3]}, {"vertex": [8, 9, 14, 15, 16, 12]},
+             {"vertex": [13, 10, 7, 11]}, {"vertex": [6, 18,
+                                                      17, 19, 4, 5]}, {"vertex": [2, 1, 6, 5]},
+             {"vertex": [9, 10, 13, 17, 18,
+                         14]}, {"vertex": [7, 8, 12, 11]}, {"vertex": [0, 3, 4, 19, 16, 15]},
+             {"vertex": [4, 3, 2, 5]}, {"vertex": [11, 12, 16, 19, 17,
+                                                   13]}, {"vertex":
+                                                          [7, 10, 9,
+                                                           8]}, {"vertex": [0, 15, 14, 18, 6, 1]}]
+        }, "Reasoning":
+        "I generated this from the Gemini 2.5 API playground while developing the test.  It appears correct for the 1st test."
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 3 and subPass == 1:
-        return {
-            'polyhedron': {
-                'vertex': [{
-                    'xyz': [5.0, -5.0, -10.0]
-                }, {
-                    'xyz': [15.0, -5.0, -10.0]
-                }, {
-                    'xyz': [15.0, 15.0, -10.0]
-                }, {
-                    'xyz': [5.0, 15.0, -10.0]
-                }, {
-                    'xyz': [5.0, -5.0, 20.0]
-                }, {
-                    'xyz': [15.0, -5.0, 20.0]
-                }, {
-                    'xyz': [15.0, 15.0, 20.0]
-                }, {
-                    'xyz': [5.0, 15.0, 20.0]
-                }, {
-                    'xyz': [-17.5, -12.5, -12.5]
-                }, {
-                    'xyz': [-2.5, -12.5, -12.5]
-                }, {
-                    'xyz': [-2.5, 2.5, -12.5]
-                }, {
-                    'xyz': [-17.5, 2.5, -12.5]
-                }, {
-                    'xyz': [-17.5, -12.5, 2.5]
-                }, {
-                    'xyz': [-2.5, -12.5, 2.5]
-                }, {
-                    'xyz': [-2.5, 2.5, 2.5]
-                }, {
-                    'xyz': [-17.5, 2.5, 2.5]
-                }],
-                'faces': [{
-                    'vertex': [3, 2, 1, 0]
-                }, {
-                    'vertex': [4, 5, 6, 7]
-                }, {
-                    'vertex': [0, 1, 5, 4]
-                }, {
-                    'vertex': [7, 6, 2, 3]
-                }, {
-                    'vertex': [3, 0, 4, 7]
-                }, {
-                    'vertex': [1, 2, 6, 5]
-                }, {
-                    'vertex': [11, 10, 9, 8]
-                }, {
-                    'vertex': [12, 13, 14, 15]
-                }, {
-                    'vertex': [8, 9, 13, 12]
-                }, {
-                    'vertex': [15, 14, 10, 11]
-                }, {
-                    'vertex': [11, 8, 12, 15]
-                }, {
-                    'vertex': [9, 10, 14, 13]
-                }]
-            }
-        }, ""
+  if questionNum == 3 and subPass == 1:
+    return {
+        'polyhedron': {
+            'vertex':
+            [{'xyz': [5.0, -5.0, -10.0]}, {'xyz': [15.0, -5.0, -10.0]},
+             {'xyz': [15.0, 15.0, -10.0]}, {'xyz': [5.0, 15.0, -10.0]}, {'xyz': [5.0, -5.0, 20.0]},
+             {'xyz': [15.0, -5.0, 20.0]}, {'xyz': [15.0, 15.0, 20.0]}, {'xyz': [5.0, 15.0, 20.0]},
+             {'xyz': [-17.5, -12.5,
+                      -12.5]}, {'xyz': [-2.5, -12.5,
+                                        -12.5]}, {'xyz': [-2.5, 2.5,
+                                                          -12.5]}, {'xyz': [-17.5, 2.5, -12.5]},
+             {'xyz': [-17.5, -12.5,
+                      2.5]}, {'xyz': [-2.5, -12.5,
+                                      2.5]}, {'xyz': [-2.5, 2.5, 2.5]}, {'xyz': [-17.5, 2.5, 2.5]}],
+            'faces': [{'vertex': [3, 2, 1, 0]}, {'vertex': [4, 5, 6, 7]}, {'vertex': [0, 1, 5, 4]},
+                      {'vertex': [7, 6, 2, 3]}, {'vertex': [3, 0, 4, 7]}, {'vertex': [1, 2, 6, 5]},
+                      {'vertex': [11, 10, 9, 8]}, {'vertex': [12, 13, 14,
+                                                              15]}, {'vertex': [8, 9, 13, 12]},
+                      {'vertex': [15, 14, 10, 11]}, {'vertex': [11, 8, 12,
+                                                                15]}, {'vertex': [9, 10, 14, 13]}]
+        }
+    }, ""
 
-    if questionNum == 3 and subPass == 2:
-        return {
-            'polyhedron': {
-                'vertex': [{
-                    'xyz': [10.0, -5.0, -10.0]
-                }, {
-                    'xyz': [20.0, -5.0, -10.0]
-                }, {
-                    'xyz': [20.0, 15.0, -10.0]
-                }, {
-                    'xyz': [10.0, 15.0, -10.0]
-                }, {
-                    'xyz': [10.0, -5.0, 20.0]
-                }, {
-                    'xyz': [20.0, -5.0, 20.0]
-                }, {
-                    'xyz': [20.0, 15.0, 20.0]
-                }, {
-                    'xyz': [10.0, 15.0, 20.0]
-                }, {
-                    'xyz': [-22.5, -12.5, -12.5]
-                }, {
-                    'xyz': [-7.5, -12.5, -12.5]
-                }, {
-                    'xyz': [-7.5, 2.5, -12.5]
-                }, {
-                    'xyz': [-22.5, 2.5, -12.5]
-                }, {
-                    'xyz': [-22.5, -12.5, 2.5]
-                }, {
-                    'xyz': [-7.5, -12.5, 2.5]
-                }, {
-                    'xyz': [-7.5, 2.5, 2.5]
-                }, {
-                    'xyz': [-22.5, 2.5, 2.5]
-                }],
-                'faces': [{
-                    'vertex': [3, 2, 1, 0]
-                }, {
-                    'vertex': [4, 5, 6, 7]
-                }, {
-                    'vertex': [0, 1, 5, 4]
-                }, {
-                    'vertex': [7, 6, 2, 3]
-                }, {
-                    'vertex': [3, 0, 4, 7]
-                }, {
-                    'vertex': [1, 2, 6, 5]
-                }, {
-                    'vertex': [11, 10, 9, 8]
-                }, {
-                    'vertex': [12, 13, 14, 15]
-                }, {
-                    'vertex': [8, 9, 13, 12]
-                }, {
-                    'vertex': [15, 14, 10, 11]
-                }, {
-                    'vertex': [11, 8, 12, 15]
-                }, {
-                    'vertex': [9, 10, 14, 13]
-                }]
-            }
-        }, ""
+  if questionNum == 3 and subPass == 2:
+    return {
+        'polyhedron': {
+            'vertex':
+            [{'xyz': [10.0, -5.0, -10.0]}, {'xyz': [20.0, -5.0,
+                                                    -10.0]}, {'xyz': [20.0, 15.0, -10.0]},
+             {'xyz': [10.0, 15.0, -10.0]}, {'xyz': [10.0, -5.0, 20.0]}, {'xyz': [20.0, -5.0, 20.0]},
+             {'xyz': [20.0, 15.0, 20.0]}, {'xyz': [10.0, 15.0,
+                                                   20.0]}, {'xyz': [-22.5, -12.5, -12.5]},
+             {'xyz': [-7.5, -12.5, -12.5]}, {'xyz': [-7.5, 2.5,
+                                                     -12.5]}, {'xyz': [-22.5, 2.5, -12.5]},
+             {'xyz': [-22.5, -12.5,
+                      2.5]}, {'xyz': [-7.5, -12.5,
+                                      2.5]}, {'xyz': [-7.5, 2.5, 2.5]}, {'xyz': [-22.5, 2.5, 2.5]}],
+            'faces': [{'vertex': [3, 2, 1, 0]}, {'vertex': [4, 5, 6, 7]}, {'vertex': [0, 1, 5, 4]},
+                      {'vertex': [7, 6, 2, 3]}, {'vertex': [3, 0, 4, 7]}, {'vertex': [1, 2, 6, 5]},
+                      {'vertex': [11, 10, 9, 8]}, {'vertex': [12, 13, 14,
+                                                              15]}, {'vertex': [8, 9, 13, 12]},
+                      {'vertex': [15, 14, 10, 11]}, {'vertex': [11, 8, 12,
+                                                                15]}, {'vertex': [9, 10, 14, 13]}]
+        }
+    }, ""
 
-    if questionNum == 3 and subPass == 3:
-        return {
-            'polyhedron': {
-                'vertex': [{
-                    'xyz': [-2.5, 15.0, -10.0]
-                }, {
-                    'xyz': [7.5, 15.0, -10.0]
-                }, {
-                    'xyz': [7.5, -5.0, -10.0]
-                }, {
-                    'xyz': [-2.5, 15.0, 20.0]
-                }, {
-                    'xyz': [7.5, 15.0, 20.0]
-                }, {
-                    'xyz': [7.5, -5.0, 20.0]
-                }, {
-                    'xyz': [-2.5, -5.0, 20.0]
-                }, {
-                    'xyz': [-10.0, -12.5, -12.5]
-                }, {
-                    'xyz': [5.0, -12.5, -12.5]
-                }, {
-                    'xyz': [5.0, 2.5, -12.5]
-                }, {
-                    'xyz': [-10.0, 2.5, -12.5]
-                }, {
-                    'xyz': [-10.0, -12.5, 2.5]
-                }, {
-                    'xyz': [5.0, -12.5, 2.5]
-                }, {
-                    'xyz': [-10.0, 2.5, 2.5]
-                }, {
-                    'xyz': [5.0, -5.0, -10.0]
-                }, {
-                    'xyz': [5.0, 2.5, -10.0]
-                }, {
-                    'xyz': [-2.5, 2.5, -10.0]
-                }, {
-                    'xyz': [5.0, -5.0, 2.5]
-                }, {
-                    'xyz': [-2.5, -5.0, 2.5]
-                }, {
-                    'xyz': [-2.5, 2.5, 2.5]
-                }],
-                'faces': [{
-                    'vertex': [6, 3, 0, 16, 19, 18]
-                }, {
-                    'vertex': [2, 1, 4, 5]
-                }, {
-                    'vertex': [6, 18, 17, 14, 2, 5]
-                }, {
-                    'vertex': [1, 0, 3, 4]
-                }, {
-                    'vertex': [1, 2, 14, 15, 16, 0]
-                }, {
-                    'vertex': [5, 4, 3, 6]
-                }, {
-                    'vertex': [7, 11, 13, 10]
-                }, {
-                    'vertex': [8, 9, 15, 14, 17, 12]
-                }, {
-                    'vertex': [11, 7, 8, 12]
-                }, {
-                    'vertex': [15, 9, 10, 13, 19, 16]
-                }, {
-                    'vertex': [10, 9, 8, 7]
-                }, {
-                    'vertex': [12, 17, 18, 19, 13, 11]
-                }]
-            }
-        }, ""
+  if questionNum == 3 and subPass == 3:
+    return {
+        'polyhedron': {
+            'vertex':
+            [{'xyz': [-2.5, 15.0, -10.0]}, {'xyz': [7.5, 15.0, -10.0]}, {'xyz': [7.5, -5.0, -10.0]},
+             {'xyz': [-2.5, 15.0, 20.0]}, {'xyz': [7.5, 15.0, 20.0]}, {'xyz': [7.5, -5.0, 20.0]},
+             {'xyz': [-2.5, -5.0, 20.0]}, {'xyz': [-10.0, -12.5, -12.5]},
+             {'xyz': [5.0, -12.5, -12.5]}, {'xyz': [5.0, 2.5, -12.5]}, {'xyz': [-10.0, 2.5, -12.5]},
+             {'xyz': [-10.0, -12.5, 2.5]}, {'xyz': [5.0, -12.5, 2.5]}, {'xyz': [-10.0, 2.5, 2.5]},
+             {'xyz': [5.0, -5.0, -10.0]}, {'xyz': [5.0, 2.5, -10.0]}, {'xyz': [-2.5, 2.5, -10.0]},
+             {'xyz': [5.0, -5.0, 2.5]}, {'xyz': [-2.5, -5.0, 2.5]}, {'xyz': [-2.5, 2.5, 2.5]}],
+            'faces': [{'vertex': [6, 3, 0, 16, 19,
+                                  18]}, {'vertex': [2, 1, 4, 5]}, {'vertex': [6, 18, 17, 14, 2, 5]},
+                      {'vertex': [1, 0, 3, 4]}, {'vertex': [1, 2, 14, 15, 16,
+                                                            0]}, {'vertex': [5, 4, 3, 6]},
+                      {'vertex': [7, 11, 13, 10]}, {'vertex': [8, 9, 15, 14, 17,
+                                                               12]}, {'vertex': [11, 7, 8, 12]},
+                      {'vertex': [15, 9, 10, 13, 19,
+                                  16]}, {'vertex': [10, 9, 8,
+                                                    7]}, {'vertex': [12, 17, 18, 19, 13, 11]}]
+        }
+    }, ""
 
-    if questionNum == 4 and subPass == 0:
-        # Question 4
-        return {
-            'tetrahedrons': [{
-                "x": -1.500000,
-                "y": 2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -0.500000,
-                "y": 2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.500000,
-                "y": 2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.500000,
-                "y": 2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 2.500000,
-                "y": 2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -2.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -1.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -1.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 0.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 1.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 2.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 2.000000,
-                "y": 1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -2.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -1.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -1.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -0.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -0.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 0.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 1.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 2.500000,
-                "y": 0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -2.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -2.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -1.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -1.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 0.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 1.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 2.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 2.000000,
-                "y": 0.000000,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -2.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -1.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -1.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -0.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -0.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 0.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 1.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 2.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 2.500000,
-                "y": -0.866025,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -2.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -1.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -1.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 0.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 1.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": 2.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 2.000000,
-                "y": -1.732051,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -1.500000,
-                "y": -2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": -1.500000,
-                "y": -2.598076,
-                "z": 0.000000,
-                "q0": 1.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 0.000000
-            }, {
-                "x": -0.500000,
-                "y": -2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 0.500000,
-                "y": -2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 1.500000,
-                "y": -2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }, {
-                "x": 2.500000,
-                "y": -2.598076,
-                "z": 0.000000,
-                "q0": 0.000000,
-                "q1": 0.000000,
-                "q2": 0.000000,
-                "q3": 1.000000
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 4 and subPass == 0:
+    # Question 4
+    return {
+        'tetrahedrons': [{
+            "x": -1.500000, "y": 2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -0.500000, "y": 2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.500000, "y": 2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.500000, "y": 2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 2.500000, "y": 2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -2.000000, "y": 1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -1.000000, "y": 1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -1.000000, "y": 1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 0.000000, "y": 1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.000000, "y": 1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 1.000000, "y": 1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.000000, "y": 1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 2.000000, "y": 1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 2.000000, "y": 1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -2.500000, "y": 0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -1.500000, "y": 0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -1.500000, "y": 0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -0.500000, "y": 0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -0.500000, "y": 0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 0.500000, "y": 0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.500000, "y": 0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 1.500000, "y": 0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.500000, "y": 0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 2.500000, "y": 0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -2.000000, "y": 0.000000, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -2.000000, "y": 0.000000, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -1.000000, "y": 0.000000, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -1.000000, "y": 0.000000, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 0.000000, "y": 0.000000, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.000000, "y": 0.000000, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 1.000000, "y": 0.000000, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.000000, "y": 0.000000, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 2.000000, "y": 0.000000, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 2.000000, "y": 0.000000, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -2.500000, "y": -0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -1.500000, "y": -0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -1.500000, "y": -0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -0.500000, "y": -0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -0.500000, "y": -0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 0.500000, "y": -0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.500000, "y": -0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 1.500000, "y": -0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.500000, "y": -0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 2.500000, "y": -0.866025, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 2.500000, "y": -0.866025, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -2.000000, "y": -1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -1.000000, "y": -1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -1.000000, "y": -1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 0.000000, "y": -1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.000000, "y": -1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 1.000000, "y": -1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.000000, "y": -1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": 2.000000, "y": -1.732051, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 2.000000, "y": -1.732051, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -1.500000, "y": -2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": -1.500000, "y": -2.598076, "z": 0.000000, "q0": 1.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 0.000000
+        }, {
+            "x": -0.500000, "y": -2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 0.500000, "y": -2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 1.500000, "y": -2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }, {
+            "x": 2.500000, "y": -2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+            0.000000, "q3": 1.000000
+        }]
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 4 and subPass == 1:
-        # Cover a circle of diameter 4 (radius 2) with two non-intersecting spirals
-        # Shadows overlap to form a solid circle
-        import math as m
+  if questionNum == 4 and subPass == 1:
+    # Cover a circle of diameter 4 (radius 2) with two non-intersecting spirals
+    # Shadows overlap to form a solid circle
+    import math as m
 
-        tetrahedrons = []
-        radius = 2.0  # Target circle radius
+    tetrahedrons = []
+    radius = 2.0  # Target circle radius
 
-        # Tetrahedron shadow centroid (NOT at origin!)
-        # Vertices: [0,0], [1,0], [0.5, sqrt(3)/2]
-        # Centroid: (0.5, sqrt(3)/6)
-        cx = 0.5
-        cy = m.sqrt(3) / 6  # ~0.289
+    # Tetrahedron shadow centroid (NOT at origin!)
+    # Vertices: [0,0], [1,0], [0.5, sqrt(3)/2]
+    # Centroid: (0.5, sqrt(3)/6)
+    cx = 0.5
+    cy = m.sqrt(3) / 6  # ~0.289
 
-        # Quaternion for rotation around Z axis by angle theta
-        def quat_z(theta):
-            return (m.cos(theta / 2), 0, 0, m.sin(theta / 2))
+    # Quaternion for rotation around Z axis by angle theta
+    def quat_z(theta):
+      return (m.cos(theta / 2), 0, 0, m.sin(theta / 2))
 
-        def rotated_centroid(theta):
-            """Where the shadow centroid ends up after Z rotation."""
-            return (cx * m.cos(theta) - cy * m.sin(theta),
-                    cx * m.sin(theta) + cy * m.cos(theta))
+    def rotated_centroid(theta):
+      """Where the shadow centroid ends up after Z rotation."""
+      return (cx * m.cos(theta) - cy * m.sin(theta), cx * m.sin(theta) + cy * m.cos(theta))
 
-        def place_tet(target_x, target_y, rot_theta, z_height):
-            """Place tetrahedron so its shadow centroid is at (target_x, target_y)."""
-            rc_x, rc_y = rotated_centroid(rot_theta)
-            q0, q1, q2, q3 = quat_z(rot_theta)
-            return {
-                "x": target_x - rc_x,
-                "y": target_y - rc_y,
-                "z": z_height,
-                "q0": q0,
-                "q1": q1,
-                "q2": q2,
-                "q3": q3
-            }
+    def place_tet(target_x, target_y, rot_theta, z_height):
+      """Place tetrahedron so its shadow centroid is at (target_x, target_y)."""
+      rc_x, rc_y = rotated_centroid(rot_theta)
+      q0, q1, q2, q3 = quat_z(rot_theta)
+      return {
+          "x": target_x - rc_x, "y": target_y - rc_y, "z": z_height, "q0": q0, "q1": q1, "q2": q2,
+          "q3": q3
+      }
 
-        # Outer spiral - place shadow centroids on circle of radius ~1.6
-        k_outer = 1.6
-        n_outer = 24
-        for i in range(n_outer):
-            theta = 2 * m.pi * i / n_outer
-            z = i
-            tx = k_outer * m.cos(theta)
-            ty = k_outer * m.sin(theta)
-            # Rotate tetrahedron to point inward
-            rot = theta + m.pi * 1.2
-            tetrahedrons.append(place_tet(tx, ty, rot, z))
+    # Outer spiral - place shadow centroids on circle of radius ~1.6
+    k_outer = 1.6
+    n_outer = 24
+    for i in range(n_outer):
+      theta = 2 * m.pi * i / n_outer
+      z = i * 2
+      tx = k_outer * m.cos(theta)
+      ty = k_outer * m.sin(theta)
+      # Rotate tetrahedron to point inward
+      rot = theta + m.pi * 1.2
+      tetrahedrons.append(place_tet(tx, ty, rot, z))
 
-        # Inner spiral - smaller radius, opposite direction
-        k_inner = 0.6
-        n_inner = 12
-        for i in range(n_inner):
-            theta = -2 * m.pi * i / n_inner
-            z = i + 100
-            tx = k_inner * m.cos(theta)
-            ty = k_inner * m.sin(theta)
-            rot = theta  # Point outward
-            tetrahedrons.append(place_tet(tx, ty, rot, z))
+    # Inner spiral - smaller radius, opposite direction
+    k_inner = 0.6
+    n_inner = 12
+    for i in range(n_inner):
+      theta = -2 * m.pi * i / n_inner
+      z = i * 2 + 100
+      tx = k_inner * m.cos(theta)
+      ty = k_inner * m.sin(theta)
+      rot = theta  # Point outward
+      tetrahedrons.append(place_tet(tx, ty, rot, z))
 
-        # Middle ring to fill gaps
-        k_mid = 1.1
-        n_mid = 18
-        for i in range(n_mid):
-            theta = 2 * m.pi * i / n_mid + m.pi / n_mid
-            z = 200 + i
-            tx = k_mid * m.cos(theta)
-            ty = k_mid * m.sin(theta)
-            rot = theta + m.pi / 2
-            tetrahedrons.append(place_tet(tx, ty, rot, z))
+    # Middle ring to fill gaps
+    k_mid = 1.1
+    n_mid = 18
+    for i in range(n_mid):
+      theta = 2 * m.pi * i / n_mid + m.pi / n_mid
+      z = 200 + i * 2
+      tx = k_mid * m.cos(theta)
+      ty = k_mid * m.sin(theta)
+      rot = theta + m.pi / 2
+      tetrahedrons.append(place_tet(tx, ty, rot, z))
 
-        return {"tetrahedrons": tetrahedrons}, "Placebo thinking... hmmm..."
+    return {"tetrahedrons": tetrahedrons}, "Placebo thinking... hmmm..."
 
-    if questionNum == 4 and subPass == 2:
-        return {
-            'tetrahedrons': [{
-                'x': -3,
-                'y': 1,
-                'z': 1,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': 1,
-                'z': 2,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.585786437626905,
-                'y': 1,
-                'z': 3,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.8786796564403574,
-                'y': 1,
-                'z': 4,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.1715728752538098,
-                'y': 1,
-                'z': 5,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 0.5355339059327378,
-                'y': 1,
-                'z': 6,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.2426406871192854,
-                'y': 1,
-                'z': 7,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.949747468305833,
-                'y': 1,
-                'z': 8,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': 1,
-                'z': 9,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': 1.7071067811865475,
-                'z': 10,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': 1.7071067811865475,
-                'z': 11,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.585786437626905,
-                'y': 1.7071067811865475,
-                'z': 12,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.8786796564403574,
-                'y': 1.7071067811865475,
-                'z': 13,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.1715728752538098,
-                'y': 1.7071067811865475,
-                'z': 14,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 0.5355339059327378,
-                'y': 1.7071067811865475,
-                'z': 15,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.2426406871192854,
-                'y': 1.7071067811865475,
-                'z': 16,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.949747468305833,
-                'y': 1.7071067811865475,
-                'z': 17,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': 1.7071067811865475,
-                'z': 18,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': 2.2928932188134525,
-                'z': 19,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': 2.2928932188134525,
-                'z': 20,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.585786437626905,
-                'y': 2.2928932188134525,
-                'z': 21,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.8786796564403574,
-                'y': 2.2928932188134525,
-                'z': 22,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.1715728752538098,
-                'y': 2.2928932188134525,
-                'z': 23,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 0.5355339059327378,
-                'y': 2.2928932188134525,
-                'z': 24,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.2426406871192854,
-                'y': 2.2928932188134525,
-                'z': 25,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.949747468305833,
-                'y': 2.2928932188134525,
-                'z': 26,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': 2.2928932188134525,
-                'z': 27,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': -3,
-                'z': 28,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': -3,
-                'z': 29,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.585786437626905,
-                'y': -3,
-                'z': 30,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.8786796564403574,
-                'y': -3,
-                'z': 31,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.1715728752538098,
-                'y': -3,
-                'z': 32,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 0.5355339059327378,
-                'y': -3,
-                'z': 33,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.2426406871192854,
-                'y': -3,
-                'z': 34,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.949747468305833,
-                'y': -3,
-                'z': 35,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': -3,
-                'z': 36,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': -2.2928932188134525,
-                'z': 37,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': -2.2928932188134525,
-                'z': 38,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.585786437626905,
-                'y': -2.2928932188134525,
-                'z': 39,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.8786796564403574,
-                'y': -2.2928932188134525,
-                'z': 40,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.1715728752538098,
-                'y': -2.2928932188134525,
-                'z': 41,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 0.5355339059327378,
-                'y': -2.2928932188134525,
-                'z': 42,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.2426406871192854,
-                'y': -2.2928932188134525,
-                'z': 43,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.949747468305833,
-                'y': -2.2928932188134525,
-                'z': 44,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': -2.2928932188134525,
-                'z': 45,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': -1.7071067811865475,
-                'z': 46,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': -1.7071067811865475,
-                'z': 47,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.585786437626905,
-                'y': -1.7071067811865475,
-                'z': 48,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.8786796564403574,
-                'y': -1.7071067811865475,
-                'z': 49,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -0.1715728752538098,
-                'y': -1.7071067811865475,
-                'z': 50,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 0.5355339059327378,
-                'y': -1.7071067811865475,
-                'z': 51,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.2426406871192854,
-                'y': -1.7071067811865475,
-                'z': 52,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.949747468305833,
-                'y': -1.7071067811865475,
-                'z': 53,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': -1.7071067811865475,
-                'z': 54,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': -1,
-                'z': 55,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': -1,
-                'z': 56,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.7071067811865475,
-                'y': -1,
-                'z': 57,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': -0.29289321881345254,
-                'z': 58,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': -0.29289321881345254,
-                'z': 59,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.7071067811865475,
-                'y': -0.29289321881345254,
-                'z': 60,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -3,
-                'y': 0.29289321881345254,
-                'z': 61,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -2.2928932188134525,
-                'y': 0.29289321881345254,
-                'z': 62,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': -1.7071067811865475,
-                'y': 0.29289321881345254,
-                'z': 63,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1,
-                'y': -1,
-                'z': 64,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.7071067811865475,
-                'y': -1,
-                'z': 65,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': -1,
-                'z': 66,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1,
-                'y': -0.29289321881345254,
-                'z': 67,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.7071067811865475,
-                'y': -0.29289321881345254,
-                'z': 68,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': -0.29289321881345254,
-                'z': 69,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1,
-                'y': 0.29289321881345254,
-                'z': 70,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 1.7071067811865475,
-                'y': 0.29289321881345254,
-                'z': 71,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }, {
-                'x': 2.2928932188134525,
-                'y': 0.29289321881345254,
-                'z': 72,
-                'q0': 0.8804762392132465,
-                'q1': -0.2798481423343618,
-                'q2': -0.3647051996326173,
-                'q3': -0.115916895959809
-            }]
-        }, "It's possible to rotate the tetrahedron to make it's projection a 1x1 square, but you need to make sure they don't intersect."
+  if questionNum == 4 and subPass == 2:
+    return {
+        'tetrahedrons': [{
+            'x': -3, 'y': 1, 'z': 1, 'q0': 0.8804762392132465, 'q1': -0.2798481423343618, 'q2':
+            -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': 1, 'z': 2, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.585786437626905, 'y': 1, 'z': 3, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.8786796564403574, 'y': 1, 'z': 4, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.1715728752538098, 'y': 1, 'z': 5, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 0.5355339059327378, 'y': 1, 'z': 6, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.2426406871192854, 'y': 1, 'z': 7, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.949747468305833, 'y': 1, 'z': 8, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': 1, 'z': 9, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': 1.7071067811865475, 'z': 10, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': 1.7071067811865475, 'z': 11, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.585786437626905, 'y': 1.7071067811865475, 'z': 12, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.8786796564403574, 'y': 1.7071067811865475, 'z': 13, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.1715728752538098, 'y': 1.7071067811865475, 'z': 14, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 0.5355339059327378, 'y': 1.7071067811865475, 'z': 15, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.2426406871192854, 'y': 1.7071067811865475, 'z': 16, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.949747468305833, 'y': 1.7071067811865475, 'z': 17, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': 1.7071067811865475, 'z': 18, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': 2.2928932188134525, 'z': 19, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': 2.2928932188134525, 'z': 20, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.585786437626905, 'y': 2.2928932188134525, 'z': 21, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.8786796564403574, 'y': 2.2928932188134525, 'z': 22, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.1715728752538098, 'y': 2.2928932188134525, 'z': 23, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 0.5355339059327378, 'y': 2.2928932188134525, 'z': 24, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.2426406871192854, 'y': 2.2928932188134525, 'z': 25, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.949747468305833, 'y': 2.2928932188134525, 'z': 26, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': 2.2928932188134525, 'z': 27, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': -3, 'z': 28, 'q0': 0.8804762392132465, 'q1': -0.2798481423343618, 'q2':
+            -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': -3, 'z': 29, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.585786437626905, 'y': -3, 'z': 30, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.8786796564403574, 'y': -3, 'z': 31, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.1715728752538098, 'y': -3, 'z': 32, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 0.5355339059327378, 'y': -3, 'z': 33, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.2426406871192854, 'y': -3, 'z': 34, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.949747468305833, 'y': -3, 'z': 35, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': -3, 'z': 36, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': -2.2928932188134525, 'z': 37, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': -2.2928932188134525, 'z': 38, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.585786437626905, 'y': -2.2928932188134525, 'z': 39, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.8786796564403574, 'y': -2.2928932188134525, 'z': 40, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.1715728752538098, 'y': -2.2928932188134525, 'z': 41, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 0.5355339059327378, 'y': -2.2928932188134525, 'z': 42, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.2426406871192854, 'y': -2.2928932188134525, 'z': 43, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.949747468305833, 'y': -2.2928932188134525, 'z': 44, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': -2.2928932188134525, 'z': 45, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': -1.7071067811865475, 'z': 46, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': -1.7071067811865475, 'z': 47, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.585786437626905, 'y': -1.7071067811865475, 'z': 48, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.8786796564403574, 'y': -1.7071067811865475, 'z': 49, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -0.1715728752538098, 'y': -1.7071067811865475, 'z': 50, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 0.5355339059327378, 'y': -1.7071067811865475, 'z': 51, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.2426406871192854, 'y': -1.7071067811865475, 'z': 52, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.949747468305833, 'y': -1.7071067811865475, 'z': 53, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': -1.7071067811865475, 'z': 54, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': -1, 'z': 55, 'q0': 0.8804762392132465, 'q1': -0.2798481423343618, 'q2':
+            -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': -1, 'z': 56, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.7071067811865475, 'y': -1, 'z': 57, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': -0.29289321881345254, 'z': 58, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': -0.29289321881345254, 'z': 59, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.7071067811865475, 'y': -0.29289321881345254, 'z': 60, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -3, 'y': 0.29289321881345254, 'z': 61, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -2.2928932188134525, 'y': 0.29289321881345254, 'z': 62, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': -1.7071067811865475, 'y': 0.29289321881345254, 'z': 63, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1, 'y': -1, 'z': 64, 'q0': 0.8804762392132465, 'q1': -0.2798481423343618, 'q2':
+            -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.7071067811865475, 'y': -1, 'z': 65, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': -1, 'z': 66, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1, 'y': -0.29289321881345254, 'z': 67, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.7071067811865475, 'y': -0.29289321881345254, 'z': 68, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': -0.29289321881345254, 'z': 69, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1, 'y': 0.29289321881345254, 'z': 70, 'q0': 0.8804762392132465, 'q1':
+            -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 1.7071067811865475, 'y': 0.29289321881345254, 'z': 71, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }, {
+            'x': 2.2928932188134525, 'y': 0.29289321881345254, 'z': 72, 'q0': 0.8804762392132465,
+            'q1': -0.2798481423343618, 'q2': -0.3647051996326173, 'q3': -0.115916895959809
+        }]
+    }, "It's possible to rotate the tetrahedron to make it's projection a 1x1 square, but you need to make sure they don't intersect."
 
-    if questionNum == 5 and subPass == 0:
-        # Question 5 subpass 0
-        return {
-            'maze':
-            dedent("""
+  if questionNum == 5 and subPass == 0:
+    # Question 5 subpass 0
+    return {
+        'maze':
+        dedent("""
             ################
             #A..#...#.....##
             ###.#.#.#.###.##
@@ -1851,177 +760,92 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             ################
             ################
                 """).strip()
-        }, "Placebo thinking... hmmm..."
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 5:
-        sizes = [16, 32, 64, 128]
-        size = sizes[subPass]
-        grid = [list("#" * size) for _ in range(size)]
-        x_min, x_max = 1, size - 2
-        y_min, y_max = 1, size - 2
+  if questionNum == 5:
+    sizes = [16, 32, 64, 128]
+    size = sizes[subPass]
+    grid = [list("#" * size) for _ in range(size)]
+    x_min, x_max = 1, size - 2
+    y_min, y_max = 1, size - 2
 
-        path = []
-        y = y_min
-        go_right = True
-        while y <= y_max:
-            if go_right:
-                for x in range(x_min, x_max + 1):
-                    path.append((x, y))
-                if y + 2 <= y_max:
-                    path.append((x_max, y + 1))
-                    path.append((x_max, y + 2))
-            else:
-                for x in range(x_max, x_min - 1, -1):
-                    path.append((x, y))
-                if y + 2 <= y_max:
-                    path.append((x_min, y + 1))
-                    path.append((x_min, y + 2))
-            y += 2
-            go_right = not go_right
+    path = []
+    y = y_min
+    go_right = True
+    while y <= y_max:
+      if go_right:
+        for x in range(x_min, x_max + 1):
+          path.append((x, y))
+        if y + 2 <= y_max:
+          path.append((x_max, y + 1))
+          path.append((x_max, y + 2))
+      else:
+        for x in range(x_max, x_min - 1, -1):
+          path.append((x, y))
+        if y + 2 <= y_max:
+          path.append((x_min, y + 1))
+          path.append((x_min, y + 2))
+      y += 2
+      go_right = not go_right
 
-        for (x, y) in path:
-            grid[y][x] = "."
-        if path:
-            ax, ay = path[0]
-            bx, by = path[-1]
-            grid[ay][ax] = "A"
-            grid[by][bx] = "B"
+    for (x, y) in path:
+      grid[y][x] = "."
+    if path:
+      ax, ay = path[0]
+      bx, by = path[-1]
+      grid[ay][ax] = "A"
+      grid[by][bx] = "B"
 
-        maze = "\n".join("".join(row) for row in grid)
-        return {"maze": maze}, "Placebo thinking... hmmm..."
+    maze = "\n".join("".join(row) for row in grid)
+    return {"maze": maze}, "Placebo thinking... hmmm..."
 
-    if questionNum == 6 and subPass == 0:
-        return {
-            "voxels": [{
-                "xyz": [0, 0, 0]
-            }, {
-                "xyz": [0, 0, 1]
-            }, {
-                "xyz": [0, 0, 2]
-            }, {
-                "xyz": [0, 0, 3]
-            }, {
-                "xyz": [0, 0, 4]
-            }, {
-                "xyz": [0, 0, 5]
-            }, {
-                "xyz": [0, 1, 0]
-            }, {
-                "xyz": [0, 1, 1]
-            }, {
-                "xyz": [0, 1, 2]
-            }, {
-                "xyz": [0, 1, 3]
-            }, {
-                "xyz": [0, 1, 4]
-            }, {
-                "xyz": [0, 1, 5]
-            }, {
-                "xyz": [0, 2, 0]
-            }, {
-                "xyz": [0, 2, 1]
-            }, {
-                "xyz": [0, 2, 2]
-            }, {
-                "xyz": [0, 2, 3]
-            }, {
-                "xyz": [0, 2, 4]
-            }, {
-                "xyz": [0, 3, 3]
-            }, {
-                "xyz": [0, 4, 4]
-            }, {
-                "xyz": [0, 5, 5]
-            }, {
-                "xyz": [1, 0, 1]
-            }, {
-                "xyz": [1, 1, 2]
-            }, {
-                "xyz": [1, 2, 3]
-            }, {
-                "xyz": [1, 3, 4]
-            }, {
-                "xyz": [1, 4, 5]
-            }, {
-                "xyz": [1, 5, 0]
-            }, {
-                "xyz": [2, 0, 2]
-            }, {
-                "xyz": [2, 1, 3]
-            }, {
-                "xyz": [2, 2, 4]
-            }, {
-                "xyz": [2, 3, 5]
-            }, {
-                "xyz": [2, 4, 0]
-            }, {
-                "xyz": [2, 5, 1]
-            }, {
-                "xyz": [3, 0, 3]
-            }, {
-                "xyz": [3, 1, 4]
-            }, {
-                "xyz": [3, 2, 5]
-            }, {
-                "xyz": [3, 3, 0]
-            }, {
-                "xyz": [3, 4, 1]
-            }, {
-                "xyz": [3, 5, 2]
-            }, {
-                "xyz": [4, 0, 4]
-            }, {
-                "xyz": [4, 1, 5]
-            }, {
-                "xyz": [4, 2, 0]
-            }, {
-                "xyz": [4, 3, 1]
-            }, {
-                "xyz": [4, 4, 2]
-            }, {
-                "xyz": [4, 5, 3]
-            }, {
-                "xyz": [5, 0, 5]
-            }, {
-                "xyz": [5, 1, 0]
-            }, {
-                "xyz": [5, 2, 1]
-            }, {
-                "xyz": [5, 3, 2]
-            }, {
-                "xyz": [5, 4, 3]
-            }, {
-                "xyz": [5, 5, 4]
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 6 and subPass == 0:
+    return {
+        "voxels":
+        [{"xyz": [0, 0, 0]}, {"xyz": [0, 0, 1]}, {"xyz": [0, 0, 2]}, {"xyz": [0, 0, 3]},
+         {"xyz": [0, 0, 4]}, {"xyz": [0, 0, 5]}, {"xyz": [0, 1, 0]}, {"xyz": [0, 1, 1]},
+         {"xyz": [0, 1, 2]}, {"xyz": [0, 1, 3]}, {"xyz": [0, 1, 4]}, {"xyz": [0, 1, 5]},
+         {"xyz": [0, 2, 0]}, {"xyz": [0, 2, 1]}, {"xyz": [0, 2, 2]}, {"xyz": [0, 2, 3]},
+         {"xyz": [0, 2, 4]}, {"xyz": [0, 3, 3]}, {"xyz": [0, 4, 4]}, {"xyz": [0, 5, 5]},
+         {"xyz": [1, 0, 1]}, {"xyz": [1, 1, 2]}, {"xyz": [1, 2, 3]}, {"xyz": [1, 3, 4]},
+         {"xyz": [1, 4, 5]}, {"xyz": [1, 5, 0]}, {"xyz": [2, 0, 2]}, {"xyz": [2, 1, 3]},
+         {"xyz": [2, 2, 4]}, {"xyz": [2, 3, 5]}, {"xyz": [2, 4, 0]}, {"xyz": [2, 5, 1]},
+         {"xyz": [3, 0, 3]}, {"xyz": [3, 1, 4]}, {"xyz": [3, 2, 5]}, {"xyz": [3, 3, 0]},
+         {"xyz": [3, 4, 1]}, {"xyz": [3, 5, 2]}, {"xyz": [4, 0, 4]}, {"xyz": [4, 1, 5]}, {
+             "xyz": [4, 2, 0]
+         }, {"xyz": [4, 3, 1]}, {"xyz": [4, 4, 2]}, {"xyz": [4, 5, 3]}, {"xyz": [5, 0, 5]},
+         {"xyz": [5, 1, 0]}, {"xyz": [5, 2, 1]}, {"xyz": [5, 3, 2]}, {"xyz":
+                                                                      [5, 4,
+                                                                       3]}, {"xyz": [5, 5, 4]}]
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 6:
-        sizes = [6, 8, 12, 16, 24, 24]
-        counts = [50, 100, 200, 400, 1000, 500]
-        size = sizes[subPass]
-        count = counts[subPass]
-        voxels = []
+  if questionNum == 6:
+    sizes = [6, 8, 12, 16, 24, 24]
+    counts = [50, 100, 200, 400, 1000, 500]
+    size = sizes[subPass]
+    count = counts[subPass]
+    voxels = []
 
-        for y in range(size):
-            for x in range(size):
-                for z in range(size):
-                    if x + y + z % size == 0:
-                        if subPass == 5 and "7" in str(x + y + z): continue
-                        voxels.append({"xyz": [x, y, z]})
-
-        while len(voxels) < count:
-            x = random.randint(0, size - 1)
-            y = random.randint(0, size - 1)
-            z = random.randint(0, size - 1)
+    for y in range(size):
+      for x in range(size):
+        for z in range(size):
+          if x + y + z % size == 0:
             if subPass == 5 and "7" in str(x + y + z): continue
-            element = {"xyz": [x, y, z]}
-            if element not in voxels:
-                voxels.append(element)
+            voxels.append({"xyz": [x, y, z]})
 
-        return {"voxels": voxels}, "Placebo thinking... hmmm..."
+    while len(voxels) < count:
+      x = random.randint(0, size - 1)
+      y = random.randint(0, size - 1)
+      z = random.randint(0, size - 1)
+      if subPass == 5 and "7" in str(x + y + z): continue
+      element = {"xyz": [x, y, z]}
+      if element not in voxels:
+        voxels.append(element)
 
-    if questionNum == 7 and subPass == 0:
-        return dedent("""
+    return {"voxels": voxels}, "Placebo thinking... hmmm..."
+
+  if questionNum == 7 and subPass == 0:
+    return dedent("""
             A5650
             2B201
             30150
@@ -2029,8 +853,8 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             91912
         """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if questionNum == 7 and subPass == 1:
-        return dedent("""
+  if questionNum == 7 and subPass == 1:
+    return dedent("""
         A120234145
         9876581206
         8395062907
@@ -2043,8 +867,8 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
         314205631B
         """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if questionNum == 7 and subPass == 2:
-        return dedent("""
+  if questionNum == 7 and subPass == 2:
+    return dedent("""
         789321505057893
         21A789032150505
         780932551789320
@@ -2062,8 +886,8 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
         505050505052178
         """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if questionNum == 7 and subPass == 3:
-        return dedent("""
+  if questionNum == 7 and subPass == 3:
+    return dedent("""
         A0505050505050505051
         92939798919293979801
         50505050505050505052
@@ -2086,8 +910,8 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
         78123781237812378123
         """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if questionNum == 7 and subPass == 4:
-        return dedent("""
+  if questionNum == 7 and subPass == 4:
+    return dedent("""
         A432234322345432234554322
         7897897897897897897897890
         2234554322345543223455432
@@ -2115,8 +939,8 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
         345543222345543223455445B
         """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if questionNum == 7 and subPass == 5:
-        return dedent("""
+  if questionNum == 7 and subPass == 5:
+    return dedent("""
         A43223333344444444443333322222
         778967896789678967896789678960
         222223333344444444443333322222
@@ -2149,2593 +973,4448 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
         678967896789678967896789678967
         """.strip("\n")), "Placebo thinking... hmmm..."
 
-    if questionNum == 8 and subPass == 0:
-        return {
-            'function':
-            dedent("""
+  if questionNum == 8 and subPass == 0:
+    return {
+        'function':
+        dedent("""
             def f(x,y):
                 return -162*x*x*x - 854*x*x + 945*x + 653*y*y*y - 1881*y*y - 145*y + 2829
         """.strip())
-        }, "Placebo thinking... hmmm..."
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 8 and subPass == 1:
-        return {
-            'function':
-            dedent("""
+  if questionNum == 8 and subPass == 1:
+    return {
+        'function':
+        dedent("""
             def f(x,y):
                 return -5 * x - 4 * y + 30
         """.strip())
-        }, "Placebo thinking... hmmm..."
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 8 and subPass == 3:
-        return {
-            'function':
-            dedent("""
+  if questionNum == 8 and subPass == 3:
+    return {
+        'function':
+        dedent("""
             def f(x,y):
                 return ((x-0)**2+(y-0)**2) * ((x-0)**2+(y-1)**2) * ((x-0)**2+(y-2)**2) * ((x-0)**2+(y-3)**2) * ((x-0)**2+(y-4)**2) * ((x-0)**2+(y-5)**2) * ((x-1)**2+(y-0)**2) * ((x-1)**2+(y-1)**2) * ((x-1)**2+(y-2)**2) * ((x-1)**2+(y-3)**2) * ((x-1)**2+(y-7)**2) * ((x-2)**2+(y-0)**2) * ((x-2)**2+(y-1)**2) * ((x-2)**2+(y-2)**2) * ((x-2)**2+(y-6)**2) * ((x-2)**2+(y-7)**2) * ((x-3)**2+(y-0)**2) * ((x-3)**2+(y-1)**2) * ((x-3)**2+(y-5)**2) * ((x-3)**2+(y-6)**2) * ((x-3)**2+(y-7)**2) * ((x-4)**2+(y-0)**2) * ((x-4)**2+(y-1)**2) * ((x-4)**2+(y-5)**2) * ((x-4)**2+(y-6)**2) * ((x-4)**2+(y-7)**2) * ((x-5)**2+(y-0)**2) * ((x-5)**2+(y-1)**2) * ((x-5)**2+(y-2)**2) * ((x-5)**2+(y-6)**2) * ((x-5)**2+(y-7)**2) * ((x-6)**2+(y-0)**2) * ((x-6)**2+(y-1)**2) * ((x-6)**2+(y-2)**2) * ((x-6)**2+(y-3)**2) * ((x-6)**2+(y-7)**2) * ((x-7)**2+(y-0)**2) * ((x-7)**2+(y-1)**2) * ((x-7)**2+(y-2)**2) * ((x-7)**2+(y-3)**2) * ((x-7)**2+(y-4)**2) * ((x-7)**2+(y-5)**2) - 1
         """.strip())
-        }, "Placebo thinking... hmmm..."
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 9:
-        gridSizes = [4, 8, 12, 16, 16, 16]
-        gridSize = gridSizes[subPass]
+  if questionNum == 9:
+    gridSizes = [4, 8, 12, 16, 16, 16, 16, 16, 16]
+    gridSize = gridSizes[subPass]
 
-        steps = []
-        for y in range(gridSize):
-            if y % 2 == 0:
-                for x in range(1, gridSize):
-                    steps.append({"xy": [x + 1, y + 1]})
-            else:
-                for x in range(gridSize - 1, 0, -1):
-                    steps.append({"xy": [x + 1, y + 1]})
-        for y in range(gridSize - 1, -1, -1):
-            steps.append({"xy": [1, y + 1]})
+    steps = []
+    for y in range(gridSize):
+      if y % 2 == 0:
+        for x in range(1, gridSize):
+          steps.append({"xy": [x + 1, y + 1]})
+      else:
+        for x in range(gridSize - 1, 0, -1):
+          steps.append({"xy": [x + 1, y + 1]})
+    for y in range(gridSize - 1, -1, -1):
+      steps.append({"xy": [1, y + 1]})
 
-        return {"steps": steps}, "Placebo thinking... hmmm..."
+    return {"steps": steps}, "Placebo thinking... hmmm..."
 
-    if questionNum == 10:
-        g = {}
-        exec(open("10.py").read(), g)
+  if questionNum == 10:
+    g = {}
+    exec(open("10.py").read(), g)
 
-        sizes = [16, 32, 64, 128, 256]
-        size = sizes[subPass]
+    sizes = [16, 32, 64, 128, 256]
+    size = sizes[subPass]
 
-        # I say this isn't cheating, as I wrote that code, and if an LLM wants to render
-        # an image in its internal reasoning loop to understand, that would help it
-        # answer many of these questions.
-        p = g["generateReferenceAscii"](size, "Placebo")
+    # I say this isn't cheating, as I wrote that code, and if an LLM wants to render
+    # an image in its internal reasoning loop to understand, that would help it
+    # answer many of these questions.
+    p = g["generateReferenceAscii"](size, "Placebo")
 
-        return {"painting": p}, "Placebo thinking... hmmm..."
+    return {"painting": p}, "Placebo thinking... hmmm..."
 
-    if questionNum == 11 and subPass == 0:
-        return {
-            "path": [{
-                "pos": [0, 0, 0]
-            }, {
-                "pos": [1, 0, 0]
-            }, {
-                "pos": [2, 0, 0]
-            }, {
-                "pos": [3, 0, 0]
-            }, {
-                "pos": [3, 1, 0]
-            }, {
-                "pos": [2, 1, 0]
-            }, {
-                "pos": [1, 1, 0]
-            }, {
-                "pos": [0, 1, 0]
-            }, {
-                "pos": [0, 2, 0]
-            }, {
-                "pos": [1, 2, 0]
-            }, {
-                "pos": [2, 2, 0]
-            }, {
-                "pos": [3, 2, 0]
-            }, {
-                "pos": [3, 3, 0]
-            }, {
-                "pos": [2, 3, 0]
-            }, {
-                "pos": [1, 3, 0]
-            }, {
-                "pos": [0, 3, 0]
-            }, {
-                "pos": [0, 3, 1]
-            }, {
-                "pos": [1, 3, 1]
-            }, {
-                "pos": [2, 3, 1]
-            }, {
-                "pos": [3, 3, 1]
-            }, {
-                "pos": [3, 2, 1]
-            }, {
-                "pos": [2, 2, 1]
-            }, {
-                "pos": [1, 2, 1]
-            }, {
-                "pos": [0, 2, 1]
-            }, {
-                "pos": [0, 1, 1]
-            }, {
-                "pos": [1, 1, 1]
-            }, {
-                "pos": [2, 1, 1]
-            }, {
-                "pos": [3, 1, 1]
-            }, {
-                "pos": [3, 0, 1]
-            }, {
-                "pos": [2, 0, 1]
-            }, {
-                "pos": [1, 0, 1]
-            }, {
-                "pos": [0, 0, 1]
-            }, {
-                "pos": [0, 0, 2]
-            }, {
-                "pos": [1, 0, 2]
-            }, {
-                "pos": [2, 0, 2]
-            }, {
-                "pos": [3, 0, 2]
-            }, {
-                "pos": [3, 1, 2]
-            }, {
-                "pos": [2, 1, 2]
-            }, {
-                "pos": [1, 1, 2]
-            }, {
-                "pos": [0, 1, 2]
-            }, {
-                "pos": [0, 2, 2]
-            }, {
-                "pos": [1, 2, 2]
-            }, {
-                "pos": [2, 2, 2]
-            }, {
-                "pos": [3, 2, 2]
-            }, {
-                "pos": [3, 3, 2]
-            }, {
-                "pos": [2, 3, 2]
-            }, {
-                "pos": [1, 3, 2]
-            }, {
-                "pos": [0, 3, 2]
-            }, {
-                "pos": [0, 3, 3]
-            }, {
-                "pos": [1, 3, 3]
-            }, {
-                "pos": [2, 3, 3]
-            }, {
-                "pos": [3, 3, 3]
-            }, {
-                "pos": [3, 2, 3]
-            }, {
-                "pos": [2, 2, 3]
-            }, {
-                "pos": [1, 2, 3]
-            }, {
-                "pos": [0, 2, 3]
-            }, {
-                "pos": [0, 1, 3]
-            }, {
-                "pos": [1, 1, 3]
-            }, {
-                "pos": [2, 1, 3]
-            }, {
-                "pos": [3, 1, 3]
-            }, {
-                "pos": [3, 0, 3]
-            }, {
-                "pos": [2, 0, 3]
-            }, {
-                "pos": [1, 0, 3]
-            }, {
-                "pos": [0, 0, 3]
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 11 and subPass == 0:
+    return {
+        "path":
+        [{"pos": [0, 0, 0]}, {"pos": [1, 0, 0]}, {"pos": [2, 0, 0]}, {"pos": [3, 0, 0]},
+         {"pos": [3, 1, 0]}, {"pos": [2, 1, 0]}, {"pos": [1, 1, 0]}, {"pos": [0, 1, 0]},
+         {"pos": [0, 2, 0]}, {"pos": [1, 2, 0]}, {"pos": [2, 2, 0]}, {"pos": [3, 2, 0]},
+         {"pos": [3, 3, 0]}, {"pos": [2, 3, 0]}, {"pos": [1, 3, 0]}, {"pos": [0, 3, 0]},
+         {"pos": [0, 3, 1]}, {"pos": [1, 3, 1]}, {"pos": [2, 3, 1]}, {"pos": [3, 3, 1]},
+         {"pos": [3, 2, 1]}, {"pos": [2, 2, 1]}, {"pos": [1, 2, 1]}, {"pos": [0, 2, 1]},
+         {"pos": [0, 1, 1]}, {"pos": [1, 1, 1]}, {"pos": [2, 1, 1]}, {"pos":
+                                                                      [3, 1,
+                                                                       1]}, {"pos": [3, 0, 1]},
+         {"pos": [2, 0, 1]}, {"pos": [1, 0, 1]}, {"pos": [0, 0, 1]}, {"pos":
+                                                                      [0, 0,
+                                                                       2]}, {"pos": [1, 0, 2]},
+         {"pos": [2, 0, 2]}, {"pos": [3, 0, 2]}, {"pos": [3, 1, 2]}, {"pos":
+                                                                      [2, 1,
+                                                                       2]}, {"pos": [1, 1, 2]},
+         {"pos": [0, 1, 2]}, {"pos": [0, 2, 2]}, {"pos": [1, 2, 2]}, {"pos": [2, 2, 2]}, {
+             "pos": [3, 2, 2]
+         }, {"pos": [3, 3, 2]}, {"pos": [2, 3, 2]}, {"pos":
+                                                     [1, 3, 2]}, {"pos":
+                                                                  [0, 3, 2]}, {"pos": [0, 3, 3]},
+         {"pos": [1, 3, 3]}, {"pos": [2, 3, 3]}, {"pos": [3, 3, 3]}, {"pos": [3, 2, 3]}, {
+             "pos": [2, 2, 3]
+         }, {"pos": [1, 2, 3]}, {"pos": [0, 2, 3]}, {"pos": [0, 1, 3]}, {"pos": [1, 1, 3]}, {
+             "pos": [2, 1, 3]
+         }, {"pos": [3, 1, 3]}, {"pos": [3, 0, 3]}, {"pos": [2, 0, 3]}, {"pos":
+                                                                         [1, 0,
+                                                                          3]}, {"pos": [0, 0, 3]}]
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 12 and subPass == 0:
-        return {
-            "points": [{
-                "x": 0.0,
-                "y": 0.0
-            }, {
-                "x": 1.0,
-                "y": 0.0
-            }, {
-                "x": 0.5,
-                "y": 0.8660254038
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 11 and subPass == 1:
+    return {
+        'path':
+        [{'pos': [0, 0, 0, 0]}, {'pos': [0, 0, 0, 1]}, {'pos': [0, 0, 0, 2]}, {'pos': [0, 0, 0, 3]},
+         {'pos': [0, 0, 0, 4]}, {'pos': [0, 0, 1, 4]}, {'pos': [0, 0, 1, 3]}, {'pos': [0, 0, 1, 2]},
+         {'pos': [0, 0, 1, 1]}, {'pos': [0, 0, 1, 0]}, {'pos': [0, 0, 2, 0]}, {'pos': [0, 0, 2, 1]},
+         {'pos': [0, 0, 2, 2]}, {'pos': [0, 0, 2, 3]}, {'pos': [0, 0, 2, 4]}, {'pos': [0, 0, 3, 4]},
+         {'pos': [0, 0, 3, 3]}, {'pos': [0, 0, 3, 2]}, {'pos': [0, 0, 3, 1]}, {'pos': [0, 0, 3, 0]},
+         {'pos': [0, 0, 4, 0]}, {'pos': [0, 0, 4, 1]}, {'pos': [0, 0, 4, 2]}, {'pos': [0, 0, 4, 3]},
+         {'pos': [0, 0, 4, 4]}, {'pos': [0, 1, 4, 4]}, {'pos': [0, 1, 4, 3]}, {'pos': [0, 1, 4, 2]},
+         {'pos': [0, 1, 4, 1]}, {'pos': [0, 1, 4, 0]}, {'pos': [0, 1, 3, 0]}, {'pos': [0, 1, 3, 1]},
+         {'pos': [0, 1, 3, 2]}, {'pos': [0, 1, 3, 3]}, {'pos': [0, 1, 3, 4]}, {'pos': [0, 1, 2, 4]},
+         {'pos': [0, 1, 2, 3]}, {'pos': [0, 1, 2, 2]}, {'pos': [0, 1, 2, 1]}, {'pos': [0, 1, 2, 0]},
+         {'pos': [0, 1, 1, 0]}, {'pos': [0, 1, 1, 1]}, {'pos': [0, 1, 1, 2]}, {'pos': [0, 1, 1, 3]},
+         {'pos': [0, 1, 1, 4]}, {'pos': [0, 1, 0, 4]}, {'pos': [0, 1, 0, 3]}, {'pos': [0, 1, 0, 2]},
+         {'pos': [0, 1, 0, 1]}, {'pos': [0, 1, 0, 0]}, {'pos': [0, 2, 0, 0]}, {'pos': [0, 2, 0, 1]},
+         {'pos': [0, 2, 0, 2]}, {'pos': [0, 2, 0, 3]}, {'pos': [0, 2, 0, 4]}, {'pos': [0, 2, 1, 4]},
+         {'pos': [0, 2, 1, 3]}, {'pos': [0, 2, 1, 2]}, {'pos': [0, 2, 1, 1]}, {
+             'pos': [0, 2, 1, 0]
+         }, {'pos': [0, 2, 2,
+                     0]}, {'pos':
+                           [0, 2, 2,
+                            1]}, {'pos':
+                                  [0, 2, 2,
+                                   2]}, {'pos':
+                                         [0, 2, 2,
+                                          3]}, {'pos':
+                                                [0, 2, 2,
+                                                 4]}, {'pos':
+                                                       [0, 2, 3,
+                                                        4]}, {'pos':
+                                                              [0, 2, 3,
+                                                               3]}, {'pos':
+                                                                     [0, 2, 3,
+                                                                      2]}, {'pos': [0, 2, 3, 1]},
+         {'pos':
+          [0, 2, 3,
+           0]}, {'pos':
+                 [0, 2, 4,
+                  0]}, {'pos':
+                        [0, 2, 4,
+                         1]}, {'pos':
+                               [0, 2, 4,
+                                2]}, {'pos':
+                                      [0, 2, 4,
+                                       3]}, {'pos':
+                                             [0, 2, 4,
+                                              4]}, {'pos':
+                                                    [0, 3, 4,
+                                                     4]}, {'pos':
+                                                           [0, 3, 4,
+                                                            3]}, {'pos':
+                                                                  [0, 3, 4,
+                                                                   2]}, {'pos': [0, 3, 4, 1]},
+         {'pos':
+          [0, 3, 4,
+           0]}, {'pos':
+                 [0, 3, 3,
+                  0]}, {'pos':
+                        [0, 3, 3,
+                         1]}, {'pos':
+                               [0, 3, 3,
+                                2]}, {'pos':
+                                      [0, 3, 3,
+                                       3]}, {'pos':
+                                             [0, 3, 3,
+                                              4]}, {'pos':
+                                                    [0, 3, 2,
+                                                     4]}, {'pos':
+                                                           [0, 3, 2,
+                                                            3]}, {'pos':
+                                                                  [0, 3, 2,
+                                                                   2]}, {'pos': [0, 3, 2, 1]
+                                                                         }, {'pos': [0, 3, 2, 0]},
+         {'pos':
+          [0, 3, 1,
+           0]}, {'pos':
+                 [0, 3, 1,
+                  1]}, {'pos':
+                        [0, 3, 1,
+                         2]}, {'pos':
+                               [0, 3, 1,
+                                3]}, {'pos':
+                                      [0, 3, 1,
+                                       4]}, {'pos':
+                                             [0, 3, 0,
+                                              4]}, {'pos':
+                                                    [0, 3, 0,
+                                                     3]}, {'pos':
+                                                           [0, 3, 0,
+                                                            2]}, {'pos':
+                                                                  [0, 3, 0,
+                                                                   1]}, {'pos': [0, 3, 0, 0]
+                                                                         }, {'pos': [0, 4, 0, 0]},
+         {'pos':
+          [0, 4, 0,
+           1]}, {'pos':
+                 [0, 4, 0,
+                  2]}, {'pos':
+                        [0, 4, 0,
+                         3]}, {'pos':
+                               [0, 4, 0,
+                                4]}, {'pos':
+                                      [0, 4, 1,
+                                       4]}, {'pos':
+                                             [0, 4, 1,
+                                              3]}, {'pos':
+                                                    [0, 4, 1,
+                                                     2]}, {'pos':
+                                                           [0, 4, 1,
+                                                            1]}, {'pos':
+                                                                  [0, 4, 1,
+                                                                   0]}, {'pos': [0, 4, 2, 0]
+                                                                         }, {'pos': [0, 4, 2, 1]},
+         {'pos':
+          [0, 4, 2,
+           2]}, {'pos':
+                 [0, 4, 2,
+                  3]}, {'pos':
+                        [0, 4, 2,
+                         4]}, {'pos':
+                               [0, 4, 3,
+                                4]}, {'pos':
+                                      [0, 4, 3,
+                                       3]}, {'pos':
+                                             [0, 4, 3,
+                                              2]}, {'pos':
+                                                    [0, 4, 3,
+                                                     1]}, {'pos':
+                                                           [0, 4, 3,
+                                                            0]}, {'pos':
+                                                                  [0, 4, 4,
+                                                                   0]}, {'pos': [0, 4, 4, 1]
+                                                                         }, {'pos': [0, 4, 4, 2]},
+         {'pos':
+          [0, 4, 4,
+           3]}, {'pos':
+                 [0, 4, 4,
+                  4]}, {'pos':
+                        [1, 4, 4,
+                         4]}, {'pos':
+                               [1, 4, 4,
+                                3]}, {'pos':
+                                      [1, 4, 4,
+                                       2]}, {'pos':
+                                             [1, 4, 4,
+                                              1]}, {'pos':
+                                                    [1, 4, 4,
+                                                     0]}, {'pos':
+                                                           [1, 4, 3,
+                                                            0]}, {'pos':
+                                                                  [1, 4, 3,
+                                                                   1]}, {'pos': [1, 4, 3, 2]
+                                                                         }, {'pos': [1, 4, 3, 3]},
+         {'pos':
+          [1, 4, 3,
+           4]}, {'pos':
+                 [1, 4, 2,
+                  4]}, {'pos':
+                        [1, 4, 2,
+                         3]}, {'pos':
+                               [1, 4, 2,
+                                2]}, {'pos':
+                                      [1, 4, 2,
+                                       1]}, {'pos':
+                                             [1, 4, 2,
+                                              0]}, {'pos':
+                                                    [1, 4, 1,
+                                                     0]}, {'pos':
+                                                           [1, 4, 1,
+                                                            1]}, {'pos':
+                                                                  [1, 4, 1,
+                                                                   2]}, {'pos': [1, 4, 1, 3]
+                                                                         }, {'pos': [1, 4, 1, 4]},
+         {'pos':
+          [1, 4, 0,
+           4]}, {'pos':
+                 [1, 4, 0,
+                  3]}, {'pos':
+                        [1, 4, 0,
+                         2]}, {'pos':
+                               [1, 4, 0,
+                                1]}, {'pos':
+                                      [1, 4, 0,
+                                       0]}, {'pos':
+                                             [1, 3, 0,
+                                              0]}, {'pos':
+                                                    [1, 3, 0,
+                                                     1]}, {'pos':
+                                                           [1, 3, 0,
+                                                            2]}, {'pos':
+                                                                  [1, 3, 0,
+                                                                   3]}, {'pos': [1, 3, 0, 4]
+                                                                         }, {'pos': [1, 3, 1, 4]},
+         {'pos':
+          [1, 3, 1,
+           3]}, {'pos':
+                 [1, 3, 1,
+                  2]}, {'pos':
+                        [1, 3, 1,
+                         1]}, {'pos':
+                               [1, 3, 1,
+                                0]}, {'pos':
+                                      [1, 3, 2,
+                                       0]}, {'pos':
+                                             [1, 3, 2,
+                                              1]}, {'pos':
+                                                    [1, 3, 2,
+                                                     2]}, {'pos':
+                                                           [1, 3, 2,
+                                                            3]}, {'pos':
+                                                                  [1, 3, 2,
+                                                                   4]}, {'pos': [1, 3, 3, 4]
+                                                                         }, {'pos': [1, 3, 3, 3]},
+         {'pos':
+          [1, 3, 3,
+           2]}, {'pos':
+                 [1, 3, 3,
+                  1]}, {'pos':
+                        [1, 3, 3,
+                         0]}, {'pos':
+                               [1, 3, 4,
+                                0]}, {'pos':
+                                      [1, 3, 4,
+                                       1]}, {'pos':
+                                             [1, 3, 4,
+                                              2]}, {'pos':
+                                                    [1, 3, 4,
+                                                     3]}, {'pos':
+                                                           [1, 3, 4,
+                                                            4]}, {'pos':
+                                                                  [1, 2, 4,
+                                                                   4]}, {'pos': [1, 2, 4, 3]
+                                                                         }, {'pos': [1, 2, 4, 2]},
+         {'pos':
+          [1, 2, 4,
+           1]}, {'pos':
+                 [1, 2, 4,
+                  0]}, {'pos':
+                        [1, 2, 3,
+                         0]}, {'pos':
+                               [1, 2, 3,
+                                1]}, {'pos':
+                                      [1, 2, 3,
+                                       2]}, {'pos':
+                                             [1, 2, 3,
+                                              3]}, {'pos':
+                                                    [1, 2, 3,
+                                                     4]}, {'pos':
+                                                           [1, 2, 2,
+                                                            4]}, {'pos':
+                                                                  [1, 2, 2,
+                                                                   3]}, {'pos': [1, 2, 2, 2]
+                                                                         }, {'pos': [1, 2, 2, 1]},
+         {'pos':
+          [1, 2, 2,
+           0]}, {'pos':
+                 [1, 2, 1,
+                  0]}, {'pos':
+                        [1, 2, 1,
+                         1]}, {'pos':
+                               [1, 2, 1,
+                                2]}, {'pos':
+                                      [1, 2, 1,
+                                       3]}, {'pos':
+                                             [1, 2, 1,
+                                              4]}, {'pos':
+                                                    [1, 2, 0,
+                                                     4]}, {'pos':
+                                                           [1, 2, 0,
+                                                            3]}, {'pos':
+                                                                  [1, 2, 0,
+                                                                   2]}, {'pos': [1, 2, 0, 1]
+                                                                         }, {'pos': [1, 2, 0, 0]},
+         {'pos':
+          [1, 1, 0,
+           0]}, {'pos':
+                 [1, 1, 0,
+                  1]}, {'pos':
+                        [1, 1, 0,
+                         2]}, {'pos':
+                               [1, 1, 0,
+                                3]}, {'pos':
+                                      [1, 1, 0,
+                                       4]}, {'pos':
+                                             [1, 1, 1,
+                                              4]}, {'pos':
+                                                    [1, 1, 1,
+                                                     3]}, {'pos':
+                                                           [1, 1, 1,
+                                                            2]}, {'pos':
+                                                                  [1, 1, 1,
+                                                                   1]}, {'pos': [1, 1, 1, 0]
+                                                                         }, {'pos': [1, 1, 2, 0]},
+         {'pos':
+          [1, 1, 2,
+           1]}, {'pos':
+                 [1, 1, 2,
+                  2]}, {'pos':
+                        [1, 1, 2,
+                         3]}, {'pos':
+                               [1, 1, 2,
+                                4]}, {'pos':
+                                      [1, 1, 3,
+                                       4]}, {'pos':
+                                             [1, 1, 3,
+                                              3]}, {'pos':
+                                                    [1, 1, 3,
+                                                     2]}, {'pos':
+                                                           [1, 1, 3,
+                                                            1]}, {'pos':
+                                                                  [1, 1, 3,
+                                                                   0]}, {'pos': [1, 1, 4, 0]
+                                                                         }, {'pos': [1, 1, 4, 1]},
+         {'pos':
+          [1, 1, 4,
+           2]}, {'pos':
+                 [1, 1, 4,
+                  3]}, {'pos':
+                        [1, 1, 4,
+                         4]}, {'pos':
+                               [1, 0, 4,
+                                4]}, {'pos':
+                                      [1, 0, 4,
+                                       3]}, {'pos':
+                                             [1, 0, 4,
+                                              2]}, {'pos':
+                                                    [1, 0, 4,
+                                                     1]}, {'pos':
+                                                           [1, 0, 4,
+                                                            0]}, {'pos':
+                                                                  [1, 0, 3,
+                                                                   0]}, {'pos': [1, 0, 3, 1]
+                                                                         }, {'pos': [1, 0, 3, 2]},
+         {'pos':
+          [1, 0, 3,
+           3]}, {'pos':
+                 [1, 0, 3,
+                  4]}, {'pos':
+                        [1, 0, 2,
+                         4]}, {'pos':
+                               [1, 0, 2,
+                                3]}, {'pos':
+                                      [1, 0, 2,
+                                       2]}, {'pos':
+                                             [1, 0, 2,
+                                              1]}, {'pos':
+                                                    [1, 0, 2,
+                                                     0]}, {'pos':
+                                                           [1, 0, 1,
+                                                            0]}, {'pos':
+                                                                  [1, 0, 1,
+                                                                   1]}, {'pos': [1, 0, 1, 2]
+                                                                         }, {'pos': [1, 0, 1, 3]},
+         {'pos':
+          [1, 0, 1,
+           4]}, {'pos':
+                 [1, 0, 0,
+                  4]}, {'pos':
+                        [1, 0, 0,
+                         3]}, {'pos':
+                               [1, 0, 0,
+                                2]}, {'pos':
+                                      [1, 0, 0,
+                                       1]}, {'pos':
+                                             [1, 0, 0,
+                                              0]}, {'pos':
+                                                    [2, 0, 0,
+                                                     0]}, {'pos':
+                                                           [2, 0, 0,
+                                                            1]}, {'pos':
+                                                                  [2, 0, 0,
+                                                                   2]}, {'pos': [2, 0, 0, 3]
+                                                                         }, {'pos': [2, 0, 0, 4]},
+         {'pos':
+          [2, 0, 1,
+           4]}, {'pos':
+                 [2, 0, 1,
+                  3]}, {'pos':
+                        [2, 0, 1,
+                         2]}, {'pos':
+                               [2, 0, 1,
+                                1]}, {'pos':
+                                      [2, 0, 1,
+                                       0]}, {'pos':
+                                             [2, 0, 2,
+                                              0]}, {'pos':
+                                                    [2, 0, 2,
+                                                     1]}, {'pos':
+                                                           [2, 0, 2,
+                                                            2]}, {'pos':
+                                                                  [2, 0, 2,
+                                                                   3]}, {'pos': [2, 0, 2, 4]
+                                                                         }, {'pos': [2, 0, 3, 4]},
+         {'pos':
+          [2, 0, 3,
+           3]}, {'pos':
+                 [2, 0, 3,
+                  2]}, {'pos':
+                        [2, 0, 3,
+                         1]}, {'pos':
+                               [2, 0, 3,
+                                0]}, {'pos':
+                                      [2, 0, 4,
+                                       0]}, {'pos':
+                                             [2, 0, 4,
+                                              1]}, {'pos':
+                                                    [2, 0, 4,
+                                                     2]}, {'pos':
+                                                           [2, 0, 4,
+                                                            3]}, {'pos':
+                                                                  [2, 0, 4,
+                                                                   4]}, {'pos': [2, 1, 4, 4]
+                                                                         }, {'pos': [2, 1, 4, 3]},
+         {'pos':
+          [2, 1, 4,
+           2]}, {'pos':
+                 [2, 1, 4,
+                  1]}, {'pos':
+                        [2, 1, 4,
+                         0]}, {'pos':
+                               [2, 1, 3,
+                                0]}, {'pos':
+                                      [2, 1, 3,
+                                       1]}, {'pos':
+                                             [2, 1, 3,
+                                              2]}, {'pos':
+                                                    [2, 1, 3,
+                                                     3]}, {'pos':
+                                                           [2, 1, 3,
+                                                            4]}, {'pos':
+                                                                  [2, 1, 2,
+                                                                   4]}, {'pos': [2, 1, 2, 3]
+                                                                         }, {'pos': [2, 1, 2, 2]},
+         {'pos':
+          [2, 1, 2,
+           1]}, {'pos':
+                 [2, 1, 2,
+                  0]}, {'pos':
+                        [2, 1, 1,
+                         0]}, {'pos':
+                               [2, 1, 1,
+                                1]}, {'pos':
+                                      [2, 1, 1,
+                                       2]}, {'pos':
+                                             [2, 1, 1,
+                                              3]}, {'pos':
+                                                    [2, 1, 1,
+                                                     4]}, {'pos':
+                                                           [2, 1, 0,
+                                                            4]}, {'pos':
+                                                                  [2, 1, 0,
+                                                                   3]}, {'pos': [2, 1, 0, 2]
+                                                                         }, {'pos': [2, 1, 0, 1]},
+         {'pos':
+          [2, 1, 0,
+           0]}, {'pos':
+                 [2, 2, 0,
+                  0]}, {'pos':
+                        [2, 2, 0,
+                         1]}, {'pos':
+                               [2, 2, 0,
+                                2]}, {'pos':
+                                      [2, 2, 0,
+                                       3]}, {'pos':
+                                             [2, 2, 0,
+                                              4]}, {'pos':
+                                                    [2, 2, 1,
+                                                     4]}, {'pos':
+                                                           [2, 2, 1,
+                                                            3]}, {'pos':
+                                                                  [2, 2, 1,
+                                                                   2]}, {'pos': [2, 2, 1, 1]
+                                                                         }, {'pos': [2, 2, 1, 0]},
+         {'pos':
+          [2, 2, 2,
+           0]}, {'pos':
+                 [2, 2, 2,
+                  1]}, {'pos':
+                        [2, 2, 2,
+                         2]}, {'pos':
+                               [2, 2, 2,
+                                3]}, {'pos':
+                                      [2, 2, 2,
+                                       4]}, {'pos':
+                                             [2, 2, 3,
+                                              4]}, {'pos':
+                                                    [2, 2, 3,
+                                                     3]}, {'pos':
+                                                           [2, 2, 3,
+                                                            2]}, {'pos':
+                                                                  [2, 2, 3,
+                                                                   1]}, {'pos': [2, 2, 3, 0]
+                                                                         }, {'pos': [2, 2, 4, 0]},
+         {'pos':
+          [2, 2, 4,
+           1]}, {'pos':
+                 [2, 2, 4,
+                  2]}, {'pos':
+                        [2, 2, 4,
+                         3]}, {'pos':
+                               [2, 2, 4,
+                                4]}, {'pos':
+                                      [2, 3, 4,
+                                       4]}, {'pos':
+                                             [2, 3, 4,
+                                              3]}, {'pos':
+                                                    [2, 3, 4,
+                                                     2]}, {'pos':
+                                                           [2, 3, 4,
+                                                            1]}, {'pos': [2, 3, 4, 0]
+                                                                  }, {'pos': [2, 3, 3, 0]
+                                                                      }, {'pos': [2, 3, 3, 1]
+                                                                          }, {'pos': [2, 3, 3, 2]},
+         {'pos':
+          [2, 3, 3,
+           3]}, {'pos':
+                 [2, 3, 3,
+                  4]}, {'pos':
+                        [2, 3, 2,
+                         4]}, {'pos':
+                               [2, 3, 2,
+                                3]}, {'pos':
+                                      [2, 3, 2,
+                                       2]}, {'pos':
+                                             [2, 3, 2,
+                                              1]}, {'pos':
+                                                    [2, 3, 2,
+                                                     0]}, {'pos': [2, 3, 1, 0]
+                                                           }, {'pos': [2, 3, 1, 1]
+                                                               }, {'pos': [2, 3, 1, 2]
+                                                                   }, {'pos': [2, 3, 1, 3]
+                                                                       }, {'pos': [2, 3, 1, 4]
+                                                                           }, {'pos': [2, 3, 0, 4]},
+         {'pos':
+          [2, 3, 0,
+           3]}, {'pos':
+                 [2, 3, 0,
+                  2]}, {'pos':
+                        [2, 3, 0,
+                         1]}, {'pos':
+                               [2, 3, 0,
+                                0]}, {'pos':
+                                      [2, 4, 0,
+                                       0]}, {'pos':
+                                             [2, 4, 0,
+                                              1]}, {'pos':
+                                                    [2, 4, 0,
+                                                     2]}, {'pos': [2, 4, 0, 3]
+                                                           }, {'pos': [2, 4, 0, 4]
+                                                               }, {'pos': [2, 4, 1, 4]
+                                                                   }, {'pos': [2, 4, 1, 3]
+                                                                       }, {'pos': [2, 4, 1, 2]
+                                                                           }, {'pos': [2, 4, 1, 1]},
+         {'pos':
+          [2, 4, 1,
+           0]}, {'pos':
+                 [2, 4, 2,
+                  0]}, {'pos':
+                        [2, 4, 2,
+                         1]}, {'pos':
+                               [2, 4, 2,
+                                2]}, {'pos':
+                                      [2, 4, 2,
+                                       3]}, {'pos':
+                                             [2, 4, 2,
+                                              4]}, {'pos':
+                                                    [2, 4, 3,
+                                                     4]}, {'pos': [2, 4, 3, 3]
+                                                           }, {'pos': [2, 4, 3, 2]
+                                                               }, {'pos': [2, 4, 3, 1]
+                                                                   }, {'pos': [2, 4, 3, 0]
+                                                                       }, {'pos': [2, 4, 4, 0]
+                                                                           }, {'pos': [2, 4, 4, 1]},
+         {'pos':
+          [2, 4, 4,
+           2]}, {'pos':
+                 [2, 4, 4,
+                  3]}, {'pos':
+                        [2, 4, 4,
+                         4]}, {'pos':
+                               [3, 4, 4,
+                                4]}, {'pos':
+                                      [3, 4, 4,
+                                       3]}, {'pos':
+                                             [3, 4, 4,
+                                              2]}, {'pos':
+                                                    [3, 4, 4,
+                                                     1]}, {'pos': [3, 4, 4, 0]
+                                                           }, {'pos': [3, 4, 3, 0]
+                                                               }, {'pos': [3, 4, 3, 1]
+                                                                   }, {'pos': [3, 4, 3, 2]
+                                                                       }, {'pos': [3, 4, 3, 3]
+                                                                           }, {'pos': [3, 4, 3, 4]},
+         {'pos':
+          [3, 4, 2,
+           4]}, {'pos':
+                 [3, 4, 2,
+                  3]}, {'pos':
+                        [3, 4, 2,
+                         2]}, {'pos':
+                               [3, 4, 2,
+                                1]}, {'pos':
+                                      [3, 4, 2,
+                                       0]}, {'pos':
+                                             [3, 4, 1,
+                                              0]}, {'pos':
+                                                    [3, 4, 1,
+                                                     1]}, {'pos': [3, 4, 1, 2]
+                                                           }, {'pos': [3, 4, 1, 3]
+                                                               }, {'pos': [3, 4, 1, 4]
+                                                                   }, {'pos': [3, 4, 0, 4]
+                                                                       }, {'pos': [3, 4, 0, 3]
+                                                                           }, {'pos': [3, 4, 0, 2]},
+         {'pos':
+          [3, 4, 0,
+           1]}, {'pos':
+                 [3, 4, 0,
+                  0]}, {'pos':
+                        [3, 3, 0,
+                         0]}, {'pos':
+                               [3, 3, 0,
+                                1]}, {'pos':
+                                      [3, 3, 0,
+                                       2]}, {'pos':
+                                             [3, 3, 0,
+                                              3]}, {'pos':
+                                                    [3, 3, 0,
+                                                     4]}, {'pos':
+                                                           [3, 3, 1,
+                                                            4]}, {'pos':
+                                                                  [3, 3, 1,
+                                                                   3]}, {'pos': [3, 3, 1, 2]
+                                                                         }, {'pos': [3, 3, 1, 1]}, {
+                                                                             'pos': [3, 3, 1, 0]
+                                                                         }, {'pos': [3, 3, 2, 0]}, {
+                                                                             'pos': [3, 3, 2, 1]
+                                                                         }, {'pos': [3, 3, 2, 2]}, {
+                                                                             'pos': [3, 3, 2, 3]
+                                                                         }, {'pos': [3, 3, 2, 4]}, {
+                                                                             'pos': [3, 3, 3, 4]
+                                                                         }, {'pos': [3, 3, 3, 3]}, {
+                                                                             'pos': [3, 3, 3, 2]
+                                                                         }, {'pos': [3, 3, 3, 1]}, {
+                                                                             'pos': [3, 3, 3, 0]
+                                                                         }, {'pos': [3, 3, 4, 0]}, {
+                                                                             'pos': [3, 3, 4, 1]
+                                                                         }, {'pos': [3, 3, 4, 2]}, {
+                                                                             'pos': [3, 3, 4, 3]
+                                                                         }, {'pos': [3, 3, 4, 4]}, {
+                                                                             'pos': [3, 2, 4, 4]
+                                                                         }, {'pos': [3, 2, 4, 3]}, {
+                                                                             'pos': [3, 2, 4, 2]
+                                                                         }, {'pos': [3, 2, 4, 1]}, {
+                                                                             'pos': [3, 2, 4, 0]
+                                                                         }, {'pos': [3, 2, 3, 0]}, {
+                                                                             'pos': [3, 2, 3, 1]
+                                                                         }, {'pos': [3, 2, 3, 2]}, {
+                                                                             'pos': [3, 2, 3, 3]
+                                                                         }, {'pos': [3, 2, 3, 4]}, {
+                                                                             'pos': [3, 2, 2, 4]
+                                                                         }, {'pos': [3, 2, 2, 3]}, {
+                                                                             'pos': [3, 2, 2, 2]
+                                                                         }, {'pos': [3, 2, 2, 1]}, {
+                                                                             'pos': [3, 2, 2, 0]
+                                                                         }, {'pos': [3, 2, 1, 0]}, {
+                                                                             'pos': [3, 2, 1, 1]
+                                                                         }, {'pos': [3, 2, 1, 2]}, {
+                                                                             'pos': [3, 2, 1, 3]
+                                                                         }, {'pos': [3, 2, 1, 4]}, {
+                                                                             'pos': [3, 2, 0, 4]
+                                                                         }, {'pos': [3, 2, 0, 3]}, {
+                                                                             'pos': [3, 2, 0, 2]
+                                                                         }, {'pos': [3, 2, 0, 1]}, {
+                                                                             'pos': [3, 2, 0, 0]
+                                                                         }, {'pos': [3, 1, 0, 0]}, {
+                                                                             'pos': [3, 1, 0, 1]
+                                                                         }, {'pos': [3, 1, 0, 2]}, {
+                                                                             'pos': [3, 1, 0, 3]
+                                                                         }, {'pos': [3, 1, 0, 4]}, {
+                                                                             'pos': [3, 1, 1, 4]
+                                                                         }, {'pos': [3, 1, 1, 3]}, {
+                                                                             'pos': [3, 1, 1, 2]
+                                                                         }, {'pos': [3, 1, 1, 1]}, {
+                                                                             'pos': [3, 1, 1, 0]
+                                                                         }, {'pos': [3, 1, 2, 0]}, {
+                                                                             'pos': [3, 1, 2, 1]
+                                                                         }, {'pos': [3, 1, 2, 2]}, {
+                                                                             'pos': [3, 1, 2, 3]
+                                                                         }, {'pos': [3, 1, 2, 4]}, {
+                                                                             'pos': [3, 1, 3, 4]
+                                                                         }, {'pos': [3, 1, 3, 3]}, {
+                                                                             'pos': [3, 1, 3, 2]
+                                                                         }, {'pos': [3, 1, 3, 1]}, {
+                                                                             'pos': [3, 1, 3, 0]
+                                                                         }, {'pos': [3, 1, 4, 0]}, {
+                                                                             'pos': [3, 1, 4, 1]
+                                                                         }, {'pos': [3, 1, 4, 2]}, {
+                                                                             'pos': [3, 1, 4, 3]
+                                                                         }, {'pos': [3, 1, 4, 4]}, {
+                                                                             'pos': [3, 0, 4, 4]
+                                                                         }, {'pos': [3, 0, 4, 3]}, {
+                                                                             'pos': [3, 0, 4, 2]
+                                                                         }, {'pos': [3, 0, 4, 1]}, {
+                                                                             'pos': [3, 0, 4, 0]
+                                                                         }, {'pos': [3, 0, 3, 0]}, {
+                                                                             'pos': [3, 0, 3, 1]
+                                                                         }, {'pos': [3, 0, 3, 2]}, {
+                                                                             'pos': [3, 0, 3, 3]
+                                                                         }, {'pos': [3, 0, 3, 4]}, {
+                                                                             'pos': [3, 0, 2, 4]
+                                                                         }, {'pos': [3, 0, 2, 3]}, {
+                                                                             'pos': [3, 0, 2, 2]
+                                                                         }, {'pos': [3, 0, 2, 1]}, {
+                                                                             'pos': [3, 0, 2, 0]
+                                                                         }, {'pos': [3, 0, 1, 0]}, {
+                                                                             'pos': [3, 0, 1, 1]
+                                                                         }, {'pos': [3, 0, 1, 2]}, {
+                                                                             'pos': [3, 0, 1, 3]
+                                                                         }, {'pos': [3, 0, 1, 4]}, {
+                                                                             'pos': [3, 0, 0, 4]
+                                                                         }, {'pos': [3, 0, 0, 3]}, {
+                                                                             'pos': [3, 0, 0, 2]
+                                                                         }, {'pos': [3, 0, 0, 1]}, {
+                                                                             'pos': [3, 0, 0, 0]
+                                                                         }, {'pos': [4, 0, 0, 0]}, {
+                                                                             'pos': [4, 0, 0, 1]
+                                                                         }, {'pos': [4, 0, 0, 2]}, {
+                                                                             'pos': [4, 0, 0, 3]
+                                                                         }, {'pos': [4, 0, 0, 4]}, {
+                                                                             'pos': [4, 0, 1, 4]
+                                                                         }, {'pos': [4, 0, 1, 3]}, {
+                                                                             'pos': [4, 0, 1, 2]
+                                                                         }, {'pos': [4, 0, 1, 1]}, {
+                                                                             'pos': [4, 0, 1, 0]
+                                                                         }, {'pos': [4, 0, 2, 0]}, {
+                                                                             'pos': [4, 0, 2, 1]
+                                                                         }, {'pos': [4, 0, 2, 2]}, {
+                                                                             'pos': [4, 0, 2, 3]
+                                                                         }, {'pos': [4, 0, 2, 4]}, {
+                                                                             'pos': [4, 0, 3, 4]
+                                                                         }, {'pos': [4, 0, 3, 3]}, {
+                                                                             'pos': [4, 0, 3, 2]
+                                                                         }, {'pos': [4, 0, 3, 1]}, {
+                                                                             'pos': [4, 0, 3, 0]
+                                                                         }, {'pos': [4, 0, 4, 0]}, {
+                                                                             'pos': [4, 0, 4, 1]
+                                                                         }, {'pos': [4, 0, 4, 2]}, {
+                                                                             'pos': [4, 0, 4, 3]
+                                                                         }, {'pos': [4, 0, 4, 4]}, {
+                                                                             'pos': [4, 1, 4, 4]
+                                                                         }, {'pos': [4, 1, 4, 3]}, {
+                                                                             'pos': [4, 1, 4, 2]
+                                                                         }, {'pos': [4, 1, 4, 1]}, {
+                                                                             'pos': [4, 1, 4, 0]
+                                                                         }, {'pos': [4, 1, 3, 0]}, {
+                                                                             'pos': [4, 1, 3, 1]
+                                                                         }, {'pos': [4, 1, 3, 2]}, {
+                                                                             'pos': [4, 1, 3, 3]
+                                                                         }, {'pos': [4, 1, 3, 4]}, {
+                                                                             'pos': [4, 1, 2, 4]
+                                                                         }, {'pos': [4, 1, 2, 3]}, {
+                                                                             'pos': [4, 1, 2, 2]
+                                                                         }, {'pos': [4, 1, 2, 1]}, {
+                                                                             'pos': [4, 1, 2, 0]
+                                                                         }, {'pos': [4, 1, 1, 0]}, {
+                                                                             'pos': [4, 1, 1, 1]
+                                                                         }, {'pos': [4, 1, 1, 2]}, {
+                                                                             'pos': [4, 1, 1, 3]
+                                                                         }, {'pos': [4, 1, 1, 4]}, {
+                                                                             'pos': [4, 1, 0, 4]
+                                                                         }, {'pos': [4, 1, 0, 3]}, {
+                                                                             'pos': [4, 1, 0, 2]
+                                                                         }, {'pos': [4, 1, 0, 1]}, {
+                                                                             'pos': [4, 1, 0, 0]
+                                                                         }, {'pos': [4, 2, 0, 0]}, {
+                                                                             'pos': [4, 2, 0, 1]
+                                                                         }, {'pos': [4, 2, 0, 2]}, {
+                                                                             'pos': [4, 2, 0, 3]
+                                                                         }, {'pos': [4, 2, 0, 4]}, {
+                                                                             'pos': [4, 2, 1, 4]
+                                                                         }, {'pos': [4, 2, 1, 3]}, {
+                                                                             'pos': [4, 2, 1, 2]
+                                                                         }, {'pos': [4, 2, 1, 1]}, {
+                                                                             'pos': [4, 2, 1, 0]
+                                                                         }, {'pos': [4, 2, 2, 0]}, {
+                                                                             'pos': [4, 2, 2, 1]
+                                                                         }, {'pos': [4, 2, 2, 2]}, {
+                                                                             'pos': [4, 2, 2, 3]
+                                                                         }, {'pos': [4, 2, 2, 4]}, {
+                                                                             'pos': [4, 2, 3, 4]
+                                                                         }, {'pos': [4, 2, 3, 3]}, {
+                                                                             'pos': [4, 2, 3, 2]
+                                                                         }, {'pos': [4, 2, 3, 1]}, {
+                                                                             'pos': [4, 2, 3, 0]
+                                                                         }, {'pos': [4, 2, 4, 0]}, {
+                                                                             'pos': [4, 2, 4, 1]
+                                                                         }, {'pos': [4, 2, 4, 2]}, {
+                                                                             'pos': [4, 2, 4, 3]
+                                                                         }, {'pos': [4, 2, 4, 4]}, {
+                                                                             'pos': [4, 3, 4, 4]
+                                                                         }, {'pos': [4, 3, 4, 3]}, {
+                                                                             'pos': [4, 3, 4, 2]
+                                                                         }, {'pos': [4, 3, 4, 1]}, {
+                                                                             'pos': [4, 3, 4, 0]
+                                                                         }, {'pos': [4, 3, 3, 0]}, {
+                                                                             'pos': [4, 3, 3, 1]
+                                                                         }, {'pos': [4, 3, 3, 2]}, {
+                                                                             'pos': [4, 3, 3, 3]
+                                                                         }, {'pos': [4, 3, 3, 4]}, {
+                                                                             'pos': [4, 3, 2, 4]
+                                                                         }, {'pos': [4, 3, 2, 3]}, {
+                                                                             'pos': [4, 3, 2, 2]
+                                                                         }, {'pos': [4, 3, 2, 1]}, {
+                                                                             'pos': [4, 3, 2, 0]
+                                                                         }, {'pos': [4, 3, 1, 0]}, {
+                                                                             'pos': [4, 3, 1, 1]
+                                                                         }, {'pos': [4, 3, 1, 2]}, {
+                                                                             'pos': [4, 3, 1, 3]
+                                                                         }, {'pos': [4, 3, 1, 4]}, {
+                                                                             'pos': [4, 3, 0, 4]
+                                                                         }, {'pos': [4, 3, 0, 3]}, {
+                                                                             'pos': [4, 3, 0, 2]
+                                                                         }, {'pos': [4, 3, 0, 1]}, {
+                                                                             'pos': [4, 3, 0, 0]
+                                                                         }, {'pos': [4, 4, 0, 0]}, {
+                                                                             'pos': [4, 4, 0, 1]
+                                                                         }, {'pos': [4, 4, 0, 2]}, {
+                                                                             'pos': [4, 4, 0, 3]
+                                                                         }, {'pos': [4, 4, 0, 4]}, {
+                                                                             'pos': [4, 4, 1, 4]
+                                                                         }, {'pos': [4, 4, 1, 3]}, {
+                                                                             'pos': [4, 4, 1, 2]
+                                                                         }, {'pos': [4, 4, 1, 1]}, {
+                                                                             'pos': [4, 4, 1, 0]
+                                                                         }, {'pos': [4, 4, 2, 0]}, {
+                                                                             'pos': [4, 4, 2, 1]
+                                                                         }, {'pos': [4, 4, 2, 2]}, {
+                                                                             'pos': [4, 4, 2, 3]
+                                                                         }, {'pos': [4, 4, 2, 4]}, {
+                                                                             'pos': [4, 4, 3, 4]
+                                                                         }, {'pos': [4, 4, 3, 3]}, {
+                                                                             'pos': [4, 4, 3, 2]
+                                                                         }, {'pos': [4, 4, 3, 1]}, {
+                                                                             'pos': [4, 4, 3, 0]
+                                                                         }, {'pos': [4, 4, 4, 0]}, {
+                                                                             'pos': [4, 4, 4, 1]
+                                                                         }, {'pos': [4, 4, 4, 2]}, {
+                                                                             'pos': [4, 4, 4, 3]
+                                                                         }, {'pos': [4, 4, 4, 4]}]
+    }, ""
 
-    if questionNum == 12 and subPass == 1:
-        return {
-            'points': [{
-                'x': 0,
-                'y': 0
-            }, {
-                'x': 1,
-                'y': 0
-            }, {
-                'x': 2,
-                'y': 0
-            }, {
-                'x': 3,
-                'y': 0
-            }, {
-                'x': 3,
-                'y': 1
-            }, {
-                'x': 2,
-                'y': 1
-            }, {
-                'x': 1,
-                'y': 1
-            }, {
-                'x': 1,
-                'y': 2
-            }, {
-                'x': 2,
-                'y': 2
-            }, {
-                'x': 3,
-                'y': 2
-            }, {
-                'x': 3,
-                'y': 3
-            }, {
-                'x': 2,
-                'y': 3
-            }, {
-                'x': 1,
-                'y': 3
-            }, {
-                'x': 0,
-                'y': 3
-            }, {
-                'x': 0,
-                'y': 2
-            }, {
-                'x': 0,
-                'y': 1
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 11 and subPass == 3:
+    return {
+        'path':
+        [{'pos': [0, 0, 0, 0, 0, 0]}, {'pos': [0, 0, 0, 0, 0, 1]}, {'pos': [0, 0, 0, 0, 0, 2]},
+         {'pos': [0, 0, 0, 0, 1, 2]}, {'pos': [0, 0, 0, 0, 1, 1]}, {'pos': [0, 0, 0, 0, 1, 0]},
+         {'pos': [0, 0, 0, 0, 2, 0]}, {'pos': [0, 0, 0, 0, 2, 1]}, {'pos': [0, 0, 0, 0, 2, 2]},
+         {'pos': [0, 0, 0, 1, 2, 2]}, {'pos': [0, 0, 0, 1, 2, 1]}, {'pos': [0, 0, 0, 1, 2, 0]},
+         {'pos': [0, 0, 0, 1, 1, 0]}, {'pos': [0, 0, 0, 1, 1, 1]}, {'pos': [0, 0, 0, 1, 1, 2]},
+         {'pos': [0, 0, 0, 1, 0,
+                  2]}, {'pos': [0, 0, 0, 1, 0,
+                                1]}, {'pos': [0, 0, 0, 1, 0,
+                                              0]}, {'pos': [0, 0, 0, 2, 0,
+                                                            0]}, {'pos': [0, 0, 0, 2, 0, 1]},
+         {'pos': [0, 0, 0, 2, 0,
+                  2]}, {'pos': [0, 0, 0, 2, 1,
+                                2]}, {'pos': [0, 0, 0, 2, 1,
+                                              1]}, {'pos': [0, 0, 0, 2, 1,
+                                                            0]}, {'pos': [0, 0, 0, 2, 2, 0]},
+         {'pos': [0, 0, 0, 2, 2,
+                  1]}, {'pos': [0, 0, 0, 2, 2,
+                                2]}, {'pos': [0, 0, 1, 2, 2,
+                                              2]}, {'pos': [0, 0, 1, 2, 2,
+                                                            1]}, {'pos':
+                                                                  [0, 0, 1, 2, 2,
+                                                                   0]}, {'pos': [0, 0, 1, 2, 1, 0]},
+         {'pos': [0, 0, 1, 2, 1,
+                  1]}, {'pos': [0, 0, 1, 2, 1,
+                                2]}, {'pos': [0, 0, 1, 2, 0,
+                                              2]}, {'pos': [0, 0, 1, 2, 0,
+                                                            1]}, {'pos':
+                                                                  [0, 0, 1, 2, 0,
+                                                                   0]}, {'pos': [0, 0, 1, 1, 0, 0]},
+         {'pos': [0, 0, 1, 1, 0,
+                  1]}, {'pos': [0, 0, 1, 1, 0,
+                                2]}, {'pos': [0, 0, 1, 1, 1,
+                                              2]}, {'pos': [0, 0, 1, 1, 1,
+                                                            1]}, {'pos':
+                                                                  [0, 0, 1, 1, 1,
+                                                                   0]}, {'pos': [0, 0, 1, 1, 2, 0]},
+         {'pos': [0, 0, 1, 1, 2,
+                  1]}, {'pos': [0, 0, 1, 1, 2,
+                                2]}, {'pos': [0, 0, 1, 0, 2,
+                                              2]}, {'pos': [0, 0, 1, 0, 2,
+                                                            1]}, {'pos':
+                                                                  [0, 0, 1, 0, 2,
+                                                                   0]}, {'pos': [0, 0, 1, 0, 1, 0]},
+         {'pos': [0, 0, 1, 0, 1, 1]}, {'pos': [0, 0, 1, 0, 1, 2]}, {'pos': [0, 0, 1, 0, 0, 2]}, {
+             'pos': [0, 0, 1, 0, 0, 1]
+         }, {'pos': [0, 0, 1, 0, 0, 0]}, {'pos': [0, 0, 2, 0, 0, 0]}, {'pos': [0, 0, 2, 0, 0, 1]}, {
+             'pos': [0, 0, 2, 0, 0, 2]
+         }, {'pos': [0, 0, 2, 0, 1, 2]}, {'pos': [0, 0, 2, 0, 1, 1]}, {'pos': [0, 0, 2, 0, 1, 0]}, {
+             'pos': [0, 0, 2, 0, 2, 0]
+         }, {'pos': [0, 0, 2, 0, 2, 1]}, {'pos': [0, 0, 2, 0, 2, 2]}, {'pos': [0, 0, 2, 1, 2, 2]}, {
+             'pos': [0, 0, 2, 1, 2, 1]
+         }, {'pos': [0, 0, 2, 1, 2, 0]}, {'pos': [0, 0, 2, 1, 1, 0]}, {'pos': [0, 0, 2, 1, 1, 1]}, {
+             'pos': [0, 0, 2, 1, 1, 2]
+         }, {'pos': [0, 0, 2, 1, 0, 2]}, {'pos': [0, 0, 2, 1, 0, 1]}, {'pos': [0, 0, 2, 1, 0, 0]}, {
+             'pos': [0, 0, 2, 2, 0, 0]
+         }, {'pos': [0, 0, 2, 2, 0, 1]}, {'pos': [0, 0, 2, 2, 0, 2]}, {'pos': [0, 0, 2, 2, 1, 2]}, {
+             'pos': [0, 0, 2, 2, 1, 1]
+         }, {'pos': [0, 0, 2, 2, 1, 0]}, {'pos': [0, 0, 2, 2, 2, 0]}, {'pos': [0, 0, 2, 2, 2, 1]}, {
+             'pos': [0, 0, 2, 2, 2, 2]
+         }, {'pos': [0, 1, 2, 2, 2, 2]}, {'pos': [0, 1, 2, 2, 2, 1]}, {'pos': [0, 1, 2, 2, 2, 0]}, {
+             'pos': [0, 1, 2, 2, 1, 0]
+         }, {'pos': [0, 1, 2, 2, 1, 1]}, {'pos': [0, 1, 2, 2, 1, 2]}, {'pos': [0, 1, 2, 2, 0, 2]}, {
+             'pos': [0, 1, 2, 2, 0, 1]
+         }, {'pos': [0, 1, 2, 2, 0, 0]}, {'pos': [0, 1, 2, 1, 0, 0]}, {'pos': [0, 1, 2, 1, 0, 1]}, {
+             'pos': [0, 1, 2, 1, 0, 2]
+         }, {'pos': [0, 1, 2, 1, 1, 2]}, {'pos': [0, 1, 2, 1, 1, 1]}, {'pos': [0, 1, 2, 1, 1, 0]}, {
+             'pos': [0, 1, 2, 1, 2, 0]
+         }, {'pos': [0, 1, 2, 1, 2, 1]}, {'pos': [0, 1, 2, 1, 2, 2]}, {'pos': [0, 1, 2, 0, 2, 2]}, {
+             'pos': [0, 1, 2, 0, 2, 1]
+         }, {'pos': [0, 1, 2, 0, 2, 0]}, {'pos': [0, 1, 2, 0, 1, 0]}, {'pos': [0, 1, 2, 0, 1, 1]}, {
+             'pos': [0, 1, 2, 0, 1, 2]
+         }, {'pos': [0, 1, 2, 0, 0, 2]}, {'pos': [0, 1, 2, 0, 0, 1]}, {'pos': [0, 1, 2, 0, 0, 0]}, {
+             'pos': [0, 1, 1, 0, 0, 0]
+         }, {'pos': [0, 1, 1, 0, 0, 1]}, {'pos': [0, 1, 1, 0, 0, 2]}, {'pos': [0, 1, 1, 0, 1, 2]}, {
+             'pos': [0, 1, 1, 0, 1, 1]
+         }, {'pos': [0, 1, 1, 0, 1, 0]}, {'pos': [0, 1, 1, 0, 2, 0]}, {'pos': [0, 1, 1, 0, 2, 1]}, {
+             'pos': [0, 1, 1, 0, 2, 2]
+         }, {'pos': [0, 1, 1, 1, 2, 2]}, {'pos': [0, 1, 1, 1, 2, 1]}, {'pos': [0, 1, 1, 1, 2, 0]}, {
+             'pos': [0, 1, 1, 1, 1, 0]
+         }, {'pos': [0, 1, 1, 1, 1, 1]}, {'pos': [0, 1, 1, 1, 1, 2]}, {'pos': [0, 1, 1, 1, 0, 2]}, {
+             'pos': [0, 1, 1, 1, 0, 1]
+         }, {'pos': [0, 1, 1, 1, 0, 0]}, {'pos': [0, 1, 1, 2, 0, 0]}, {'pos': [0, 1, 1, 2, 0, 1]}, {
+             'pos': [0, 1, 1, 2, 0, 2]
+         }, {'pos': [0, 1, 1, 2, 1, 2]}, {'pos': [0, 1, 1, 2, 1, 1]}, {'pos': [0, 1, 1, 2, 1, 0]}, {
+             'pos': [0, 1, 1, 2, 2, 0]
+         }, {'pos': [0, 1, 1, 2, 2, 1]}, {'pos': [0, 1, 1, 2, 2, 2]}, {'pos': [0, 1, 0, 2, 2, 2]}, {
+             'pos': [0, 1, 0, 2, 2, 1]
+         }, {'pos': [0, 1, 0, 2, 2, 0]}, {'pos': [0, 1, 0, 2, 1, 0]}, {'pos': [0, 1, 0, 2, 1, 1]}, {
+             'pos': [0, 1, 0, 2, 1, 2]
+         }, {'pos': [0, 1, 0, 2, 0, 2]}, {'pos': [0, 1, 0, 2, 0, 1]}, {'pos': [0, 1, 0, 2, 0, 0]}, {
+             'pos': [0, 1, 0, 1, 0, 0]
+         }, {'pos': [0, 1, 0, 1, 0, 1]}, {'pos': [0, 1, 0, 1, 0, 2]}, {'pos': [0, 1, 0, 1, 1, 2]}, {
+             'pos': [0, 1, 0, 1, 1, 1]
+         }, {'pos': [0, 1, 0, 1, 1, 0]}, {'pos': [0, 1, 0, 1, 2, 0]}, {'pos': [0, 1, 0, 1, 2, 1]}, {
+             'pos': [0, 1, 0, 1, 2, 2]
+         }, {'pos': [0, 1, 0, 0, 2, 2]}, {'pos': [0, 1, 0, 0, 2, 1]}, {'pos': [0, 1, 0, 0, 2, 0]}, {
+             'pos': [0, 1, 0, 0, 1, 0]
+         }, {'pos': [0, 1, 0, 0, 1, 1]}, {'pos': [0, 1, 0, 0, 1, 2]}, {'pos': [0, 1, 0, 0, 0, 2]}, {
+             'pos': [0, 1, 0, 0, 0, 1]
+         }, {'pos': [0, 1, 0, 0, 0, 0]}, {'pos': [0, 2, 0, 0, 0, 0]}, {'pos': [0, 2, 0, 0, 0, 1]}, {
+             'pos': [0, 2, 0, 0, 0, 2]
+         }, {'pos': [0, 2, 0, 0, 1, 2]}, {'pos': [0, 2, 0, 0, 1, 1]}, {'pos': [0, 2, 0, 0, 1, 0]}, {
+             'pos': [0, 2, 0, 0, 2, 0]
+         }, {'pos': [0, 2, 0, 0, 2, 1]}, {'pos': [0, 2, 0, 0, 2, 2]}, {'pos': [0, 2, 0, 1, 2, 2]}, {
+             'pos': [0, 2, 0, 1, 2, 1]
+         }, {'pos': [0, 2, 0, 1, 2, 0]}, {'pos': [0, 2, 0, 1, 1, 0]}, {'pos': [0, 2, 0, 1, 1, 1]}, {
+             'pos': [0, 2, 0, 1, 1, 2]
+         }, {'pos': [0, 2, 0, 1, 0, 2]}, {'pos': [0, 2, 0, 1, 0, 1]}, {'pos': [0, 2, 0, 1, 0, 0]}, {
+             'pos': [0, 2, 0, 2, 0, 0]
+         }, {'pos': [0, 2, 0, 2, 0, 1]}, {'pos': [0, 2, 0, 2, 0, 2]}, {'pos': [0, 2, 0, 2, 1, 2]}, {
+             'pos': [0, 2, 0, 2, 1, 1]
+         }, {'pos': [0, 2, 0, 2, 1, 0]}, {'pos': [0, 2, 0, 2, 2, 0]}, {'pos': [0, 2, 0, 2, 2, 1]}, {
+             'pos': [0, 2, 0, 2, 2, 2]
+         }, {'pos': [0, 2, 1, 2, 2, 2]}, {'pos': [0, 2, 1, 2, 2, 1]}, {'pos': [0, 2, 1, 2, 2, 0]}, {
+             'pos': [0, 2, 1, 2, 1, 0]
+         }, {'pos': [0, 2, 1, 2, 1, 1]}, {'pos': [0, 2, 1, 2, 1, 2]}, {'pos': [0, 2, 1, 2, 0, 2]}, {
+             'pos': [0, 2, 1, 2, 0, 1]
+         }, {'pos': [0, 2, 1, 2, 0, 0]}, {'pos': [0, 2, 1, 1, 0, 0]}, {'pos': [0, 2, 1, 1, 0, 1]}, {
+             'pos': [0, 2, 1, 1, 0, 2]
+         }, {'pos': [0, 2, 1, 1, 1, 2]}, {'pos': [0, 2, 1, 1, 1, 1]}, {'pos': [0, 2, 1, 1, 1, 0]}, {
+             'pos': [0, 2, 1, 1, 2, 0]
+         }, {'pos': [0, 2, 1, 1, 2, 1]}, {'pos': [0, 2, 1, 1, 2, 2]}, {'pos': [0, 2, 1, 0, 2, 2]}, {
+             'pos': [0, 2, 1, 0, 2, 1]
+         }, {'pos': [0, 2, 1, 0, 2, 0]}, {'pos': [0, 2, 1, 0, 1, 0]}, {'pos': [0, 2, 1, 0, 1, 1]}, {
+             'pos': [0, 2, 1, 0, 1, 2]
+         }, {'pos': [0, 2, 1, 0, 0, 2]}, {'pos': [0, 2, 1, 0, 0, 1]}, {'pos': [0, 2, 1, 0, 0, 0]}, {
+             'pos': [0, 2, 2, 0, 0, 0]
+         }, {'pos': [0, 2, 2, 0, 0, 1]}, {'pos': [0, 2, 2, 0, 0, 2]}, {'pos': [0, 2, 2, 0, 1, 2]}, {
+             'pos': [0, 2, 2, 0, 1, 1]
+         }, {'pos': [0, 2, 2, 0, 1, 0]}, {'pos': [0, 2, 2, 0, 2, 0]}, {'pos': [0, 2, 2, 0, 2, 1]}, {
+             'pos': [0, 2, 2, 0, 2, 2]
+         }, {'pos': [0, 2, 2, 1, 2, 2]}, {'pos': [0, 2, 2, 1, 2, 1]}, {'pos': [0, 2, 2, 1, 2, 0]}, {
+             'pos': [0, 2, 2, 1, 1, 0]
+         }, {'pos': [0, 2, 2, 1, 1, 1]}, {'pos': [0, 2, 2, 1, 1, 2]}, {'pos': [0, 2, 2, 1, 0, 2]}, {
+             'pos': [0, 2, 2, 1, 0, 1]
+         }, {'pos': [0, 2, 2, 1, 0, 0]}, {'pos': [0, 2, 2, 2, 0, 0]}, {'pos': [0, 2, 2, 2, 0, 1]}, {
+             'pos': [0, 2, 2, 2, 0, 2]
+         }, {'pos': [0, 2, 2, 2, 1, 2]}, {'pos': [0, 2, 2, 2, 1, 1]}, {'pos': [0, 2, 2, 2, 1, 0]}, {
+             'pos': [0, 2, 2, 2, 2, 0]
+         }, {'pos': [0, 2, 2, 2, 2, 1]}, {'pos': [0, 2, 2, 2, 2, 2]}, {'pos': [1, 2, 2, 2, 2, 2]}, {
+             'pos': [1, 2, 2, 2, 2, 1]
+         }, {'pos': [1, 2, 2, 2, 2, 0]}, {'pos': [1, 2, 2, 2, 1, 0]}, {'pos': [1, 2, 2, 2, 1, 1]}, {
+             'pos': [1, 2, 2, 2, 1, 2]
+         }, {'pos': [1, 2, 2, 2, 0, 2]}, {'pos': [1, 2, 2, 2, 0, 1]}, {'pos': [1, 2, 2, 2, 0, 0]}, {
+             'pos': [1, 2, 2, 1, 0, 0]
+         }, {'pos': [1, 2, 2, 1, 0, 1]}, {'pos': [1, 2, 2, 1, 0, 2]}, {'pos': [1, 2, 2, 1, 1, 2]}, {
+             'pos': [1, 2, 2, 1, 1, 1]
+         }, {'pos': [1, 2, 2, 1, 1, 0]}, {'pos': [1, 2, 2, 1, 2, 0]}, {'pos': [1, 2, 2, 1, 2, 1]}, {
+             'pos': [1, 2, 2, 1, 2, 2]
+         }, {'pos': [1, 2, 2, 0, 2, 2]}, {'pos': [1, 2, 2, 0, 2, 1]}, {'pos': [1, 2, 2, 0, 2, 0]}, {
+             'pos': [1, 2, 2, 0, 1, 0]
+         }, {'pos': [1, 2, 2, 0, 1, 1]}, {'pos': [1, 2, 2, 0, 1, 2]}, {'pos': [1, 2, 2, 0, 0, 2]}, {
+             'pos': [1, 2, 2, 0, 0, 1]
+         }, {'pos': [1, 2, 2, 0, 0, 0]}, {'pos': [1, 2, 1, 0, 0, 0]}, {'pos': [1, 2, 1, 0, 0, 1]}, {
+             'pos': [1, 2, 1, 0, 0, 2]
+         }, {'pos': [1, 2, 1, 0, 1, 2]}, {'pos': [1, 2, 1, 0, 1, 1]}, {'pos': [1, 2, 1, 0, 1, 0]}, {
+             'pos': [1, 2, 1, 0, 2, 0]
+         }, {'pos': [1, 2, 1, 0, 2, 1]}, {'pos': [1, 2, 1, 0, 2, 2]}, {'pos': [1, 2, 1, 1, 2, 2]}, {
+             'pos': [1, 2, 1, 1, 2, 1]
+         }, {'pos': [1, 2, 1, 1, 2, 0]}, {'pos': [1, 2, 1, 1, 1, 0]}, {'pos': [1, 2, 1, 1, 1, 1]}, {
+             'pos': [1, 2, 1, 1, 1, 2]
+         }, {'pos': [1, 2, 1, 1, 0, 2]}, {'pos': [1, 2, 1, 1, 0, 1]}, {'pos': [1, 2, 1, 1, 0, 0]}, {
+             'pos': [1, 2, 1, 2, 0, 0]
+         }, {'pos': [1, 2, 1, 2, 0, 1]}, {'pos': [1, 2, 1, 2, 0, 2]}, {'pos': [1, 2, 1, 2, 1, 2]}, {
+             'pos': [1, 2, 1, 2, 1, 1]
+         }, {'pos': [1, 2, 1, 2, 1, 0]}, {'pos': [1, 2, 1, 2, 2, 0]}, {'pos': [1, 2, 1, 2, 2, 1]}, {
+             'pos': [1, 2, 1, 2, 2, 2]
+         }, {'pos': [1, 2, 0, 2, 2, 2]}, {'pos': [1, 2, 0, 2, 2, 1]}, {'pos': [1, 2, 0, 2, 2, 0]}, {
+             'pos': [1, 2, 0, 2, 1, 0]
+         }, {'pos': [1, 2, 0, 2, 1, 1]}, {'pos': [1, 2, 0, 2, 1, 2]}, {'pos': [1, 2, 0, 2, 0, 2]}, {
+             'pos': [1, 2, 0, 2, 0, 1]
+         }, {'pos': [1, 2, 0, 2, 0, 0]}, {'pos': [1, 2, 0, 1, 0, 0]}, {'pos': [1, 2, 0, 1, 0, 1]}, {
+             'pos': [1, 2, 0, 1, 0, 2]
+         }, {'pos': [1, 2, 0, 1, 1, 2]}, {'pos': [1, 2, 0, 1, 1, 1]}, {'pos': [1, 2, 0, 1, 1, 0]}, {
+             'pos': [1, 2, 0, 1, 2, 0]
+         }, {'pos': [1, 2, 0, 1, 2, 1]}, {'pos': [1, 2, 0, 1, 2, 2]}, {'pos': [1, 2, 0, 0, 2, 2]}, {
+             'pos': [1, 2, 0, 0, 2, 1]
+         }, {'pos': [1, 2, 0, 0, 2, 0]}, {'pos': [1, 2, 0, 0, 1, 0]}, {'pos': [1, 2, 0, 0, 1, 1]}, {
+             'pos': [1, 2, 0, 0, 1, 2]
+         }, {'pos': [1, 2, 0, 0, 0, 2]}, {'pos': [1, 2, 0, 0, 0, 1]}, {'pos': [1, 2, 0, 0, 0, 0]}, {
+             'pos': [1, 1, 0, 0, 0, 0]
+         }, {'pos': [1, 1, 0, 0, 0, 1]}, {'pos': [1, 1, 0, 0, 0, 2]}, {'pos': [1, 1, 0, 0, 1, 2]}, {
+             'pos': [1, 1, 0, 0, 1, 1]
+         }, {'pos': [1, 1, 0, 0, 1, 0]}, {'pos': [1, 1, 0, 0, 2, 0]}, {'pos': [1, 1, 0, 0, 2, 1]}, {
+             'pos': [1, 1, 0, 0, 2, 2]
+         }, {'pos': [1, 1, 0, 1, 2, 2]}, {'pos': [1, 1, 0, 1, 2, 1]}, {'pos': [1, 1, 0, 1, 2, 0]}, {
+             'pos': [1, 1, 0, 1, 1, 0]
+         }, {'pos': [1, 1, 0, 1, 1, 1]}, {'pos': [1, 1, 0, 1, 1, 2]}, {'pos': [1, 1, 0, 1, 0, 2]}, {
+             'pos': [1, 1, 0, 1, 0, 1]
+         }, {'pos': [1, 1, 0, 1, 0, 0]}, {'pos': [1, 1, 0, 2, 0, 0]}, {'pos': [1, 1, 0, 2, 0, 1]}, {
+             'pos': [1, 1, 0, 2, 0, 2]
+         }, {'pos': [1, 1, 0, 2, 1, 2]}, {'pos': [1, 1, 0, 2, 1, 1]}, {'pos': [1, 1, 0, 2, 1, 0]}, {
+             'pos': [1, 1, 0, 2, 2, 0]
+         }, {'pos': [1, 1, 0, 2, 2, 1]}, {'pos': [1, 1, 0, 2, 2, 2]}, {'pos': [1, 1, 1, 2, 2, 2]}, {
+             'pos': [1, 1, 1, 2, 2, 1]
+         }, {'pos': [1, 1, 1, 2, 2, 0]}, {'pos': [1, 1, 1, 2, 1, 0]}, {'pos': [1, 1, 1, 2, 1, 1]}, {
+             'pos': [1, 1, 1, 2, 1, 2]
+         }, {'pos': [1, 1, 1, 2, 0, 2]}, {'pos': [1, 1, 1, 2, 0, 1]}, {'pos': [1, 1, 1, 2, 0, 0]}, {
+             'pos': [1, 1, 1, 1, 0, 0]
+         }, {'pos': [1, 1, 1, 1, 0, 1]}, {'pos': [1, 1, 1, 1, 0, 2]}, {'pos': [1, 1, 1, 1, 1, 2]}, {
+             'pos': [1, 1, 1, 1, 1, 1]
+         }, {'pos': [1, 1, 1, 1, 1, 0]}, {'pos': [1, 1, 1, 1, 2, 0]}, {'pos': [1, 1, 1, 1, 2, 1]}, {
+             'pos': [1, 1, 1, 1, 2, 2]
+         }, {'pos': [1, 1, 1, 0, 2, 2]}, {'pos': [1, 1, 1, 0, 2, 1]}, {'pos': [1, 1, 1, 0, 2, 0]}, {
+             'pos': [1, 1, 1, 0, 1, 0]
+         }, {'pos': [1, 1, 1, 0, 1, 1]}, {'pos': [1, 1, 1, 0, 1, 2]}, {'pos': [1, 1, 1, 0, 0, 2]}, {
+             'pos': [1, 1, 1, 0, 0, 1]
+         }, {'pos': [1, 1, 1, 0, 0, 0]}, {'pos': [1, 1, 2, 0, 0, 0]}, {'pos': [1, 1, 2, 0, 0, 1]}, {
+             'pos': [1, 1, 2, 0, 0, 2]
+         }, {'pos': [1, 1, 2, 0, 1, 2]}, {'pos': [1, 1, 2, 0, 1, 1]}, {'pos': [1, 1, 2, 0, 1, 0]}, {
+             'pos': [1, 1, 2, 0, 2, 0]
+         }, {'pos': [1, 1, 2, 0, 2, 1]}, {'pos': [1, 1, 2, 0, 2, 2]}, {'pos': [1, 1, 2, 1, 2, 2]}, {
+             'pos': [1, 1, 2, 1, 2, 1]
+         }, {'pos': [1, 1, 2, 1, 2, 0]}, {'pos': [1, 1, 2, 1, 1, 0]}, {'pos': [1, 1, 2, 1, 1, 1]}, {
+             'pos': [1, 1, 2, 1, 1, 2]
+         }, {'pos': [1, 1, 2, 1, 0, 2]}, {'pos': [1, 1, 2, 1, 0, 1]}, {'pos': [1, 1, 2, 1, 0, 0]}, {
+             'pos': [1, 1, 2, 2, 0, 0]
+         }, {'pos': [1, 1, 2, 2, 0, 1]}, {'pos': [1, 1, 2, 2, 0, 2]}, {'pos': [1, 1, 2, 2, 1, 2]}, {
+             'pos': [1, 1, 2, 2, 1, 1]
+         }, {'pos': [1, 1, 2, 2, 1, 0]}, {'pos': [1, 1, 2, 2, 2, 0]}, {'pos': [1, 1, 2, 2, 2, 1]}, {
+             'pos': [1, 1, 2, 2, 2, 2]
+         }, {'pos': [1, 0, 2, 2, 2, 2]}, {'pos': [1, 0, 2, 2, 2, 1]}, {'pos': [1, 0, 2, 2, 2, 0]}, {
+             'pos': [1, 0, 2, 2, 1, 0]
+         }, {'pos': [1, 0, 2, 2, 1, 1]}, {'pos': [1, 0, 2, 2, 1, 2]}, {'pos': [1, 0, 2, 2, 0, 2]}, {
+             'pos': [1, 0, 2, 2, 0, 1]
+         }, {'pos': [1, 0, 2, 2, 0, 0]}, {'pos': [1, 0, 2, 1, 0, 0]}, {'pos': [1, 0, 2, 1, 0, 1]}, {
+             'pos': [1, 0, 2, 1, 0, 2]
+         }, {'pos': [1, 0, 2, 1, 1, 2]}, {'pos': [1, 0, 2, 1, 1, 1]}, {'pos': [1, 0, 2, 1, 1, 0]}, {
+             'pos': [1, 0, 2, 1, 2, 0]
+         }, {'pos': [1, 0, 2, 1, 2, 1]}, {'pos': [1, 0, 2, 1, 2, 2]}, {'pos': [1, 0, 2, 0, 2, 2]}, {
+             'pos': [1, 0, 2, 0, 2, 1]
+         }, {'pos': [1, 0, 2, 0, 2, 0]}, {'pos': [1, 0, 2, 0, 1, 0]}, {'pos': [1, 0, 2, 0, 1, 1]}, {
+             'pos': [1, 0, 2, 0, 1, 2]
+         }, {'pos': [1, 0, 2, 0, 0, 2]}, {'pos': [1, 0, 2, 0, 0, 1]}, {'pos': [1, 0, 2, 0, 0, 0]}, {
+             'pos': [1, 0, 1, 0, 0, 0]
+         }, {'pos': [1, 0, 1, 0, 0, 1]}, {'pos': [1, 0, 1, 0, 0, 2]}, {'pos': [1, 0, 1, 0, 1, 2]}, {
+             'pos': [1, 0, 1, 0, 1, 1]
+         }, {'pos': [1, 0, 1, 0, 1, 0]}, {'pos': [1, 0, 1, 0, 2, 0]}, {'pos': [1, 0, 1, 0, 2, 1]}, {
+             'pos': [1, 0, 1, 0, 2, 2]
+         }, {'pos': [1, 0, 1, 1, 2, 2]}, {'pos': [1, 0, 1, 1, 2, 1]}, {'pos': [1, 0, 1, 1, 2, 0]}, {
+             'pos': [1, 0, 1, 1, 1, 0]
+         }, {'pos': [1, 0, 1, 1, 1, 1]}, {'pos': [1, 0, 1, 1, 1, 2]}, {'pos': [1, 0, 1, 1, 0, 2]}, {
+             'pos': [1, 0, 1, 1, 0, 1]
+         }, {'pos': [1, 0, 1, 1, 0, 0]}, {'pos': [1, 0, 1, 2, 0, 0]}, {'pos': [1, 0, 1, 2, 0, 1]}, {
+             'pos': [1, 0, 1, 2, 0, 2]
+         }, {'pos': [1, 0, 1, 2, 1, 2]}, {'pos': [1, 0, 1, 2, 1, 1]}, {'pos': [1, 0, 1, 2, 1, 0]}, {
+             'pos': [1, 0, 1, 2, 2, 0]
+         }, {'pos': [1, 0, 1, 2, 2, 1]}, {'pos': [1, 0, 1, 2, 2, 2]}, {'pos': [1, 0, 0, 2, 2, 2]}, {
+             'pos': [1, 0, 0, 2, 2, 1]
+         }, {'pos': [1, 0, 0, 2, 2, 0]}, {'pos': [1, 0, 0, 2, 1, 0]}, {'pos': [1, 0, 0, 2, 1, 1]}, {
+             'pos': [1, 0, 0, 2, 1, 2]
+         }, {'pos': [1, 0, 0, 2, 0, 2]}, {'pos': [1, 0, 0, 2, 0, 1]}, {'pos': [1, 0, 0, 2, 0, 0]}, {
+             'pos': [1, 0, 0, 1, 0, 0]
+         }, {'pos': [1, 0, 0, 1, 0, 1]}, {'pos': [1, 0, 0, 1, 0, 2]}, {'pos': [1, 0, 0, 1, 1, 2]}, {
+             'pos': [1, 0, 0, 1, 1, 1]
+         }, {'pos': [1, 0, 0, 1, 1, 0]}, {'pos': [1, 0, 0, 1, 2, 0]}, {'pos': [1, 0, 0, 1, 2, 1]}, {
+             'pos': [1, 0, 0, 1, 2, 2]
+         }, {'pos': [1, 0, 0, 0, 2, 2]}, {'pos': [1, 0, 0, 0, 2, 1]}, {'pos': [1, 0, 0, 0, 2, 0]}, {
+             'pos': [1, 0, 0, 0, 1, 0]
+         }, {'pos': [1, 0, 0, 0, 1, 1]}, {'pos': [1, 0, 0, 0, 1, 2]}, {'pos': [1, 0, 0, 0, 0, 2]}, {
+             'pos': [1, 0, 0, 0, 0, 1]
+         }, {'pos': [1, 0, 0, 0, 0, 0]}, {'pos': [2, 0, 0, 0, 0, 0]}, {'pos': [2, 0, 0, 0, 0, 1]}, {
+             'pos': [2, 0, 0, 0, 0, 2]
+         }, {'pos': [2, 0, 0, 0, 1, 2]}, {'pos': [2, 0, 0, 0, 1, 1]}, {'pos': [2, 0, 0, 0, 1, 0]}, {
+             'pos': [2, 0, 0, 0, 2, 0]
+         }, {'pos': [2, 0, 0, 0, 2, 1]}, {'pos': [2, 0, 0, 0, 2, 2]}, {'pos': [2, 0, 0, 1, 2, 2]}, {
+             'pos': [2, 0, 0, 1, 2, 1]
+         }, {'pos': [2, 0, 0, 1, 2, 0]}, {'pos': [2, 0, 0, 1, 1, 0]}, {'pos': [2, 0, 0, 1, 1, 1]}, {
+             'pos': [2, 0, 0, 1, 1, 2]
+         }, {'pos': [2, 0, 0, 1, 0, 2]}, {'pos': [2, 0, 0, 1, 0, 1]}, {'pos': [2, 0, 0, 1, 0, 0]}, {
+             'pos': [2, 0, 0, 2, 0, 0]
+         }, {'pos': [2, 0, 0, 2, 0, 1]}, {'pos': [2, 0, 0, 2, 0, 2]}, {'pos': [2, 0, 0, 2, 1, 2]}, {
+             'pos': [2, 0, 0, 2, 1, 1]
+         }, {'pos': [2, 0, 0, 2, 1, 0]}, {'pos': [2, 0, 0, 2, 2, 0]}, {'pos': [2, 0, 0, 2, 2, 1]}, {
+             'pos': [2, 0, 0, 2, 2, 2]
+         }, {'pos': [2, 0, 1, 2, 2, 2]}, {'pos': [2, 0, 1, 2, 2, 1]}, {'pos': [2, 0, 1, 2, 2, 0]}, {
+             'pos': [2, 0, 1, 2, 1, 0]
+         }, {'pos': [2, 0, 1, 2, 1, 1]}, {'pos': [2, 0, 1, 2, 1, 2]}, {'pos': [2, 0, 1, 2, 0, 2]}, {
+             'pos': [2, 0, 1, 2, 0, 1]
+         }, {'pos': [2, 0, 1, 2, 0, 0]}, {'pos': [2, 0, 1, 1, 0, 0]}, {'pos': [2, 0, 1, 1, 0, 1]}, {
+             'pos': [2, 0, 1, 1, 0, 2]
+         }, {'pos': [2, 0, 1, 1, 1, 2]}, {'pos': [2, 0, 1, 1, 1, 1]}, {'pos': [2, 0, 1, 1, 1, 0]}, {
+             'pos': [2, 0, 1, 1, 2, 0]
+         }, {'pos': [2, 0, 1, 1, 2, 1]}, {'pos': [2, 0, 1, 1, 2, 2]}, {'pos': [2, 0, 1, 0, 2, 2]}, {
+             'pos': [2, 0, 1, 0, 2, 1]
+         }, {'pos': [2, 0, 1, 0, 2, 0]}, {'pos': [2, 0, 1, 0, 1, 0]}, {'pos': [2, 0, 1, 0, 1, 1]}, {
+             'pos': [2, 0, 1, 0, 1, 2]
+         }, {'pos': [2, 0, 1, 0, 0, 2]}, {'pos': [2, 0, 1, 0, 0, 1]}, {'pos': [2, 0, 1, 0, 0, 0]}, {
+             'pos': [2, 0, 2, 0, 0, 0]
+         }, {'pos': [2, 0, 2, 0, 0, 1]}, {'pos': [2, 0, 2, 0, 0, 2]}, {'pos': [2, 0, 2, 0, 1, 2]}, {
+             'pos': [2, 0, 2, 0, 1, 1]
+         }, {'pos': [2, 0, 2, 0, 1, 0]}, {'pos': [2, 0, 2, 0, 2, 0]}, {'pos': [2, 0, 2, 0, 2, 1]}, {
+             'pos': [2, 0, 2, 0, 2, 2]
+         }, {'pos': [2, 0, 2, 1, 2, 2]}, {'pos': [2, 0, 2, 1, 2, 1]}, {'pos': [2, 0, 2, 1, 2, 0]}, {
+             'pos': [2, 0, 2, 1, 1, 0]
+         }, {'pos': [2, 0, 2, 1, 1, 1]}, {'pos': [2, 0, 2, 1, 1, 2]}, {'pos': [2, 0, 2, 1, 0, 2]}, {
+             'pos': [2, 0, 2, 1, 0, 1]
+         }, {'pos': [2, 0, 2, 1, 0, 0]}, {'pos': [2, 0, 2, 2, 0, 0]}, {'pos': [2, 0, 2, 2, 0, 1]}, {
+             'pos': [2, 0, 2, 2, 0, 2]
+         }, {'pos': [2, 0, 2, 2, 1, 2]}, {'pos': [2, 0, 2, 2, 1, 1]}, {'pos': [2, 0, 2, 2, 1, 0]}, {
+             'pos': [2, 0, 2, 2, 2, 0]
+         }, {'pos': [2, 0, 2, 2, 2, 1]}, {'pos': [2, 0, 2, 2, 2, 2]}, {'pos': [2, 1, 2, 2, 2, 2]}, {
+             'pos': [2, 1, 2, 2, 2, 1]
+         }, {'pos': [2, 1, 2, 2, 2, 0]}, {'pos': [2, 1, 2, 2, 1, 0]}, {'pos': [2, 1, 2, 2, 1, 1]}, {
+             'pos': [2, 1, 2, 2, 1, 2]
+         }, {'pos': [2, 1, 2, 2, 0, 2]}, {'pos': [2, 1, 2, 2, 0, 1]}, {'pos': [2, 1, 2, 2, 0, 0]}, {
+             'pos': [2, 1, 2, 1, 0, 0]
+         }, {'pos': [2, 1, 2, 1, 0, 1]}, {'pos': [2, 1, 2, 1, 0, 2]}, {'pos': [2, 1, 2, 1, 1, 2]}, {
+             'pos': [2, 1, 2, 1, 1, 1]
+         }, {'pos': [2, 1, 2, 1, 1, 0]}, {'pos': [2, 1, 2, 1, 2, 0]}, {'pos': [2, 1, 2, 1, 2, 1]}, {
+             'pos': [2, 1, 2, 1, 2, 2]
+         }, {'pos': [2, 1, 2, 0, 2, 2]}, {'pos': [2, 1, 2, 0, 2, 1]}, {'pos': [2, 1, 2, 0, 2, 0]}, {
+             'pos': [2, 1, 2, 0, 1, 0]
+         }, {'pos': [2, 1, 2, 0, 1, 1]}, {'pos': [2, 1, 2, 0, 1, 2]}, {'pos': [2, 1, 2, 0, 0, 2]}, {
+             'pos': [2, 1, 2, 0, 0, 1]
+         }, {'pos': [2, 1, 2, 0, 0, 0]}, {'pos': [2, 1, 1, 0, 0, 0]}, {'pos': [2, 1, 1, 0, 0, 1]}, {
+             'pos': [2, 1, 1, 0, 0, 2]
+         }, {'pos': [2, 1, 1, 0, 1, 2]}, {'pos': [2, 1, 1, 0, 1, 1]}, {'pos': [2, 1, 1, 0, 1, 0]}, {
+             'pos': [2, 1, 1, 0, 2, 0]
+         }, {'pos': [2, 1, 1, 0, 2, 1]}, {'pos': [2, 1, 1, 0, 2, 2]}, {'pos': [2, 1, 1, 1, 2, 2]}, {
+             'pos': [2, 1, 1, 1, 2, 1]
+         }, {'pos': [2, 1, 1, 1, 2, 0]}, {'pos': [2, 1, 1, 1, 1, 0]}, {'pos': [2, 1, 1, 1, 1, 1]}, {
+             'pos': [2, 1, 1, 1, 1, 2]
+         }, {'pos': [2, 1, 1, 1, 0, 2]}, {'pos': [2, 1, 1, 1, 0, 1]}, {'pos': [2, 1, 1, 1, 0, 0]}, {
+             'pos': [2, 1, 1, 2, 0, 0]
+         }, {'pos': [2, 1, 1, 2, 0, 1]}, {'pos': [2, 1, 1, 2, 0, 2]}, {'pos': [2, 1, 1, 2, 1, 2]}, {
+             'pos': [2, 1, 1, 2, 1, 1]
+         }, {'pos': [2, 1, 1, 2, 1, 0]}, {'pos': [2, 1, 1, 2, 2, 0]}, {'pos': [2, 1, 1, 2, 2, 1]}, {
+             'pos': [2, 1, 1, 2, 2, 2]
+         }, {'pos': [2, 1, 0, 2, 2, 2]}, {'pos': [2, 1, 0, 2, 2, 1]}, {'pos': [2, 1, 0, 2, 2, 0]}, {
+             'pos': [2, 1, 0, 2, 1, 0]
+         }, {'pos': [2, 1, 0, 2, 1, 1]}, {'pos': [2, 1, 0, 2, 1, 2]}, {'pos': [2, 1, 0, 2, 0, 2]}, {
+             'pos': [2, 1, 0, 2, 0, 1]
+         }, {'pos': [2, 1, 0, 2, 0, 0]}, {'pos': [2, 1, 0, 1, 0, 0]}, {'pos': [2, 1, 0, 1, 0, 1]}, {
+             'pos': [2, 1, 0, 1, 0, 2]
+         }, {'pos': [2, 1, 0, 1, 1, 2]}, {'pos': [2, 1, 0, 1, 1, 1]}, {'pos': [2, 1, 0, 1, 1, 0]}, {
+             'pos': [2, 1, 0, 1, 2, 0]
+         }, {'pos': [2, 1, 0, 1, 2, 1]}, {'pos': [2, 1, 0, 1, 2, 2]}, {'pos': [2, 1, 0, 0, 2, 2]}, {
+             'pos': [2, 1, 0, 0, 2, 1]
+         }, {'pos': [2, 1, 0, 0, 2, 0]}, {'pos': [2, 1, 0, 0, 1, 0]}, {'pos': [2, 1, 0, 0, 1, 1]}, {
+             'pos': [2, 1, 0, 0, 1, 2]
+         }, {'pos': [2, 1, 0, 0, 0, 2]}, {'pos': [2, 1, 0, 0, 0, 1]}, {'pos': [2, 1, 0, 0, 0, 0]}, {
+             'pos': [2, 2, 0, 0, 0, 0]
+         }, {'pos': [2, 2, 0, 0, 0, 1]}, {'pos': [2, 2, 0, 0, 0, 2]}, {'pos': [2, 2, 0, 0, 1, 2]}, {
+             'pos': [2, 2, 0, 0, 1, 1]
+         }, {'pos': [2, 2, 0, 0, 1, 0]}, {'pos': [2, 2, 0, 0, 2, 0]}, {'pos': [2, 2, 0, 0, 2, 1]}, {
+             'pos': [2, 2, 0, 0, 2, 2]
+         }, {'pos': [2, 2, 0, 1, 2, 2]}, {'pos': [2, 2, 0, 1, 2, 1]}, {'pos': [2, 2, 0, 1, 2, 0]}, {
+             'pos': [2, 2, 0, 1, 1, 0]
+         }, {'pos': [2, 2, 0, 1, 1, 1]}, {'pos': [2, 2, 0, 1, 1, 2]}, {'pos': [2, 2, 0, 1, 0, 2]}, {
+             'pos': [2, 2, 0, 1, 0, 1]
+         }, {'pos': [2, 2, 0, 1, 0, 0]}, {'pos': [2, 2, 0, 2, 0, 0]}, {'pos': [2, 2, 0, 2, 0, 1]}, {
+             'pos': [2, 2, 0, 2, 0, 2]
+         }, {'pos': [2, 2, 0, 2, 1, 2]}, {'pos': [2, 2, 0, 2, 1, 1]}, {'pos': [2, 2, 0, 2, 1, 0]}, {
+             'pos': [2, 2, 0, 2, 2, 0]
+         }, {'pos': [2, 2, 0, 2, 2, 1]}, {'pos': [2, 2, 0, 2, 2, 2]}, {'pos': [2, 2, 1, 2, 2, 2]}, {
+             'pos': [2, 2, 1, 2, 2, 1]
+         }, {'pos': [2, 2, 1, 2, 2, 0]}, {'pos': [2, 2, 1, 2, 1, 0]}, {'pos': [2, 2, 1, 2, 1, 1]}, {
+             'pos': [2, 2, 1, 2, 1, 2]
+         }, {'pos': [2, 2, 1, 2, 0, 2]}, {'pos': [2, 2, 1, 2, 0, 1]}, {'pos': [2, 2, 1, 2, 0, 0]}, {
+             'pos': [2, 2, 1, 1, 0, 0]
+         }, {'pos': [2, 2, 1, 1, 0, 1]}, {'pos': [2, 2, 1, 1, 0, 2]}, {'pos': [2, 2, 1, 1, 1, 2]}, {
+             'pos': [2, 2, 1, 1, 1, 1]
+         }, {'pos': [2, 2, 1, 1, 1, 0]}, {'pos': [2, 2, 1, 1, 2, 0]}, {'pos': [2, 2, 1, 1, 2, 1]}, {
+             'pos': [2, 2, 1, 1, 2, 2]
+         }, {'pos': [2, 2, 1, 0, 2, 2]}, {'pos': [2, 2, 1, 0, 2, 1]}, {'pos': [2, 2, 1, 0, 2, 0]}, {
+             'pos': [2, 2, 1, 0, 1, 0]
+         }, {'pos': [2, 2, 1, 0, 1, 1]}, {'pos': [2, 2, 1, 0, 1, 2]}, {'pos': [2, 2, 1, 0, 0, 2]}, {
+             'pos': [2, 2, 1, 0, 0, 1]
+         }, {'pos': [2, 2, 1, 0, 0, 0]}, {'pos': [2, 2, 2, 0, 0, 0]}, {'pos': [2, 2, 2, 0, 0, 1]}, {
+             'pos': [2, 2, 2, 0, 0, 2]
+         }, {'pos': [2, 2, 2, 0, 1, 2]}, {'pos': [2, 2, 2, 0, 1, 1]}, {'pos': [2, 2, 2, 0, 1, 0]}, {
+             'pos': [2, 2, 2, 0, 2, 0]
+         }, {'pos': [2, 2, 2, 0, 2, 1]}, {'pos': [2, 2, 2, 0, 2, 2]}, {'pos': [2, 2, 2, 1, 2, 2]}, {
+             'pos': [2, 2, 2, 1, 2, 1]
+         }, {'pos': [2, 2, 2, 1, 2, 0]}, {'pos': [2, 2, 2, 1, 1, 0]}, {'pos': [2, 2, 2, 1, 1, 1]}, {
+             'pos': [2, 2, 2, 1, 1, 2]
+         }, {'pos': [2, 2, 2, 1, 0, 2]}, {'pos': [2, 2, 2, 1, 0, 1]}, {'pos': [2, 2, 2, 1, 0, 0]}, {
+             'pos': [2, 2, 2, 2, 0, 0]
+         }, {'pos': [2, 2, 2, 2, 0, 1]}, {'pos': [2, 2, 2, 2, 0, 2]}, {'pos': [2, 2, 2, 2, 1, 2]}, {
+             'pos': [2, 2, 2, 2, 1, 1]
+         }, {'pos': [2, 2, 2, 2, 1, 0]}, {'pos': [2, 2, 2, 2, 2,
+                                                  0]}, {'pos': [2, 2, 2, 2, 2,
+                                                                1]}, {'pos': [2, 2, 2, 2, 2, 2]}]
+    }, ""
 
-    if questionNum == 12 and subPass == 3:
-        return {
-            'points': [{
-                'x': 0.5,
-                'y': 2.5
-            }, {
-                'x': 1.5,
-                'y': 2.5
-            }, {
-                'x': 2.5,
-                'y': 2.5
-            }, {
-                'x': 3.5,
-                'y': 2.5
-            }, {
-                'x': 4.5,
-                'y': 2.5
-            }, {
-                'x': 5.5,
-                'y': 2.5
-            }, {
-                'x': 6.5,
-                'y': 2.5
-            }, {
-                'x': 7.5,
-                'y': 2.5
-            }, {
-                'x': 8.5,
-                'y': 2.5
-            }, {
-                'x': 9.5,
-                'y': 2.5
-            }, {
-                'x': 9.5,
-                'y': 3.5
-            }, {
-                'x': 8.5,
-                'y': 3.5
-            }, {
-                'x': 7.5,
-                'y': 3.5
-            }, {
-                'x': 6.5,
-                'y': 3.5
-            }, {
-                'x': 5.5,
-                'y': 3.5
-            }, {
-                'x': 4.5,
-                'y': 3.5
-            }, {
-                'x': 3.5,
-                'y': 3.5
-            }, {
-                'x': 2.5,
-                'y': 3.5
-            }, {
-                'x': 1.5,
-                'y': 3.5
-            }, {
-                'x': 1.5,
-                'y': 4.5
-            }, {
-                'x': 2.5,
-                'y': 4.5
-            }, {
-                'x': 3.5,
-                'y': 4.5
-            }, {
-                'x': 4.5,
-                'y': 4.5
-            }, {
-                'x': 5.5,
-                'y': 4.5
-            }, {
-                'x': 6.5,
-                'y': 4.5
-            }, {
-                'x': 7.5,
-                'y': 4.5
-            }, {
-                'x': 8.5,
-                'y': 4.5
-            }, {
-                'x': 9.5,
-                'y': 4.5
-            }, {
-                'x': 9.5,
-                'y': 5.5
-            }, {
-                'x': 8.5,
-                'y': 5.5
-            }, {
-                'x': 7.5,
-                'y': 5.5
-            }, {
-                'x': 6.5,
-                'y': 5.5
-            }, {
-                'x': 5.5,
-                'y': 5.5
-            }, {
-                'x': 4.5,
-                'y': 5.5
-            }, {
-                'x': 3.5,
-                'y': 5.5
-            }, {
-                'x': 2.5,
-                'y': 5.5
-            }, {
-                'x': 1.5,
-                'y': 5.5
-            }, {
-                'x': 1.5,
-                'y': 6.5
-            }, {
-                'x': 2.5,
-                'y': 6.5
-            }, {
-                'x': 3.5,
-                'y': 6.5
-            }, {
-                'x': 4.5,
-                'y': 6.5
-            }, {
-                'x': 5.5,
-                'y': 6.5
-            }, {
-                'x': 6.5,
-                'y': 6.5
-            }, {
-                'x': 7.5,
-                'y': 6.5
-            }, {
-                'x': 8.5,
-                'y': 6.5
-            }, {
-                'x': 9.5,
-                'y': 6.5
-            }, {
-                'x': 9.5,
-                'y': 7.5
-            }, {
-                'x': 8.5,
-                'y': 7.5
-            }, {
-                'x': 7.5,
-                'y': 7.5
-            }, {
-                'x': 6.5,
-                'y': 7.5
-            }, {
-                'x': 5.5,
-                'y': 7.5
-            }, {
-                'x': 4.5,
-                'y': 7.5
-            }, {
-                'x': 3.5,
-                'y': 7.5
-            }, {
-                'x': 2.5,
-                'y': 7.5
-            }, {
-                'x': 1.5,
-                'y': 7.5
-            }, {
-                'x': 0.5,
-                'y': 7.5
-            }, {
-                'x': 0.5,
-                'y': 6.5
-            }, {
-                'x': 0.5,
-                'y': 5.5
-            }, {
-                'x': 0.5,
-                'y': 4.5
-            }, {
-                'x': 0.5,
-                'y': 3.5
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 12 and subPass == 0:
+    return {"points": [{"x": 0.0, "y": 0.0}, {"x": 1.0, "y": 0.0},
+                       {"x": 0.5, "y": 0.8660254038}]}, "Placebo thinking... hmmm..."
 
-    if questionNum == 12 and subPass == 5:
-        return {
-            'points': [{
-                'x': 0,
-                'y': 0
-            }, {
-                'x': 1,
-                'y': 0
-            }, {
-                'x': 2,
-                'y': 0
-            }, {
-                'x': 3,
-                'y': 0
-            }, {
-                'x': 4,
-                'y': 0
-            }, {
-                'x': 5,
-                'y': 0
-            }, {
-                'x': 6,
-                'y': 0
-            }, {
-                'x': 7,
-                'y': 0
-            }, {
-                'x': 8,
-                'y': 0
-            }, {
-                'x': 9,
-                'y': 0
-            }, {
-                'x': 10,
-                'y': 0
-            }, {
-                'x': 11,
-                'y': 0
-            }, {
-                'x': 12,
-                'y': 0
-            }, {
-                'x': 13,
-                'y': 0
-            }, {
-                'x': 14,
-                'y': 0
-            }, {
-                'x': 15,
-                'y': 0
-            }, {
-                'x': 16,
-                'y': 0
-            }, {
-                'x': 17,
-                'y': 0
-            }, {
-                'x': 18,
-                'y': 0
-            }, {
-                'x': 19,
-                'y': 0
-            }, {
-                'x': 20,
-                'y': 0
-            }, {
-                'x': 21,
-                'y': 0
-            }, {
-                'x': 22,
-                'y': 0
-            }, {
-                'x': 23,
-                'y': 0
-            }, {
-                'x': 24,
-                'y': 0
-            }, {
-                'x': 25,
-                'y': 0
-            }, {
-                'x': 26,
-                'y': 0
-            }, {
-                'x': 27,
-                'y': 0
-            }, {
-                'x': 28,
-                'y': 0
-            }, {
-                'x': 29,
-                'y': 0
-            }, {
-                'x': 29,
-                'y': 1
-            }, {
-                'x': 28,
-                'y': 1
-            }, {
-                'x': 27,
-                'y': 1
-            }, {
-                'x': 26,
-                'y': 1
-            }, {
-                'x': 25,
-                'y': 1
-            }, {
-                'x': 24,
-                'y': 1
-            }, {
-                'x': 23,
-                'y': 1
-            }, {
-                'x': 22,
-                'y': 1
-            }, {
-                'x': 21,
-                'y': 1
-            }, {
-                'x': 20,
-                'y': 1
-            }, {
-                'x': 19,
-                'y': 1
-            }, {
-                'x': 18,
-                'y': 1
-            }, {
-                'x': 17,
-                'y': 1
-            }, {
-                'x': 16,
-                'y': 1
-            }, {
-                'x': 15,
-                'y': 1
-            }, {
-                'x': 14,
-                'y': 1
-            }, {
-                'x': 13,
-                'y': 1
-            }, {
-                'x': 12,
-                'y': 1
-            }, {
-                'x': 11,
-                'y': 1
-            }, {
-                'x': 10,
-                'y': 1
-            }, {
-                'x': 9,
-                'y': 1
-            }, {
-                'x': 8,
-                'y': 1
-            }, {
-                'x': 7,
-                'y': 1
-            }, {
-                'x': 6,
-                'y': 1
-            }, {
-                'x': 5,
-                'y': 1
-            }, {
-                'x': 4,
-                'y': 1
-            }, {
-                'x': 3,
-                'y': 1
-            }, {
-                'x': 2,
-                'y': 1
-            }, {
-                'x': 1,
-                'y': 1
-            }, {
-                'x': 1,
-                'y': 2
-            }, {
-                'x': 2,
-                'y': 2
-            }, {
-                'x': 3,
-                'y': 2
-            }, {
-                'x': 4,
-                'y': 2
-            }, {
-                'x': 5,
-                'y': 2
-            }, {
-                'x': 6,
-                'y': 2
-            }, {
-                'x': 7,
-                'y': 2
-            }, {
-                'x': 8,
-                'y': 2
-            }, {
-                'x': 9,
-                'y': 2
-            }, {
-                'x': 10,
-                'y': 2
-            }, {
-                'x': 11,
-                'y': 2
-            }, {
-                'x': 12,
-                'y': 2
-            }, {
-                'x': 13,
-                'y': 2
-            }, {
-                'x': 14,
-                'y': 2
-            }, {
-                'x': 15,
-                'y': 2
-            }, {
-                'x': 16,
-                'y': 2
-            }, {
-                'x': 17,
-                'y': 2
-            }, {
-                'x': 18,
-                'y': 2
-            }, {
-                'x': 19,
-                'y': 2
-            }, {
-                'x': 20,
-                'y': 2
-            }, {
-                'x': 21,
-                'y': 2
-            }, {
-                'x': 22,
-                'y': 2
-            }, {
-                'x': 23,
-                'y': 2
-            }, {
-                'x': 24,
-                'y': 2
-            }, {
-                'x': 25,
-                'y': 2
-            }, {
-                'x': 26,
-                'y': 2
-            }, {
-                'x': 27,
-                'y': 2
-            }, {
-                'x': 28,
-                'y': 2
-            }, {
-                'x': 29,
-                'y': 2
-            }, {
-                'x': 29,
-                'y': 3
-            }, {
-                'x': 28,
-                'y': 3
-            }, {
-                'x': 27,
-                'y': 3
-            }, {
-                'x': 26,
-                'y': 3
-            }, {
-                'x': 25,
-                'y': 3
-            }, {
-                'x': 24,
-                'y': 3
-            }, {
-                'x': 23,
-                'y': 3
-            }, {
-                'x': 22,
-                'y': 3
-            }, {
-                'x': 21,
-                'y': 3
-            }, {
-                'x': 20,
-                'y': 3
-            }, {
-                'x': 19,
-                'y': 3
-            }, {
-                'x': 18,
-                'y': 3
-            }, {
-                'x': 17,
-                'y': 3
-            }, {
-                'x': 16,
-                'y': 3
-            }, {
-                'x': 15,
-                'y': 3
-            }, {
-                'x': 14,
-                'y': 3
-            }, {
-                'x': 13,
-                'y': 3
-            }, {
-                'x': 12,
-                'y': 3
-            }, {
-                'x': 11,
-                'y': 3
-            }, {
-                'x': 10,
-                'y': 3
-            }, {
-                'x': 9,
-                'y': 3
-            }, {
-                'x': 8,
-                'y': 3
-            }, {
-                'x': 7,
-                'y': 3
-            }, {
-                'x': 6,
-                'y': 3
-            }, {
-                'x': 5,
-                'y': 3
-            }, {
-                'x': 4,
-                'y': 3
-            }, {
-                'x': 3,
-                'y': 3
-            }, {
-                'x': 2,
-                'y': 3
-            }, {
-                'x': 1,
-                'y': 3
-            }, {
-                'x': 1,
-                'y': 4
-            }, {
-                'x': 2,
-                'y': 4
-            }, {
-                'x': 3,
-                'y': 4
-            }, {
-                'x': 4,
-                'y': 4
-            }, {
-                'x': 5,
-                'y': 4
-            }, {
-                'x': 6,
-                'y': 4
-            }, {
-                'x': 7,
-                'y': 4
-            }, {
-                'x': 8,
-                'y': 4
-            }, {
-                'x': 9,
-                'y': 4
-            }, {
-                'x': 10,
-                'y': 4
-            }, {
-                'x': 11,
-                'y': 4
-            }, {
-                'x': 12,
-                'y': 4
-            }, {
-                'x': 13,
-                'y': 4
-            }, {
-                'x': 14,
-                'y': 4
-            }, {
-                'x': 15,
-                'y': 4
-            }, {
-                'x': 16,
-                'y': 4
-            }, {
-                'x': 17,
-                'y': 4
-            }, {
-                'x': 18,
-                'y': 4
-            }, {
-                'x': 19,
-                'y': 4
-            }, {
-                'x': 20,
-                'y': 4
-            }, {
-                'x': 21,
-                'y': 4
-            }, {
-                'x': 22,
-                'y': 4
-            }, {
-                'x': 23,
-                'y': 4
-            }, {
-                'x': 24,
-                'y': 4
-            }, {
-                'x': 25,
-                'y': 4
-            }, {
-                'x': 26,
-                'y': 4
-            }, {
-                'x': 27,
-                'y': 4
-            }, {
-                'x': 28,
-                'y': 4
-            }, {
-                'x': 29,
-                'y': 4
-            }, {
-                'x': 29,
-                'y': 5
-            }, {
-                'x': 28,
-                'y': 5
-            }, {
-                'x': 27,
-                'y': 5
-            }, {
-                'x': 26,
-                'y': 5
-            }, {
-                'x': 25,
-                'y': 5
-            }, {
-                'x': 24,
-                'y': 5
-            }, {
-                'x': 23,
-                'y': 5
-            }, {
-                'x': 22,
-                'y': 5
-            }, {
-                'x': 21,
-                'y': 5
-            }, {
-                'x': 20,
-                'y': 5
-            }, {
-                'x': 19,
-                'y': 5
-            }, {
-                'x': 18,
-                'y': 5
-            }, {
-                'x': 17,
-                'y': 5
-            }, {
-                'x': 16,
-                'y': 5
-            }, {
-                'x': 15,
-                'y': 5
-            }, {
-                'x': 14,
-                'y': 5
-            }, {
-                'x': 13,
-                'y': 5
-            }, {
-                'x': 12,
-                'y': 5
-            }, {
-                'x': 11,
-                'y': 5
-            }, {
-                'x': 10,
-                'y': 5
-            }, {
-                'x': 9,
-                'y': 5
-            }, {
-                'x': 8,
-                'y': 5
-            }, {
-                'x': 7,
-                'y': 5
-            }, {
-                'x': 6,
-                'y': 5
-            }, {
-                'x': 5,
-                'y': 5
-            }, {
-                'x': 4,
-                'y': 5
-            }, {
-                'x': 3,
-                'y': 5
-            }, {
-                'x': 2,
-                'y': 5
-            }, {
-                'x': 1,
-                'y': 5
-            }, {
-                'x': 1,
-                'y': 6
-            }, {
-                'x': 2,
-                'y': 6
-            }, {
-                'x': 3,
-                'y': 6
-            }, {
-                'x': 4,
-                'y': 6
-            }, {
-                'x': 5,
-                'y': 6
-            }, {
-                'x': 6,
-                'y': 6
-            }, {
-                'x': 7,
-                'y': 6
-            }, {
-                'x': 8,
-                'y': 6
-            }, {
-                'x': 9,
-                'y': 6
-            }, {
-                'x': 10,
-                'y': 6
-            }, {
-                'x': 11,
-                'y': 6
-            }, {
-                'x': 12,
-                'y': 6
-            }, {
-                'x': 13,
-                'y': 6
-            }, {
-                'x': 14,
-                'y': 6
-            }, {
-                'x': 15,
-                'y': 6
-            }, {
-                'x': 16,
-                'y': 6
-            }, {
-                'x': 17,
-                'y': 6
-            }, {
-                'x': 18,
-                'y': 6
-            }, {
-                'x': 19,
-                'y': 6
-            }, {
-                'x': 20,
-                'y': 6
-            }, {
-                'x': 21,
-                'y': 6
-            }, {
-                'x': 22,
-                'y': 6
-            }, {
-                'x': 23,
-                'y': 6
-            }, {
-                'x': 24,
-                'y': 6
-            }, {
-                'x': 25,
-                'y': 6
-            }, {
-                'x': 26,
-                'y': 6
-            }, {
-                'x': 27,
-                'y': 6
-            }, {
-                'x': 28,
-                'y': 6
-            }, {
-                'x': 29,
-                'y': 6
-            }, {
-                'x': 29,
-                'y': 7
-            }, {
-                'x': 28,
-                'y': 7
-            }, {
-                'x': 27,
-                'y': 7
-            }, {
-                'x': 26,
-                'y': 7
-            }, {
-                'x': 25,
-                'y': 7
-            }, {
-                'x': 24,
-                'y': 7
-            }, {
-                'x': 23,
-                'y': 7
-            }, {
-                'x': 22,
-                'y': 7
-            }, {
-                'x': 21,
-                'y': 7
-            }, {
-                'x': 20,
-                'y': 7
-            }, {
-                'x': 19,
-                'y': 7
-            }, {
-                'x': 18,
-                'y': 7
-            }, {
-                'x': 17,
-                'y': 7
-            }, {
-                'x': 16,
-                'y': 7
-            }, {
-                'x': 15,
-                'y': 7
-            }, {
-                'x': 14,
-                'y': 7
-            }, {
-                'x': 13,
-                'y': 7
-            }, {
-                'x': 12,
-                'y': 7
-            }, {
-                'x': 11,
-                'y': 7
-            }, {
-                'x': 10,
-                'y': 7
-            }, {
-                'x': 9,
-                'y': 7
-            }, {
-                'x': 8,
-                'y': 7
-            }, {
-                'x': 7,
-                'y': 7
-            }, {
-                'x': 6,
-                'y': 7
-            }, {
-                'x': 5,
-                'y': 7
-            }, {
-                'x': 4,
-                'y': 7
-            }, {
-                'x': 3,
-                'y': 7
-            }, {
-                'x': 2,
-                'y': 7
-            }, {
-                'x': 1,
-                'y': 7
-            }, {
-                'x': 1,
-                'y': 8
-            }, {
-                'x': 2,
-                'y': 8
-            }, {
-                'x': 3,
-                'y': 8
-            }, {
-                'x': 4,
-                'y': 8
-            }, {
-                'x': 5,
-                'y': 8
-            }, {
-                'x': 6,
-                'y': 8
-            }, {
-                'x': 7,
-                'y': 8
-            }, {
-                'x': 8,
-                'y': 8
-            }, {
-                'x': 9,
-                'y': 8
-            }, {
-                'x': 10,
-                'y': 8
-            }, {
-                'x': 11,
-                'y': 8
-            }, {
-                'x': 12,
-                'y': 8
-            }, {
-                'x': 13,
-                'y': 8
-            }, {
-                'x': 14,
-                'y': 8
-            }, {
-                'x': 15,
-                'y': 8
-            }, {
-                'x': 16,
-                'y': 8
-            }, {
-                'x': 17,
-                'y': 8
-            }, {
-                'x': 18,
-                'y': 8
-            }, {
-                'x': 19,
-                'y': 8
-            }, {
-                'x': 20,
-                'y': 8
-            }, {
-                'x': 21,
-                'y': 8
-            }, {
-                'x': 22,
-                'y': 8
-            }, {
-                'x': 23,
-                'y': 8
-            }, {
-                'x': 24,
-                'y': 8
-            }, {
-                'x': 25,
-                'y': 8
-            }, {
-                'x': 26,
-                'y': 8
-            }, {
-                'x': 27,
-                'y': 8
-            }, {
-                'x': 28,
-                'y': 8
-            }, {
-                'x': 29,
-                'y': 8
-            }, {
-                'x': 29,
-                'y': 9
-            }, {
-                'x': 28,
-                'y': 9
-            }, {
-                'x': 27,
-                'y': 9
-            }, {
-                'x': 26,
-                'y': 9
-            }, {
-                'x': 25,
-                'y': 9
-            }, {
-                'x': 24,
-                'y': 9
-            }, {
-                'x': 23,
-                'y': 9
-            }, {
-                'x': 22,
-                'y': 9
-            }, {
-                'x': 21,
-                'y': 9
-            }, {
-                'x': 20,
-                'y': 9
-            }, {
-                'x': 19,
-                'y': 9
-            }, {
-                'x': 18,
-                'y': 9
-            }, {
-                'x': 17,
-                'y': 9
-            }, {
-                'x': 16,
-                'y': 9
-            }, {
-                'x': 15,
-                'y': 9
-            }, {
-                'x': 14,
-                'y': 9
-            }, {
-                'x': 13,
-                'y': 9
-            }, {
-                'x': 12,
-                'y': 9
-            }, {
-                'x': 11,
-                'y': 9
-            }, {
-                'x': 10,
-                'y': 9
-            }, {
-                'x': 9,
-                'y': 9
-            }, {
-                'x': 8,
-                'y': 9
-            }, {
-                'x': 7,
-                'y': 9
-            }, {
-                'x': 6,
-                'y': 9
-            }, {
-                'x': 5,
-                'y': 9
-            }, {
-                'x': 4,
-                'y': 9
-            }, {
-                'x': 3,
-                'y': 9
-            }, {
-                'x': 2,
-                'y': 9
-            }, {
-                'x': 1,
-                'y': 9
-            }, {
-                'x': 1,
-                'y': 10
-            }, {
-                'x': 2,
-                'y': 10
-            }, {
-                'x': 3,
-                'y': 10
-            }, {
-                'x': 4,
-                'y': 10
-            }, {
-                'x': 5,
-                'y': 10
-            }, {
-                'x': 6,
-                'y': 10
-            }, {
-                'x': 7,
-                'y': 10
-            }, {
-                'x': 8,
-                'y': 10
-            }, {
-                'x': 9,
-                'y': 10
-            }, {
-                'x': 10,
-                'y': 10
-            }, {
-                'x': 11,
-                'y': 10
-            }, {
-                'x': 12,
-                'y': 10
-            }, {
-                'x': 13,
-                'y': 10
-            }, {
-                'x': 14,
-                'y': 10
-            }, {
-                'x': 15,
-                'y': 10
-            }, {
-                'x': 16,
-                'y': 10
-            }, {
-                'x': 17,
-                'y': 10
-            }, {
-                'x': 18,
-                'y': 10
-            }, {
-                'x': 19,
-                'y': 10
-            }, {
-                'x': 20,
-                'y': 10
-            }, {
-                'x': 21,
-                'y': 10
-            }, {
-                'x': 22,
-                'y': 10
-            }, {
-                'x': 23,
-                'y': 10
-            }, {
-                'x': 24,
-                'y': 10
-            }, {
-                'x': 25,
-                'y': 10
-            }, {
-                'x': 26,
-                'y': 10
-            }, {
-                'x': 27,
-                'y': 10
-            }, {
-                'x': 28,
-                'y': 10
-            }, {
-                'x': 29,
-                'y': 10
-            }, {
-                'x': 29,
-                'y': 11
-            }, {
-                'x': 28,
-                'y': 11
-            }, {
-                'x': 27,
-                'y': 11
-            }, {
-                'x': 26,
-                'y': 11
-            }, {
-                'x': 25,
-                'y': 11
-            }, {
-                'x': 24,
-                'y': 11
-            }, {
-                'x': 23,
-                'y': 11
-            }, {
-                'x': 22,
-                'y': 11
-            }, {
-                'x': 21,
-                'y': 11
-            }, {
-                'x': 20,
-                'y': 11
-            }, {
-                'x': 19,
-                'y': 11
-            }, {
-                'x': 18,
-                'y': 11
-            }, {
-                'x': 17,
-                'y': 11
-            }, {
-                'x': 16,
-                'y': 11
-            }, {
-                'x': 15,
-                'y': 11
-            }, {
-                'x': 14,
-                'y': 11
-            }, {
-                'x': 13,
-                'y': 11
-            }, {
-                'x': 12,
-                'y': 11
-            }, {
-                'x': 11,
-                'y': 11
-            }, {
-                'x': 10,
-                'y': 11
-            }, {
-                'x': 9,
-                'y': 11
-            }, {
-                'x': 8,
-                'y': 11
-            }, {
-                'x': 7,
-                'y': 11
-            }, {
-                'x': 6,
-                'y': 11
-            }, {
-                'x': 5,
-                'y': 11
-            }, {
-                'x': 4,
-                'y': 11
-            }, {
-                'x': 3,
-                'y': 11
-            }, {
-                'x': 2,
-                'y': 11
-            }, {
-                'x': 1,
-                'y': 11
-            }, {
-                'x': 1,
-                'y': 12
-            }, {
-                'x': 2,
-                'y': 12
-            }, {
-                'x': 3,
-                'y': 12
-            }, {
-                'x': 4,
-                'y': 12
-            }, {
-                'x': 5,
-                'y': 12
-            }, {
-                'x': 6,
-                'y': 12
-            }, {
-                'x': 7,
-                'y': 12
-            }, {
-                'x': 8,
-                'y': 12
-            }, {
-                'x': 9,
-                'y': 12
-            }, {
-                'x': 10,
-                'y': 12
-            }, {
-                'x': 11,
-                'y': 12
-            }, {
-                'x': 12,
-                'y': 12
-            }, {
-                'x': 13,
-                'y': 12
-            }, {
-                'x': 14,
-                'y': 12
-            }, {
-                'x': 15,
-                'y': 12
-            }, {
-                'x': 16,
-                'y': 12
-            }, {
-                'x': 17,
-                'y': 12
-            }, {
-                'x': 18,
-                'y': 12
-            }, {
-                'x': 19,
-                'y': 12
-            }, {
-                'x': 20,
-                'y': 12
-            }, {
-                'x': 21,
-                'y': 12
-            }, {
-                'x': 22,
-                'y': 12
-            }, {
-                'x': 23,
-                'y': 12
-            }, {
-                'x': 24,
-                'y': 12
-            }, {
-                'x': 25,
-                'y': 12
-            }, {
-                'x': 26,
-                'y': 12
-            }, {
-                'x': 27,
-                'y': 12
-            }, {
-                'x': 28,
-                'y': 12
-            }, {
-                'x': 29,
-                'y': 12
-            }, {
-                'x': 29,
-                'y': 13
-            }, {
-                'x': 28,
-                'y': 13
-            }, {
-                'x': 27,
-                'y': 13
-            }, {
-                'x': 26,
-                'y': 13
-            }, {
-                'x': 25,
-                'y': 13
-            }, {
-                'x': 24,
-                'y': 13
-            }, {
-                'x': 23,
-                'y': 13
-            }, {
-                'x': 22,
-                'y': 13
-            }, {
-                'x': 21,
-                'y': 13
-            }, {
-                'x': 20,
-                'y': 13
-            }, {
-                'x': 19,
-                'y': 13
-            }, {
-                'x': 18,
-                'y': 13
-            }, {
-                'x': 17,
-                'y': 13
-            }, {
-                'x': 16,
-                'y': 13
-            }, {
-                'x': 15,
-                'y': 13
-            }, {
-                'x': 14,
-                'y': 13
-            }, {
-                'x': 13,
-                'y': 13
-            }, {
-                'x': 12,
-                'y': 13
-            }, {
-                'x': 11,
-                'y': 13
-            }, {
-                'x': 10,
-                'y': 13
-            }, {
-                'x': 9,
-                'y': 13
-            }, {
-                'x': 8,
-                'y': 13
-            }, {
-                'x': 7,
-                'y': 13
-            }, {
-                'x': 6,
-                'y': 13
-            }, {
-                'x': 5,
-                'y': 13
-            }, {
-                'x': 4,
-                'y': 13
-            }, {
-                'x': 3,
-                'y': 13
-            }, {
-                'x': 2,
-                'y': 13
-            }, {
-                'x': 1,
-                'y': 13
-            }, {
-                'x': 1,
-                'y': 14
-            }, {
-                'x': 2,
-                'y': 14
-            }, {
-                'x': 3,
-                'y': 14
-            }, {
-                'x': 4,
-                'y': 14
-            }, {
-                'x': 5,
-                'y': 14
-            }, {
-                'x': 6,
-                'y': 14
-            }, {
-                'x': 7,
-                'y': 14
-            }, {
-                'x': 8,
-                'y': 14
-            }, {
-                'x': 9,
-                'y': 14
-            }, {
-                'x': 10,
-                'y': 14
-            }, {
-                'x': 11,
-                'y': 14
-            }, {
-                'x': 12,
-                'y': 14
-            }, {
-                'x': 13,
-                'y': 14
-            }, {
-                'x': 14,
-                'y': 14
-            }, {
-                'x': 15,
-                'y': 14
-            }, {
-                'x': 16,
-                'y': 14
-            }, {
-                'x': 17,
-                'y': 14
-            }, {
-                'x': 18,
-                'y': 14
-            }, {
-                'x': 19,
-                'y': 14
-            }, {
-                'x': 20,
-                'y': 14
-            }, {
-                'x': 21,
-                'y': 14
-            }, {
-                'x': 22,
-                'y': 14
-            }, {
-                'x': 23,
-                'y': 14
-            }, {
-                'x': 24,
-                'y': 14
-            }, {
-                'x': 25,
-                'y': 14
-            }, {
-                'x': 26,
-                'y': 14
-            }, {
-                'x': 27,
-                'y': 14
-            }, {
-                'x': 28,
-                'y': 14
-            }, {
-                'x': 29,
-                'y': 14
-            }, {
-                'x': 29,
-                'y': 15
-            }, {
-                'x': 28,
-                'y': 15
-            }, {
-                'x': 27,
-                'y': 15
-            }, {
-                'x': 26,
-                'y': 15
-            }, {
-                'x': 25,
-                'y': 15
-            }, {
-                'x': 24,
-                'y': 15
-            }, {
-                'x': 23,
-                'y': 15
-            }, {
-                'x': 22,
-                'y': 15
-            }, {
-                'x': 21,
-                'y': 15
-            }, {
-                'x': 20,
-                'y': 15
-            }, {
-                'x': 19,
-                'y': 15
-            }, {
-                'x': 18,
-                'y': 15
-            }, {
-                'x': 17,
-                'y': 15
-            }, {
-                'x': 16,
-                'y': 15
-            }, {
-                'x': 15,
-                'y': 15
-            }, {
-                'x': 14,
-                'y': 15
-            }, {
-                'x': 13,
-                'y': 15
-            }, {
-                'x': 12,
-                'y': 15
-            }, {
-                'x': 11,
-                'y': 15
-            }, {
-                'x': 10,
-                'y': 15
-            }, {
-                'x': 9,
-                'y': 15
-            }, {
-                'x': 8,
-                'y': 15
-            }, {
-                'x': 7,
-                'y': 15
-            }, {
-                'x': 6,
-                'y': 15
-            }, {
-                'x': 5,
-                'y': 15
-            }, {
-                'x': 4,
-                'y': 15
-            }, {
-                'x': 3,
-                'y': 15
-            }, {
-                'x': 2,
-                'y': 15
-            }, {
-                'x': 1,
-                'y': 15
-            }, {
-                'x': 1,
-                'y': 16
-            }, {
-                'x': 2,
-                'y': 16
-            }, {
-                'x': 3,
-                'y': 16
-            }, {
-                'x': 4,
-                'y': 16
-            }, {
-                'x': 5,
-                'y': 16
-            }, {
-                'x': 6,
-                'y': 16
-            }, {
-                'x': 7,
-                'y': 16
-            }, {
-                'x': 8,
-                'y': 16
-            }, {
-                'x': 9,
-                'y': 16
-            }, {
-                'x': 10,
-                'y': 16
-            }, {
-                'x': 11,
-                'y': 16
-            }, {
-                'x': 12,
-                'y': 16
-            }, {
-                'x': 13,
-                'y': 16
-            }, {
-                'x': 14,
-                'y': 16
-            }, {
-                'x': 15,
-                'y': 16
-            }, {
-                'x': 16,
-                'y': 16
-            }, {
-                'x': 17,
-                'y': 16
-            }, {
-                'x': 18,
-                'y': 16
-            }, {
-                'x': 19,
-                'y': 16
-            }, {
-                'x': 20,
-                'y': 16
-            }, {
-                'x': 21,
-                'y': 16
-            }, {
-                'x': 22,
-                'y': 16
-            }, {
-                'x': 23,
-                'y': 16
-            }, {
-                'x': 24,
-                'y': 16
-            }, {
-                'x': 25,
-                'y': 16
-            }, {
-                'x': 26,
-                'y': 16
-            }, {
-                'x': 27,
-                'y': 16
-            }, {
-                'x': 28,
-                'y': 16
-            }, {
-                'x': 29,
-                'y': 16
-            }, {
-                'x': 29,
-                'y': 17
-            }, {
-                'x': 28,
-                'y': 17
-            }, {
-                'x': 27,
-                'y': 17
-            }, {
-                'x': 26,
-                'y': 17
-            }, {
-                'x': 25,
-                'y': 17
-            }, {
-                'x': 24,
-                'y': 17
-            }, {
-                'x': 23,
-                'y': 17
-            }, {
-                'x': 22,
-                'y': 17
-            }, {
-                'x': 21,
-                'y': 17
-            }, {
-                'x': 20,
-                'y': 17
-            }, {
-                'x': 19,
-                'y': 17
-            }, {
-                'x': 18,
-                'y': 17
-            }, {
-                'x': 17,
-                'y': 17
-            }, {
-                'x': 16,
-                'y': 17
-            }, {
-                'x': 15,
-                'y': 17
-            }, {
-                'x': 14,
-                'y': 17
-            }, {
-                'x': 13,
-                'y': 17
-            }, {
-                'x': 12,
-                'y': 17
-            }, {
-                'x': 11,
-                'y': 17
-            }, {
-                'x': 10,
-                'y': 17
-            }, {
-                'x': 9,
-                'y': 17
-            }, {
-                'x': 8,
-                'y': 17
-            }, {
-                'x': 7,
-                'y': 17
-            }, {
-                'x': 6,
-                'y': 17
-            }, {
-                'x': 5,
-                'y': 17
-            }, {
-                'x': 4,
-                'y': 17
-            }, {
-                'x': 3,
-                'y': 17
-            }, {
-                'x': 2,
-                'y': 17
-            }, {
-                'x': 1,
-                'y': 17
-            }, {
-                'x': 1,
-                'y': 18
-            }, {
-                'x': 2,
-                'y': 18
-            }, {
-                'x': 3,
-                'y': 18
-            }, {
-                'x': 4,
-                'y': 18
-            }, {
-                'x': 5,
-                'y': 18
-            }, {
-                'x': 6,
-                'y': 18
-            }, {
-                'x': 7,
-                'y': 18
-            }, {
-                'x': 8,
-                'y': 18
-            }, {
-                'x': 9,
-                'y': 18
-            }, {
-                'x': 10,
-                'y': 18
-            }, {
-                'x': 11,
-                'y': 18
-            }, {
-                'x': 12,
-                'y': 18
-            }, {
-                'x': 13,
-                'y': 18
-            }, {
-                'x': 14,
-                'y': 18
-            }, {
-                'x': 15,
-                'y': 18
-            }, {
-                'x': 16,
-                'y': 18
-            }, {
-                'x': 17,
-                'y': 18
-            }, {
-                'x': 18,
-                'y': 18
-            }, {
-                'x': 19,
-                'y': 18
-            }, {
-                'x': 20,
-                'y': 18
-            }, {
-                'x': 21,
-                'y': 18
-            }, {
-                'x': 22,
-                'y': 18
-            }, {
-                'x': 23,
-                'y': 18
-            }, {
-                'x': 24,
-                'y': 18
-            }, {
-                'x': 25,
-                'y': 18
-            }, {
-                'x': 26,
-                'y': 18
-            }, {
-                'x': 27,
-                'y': 18
-            }, {
-                'x': 28,
-                'y': 18
-            }, {
-                'x': 29,
-                'y': 18
-            }, {
-                'x': 29,
-                'y': 19
-            }, {
-                'x': 28,
-                'y': 19
-            }, {
-                'x': 27,
-                'y': 19
-            }, {
-                'x': 26,
-                'y': 19
-            }, {
-                'x': 25,
-                'y': 19
-            }, {
-                'x': 24,
-                'y': 19
-            }, {
-                'x': 23,
-                'y': 19
-            }, {
-                'x': 22,
-                'y': 19
-            }, {
-                'x': 21,
-                'y': 19
-            }, {
-                'x': 20,
-                'y': 19
-            }, {
-                'x': 19,
-                'y': 19
-            }, {
-                'x': 18,
-                'y': 19
-            }, {
-                'x': 17,
-                'y': 19
-            }, {
-                'x': 16,
-                'y': 19
-            }, {
-                'x': 15,
-                'y': 19
-            }, {
-                'x': 14,
-                'y': 19
-            }, {
-                'x': 13,
-                'y': 19
-            }, {
-                'x': 12,
-                'y': 19
-            }, {
-                'x': 11,
-                'y': 19
-            }, {
-                'x': 10,
-                'y': 19
-            }, {
-                'x': 9,
-                'y': 19
-            }, {
-                'x': 8,
-                'y': 19
-            }, {
-                'x': 7,
-                'y': 19
-            }, {
-                'x': 6,
-                'y': 19
-            }, {
-                'x': 5,
-                'y': 19
-            }, {
-                'x': 4,
-                'y': 19
-            }, {
-                'x': 3,
-                'y': 19
-            }, {
-                'x': 2,
-                'y': 19
-            }, {
-                'x': 1,
-                'y': 19
-            }, {
-                'x': 0,
-                'y': 19
-            }, {
-                'x': 0,
-                'y': 18
-            }, {
-                'x': 0,
-                'y': 17
-            }, {
-                'x': 0,
-                'y': 16
-            }, {
-                'x': 0,
-                'y': 15
-            }, {
-                'x': 0,
-                'y': 14
-            }, {
-                'x': 0,
-                'y': 13
-            }, {
-                'x': 0,
-                'y': 12
-            }, {
-                'x': 0,
-                'y': 11
-            }, {
-                'x': 0,
-                'y': 10
-            }, {
-                'x': 0,
-                'y': 9
-            }, {
-                'x': 0,
-                'y': 8
-            }, {
-                'x': 0,
-                'y': 7
-            }, {
-                'x': 0,
-                'y': 6
-            }, {
-                'x': 0,
-                'y': 5
-            }, {
-                'x': 0,
-                'y': 4
-            }, {
-                'x': 0,
-                'y': 3
-            }, {
-                'x': 0,
-                'y': 2
-            }, {
-                'x': 0,
-                'y': 1
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 12 and subPass == 1:
+    return {
+        'points': [{'x': 0, 'y': 0}, {'x': 1, 'y': 0}, {'x': 2, 'y': 0}, {'x': 3, 'y': 0},
+                   {'x': 3, 'y': 1}, {'x': 2, 'y': 1}, {'x': 1, 'y': 1}, {'x': 1, 'y': 2},
+                   {'x': 2, 'y': 2}, {'x': 3, 'y': 2}, {'x': 3, 'y': 3}, {'x': 2, 'y': 3},
+                   {'x': 1, 'y': 3}, {'x': 0, 'y': 3}, {'x': 0, 'y': 2}, {'x': 0, 'y': 1}]
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 13:
-        import numpy as np
-        peopleCounts = [4, 20, 40, 80, 150, 200]
-        peopleCount = peopleCounts[subPass]
+  if questionNum == 12 and subPass == 3:
+    return {
+        'points':
+        [{'x': 0.5, 'y': 2.5}, {'x': 1.5, 'y': 2.5}, {'x': 2.5, 'y': 2.5}, {'x': 3.5, 'y': 2.5},
+         {'x': 4.5, 'y': 2.5}, {'x': 5.5, 'y': 2.5}, {'x': 6.5, 'y': 2.5}, {'x': 7.5, 'y': 2.5},
+         {'x': 8.5, 'y': 2.5}, {'x': 9.5, 'y': 2.5}, {'x': 9.5, 'y': 3.5}, {'x': 8.5, 'y': 3.5},
+         {'x': 7.5, 'y': 3.5}, {'x': 6.5, 'y': 3.5}, {'x': 5.5, 'y': 3.5}, {'x': 4.5, 'y': 3.5},
+         {'x': 3.5, 'y': 3.5}, {'x': 2.5, 'y': 3.5}, {'x': 1.5, 'y': 3.5}, {'x': 1.5, 'y': 4.5},
+         {'x': 2.5, 'y': 4.5}, {'x': 3.5, 'y': 4.5}, {'x': 4.5, 'y': 4.5}, {'x': 5.5, 'y': 4.5},
+         {'x': 6.5, 'y': 4.5}, {'x': 7.5, 'y': 4.5}, {'x': 8.5, 'y': 4.5}, {'x': 9.5, 'y': 4.5},
+         {'x': 9.5, 'y':
+          5.5}, {'x': 8.5, 'y':
+                 5.5}, {'x': 7.5, 'y':
+                        5.5}, {'x': 6.5, 'y':
+                               5.5}, {'x': 5.5, 'y':
+                                      5.5}, {'x': 4.5, 'y':
+                                             5.5}, {'x': 3.5, 'y':
+                                                    5.5}, {'x': 2.5, 'y':
+                                                           5.5}, {'x': 1.5, 'y':
+                                                                  5.5}, {'x': 1.5, 'y':
+                                                                         6.5}, {'x': 2.5, 'y': 6.5},
+         {'x': 3.5, 'y':
+          6.5}, {'x': 4.5, 'y':
+                 6.5}, {'x': 5.5, 'y':
+                        6.5}, {'x': 6.5, 'y':
+                               6.5}, {'x': 7.5, 'y':
+                                      6.5}, {'x': 8.5, 'y':
+                                             6.5}, {'x': 9.5, 'y':
+                                                    6.5}, {'x': 9.5, 'y':
+                                                           7.5}, {'x': 8.5, 'y':
+                                                                  7.5}, {'x': 7.5, 'y':
+                                                                         7.5}, {'x': 6.5, 'y': 7.5},
+         {'x': 5.5, 'y':
+          7.5}, {'x': 4.5, 'y':
+                 7.5}, {'x': 3.5, 'y':
+                        7.5}, {'x': 2.5, 'y':
+                               7.5}, {'x': 1.5, 'y':
+                                      7.5}, {'x': 0.5, 'y':
+                                             7.5}, {'x': 0.5, 'y':
+                                                    6.5}, {'x': 0.5, 'y':
+                                                           5.5}, {'x': 0.5, 'y':
+                                                                  4.5}, {'x': 0.5, 'y': 3.5}]
+    }, "Placebo thinking... hmmm..."
 
-        xDiff = math.sqrt(peopleCount) / 3
-        yDiff = math.sqrt(peopleCount) / 3
-        people = []
-        for i in np.arange(-xDiff, xDiff, 0.6):
-            for j in np.arange(-yDiff, yDiff, 0.6):
-                people.append({"xy": [i - 12, j - 12]})
-                if len(people) == peopleCount:
-                    break
-            if len(people) == peopleCount:
-                break
-        return {"people": people}, "Placebo thinking... hmmm..."
+  if questionNum == 12 and subPass == 5:
+    return {
+        'points':
+        [{'x': 0, 'y': 0}, {'x': 1, 'y': 0}, {'x': 2, 'y': 0}, {'x': 3, 'y': 0}, {'x': 4, 'y': 0},
+         {'x': 5, 'y': 0}, {'x': 6, 'y': 0}, {'x': 7, 'y': 0}, {'x': 8, 'y': 0}, {'x': 9, 'y': 0},
+         {'x': 10, 'y': 0}, {'x': 11, 'y': 0}, {'x': 12, 'y': 0}, {'x': 13, 'y': 0},
+         {'x': 14, 'y': 0}, {'x': 15, 'y': 0}, {'x': 16, 'y': 0}, {'x': 17, 'y':
+                                                                   0}, {'x': 18, 'y':
+                                                                        0}, {'x': 19, 'y':
+                                                                             0}, {'x': 20, 'y': 0},
+         {'x': 21, 'y': 0}, {'x': 22, 'y': 0}, {'x': 23, 'y': 0}, {'x': 24, 'y':
+                                                                   0}, {'x': 25, 'y':
+                                                                        0}, {'x': 26, 'y':
+                                                                             0}, {'x': 27, 'y': 0},
+         {'x': 28, 'y': 0}, {'x': 29, 'y': 0}, {'x': 29, 'y':
+                                                1}, {'x': 28, 'y':
+                                                     1}, {'x': 27, 'y':
+                                                          1}, {'x': 26, 'y':
+                                                               1}, {'x': 25, 'y':
+                                                                    1}, {'x': 24, 'y':
+                                                                         1}, {'x': 23, 'y':
+                                                                              1}, {'x': 22, 'y': 1},
+         {'x': 21, 'y': 1}, {'x': 20, 'y':
+                             1}, {'x': 19, 'y':
+                                  1}, {'x': 18, 'y':
+                                       1}, {'x': 17, 'y':
+                                            1}, {'x': 16, 'y':
+                                                 1}, {'x': 15, 'y':
+                                                      1}, {'x': 14, 'y':
+                                                           1}, {'x': 13, 'y':
+                                                                1}, {'x': 12, 'y':
+                                                                     1}, {'x': 11, 'y':
+                                                                          1}, {'x': 10, 'y':
+                                                                               1}, {'x': 9, 'y': 1},
+         {'x': 8, 'y': 1}, {'x': 7, 'y': 1}, {'x': 6, 'y': 1}, {'x': 5, 'y':
+                                                                1}, {'x': 4, 'y':
+                                                                     1}, {'x': 3, 'y':
+                                                                          1}, {'x': 2, 'y':
+                                                                               1}, {'x': 1, 'y': 1},
+         {'x': 1, 'y':
+          2}, {'x': 2, 'y':
+               2}, {'x': 3, 'y':
+                    2}, {'x': 4, 'y':
+                         2}, {'x': 5, 'y':
+                              2}, {'x': 6, 'y':
+                                   2}, {'x': 7, 'y':
+                                        2}, {'x': 8, 'y':
+                                             2}, {'x': 9, 'y':
+                                                  2}, {'x': 10, 'y':
+                                                       2}, {'x': 11, 'y':
+                                                            2}, {'x': 12, 'y':
+                                                                 2}, {'x': 13, 'y':
+                                                                      2}, {'x': 14, 'y':
+                                                                           2}, {'x': 15, 'y': 2},
+         {'x': 16, 'y':
+          2}, {'x': 17, 'y':
+               2}, {'x': 18, 'y':
+                    2}, {'x': 19, 'y':
+                         2}, {'x': 20, 'y':
+                              2}, {'x': 21, 'y':
+                                   2}, {'x': 22, 'y':
+                                        2}, {'x': 23, 'y':
+                                             2}, {'x': 24, 'y':
+                                                  2}, {'x': 25, 'y':
+                                                       2}, {'x': 26, 'y':
+                                                            2}, {'x': 27, 'y':
+                                                                 2}, {'x': 28, 'y':
+                                                                      2}, {'x': 29, 'y':
+                                                                           2}, {'x': 29, 'y': 3},
+         {'x': 28, 'y':
+          3}, {'x': 27, 'y':
+               3}, {'x': 26, 'y':
+                    3}, {'x': 25, 'y':
+                         3}, {'x': 24, 'y':
+                              3}, {'x': 23, 'y':
+                                   3}, {'x': 22, 'y':
+                                        3}, {'x': 21, 'y':
+                                             3}, {'x': 20, 'y':
+                                                  3}, {'x': 19, 'y':
+                                                       3}, {'x': 18, 'y':
+                                                            3}, {'x': 17, 'y':
+                                                                 3}, {'x': 16, 'y':
+                                                                      3}, {'x': 15, 'y':
+                                                                           3}, {'x': 14, 'y': 3},
+         {'x': 13, 'y':
+          3}, {'x': 12, 'y':
+               3}, {'x': 11, 'y':
+                    3}, {'x': 10, 'y':
+                         3}, {'x': 9, 'y':
+                              3}, {'x': 8, 'y':
+                                   3}, {'x': 7, 'y':
+                                        3}, {'x': 6, 'y':
+                                             3}, {'x': 5, 'y':
+                                                  3}, {'x': 4, 'y':
+                                                       3}, {'x': 3, 'y':
+                                                            3}, {'x': 2, 'y':
+                                                                 3}, {'x': 1, 'y':
+                                                                      3}, {'x': 1, 'y':
+                                                                           4}, {'x': 2, 'y': 4},
+         {'x': 3, 'y': 4}, {'x': 4, 'y': 4}, {'x': 5, 'y': 4}, {'x': 6, 'y': 4}, {'x': 7, 'y': 4}, {
+             'x': 8, 'y': 4
+         }, {'x': 9, 'y':
+             4}, {'x': 10, 'y':
+                  4}, {'x': 11, 'y':
+                       4}, {'x': 12, 'y':
+                            4}, {'x': 13, 'y':
+                                 4}, {'x': 14, 'y':
+                                      4}, {'x': 15, 'y':
+                                           4}, {'x': 16, 'y':
+                                                4}, {'x': 17, 'y':
+                                                     4}, {'x': 18, 'y':
+                                                          4}, {'x': 19, 'y':
+                                                               4}, {'x': 20, 'y':
+                                                                    4}, {'x': 21, 'y':
+                                                                         4}, {'x': 22, 'y':
+                                                                              4}, {'x': 23, 'y': 4},
+         {'x': 24, 'y':
+          4}, {'x': 25, 'y':
+               4}, {'x': 26, 'y':
+                    4}, {'x': 27, 'y':
+                         4}, {'x': 28, 'y':
+                              4}, {'x': 29, 'y':
+                                   4}, {'x': 29, 'y':
+                                        5}, {'x': 28, 'y':
+                                             5}, {'x': 27, 'y':
+                                                  5}, {'x': 26, 'y':
+                                                       5}, {'x': 25, 'y':
+                                                            5}, {'x': 24, 'y':
+                                                                 5}, {'x': 23, 'y':
+                                                                      5}, {'x': 22, 'y':
+                                                                           5}, {'x': 21, 'y': 5},
+         {'x': 20, 'y':
+          5}, {'x': 19, 'y':
+               5}, {'x': 18, 'y':
+                    5}, {'x': 17, 'y':
+                         5}, {'x': 16, 'y':
+                              5}, {'x': 15, 'y':
+                                   5}, {'x': 14, 'y':
+                                        5}, {'x': 13, 'y':
+                                             5}, {'x': 12, 'y':
+                                                  5}, {'x': 11, 'y':
+                                                       5}, {'x': 10, 'y':
+                                                            5}, {'x': 9, 'y':
+                                                                 5}, {'x': 8, 'y':
+                                                                      5}, {'x': 7, 'y':
+                                                                           5}, {'x': 6, 'y': 5},
+         {'x': 5, 'y':
+          5}, {'x': 4, 'y':
+               5}, {'x': 3, 'y':
+                    5}, {'x': 2, 'y':
+                         5}, {'x': 1, 'y':
+                              5}, {'x': 1, 'y':
+                                   6}, {'x': 2, 'y':
+                                        6}, {'x': 3, 'y':
+                                             6}, {'x': 4, 'y':
+                                                  6}, {'x': 5, 'y':
+                                                       6}, {'x': 6, 'y':
+                                                            6}, {'x': 7, 'y':
+                                                                 6}, {'x': 8, 'y':
+                                                                      6}, {'x': 9, 'y':
+                                                                           6}, {'x': 10, 'y': 6},
+         {'x': 11, 'y':
+          6}, {'x': 12, 'y':
+               6}, {'x': 13, 'y':
+                    6}, {'x': 14, 'y':
+                         6}, {'x': 15, 'y':
+                              6}, {'x': 16, 'y':
+                                   6}, {'x': 17, 'y':
+                                        6}, {'x': 18, 'y':
+                                             6}, {'x': 19, 'y':
+                                                  6}, {'x': 20, 'y':
+                                                       6}, {'x': 21, 'y':
+                                                            6}, {'x': 22, 'y':
+                                                                 6}, {'x': 23, 'y':
+                                                                      6}, {'x': 24, 'y':
+                                                                           6}, {'x': 25, 'y': 6},
+         {'x': 26, 'y': 6}, {'x': 27, 'y': 6}, {'x': 28, 'y': 6}, {'x': 29, 'y': 6}, {
+             'x': 29, 'y': 7
+         }, {'x': 28, 'y':
+             7}, {'x': 27, 'y':
+                  7}, {'x': 26, 'y':
+                       7}, {'x': 25, 'y':
+                            7}, {'x': 24, 'y':
+                                 7}, {'x': 23, 'y':
+                                      7}, {'x': 22, 'y':
+                                           7}, {'x': 21, 'y':
+                                                7}, {'x': 20, 'y':
+                                                     7}, {'x': 19, 'y':
+                                                          7}, {'x': 18, 'y':
+                                                               7}, {'x': 17, 'y':
+                                                                    7}, {'x': 16, 'y':
+                                                                         7}, {'x': 15, 'y':
+                                                                              7}, {'x': 14, 'y': 7},
+         {'x': 13, 'y': 7}, {'x': 12, 'y': 7}, {'x': 11, 'y': 7}, {'x': 10, 'y': 7}, {
+             'x': 9, 'y': 7
+         }, {'x': 8, 'y':
+             7}, {'x': 7, 'y':
+                  7}, {'x': 6, 'y':
+                       7}, {'x': 5, 'y':
+                            7}, {'x': 4, 'y':
+                                 7}, {'x': 3, 'y':
+                                      7}, {'x': 2, 'y':
+                                           7}, {'x': 1, 'y':
+                                                7}, {'x': 1, 'y':
+                                                     8}, {'x': 2, 'y':
+                                                          8}, {'x': 3, 'y':
+                                                               8}, {'x': 4, 'y':
+                                                                    8}, {'x': 5, 'y':
+                                                                         8}, {'x': 6, 'y':
+                                                                              8}, {'x': 7, 'y': 8},
+         {'x': 8, 'y':
+          8}, {'x': 9, 'y':
+               8}, {'x': 10, 'y':
+                    8}, {'x': 11, 'y':
+                         8}, {'x': 12, 'y':
+                              8}, {'x': 13, 'y':
+                                   8}, {'x': 14, 'y':
+                                        8}, {'x': 15, 'y':
+                                             8}, {'x': 16, 'y':
+                                                  8}, {'x': 17, 'y':
+                                                       8}, {'x': 18, 'y':
+                                                            8}, {'x': 19, 'y':
+                                                                 8}, {'x': 20, 'y':
+                                                                      8}, {'x': 21, 'y':
+                                                                           8}, {'x': 22, 'y': 8},
+         {'x': 23, 'y': 8}, {'x': 24, 'y': 8}, {'x': 25, 'y': 8}, {'x': 26, 'y': 8}, {
+             'x': 27, 'y': 8
+         }, {'x': 28, 'y':
+             8}, {'x': 29, 'y':
+                  8}, {'x': 29, 'y':
+                       9}, {'x': 28, 'y':
+                            9}, {'x': 27, 'y':
+                                 9}, {'x': 26, 'y':
+                                      9}, {'x': 25, 'y':
+                                           9}, {'x': 24, 'y':
+                                                9}, {'x': 23, 'y':
+                                                     9}, {'x': 22, 'y':
+                                                          9}, {'x': 21, 'y':
+                                                               9}, {'x': 20, 'y':
+                                                                    9}, {'x': 19, 'y':
+                                                                         9}, {'x': 18, 'y':
+                                                                              9}, {'x': 17, 'y': 9},
+         {'x': 16, 'y': 9}, {'x': 15, 'y': 9}, {'x': 14, 'y': 9}, {'x': 13, 'y': 9}, {
+             'x': 12, 'y': 9
+         }, {'x': 11, 'y':
+             9}, {'x': 10, 'y':
+                  9}, {'x': 9, 'y':
+                       9}, {'x': 8, 'y':
+                            9}, {'x': 7, 'y':
+                                 9}, {'x': 6, 'y':
+                                      9}, {'x': 5, 'y':
+                                           9}, {'x': 4, 'y':
+                                                9}, {'x': 3, 'y':
+                                                     9}, {'x': 2, 'y':
+                                                          9}, {'x': 1, 'y':
+                                                               9}, {'x': 1, 'y':
+                                                                    10}, {'x': 2, 'y':
+                                                                          10}, {'x': 3, 'y': 10},
+         {'x': 4, 'y':
+          10}, {'x': 5, 'y':
+                10}, {'x': 6, 'y':
+                      10}, {'x': 7, 'y':
+                            10}, {'x': 8, 'y':
+                                  10}, {'x': 9, 'y':
+                                        10}, {'x': 10, 'y':
+                                              10}, {'x': 11, 'y':
+                                                    10}, {'x': 12, 'y':
+                                                          10}, {'x': 13, 'y':
+                                                                10}, {'x': 14, 'y':
+                                                                      10}, {'x': 15, 'y':
+                                                                            10}, {'x': 16, 'y': 10},
+         {'x': 17, 'y':
+          10}, {'x': 18, 'y':
+                10}, {'x': 19, 'y':
+                      10}, {'x': 20, 'y':
+                            10}, {'x': 21, 'y':
+                                  10}, {'x': 22, 'y':
+                                        10}, {'x': 23, 'y':
+                                              10}, {'x': 24, 'y':
+                                                    10}, {'x': 25, 'y':
+                                                          10}, {'x': 26, 'y':
+                                                                10}, {'x': 27, 'y':
+                                                                      10}, {'x': 28, 'y':
+                                                                            10}, {'x': 29, 'y': 10},
+         {'x': 29, 'y':
+          11}, {'x': 28, 'y':
+                11}, {'x': 27, 'y':
+                      11}, {'x': 26, 'y':
+                            11}, {'x': 25, 'y':
+                                  11}, {'x': 24, 'y':
+                                        11}, {'x': 23, 'y':
+                                              11}, {'x': 22, 'y':
+                                                    11}, {'x': 21, 'y':
+                                                          11}, {'x': 20, 'y':
+                                                                11}, {'x': 19, 'y':
+                                                                      11}, {'x': 18, 'y':
+                                                                            11}, {'x': 17, 'y': 11},
+         {'x': 16, 'y':
+          11}, {'x': 15, 'y':
+                11}, {'x': 14, 'y':
+                      11}, {'x': 13, 'y':
+                            11}, {'x': 12, 'y':
+                                  11}, {'x': 11, 'y':
+                                        11}, {'x': 10, 'y':
+                                              11}, {'x': 9, 'y':
+                                                    11}, {'x': 8, 'y':
+                                                          11}, {'x': 7, 'y':
+                                                                11}, {'x': 6, 'y':
+                                                                      11}, {'x': 5, 'y':
+                                                                            11}, {'x': 4, 'y': 11},
+         {'x': 3, 'y':          11}, {'x': 2, 'y':
+                11}, {'x': 1, 'y':
+                      11}, {'x': 1, 'y':
+                            12}, {'x': 2, 'y':
+                                  12}, {'x': 3, 'y':
+                                        12}, {'x': 4, 'y':
+                                              12}, {'x': 5, 'y':
+                                                    12}, {'x': 6, 'y':
+                                                          12}, {'x': 7, 'y':
+                                                                12}, {'x': 8, 'y':
+                                                                      12}, {'x': 9, 'y':
+                                                                            12}, {'x': 10, 'y': 12},
+         {'x': 11, 'y':
+          12}, {'x': 12, 'y':
+                12}, {'x': 13, 'y':
+                      12}, {'x': 14, 'y':
+                            12}, {'x': 15, 'y':
+                                  12}, {'x': 16, 'y':
+                                        12}, {'x': 17, 'y':
+                                              12}, {'x': 18, 'y':
+                                                    12}, {'x': 19, 'y':
+                                                          12}, {'x': 20, 'y':
+                                                                12}, {'x': 21, 'y':
+                                                                      12}, {'x': 22, 'y':
+                                                                            12}, {'x': 23, 'y': 12},
+         {'x': 24, 'y':
+          12}, {'x': 25, 'y':
+                12}, {'x': 26, 'y':
+                      12}, {'x': 27, 'y':
+                            12}, {'x': 28, 'y':
+                                  12}, {'x': 29, 'y':
+                                        12}, {'x': 29, 'y':
+                                              13}, {'x': 28, 'y':
+                                                    13}, {'x': 27, 'y':
+                                                          13}, {'x': 26, 'y':
+                                                                13}, {'x': 25, 'y':
+                                                                      13}, {'x': 24, 'y':
+                                                                            13}, {'x': 23, 'y': 13},
+         {'x': 22, 'y':
+          13}, {'x': 21, 'y':
+                13}, {'x': 20, 'y':
+                      13}, {'x': 19, 'y':
+                            13}, {'x': 18, 'y':
+                                  13}, {'x': 17, 'y':
+                                        13}, {'x': 16, 'y':
+                                              13}, {'x': 15, 'y':
+                                                    13}, {'x': 14, 'y':
+                                                          13}, {'x': 13, 'y':
+                                                                13}, {'x': 12, 'y':
+                                                                      13}, {'x': 11, 'y':
+                                                                            13}, {'x': 10, 'y': 13},
+         {'x': 9, 'y':          13}, {'x': 8, 'y':
+                13}, {'x': 7, 'y':
+                      13}, {'x': 6, 'y':
+                            13}, {'x': 5, 'y':
+                                  13}, {'x': 4, 'y':
+                                        13}, {'x': 3, 'y':
+                                              13}, {'x': 2, 'y':
+                                                    13}, {'x': 1, 'y':
+                                                          13}, {'x': 1, 'y':
+                                                                14}, {'x': 2, 'y':
+                                                                      14}, {'x': 3, 'y':
+                                                                            14}, {'x': 4, 'y': 14},
+         {'x': 5, 'y':
+          14}, {'x': 6, 'y':
+                14}, {'x': 7, 'y':
+                      14}, {'x': 8, 'y':
+                            14}, {'x': 9, 'y':
+                                  14}, {'x': 10, 'y':
+                                        14}, {'x': 11, 'y':
+                                              14}, {'x': 12, 'y':
+                                                    14}, {'x': 13, 'y':
+                                                          14}, {'x': 14, 'y':
+                                                                14}, {'x': 15, 'y':
+                                                                      14}, {'x': 16, 'y':
+                                                                            14}, {'x': 17, 'y': 14},
+         {'x': 18, 'y':          14}, {'x': 19, 'y':
+                14}, {'x': 20, 'y':
+                      14}, {'x': 21, 'y':
+                            14}, {'x': 22, 'y':
+                                  14}, {'x': 23, 'y':
+                                        14}, {'x': 24, 'y':
+                                              14}, {'x': 25, 'y':
+                                                    14}, {'x': 26, 'y':
+                                                          14}, {'x': 27, 'y':
+                                                                14}, {'x': 28, 'y':
+                                                                      14}, {'x': 29, 'y':
+                                                                            14}, {'x': 29, 'y': 15},
+         {'x': 28, 'y':
+          15}, {'x': 27, 'y':
+                15}, {'x': 26, 'y':
+                      15}, {'x': 25, 'y':
+                            15}, {'x': 24, 'y':
+                                  15}, {'x': 23, 'y':
+                                        15}, {'x': 22, 'y':
+                                              15}, {'x': 21, 'y':
+                                                    15}, {'x': 20, 'y':
+                                                          15}, {'x': 19, 'y':
+                                                                15}, {'x': 18, 'y':
+                                                                      15}, {'x': 17, 'y':
+                                                                            15}, {'x': 16, 'y': 15},
+         {'x': 15, 'y':
+          15}, {'x': 14, 'y':
+                15}, {'x': 13, 'y':
+                      15}, {'x': 12, 'y':
+                            15}, {'x': 11, 'y':
+                                  15}, {'x': 10, 'y':
+                                        15}, {'x': 9, 'y':
+                                              15}, {'x': 8, 'y':
+                                                    15}, {'x': 7, 'y':
+                                                          15}, {'x': 6, 'y':
+                                                                15}, {'x': 5, 'y':
+                                                                      15}, {'x': 4, 'y':
+                                                                            15}, {'x': 3, 'y': 15},
+         {'x': 2, 'y':
+          15}, {'x': 1, 'y':
+                15}, {'x': 1, 'y':
+                      16}, {'x': 2, 'y':
+                            16}, {'x': 3, 'y':
+                                  16}, {'x': 4, 'y':
+                                        16}, {'x': 5, 'y':
+                                              16}, {'x': 6, 'y':
+                                                    16}, {'x': 7, 'y':
+                                                          16}, {'x': 8, 'y':
+                                                                16}, {'x': 9, 'y':
+                                                                      16}, {'x': 10, 'y':
+                                                                            16}, {'x': 11, 'y': 16},
+         {'x': 12, 'y':
+          16}, {'x': 13, 'y':
+                16}, {'x': 14, 'y':
+                      16}, {'x': 15, 'y':
+                            16}, {'x': 16, 'y':
+                                  16}, {'x': 17, 'y':
+                                        16}, {'x': 18, 'y':
+                                              16}, {'x': 19, 'y':
+                                                    16}, {'x': 20, 'y':
+                                                          16}, {'x': 21, 'y':
+                                                                16}, {'x': 22, 'y':
+                                                                      16}, {'x': 23, 'y':
+                                                                            16}, {'x': 24, 'y': 16},
+         {'x': 25, 'y':          16}, {'x': 26, 'y':
+                16}, {'x': 27, 'y':
+                      16}, {'x': 28, 'y':
+                            16}, {'x': 29, 'y':
+                                  16}, {'x': 29, 'y':
+                                        17}, {'x': 28, 'y':
+                                              17}, {'x': 27, 'y':
+                                                    17}, {'x': 26, 'y':
+                                                          17}, {'x': 25, 'y':
+                                                                17}, {'x': 24, 'y':
+                                                                      17}, {'x': 23, 'y':
+                                                                            17}, {'x': 22, 'y': 17},
+         {'x': 21, 'y':          17}, {'x': 20, 'y':
+                17}, {'x': 19, 'y':
+                      17}, {'x': 18, 'y':
+                            17}, {'x': 17, 'y':
+                                  17}, {'x': 16, 'y':
+                                        17}, {'x': 15, 'y':
+                                              17}, {'x': 14, 'y':
+                                                    17}, {'x': 13, 'y':
+                                                          17}, {'x': 12, 'y':
+                                                                17}, {'x': 11, 'y':
+                                                                      17}, {'x': 10, 'y':
+                                                                            17}, {'x': 9, 'y': 17},
+         {'x': 8, 'y':
+          17}, {'x': 7, 'y':
+                17}, {'x': 6, 'y':
+                      17}, {'x': 5, 'y':
+                            17}, {'x': 4, 'y':
+                                  17}, {'x': 3, 'y':
+                                        17}, {'x': 2, 'y':
+                                              17}, {'x': 1, 'y':
+                                                    17}, {'x': 1, 'y':
+                                                          18}, {'x': 2, 'y':
+                                                                18}, {'x': 3, 'y':
+                                                                      18}, {'x': 4, 'y':
+                                                                            18}, {'x': 5, 'y': 18},
+         {'x': 6, 'y':          18}, {'x': 7, 'y':
+                18}, {'x': 8, 'y':
+                      18}, {'x': 9, 'y':
+                            18}, {'x': 10, 'y':
+                                  18}, {'x': 11, 'y':
+                                        18}, {'x': 12, 'y':
+                                              18}, {'x': 13, 'y':
+                                                    18}, {'x': 14, 'y':
+                                                          18}, {'x': 15, 'y':
+                                                                18}, {'x': 16, 'y':
+                                                                      18}, {'x': 17, 'y':
+                                                                            18}, {'x': 18, 'y': 18},
+         {'x': 19, 'y':
+          18}, {'x': 20, 'y':
+                18}, {'x': 21, 'y':
+                      18}, {'x': 22, 'y':
+                            18}, {'x': 23, 'y':
+                                  18}, {'x': 24, 'y':
+                                        18}, {'x': 25, 'y':
+                                              18}, {'x': 26, 'y':
+                                                    18}, {'x': 27, 'y':
+                                                          18}, {'x': 28, 'y':
+                                                                18}, {'x': 29, 'y':
+                                                                      18}, {'x': 29, 'y':
+                                                                            19}, {'x': 28, 'y': 19},
+         {'x': 27, 'y':
+          19}, {'x': 26, 'y':
+                19}, {'x': 25, 'y':
+                      19}, {'x': 24, 'y':
+                            19}, {'x': 23, 'y':
+                                  19}, {'x': 22, 'y':
+                                        19}, {'x': 21, 'y':
+                                              19}, {'x': 20, 'y':
+                                                    19}, {'x': 19, 'y':
+                                                          19}, {'x': 18, 'y':
+                                                                19}, {'x': 17, 'y':
+                                                                      19}, {'x': 16, 'y': 19}, {
+                                                                          'x': 15, 'y': 19
+                                                                      }, {'x': 14, 'y':
+                                                                          19}, {'x': 13, 'y': 19}, {
+                                                                              'x': 12, 'y': 19
+                                                                          }, {'x': 11, 'y': 19
+                                                                              }, {'x': 10, 'y': 19},
+         {'x': 9, 'y':
+          19}, {'x': 8, 'y':
+                19}, {'x': 7, 'y':
+                      19}, {'x': 6, 'y':
+                            19}, {'x': 5, 'y':
+                                  19}, {'x': 4, 'y':
+                                        19}, {'x': 3, 'y':
+                                              19}, {'x': 2, 'y':
+                                                    19}, {'x': 1, 'y':
+                                                          19}, {'x': 0, 'y':
+                                                                19}, {'x': 0, 'y':
+                                                                      18}, {'x': 0, 'y':
+                                                                            17}, {'x': 0, 'y': 16},
+         {'x': 0, 'y':
+          15}, {'x': 0, 'y':
+                14}, {'x': 0, 'y':
+                      13}, {'x': 0, 'y':
+                            12}, {'x': 0, 'y':
+                                  11}, {'x': 0, 'y': 10
+                                        }, {'x': 0, 'y':
+                                            9}, {'x': 0, 'y':
+                                                 8}, {'x': 0, 'y':
+                                                      7}, {'x': 0, 'y':
+                                                           6}, {'x': 0, 'y':
+                                                                5}, {'x': 0, 'y':
+                                                                     4}, {'x': 0, 'y':
+                                                                          3}, {'x': 0, 'y':
+                                                                               2}, {'x': 0, 'y': 1}]
+    }, "Placebo thinking... hmmm..."
 
-    if questionNum == 14 and subPass == 0:
-        # Question 14 _ 0
-        return {
-            "lines": [{
-                "a": -0.5,
-                "b": 4
-            }, {
-                "a": 0,
-                "b": 7
-            }]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 12 and subPass == 6:
+    return {
+        'points':
+        [{'x': 0.5, 'y': 0.5}, {'x': 1.5, 'y': 0.5}, {'x': 2.5, 'y': 0.5}, {'x': 3.5, 'y': 0.5},
+         {'x': 4.5, 'y': 0.5}, {'x': 5.5, 'y': 0.5}, {'x': 6.5, 'y': 0.5}, {'x': 7.5, 'y': 0.5},
+         {'x': 8.5, 'y': 0.5}, {'x': 9.5, 'y': 0.5}, {'x': 10.5, 'y': 0.5}, {'x': 11.5, 'y': 0.5},
+         {'x': 12.5, 'y': 0.5}, {'x': 13.5, 'y': 0.5}, {'x': 14.5, 'y': 0.5}, {'x': 15.5, 'y': 0.5},
+         {'x': 16.5, 'y': 0.5}, {'x': 17.5, 'y': 0.5}, {'x': 18.5, 'y': 0.5}, {'x': 19.5, 'y': 0.5},
+         {'x': 20.5, 'y': 0.5}, {'x': 21.5, 'y': 0.5}, {'x': 22.5, 'y':                                                        0.5}, {'x': 23.5, 'y':
+                                                               0.5}, {'x': 24.5, 'y':
+                                                                      0.5}, {'x': 25.5, 'y': 0.5},
+         {'x': 26.5, 'y':          0.5}, {'x': 27.5, 'y':
+                 0.5}, {'x': 28.5, 'y':
+                        0.5}, {'x': 29.5, 'y':
+                               0.5}, {'x': 30.5, 'y':
+                                      0.5}, {'x': 31.5, 'y':
+                                             0.5}, {'x': 32.5, 'y':
+                                                    0.5}, {'x': 33.5, 'y':
+                                                           0.5}, {'x': 34.5, 'y':
+                                                                  0.5}, {'x': 35.5, 'y': 0.5},
+         {'x': 36.5, 'y':          0.5}, {'x': 37.5, 'y':
+                 0.5}, {'x': 38.5, 'y':
+                        0.5}, {'x': 39.5, 'y':
+                               0.5}, {'x': 39.5, 'y':
+                                      1.5}, {'x': 39.5, 'y':
+                                             2.5}, {'x': 39.5, 'y':
+                                                    3.5}, {'x': 39.5, 'y':
+                                                           4.5}, {'x': 39.5, 'y':
+                                                                  5.5}, {'x': 39.5, 'y': 6.5},
+         {'x': 39.5, 'y':          7.5}, {'x': 39.5, 'y':
+                 8.5}, {'x': 39.5, 'y':
+                        9.5}, {'x': 39.5, 'y':
+                               10.5}, {'x': 39.5, 'y':
+                                       11.5}, {'x': 39.5, 'y':
+                                               12.5}, {'x': 39.5, 'y':
+                                                       13.5}, {'x': 39.5, 'y':
+                                                               14.5}, {'x': 39.5, 'y': 15.5},
+         {'x': 39.5, 'y':          16.5}, {'x': 39.5, 'y':
+                  17.5}, {'x': 39.5, 'y':
+                          18.5}, {'x': 39.5, 'y':
+                                  19.5}, {'x': 39.5, 'y':
+                                          20.5}, {'x': 39.5, 'y':
+                                                  21.5}, {'x': 39.5, 'y':
+                                                          22.5}, {'x': 39.5, 'y':
+                                                                  23.5}, {'x': 39.5, 'y': 24.5},
+         {'x': 38.5, 'y':          24.5}, {'x': 38.5, 'y':
+                  23.5}, {'x': 38.5, 'y':
+                          22.5}, {'x': 38.5, 'y':
+                                  21.5}, {'x': 38.5, 'y':
+                                          20.5}, {'x': 38.5, 'y':
+                                                  19.5}, {'x': 38.5, 'y':
+                                                          18.5}, {'x': 38.5, 'y':
+                                                                  17.5}, {'x': 38.5, 'y': 16.5},
+         {'x': 38.5, 'y':          15.5}, {'x': 38.5, 'y':
+                  14.5}, {'x': 38.5, 'y':
+                          13.5}, {'x': 38.5, 'y':
+                                  12.5}, {'x': 38.5, 'y':
+                                          11.5}, {'x': 38.5, 'y':
+                                                  10.5}, {'x': 38.5, 'y':
+                                                          9.5}, {'x': 38.5, 'y':
+                                                                 8.5}, {'x': 38.5, 'y':
+                                                                        7.5}, {'x': 38.5, 'y': 6.5},
+         {'x': 38.5, 'y':          5.5}, {'x': 38.5, 'y':
+                 4.5}, {'x': 38.5, 'y':                        3.5}, {'x': 38.5, 'y':                               2.5}, {'x': 38.5, 'y':
+                                      1.5}, {'x': 37.5, 'y':
+                                             1.5}, {'x': 37.5, 'y':
+                                                    2.5}, {'x': 37.5, 'y':
+                                                           3.5}, {'x': 37.5, 'y':
+                                                                  4.5}, {'x': 37.5, 'y': 5.5},
+         {'x': 37.5, 'y':          6.5}, {'x': 37.5, 'y':
+                 7.5}, {'x': 37.5, 'y':
+                        8.5}, {'x': 37.5, 'y':                               9.5}, {'x': 37.5, 'y':
+                                      10.5}, {'x': 37.5, 'y':
+                                              11.5}, {'x': 37.5, 'y':
+                                                      12.5}, {'x': 37.5, 'y':
+                                                              13.5}, {'x': 37.5, 'y':
+                                                                      14.5}, {'x': 37.5, 'y': 15.5},
+         {'x': 37.5, 'y':
+          16.5}, {'x': 37.5, 'y':
+                  17.5}, {'x': 37.5, 'y':
+                          18.5}, {'x': 37.5, 'y':
+                                  19.5}, {'x': 37.5, 'y':
+                                          20.5}, {'x': 37.5, 'y':
+                                                  21.5}, {'x': 37.5, 'y':
+                                                          22.5}, {'x': 37.5, 'y':
+                                                                  23.5}, {'x': 37.5, 'y': 24.5},
+         {'x': 36.5, 'y':          24.5}, {'x': 36.5, 'y':
+                  23.5}, {'x': 36.5, 'y':
+                          22.5}, {'x': 36.5, 'y':                                  21.5}, {'x': 36.5, 'y':
+                                          20.5}, {'x': 36.5, 'y':
+                                                  19.5}, {'x': 36.5, 'y':
+                                                          18.5}, {'x': 36.5, 'y':
+                                                                  17.5}, {'x': 36.5, 'y': 16.5},
+         {'x': 36.5, 'y':
+          15.5}, {'x': 36.5, 'y':
+                  14.5}, {'x': 36.5, 'y':
+                          13.5}, {'x': 36.5, 'y':
+                                  12.5}, {'x': 36.5, 'y':
+                                          11.5}, {'x': 36.5, 'y':
+                                                  10.5}, {'x': 36.5, 'y':
+                                                          9.5}, {'x': 36.5, 'y':
+                                                                 8.5}, {'x': 36.5, 'y':
+                                                                        7.5}, {'x': 36.5, 'y': 6.5},
+         {'x': 36.5, 'y':
+          5.5}, {'x': 36.5, 'y':
+                 4.5}, {'x': 36.5, 'y':
+                        3.5}, {'x': 36.5, 'y':
+                               2.5}, {'x': 36.5, 'y':
+                                      1.5}, {'x': 35.5, 'y':
+                                             1.5}, {'x': 35.5, 'y':
+                                                    2.5}, {'x': 35.5, 'y':
+                                                           3.5}, {'x': 35.5, 'y':
+                                                                  4.5}, {'x': 35.5, 'y': 5.5},
+         {'x': 35.5, 'y':          6.5}, {'x': 35.5, 'y':
+                 7.5}, {'x': 35.5, 'y':
+                        8.5}, {'x': 35.5, 'y':
+                               9.5}, {'x': 35.5, 'y':
+                                      10.5}, {'x': 35.5, 'y':
+                                              11.5}, {'x': 35.5, 'y':
+                                                      12.5}, {'x': 35.5, 'y':
+                                                              13.5}, {'x': 35.5, 'y':
+                                                                      14.5}, {'x': 35.5, 'y': 15.5},
+         {'x': 35.5, 'y':          16.5}, {'x': 35.5, 'y':
+                  17.5}, {'x': 35.5, 'y':
+                          18.5}, {'x': 35.5, 'y':
+                                  19.5}, {'x': 35.5, 'y':
+                                          20.5}, {'x': 35.5, 'y':
+                                                  21.5}, {'x': 35.5, 'y':
+                                                          22.5}, {'x': 35.5, 'y':
+                                                                  23.5}, {'x': 35.5, 'y': 24.5},
+         {'x': 34.5, 'y':          24.5}, {'x': 34.5, 'y':
+                  23.5}, {'x': 34.5, 'y':
+                          22.5}, {'x': 34.5, 'y':
+                                  21.5}, {'x': 34.5, 'y':
+                                          20.5}, {'x': 34.5, 'y':
+                                                  19.5}, {'x': 34.5, 'y':
+                                                          18.5}, {'x': 34.5, 'y':
+                                                                  17.5}, {'x': 34.5, 'y': 16.5},
+         {'x': 34.5, 'y':
+          15.5}, {'x': 34.5, 'y':
+                  14.5}, {'x': 34.5, 'y':
+                          13.5}, {'x': 34.5, 'y':
+                                  12.5}, {'x': 34.5, 'y':
+                                          11.5}, {'x': 34.5, 'y':
+                                                  10.5}, {'x': 34.5, 'y':
+                                                          9.5}, {'x': 34.5, 'y':
+                                                                 8.5}, {'x': 34.5, 'y':
+                                                                        7.5}, {'x': 34.5, 'y': 6.5},
+         {'x': 34.5, 'y':
+          5.5}, {'x': 34.5, 'y':
+                 4.5}, {'x': 34.5, 'y':
+                        3.5}, {'x': 34.5, 'y':
+                               2.5}, {'x': 34.5, 'y':
+                                      1.5}, {'x': 33.5, 'y':
+                                             1.5}, {'x': 33.5, 'y':
+                                                    2.5}, {'x': 33.5, 'y':
+                                                           3.5}, {'x': 33.5, 'y':
+                                                                  4.5}, {'x': 33.5, 'y': 5.5},
+         {'x': 33.5, 'y':
+          6.5}, {'x': 33.5, 'y':
+                 7.5}, {'x': 33.5, 'y':
+                        8.5}, {'x': 33.5, 'y':
+                               9.5}, {'x': 33.5, 'y':
+                                      10.5}, {'x': 33.5, 'y':
+                                              11.5}, {'x': 33.5, 'y':
+                                                      12.5}, {'x': 33.5, 'y':
+                                                              13.5}, {'x': 33.5, 'y':
+                                                                      14.5}, {'x': 33.5, 'y': 15.5},
+         {'x': 33.5, 'y':
+          16.5}, {'x': 33.5, 'y':
+                  17.5}, {'x': 33.5, 'y':
+                          18.5}, {'x': 33.5, 'y':
+                                  19.5}, {'x': 33.5, 'y':
+                                          20.5}, {'x': 33.5, 'y':
+                                                  21.5}, {'x': 33.5, 'y':
+                                                          22.5}, {'x': 33.5, 'y':
+                                                                  23.5}, {'x': 33.5, 'y': 24.5},
+         {'x': 32.5, 'y':
+          24.5}, {'x': 32.5, 'y':
+                  23.5}, {'x': 32.5, 'y':
+                          22.5}, {'x': 32.5, 'y':
+                                  21.5}, {'x': 32.5, 'y':
+                                          20.5}, {'x': 32.5, 'y':
+                                                  19.5}, {'x': 32.5, 'y':
+                                                          18.5}, {'x': 32.5, 'y':
+                                                                  17.5}, {'x': 32.5, 'y': 16.5},
+         {'x': 32.5, 'y':
+          15.5}, {'x': 32.5, 'y':
+                  14.5}, {'x': 32.5, 'y':
+                          13.5}, {'x': 32.5, 'y':
+                                  12.5}, {'x': 32.5, 'y':
+                                          11.5}, {'x': 32.5, 'y':
+                                                  10.5}, {'x': 32.5, 'y':
+                                                          9.5}, {'x': 32.5, 'y':
+                                                                 8.5}, {'x': 32.5, 'y':
+                                                                        7.5}, {'x': 32.5, 'y': 6.5},
+         {'x': 32.5, 'y':
+          5.5}, {'x': 32.5, 'y':
+                 4.5}, {'x': 32.5, 'y':
+                        3.5}, {'x': 32.5, 'y':
+                               2.5}, {'x': 32.5, 'y':
+                                      1.5}, {'x': 31.5, 'y':
+                                             1.5}, {'x': 31.5, 'y':
+                                                    2.5}, {'x': 31.5, 'y':
+                                                           3.5}, {'x': 31.5, 'y':
+                                                                  4.5}, {'x': 31.5, 'y': 5.5},
+         {'x': 31.5, 'y':
+          6.5}, {'x': 31.5, 'y':
+                 7.5}, {'x': 31.5, 'y':
+                        8.5}, {'x': 31.5, 'y':
+                               9.5}, {'x': 31.5, 'y':
+                                      10.5}, {'x': 31.5, 'y':
+                                              11.5}, {'x': 31.5, 'y':
+                                                      12.5}, {'x': 31.5, 'y':
+                                                              13.5}, {'x': 31.5, 'y':
+                                                                      14.5}, {'x': 31.5, 'y': 15.5},
+         {'x': 31.5, 'y':
+          16.5}, {'x': 31.5, 'y':
+                  17.5}, {'x': 31.5, 'y':
+                          18.5}, {'x': 31.5, 'y':
+                                  19.5}, {'x': 31.5, 'y':
+                                          20.5}, {'x': 31.5, 'y':
+                                                  21.5}, {'x': 31.5, 'y':
+                                                          22.5}, {'x': 31.5, 'y':
+                                                                  23.5}, {'x': 31.5, 'y': 24.5},
+         {'x': 30.5, 'y':
+          24.5}, {'x': 30.5, 'y':
+                  23.5}, {'x': 30.5, 'y':
+                          22.5}, {'x': 30.5, 'y':
+                                  21.5}, {'x': 30.5, 'y':
+                                          20.5}, {'x': 30.5, 'y':
+                                                  19.5}, {'x': 30.5, 'y':
+                                                          18.5}, {'x': 30.5, 'y':
+                                                                  17.5}, {'x': 30.5, 'y': 16.5},
+         {'x': 30.5, 'y':
+          15.5}, {'x': 30.5, 'y':
+                  14.5}, {'x': 30.5, 'y':
+                          13.5}, {'x': 30.5, 'y':
+                                  12.5}, {'x': 30.5, 'y':
+                                          11.5}, {'x': 30.5, 'y':
+                                                  10.5}, {'x': 30.5, 'y':
+                                                          9.5}, {'x': 30.5, 'y':
+                                                                 8.5}, {'x': 30.5, 'y':
+                                                                        7.5}, {'x': 30.5, 'y': 6.5},
+         {'x': 30.5, 'y':
+          5.5}, {'x': 30.5, 'y':
+                 4.5}, {'x': 30.5, 'y':
+                        3.5}, {'x': 30.5, 'y':
+                               2.5}, {'x': 30.5, 'y':
+                                      1.5}, {'x': 29.5, 'y':
+                                             1.5}, {'x': 29.5, 'y':
+                                                    2.5}, {'x': 29.5, 'y':
+                                                           3.5}, {'x': 29.5, 'y':
+                                                                  4.5}, {'x': 29.5, 'y': 5.5},
+         {'x': 29.5, 'y':
+          6.5}, {'x': 29.5, 'y':
+                 7.5}, {'x': 29.5, 'y':
+                        8.5}, {'x': 29.5, 'y':
+                               9.5}, {'x': 29.5, 'y':
+                                      10.5}, {'x': 29.5, 'y':
+                                              11.5}, {'x': 29.5, 'y':
+                                                      12.5}, {'x': 29.5, 'y':
+                                                              13.5}, {'x': 29.5, 'y':
+                                                                      14.5}, {'x': 29.5, 'y': 15.5},
+         {'x': 29.5, 'y':
+          16.5}, {'x': 29.5, 'y':
+                  17.5}, {'x': 29.5, 'y':
+                          18.5}, {'x': 29.5, 'y':
+                                  19.5}, {'x': 29.5, 'y':
+                                          20.5}, {'x': 29.5, 'y':
+                                                  21.5}, {'x': 29.5, 'y':
+                                                          22.5}, {'x': 29.5, 'y':
+                                                                  23.5}, {'x': 29.5, 'y': 24.5}, {
+                                                                      'x': 28.5, 'y': 24.5
+                                                                  }, {'x': 28.5, 'y':
+                                                                      23.5}, {'x': 28.5, 'y': 22.5},
+         {'x': 28.5, 'y':
+          21.5}, {'x': 28.5, 'y':
+                  20.5}, {'x': 28.5, 'y':
+                          19.5}, {'x': 28.5, 'y':
+                                  18.5}, {'x': 28.5, 'y':
+                                          17.5}, {'x': 28.5, 'y':
+                                                  16.5}, {'x': 28.5, 'y':
+                                                          15.5}, {'x': 28.5, 'y':
+                                                                  14.5}, {'x': 28.5, 'y': 13.5}, {
+                                                                      'x': 28.5, 'y': 12.5
+                                                                  }, {'x': 28.5, 'y':
+                                                                      11.5}, {'x': 28.5, 'y': 10.5},
+         {'x': 28.5, 'y':
+          9.5}, {'x': 28.5, 'y':
+                 8.5}, {'x': 28.5, 'y':
+                        7.5}, {'x': 28.5, 'y':
+                               6.5}, {'x': 28.5, 'y':
+                                      5.5}, {'x': 28.5, 'y':
+                                             4.5}, {'x': 28.5, 'y':
+                                                    3.5}, {'x': 28.5, 'y':
+                                                           2.5}, {'x': 28.5, 'y':
+                                                                  1.5}, {'x': 27.5, 'y': 1.5}, {
+                                                                      'x': 27.5, 'y': 2.5
+                                                                  }, {'x': 27.5, 'y':
+                                                                      3.5}, {'x': 27.5, 'y': 4.5},
+         {'x': 27.5, 'y':
+          5.5}, {'x': 27.5, 'y':
+                 6.5}, {'x': 27.5, 'y':
+                        7.5}, {'x': 27.5, 'y':
+                               8.5}, {'x': 27.5, 'y':
+                                      9.5}, {'x': 27.5, 'y':
+                                             10.5}, {'x': 27.5, 'y':
+                                                     11.5}, {'x': 27.5, 'y':
+                                                             12.5}, {'x': 27.5, 'y':
+                                                                     13.5}, {'x': 27.5, 'y': 14.5},
+         {'x': 27.5, 'y':
+          15.5}, {'x': 27.5, 'y':
+                  16.5}, {'x': 27.5, 'y':
+                          17.5}, {'x': 27.5, 'y':
+                                  18.5}, {'x': 27.5, 'y':
+                                          19.5}, {'x': 27.5, 'y':
+                                                  20.5}, {'x': 27.5, 'y':
+                                                          21.5}, {'x': 27.5, 'y':
+                                                                  22.5}, {'x': 27.5, 'y': 23.5}, {
+                                                                      'x': 27.5, 'y': 24.5
+                                                                  }, {'x': 26.5, 'y':
+                                                                      24.5}, {'x': 26.5, 'y': 23.5},
+         {'x': 26.5, 'y':
+          22.5}, {'x': 26.5, 'y':
+                  21.5}, {'x': 26.5, 'y':
+                          20.5}, {'x': 26.5, 'y':
+                                  19.5}, {'x': 26.5, 'y':
+                                          18.5}, {'x': 26.5, 'y':
+                                                  17.5}, {'x': 26.5, 'y':
+                                                          16.5}, {'x': 26.5, 'y':
+                                                                  15.5}, {'x': 26.5, 'y': 14.5}, {
+                                                                      'x': 26.5, 'y': 13.5
+                                                                  }, {'x': 26.5, 'y':
+                                                                      12.5}, {'x': 26.5, 'y': 11.5},
+         {'x': 26.5, 'y':
+          10.5}, {'x': 26.5, 'y':
+                  9.5}, {'x': 26.5, 'y':
+                         8.5}, {'x': 26.5, 'y':
+                                7.5}, {'x': 26.5, 'y':
+                                       6.5}, {'x': 26.5, 'y':
+                                              5.5}, {'x': 26.5, 'y':
+                                                     4.5}, {'x': 26.5, 'y':
+                                                            3.5}, {'x': 26.5, 'y':
+                                                                   2.5}, {'x': 26.5, 'y': 1.5}, {
+                                                                       'x': 25.5, 'y': 1.5
+                                                                   }, {'x': 25.5, 'y':
+                                                                       2.5}, {'x': 25.5, 'y': 3.5},
+         {'x': 25.5, 'y':
+          4.5}, {'x': 25.5, 'y':
+                 5.5}, {'x': 25.5, 'y':
+                        6.5}, {'x': 25.5, 'y':
+                               7.5}, {'x': 25.5, 'y':
+                                      8.5}, {'x': 25.5, 'y':
+                                             9.5}, {'x': 25.5, 'y':
+                                                    10.5}, {'x': 25.5, 'y':
+                                                            11.5}, {'x': 25.5, 'y':
+                                                                    12.5}, {'x': 25.5, 'y': 13.5},
+         {'x': 25.5, 'y':
+          14.5}, {'x': 25.5, 'y':
+                  15.5}, {'x': 25.5, 'y':
+                          16.5}, {'x': 25.5, 'y':
+                                  17.5}, {'x': 25.5, 'y':
+                                          18.5}, {'x': 25.5, 'y':
+                                                  19.5}, {'x': 25.5, 'y':
+                                                          20.5}, {'x': 25.5, 'y':
+                                                                  21.5}, {'x': 25.5, 'y': 22.5}, {
+                                                                      'x': 25.5, 'y': 23.5
+                                                                  }, {'x': 25.5, 'y':
+                                                                      24.5}, {'x': 24.5, 'y': 24.5},
+         {'x': 24.5, 'y':
+          23.5}, {'x': 24.5, 'y':
+                  22.5}, {'x': 24.5, 'y':
+                          21.5}, {'x': 24.5, 'y':
+                                  20.5}, {'x': 24.5, 'y':
+                                          19.5}, {'x': 24.5, 'y':
+                                                  18.5}, {'x': 24.5, 'y':
+                                                          17.5}, {'x': 24.5, 'y':
+                                                                  16.5}, {'x': 24.5, 'y': 15.5}, {
+                                                                      'x': 24.5, 'y': 14.5
+                                                                  }, {'x': 24.5, 'y':
+                                                                      13.5}, {'x': 24.5, 'y': 12.5},
+         {'x': 24.5, 'y':
+          11.5}, {'x': 24.5, 'y':
+                  10.5}, {'x': 24.5, 'y':
+                          9.5}, {'x': 24.5, 'y':
+                                 8.5}, {'x': 24.5, 'y':
+                                        7.5}, {'x': 24.5, 'y':
+                                               6.5}, {'x': 24.5, 'y':
+                                                      5.5}, {'x': 24.5, 'y':
+                                                             4.5}, {'x': 24.5, 'y':
+                                                                    3.5}, {'x': 24.5, 'y': 2.5}, {
+                                                                        'x': 24.5, 'y': 1.5
+                                                                    }, {'x': 23.5, 'y':
+                                                                        1.5}, {'x': 23.5, 'y': 2.5},
+         {'x': 23.5, 'y':
+          3.5}, {'x': 23.5, 'y':
+                 4.5}, {'x': 23.5, 'y':
+                        5.5}, {'x': 23.5, 'y':
+                               6.5}, {'x': 23.5, 'y':
+                                      7.5}, {'x': 23.5, 'y':
+                                             8.5}, {'x': 23.5, 'y':
+                                                    9.5}, {'x': 23.5, 'y':
+                                                           10.5}, {'x': 23.5, 'y':
+                                                                   11.5}, {'x': 23.5, 'y': 12.5},
+         {'x': 23.5, 'y':
+          13.5}, {'x': 23.5, 'y':
+                  14.5}, {'x': 23.5, 'y':
+                          15.5}, {'x': 23.5, 'y':
+                                  16.5}, {'x': 23.5, 'y':
+                                          17.5}, {'x': 23.5, 'y':
+                                                  18.5}, {'x': 23.5, 'y':
+                                                          19.5}, {'x': 23.5, 'y':
+                                                                  20.5}, {'x': 23.5, 'y': 21.5}, {
+                                                                      'x': 23.5, 'y': 22.5
+                                                                  }, {'x': 23.5, 'y':
+                                                                      23.5}, {'x': 23.5, 'y': 24.5},
+         {'x': 22.5, 'y':
+          24.5}, {'x': 22.5, 'y':
+                  23.5}, {'x': 22.5, 'y':
+                          22.5}, {'x': 22.5, 'y':
+                                  21.5}, {'x': 22.5, 'y':
+                                          20.5}, {'x': 22.5, 'y':
+                                                  19.5}, {'x': 22.5, 'y':
+                                                          18.5}, {'x': 22.5, 'y':
+                                                                  17.5}, {'x': 22.5, 'y': 16.5}, {
+                                                                      'x': 22.5, 'y': 15.5
+                                                                  }, {'x': 22.5, 'y':
+                                                                      14.5}, {'x': 22.5, 'y': 13.5},
+         {'x': 22.5, 'y':
+          12.5}, {'x': 22.5, 'y':
+                  11.5}, {'x': 22.5, 'y': 10.5
+                          }, {'x': 22.5, 'y':
+                              9.5}, {'x': 22.5, 'y':
+                                     8.5}, {'x': 22.5, 'y':
+                                            7.5}, {'x': 22.5, 'y':
+                                                   6.5}, {'x': 22.5, 'y':
+                                                          5.5}, {'x': 22.5, 'y':
+                                                                 4.5}, {'x': 22.5, 'y':
+                                                                        3.5}, {'x': 22.5, 'y': 2.5},
+         {'x': 22.5, 'y':
+          1.5}, {'x': 21.5, 'y':
+                 1.5}, {'x': 21.5, 'y':
+                        2.5}, {'x': 21.5, 'y':
+                               3.5}, {'x': 21.5, 'y':
+                                      4.5}, {'x': 21.5, 'y':
+                                             5.5}, {'x': 21.5, 'y':
+                                                    6.5}, {'x': 21.5, 'y':
+                                                           7.5}, {'x': 21.5, 'y':
+                                                                  8.5}, {'x': 21.5, 'y': 9.5}, {
+                                                                      'x': 21.5, 'y': 10.5
+                                                                  }, {'x': 21.5, 'y':
+                                                                      11.5}, {'x': 21.5, 'y': 12.5},
+         {'x': 21.5, 'y':
+          13.5}, {'x': 21.5, 'y':
+                  14.5}, {'x': 21.5, 'y':
+                          15.5}, {'x': 21.5, 'y':
+                                  16.5}, {'x': 21.5, 'y':
+                                          17.5}, {'x': 21.5, 'y':
+                                                  18.5}, {'x': 21.5, 'y':
+                                                          19.5}, {'x': 21.5, 'y': 20.5}, {
+                                                              'x': 21.5, 'y':
+                                                              21.5
+                                                          }, {'x': 21.5,
+                                                              'y': 22.5}, {'x': 21.5, 'y': 23.5}, {
+                                                                  'x': 21.5, 'y': 24.5
+                                                              }, {'x': 20.5, 'y':
+                                                                  24.5}, {'x': 20.5, 'y': 23.5}, {
+                                                                      'x': 20.5, 'y': 22.5
+                                                                  }, {'x': 20.5, 'y':
+                                                                      21.5}, {'x': 20.5, 'y': 20.5},
+         {'x': 20.5, 'y':
+          19.5}, {'x': 20.5, 'y':
+                  18.5}, {'x': 20.5, 'y':
+                          17.5}, {'x': 20.5, 'y':
+                                  16.5}, {'x': 20.5, 'y':
+                                          15.5}, {'x': 20.5, 'y':
+                                                  14.5}, {'x': 20.5, 'y':
+                                                          13.5}, {'x': 20.5, 'y':
+                                                                  12.5}, {'x': 20.5, 'y': 11.5}, {
+                                                                      'x': 20.5, 'y': 10.5
+                                                                  }, {'x': 20.5, 'y':
+                                                                      9.5}, {'x': 20.5, 'y': 8.5}, {
+                                                                          'x': 20.5, 'y': 7.5
+                                                                      }, {'x': 20.5, 'y': 6.5
+                                                                          }, {'x': 20.5, 'y': 5.5},
+         {'x': 20.5, 'y':
+          4.5}, {'x': 20.5, 'y':
+                 3.5}, {'x': 20.5, 'y':
+                        2.5}, {'x': 20.5, 'y':
+                               1.5}, {'x': 19.5, 'y':
+                                      1.5}, {'x': 19.5, 'y':
+                                             2.5}, {'x': 19.5, 'y':
+                                                    3.5}, {'x': 19.5, 'y':
+                                                           4.5}, {'x': 19.5, 'y':
+                                                                  5.5}, {'x': 19.5, 'y': 6.5}, {
+                                                                      'x': 19.5,
+                                                                      'y': 7.5
+                                                                  }, {'x': 19.5, 'y':
+                                                                      8.5}, {'x': 19.5, 'y': 9.5}, {
+                                                                          'x': 19.5, 'y': 10.5
+                                                                      }, {'x': 19.5, 'y': 11.5}, {
+                                                                          'x': 19.5, 'y': 12.5
+                                                                      }, {'x': 19.5, 'y': 13.5
+                                                                          }, {'x': 19.5, 'y': 14.5},
+         {'x': 19.5, 'y':
+          15.5}, {'x': 19.5, 'y':
+                  16.5}, {'x': 19.5, 'y':
+                          17.5}, {'x': 19.5, 'y':
+                                  18.5}, {'x': 19.5, 'y':
+                                          19.5}, {'x': 19.5, 'y':
+                                                  20.5}, {'x': 19.5, 'y':
+                                                          21.5}, {'x': 19.5, 'y': 22.5}, {
+                                                              'x': 19.5, 'y':
+                                                              23.5
+                                                          }, {'x': 19.5, 'y':
+                                                              24.5}, {'x': 18.5, 'y': 24.5}, {
+                                                                  'x': 18.5, 'y':
+                                                                  23.5
+                                                              }, {'x': 18.5, 'y':
+                                                                  22.5}, {'x': 18.5, 'y': 21.5}, {
+                                                                      'x': 18.5, 'y': 20.5
+                                                                  }, {'x': 18.5, 'y': 19.5}, {
+                                                                      'x': 18.5, 'y': 18.5
+                                                                  }, {'x': 18.5, 'y': 17.5}, {
+                                                                      'x': 18.5, 'y': 16.5
+                                                                  }, {'x': 18.5, 'y': 15.5}, {
+                                                                      'x': 18.5, 'y': 14.5
+                                                                  }, {'x': 18.5, 'y': 13.5}, {
+                                                                      'x': 18.5, 'y': 12.5
+                                                                  }, {'x': 18.5, 'y': 11.5}, {
+                                                                      'x': 18.5, 'y': 10.5
+                                                                  }, {'x': 18.5, 'y':
+                                                                      9.5}, {'x': 18.5, 'y': 8.5}, {
+                                                                          'x': 18.5, 'y': 7.5
+                                                                      }, {'x': 18.5, 'y': 6.5
+                                                                          }, {'x': 18.5, 'y': 5.5},
+         {'x': 18.5, 'y':
+          4.5}, {'x': 18.5, 'y':
+                 3.5}, {'x': 18.5, 'y':
+                        2.5}, {'x': 18.5, 'y':
+                               1.5}, {'x': 17.5, 'y':
+                                      1.5}, {'x': 17.5, 'y':
+                                             2.5}, {'x': 17.5, 'y':
+                                                    3.5}, {'x': 17.5, 'y':
+                                                           4.5}, {'x': 17.5, 'y':
+                                                                  5.5}, {'x': 17.5, 'y': 6.5}, {
+                                                                      'x': 17.5, 'y': 7.5
+                                                                  }, {'x': 17.5, 'y':
+                                                                      8.5}, {'x': 17.5, 'y': 9.5}, {
+                                                                          'x': 17.5, 'y': 10.5
+                                                                      }, {'x': 17.5, 'y': 11.5
+                                                                          }, {'x': 17.5, 'y': 12.5},
+         {'x': 17.5, 'y':
+          13.5}, {'x': 17.5, 'y':
+                  14.5}, {'x': 17.5, 'y':
+                          15.5}, {'x': 17.5, 'y':
+                                  16.5}, {'x': 17.5, 'y':
+                                          17.5}, {'x': 17.5, 'y':
+                                                  18.5}, {'x': 17.5, 'y':
+                                                          19.5}, {'x': 17.5, 'y': 20.5}, {
+                                                              'x': 17.5, 'y':
+                                                              21.5
+                                                          }, {'x': 17.5, 'y':
+                                                              22.5}, {'x': 17.5, 'y': 23.5}, {
+                                                                  'x': 17.5, 'y':
+                                                                  24.5
+                                                              }, {'x': 16.5, 'y':
+                                                                  24.5}, {'x': 16.5, 'y': 23.5}, {
+                                                                      'x': 16.5, 'y': 22.5
+                                                                  }, {'x': 16.5, 'y': 21.5}, {
+                                                                      'x': 16.5, 'y': 20.5
+                                                                  }, {'x': 16.5, 'y': 19.5}, {
+                                                                      'x': 16.5, 'y': 18.5
+                                                                  }, {'x': 16.5, 'y': 17.5}, {
+                                                                      'x': 16.5, 'y': 16.5
+                                                                  }, {'x': 16.5, 'y': 15.5}, {
+                                                                      'x': 16.5, 'y': 14.5
+                                                                  }, {'x': 16.5, 'y': 13.5}, {
+                                                                      'x': 16.5, 'y': 12.5
+                                                                  }, {'x': 16.5, 'y': 11.5}, {
+                                                                      'x': 16.5, 'y': 10.5
+                                                                  }, {'x': 16.5, 'y':
+                                                                      9.5}, {'x': 16.5, 'y': 8.5}, {
+                                                                          'x': 16.5, 'y': 7.5
+                                                                      }, {'x': 16.5, 'y': 6.5
+                                                                          }, {'x': 16.5, 'y': 5.5},
+         {'x': 16.5, 'y':
+          4.5}, {'x': 16.5, 'y':
+                 3.5}, {'x': 16.5, 'y':
+                        2.5}, {'x': 16.5, 'y':
+                               1.5}, {'x': 15.5, 'y':
+                                      1.5}, {'x': 15.5, 'y':
+                                             2.5}, {'x': 15.5, 'y':
+                                                    3.5}, {'x': 15.5, 'y':
+                                                           4.5}, {'x': 15.5, 'y':
+                                                                  5.5}, {'x': 15.5, 'y': 6.5}, {
+                                                                      'x': 15.5,
+                                                                      'y': 7.5
+                                                                  }, {'x': 15.5, 'y':
+                                                                      8.5}, {'x': 15.5, 'y': 9.5}, {
+                                                                          'x': 15.5, 'y': 10.5
+                                                                      }, {'x': 15.5, 'y': 11.5}, {
+                                                                          'x': 15.5, 'y': 12.5
+                                                                      }, {'x': 15.5, 'y': 13.5}, {
+                                                                          'x': 15.5, 'y': 14.5
+                                                                      }, {'x': 15.5, 'y': 15.5}, {
+                                                                          'x': 15.5, 'y': 16.5
+                                                                      }, {'x': 15.5, 'y': 17.5}, {
+                                                                          'x': 15.5, 'y': 18.5
+                                                                      }, {'x': 15.5, 'y': 19.5}, {
+                                                                          'x': 15.5, 'y': 20.5
+                                                                      }, {'x': 15.5, 'y': 21.5}, {
+                                                                          'x': 15.5, 'y': 22.5
+                                                                      }, {'x': 15.5, 'y': 23.5}, {
+                                                                          'x': 15.5, 'y': 24.5
+                                                                      }, {'x': 14.5, 'y': 24.5}, {
+                                                                          'x': 14.5, 'y': 23.5
+                                                                      }, {'x': 14.5, 'y': 22.5}, {
+                                                                          'x': 14.5, 'y': 21.5
+                                                                      }, {'x': 14.5, 'y': 20.5}, {
+                                                                          'x': 14.5, 'y': 19.5
+                                                                      }, {'x': 14.5, 'y': 18.5}, {
+                                                                          'x': 14.5, 'y': 17.5
+                                                                      }, {'x': 14.5, 'y': 16.5}, {
+                                                                          'x': 14.5, 'y': 15.5
+                                                                      }, {'x': 14.5, 'y': 14.5}, {
+                                                                          'x': 14.5, 'y': 13.5
+                                                                      }, {'x': 14.5, 'y': 12.5
+                                                                          }, {'x': 14.5, 'y': 11.5},
+         {'x': 14.5, 'y':
+          10.5}, {'x': 14.5, 'y':
+                  9.5}, {'x': 14.5, 'y':
+                         8.5}, {'x': 14.5, 'y':
+                                7.5}, {'x': 14.5, 'y':
+                                       6.5}, {'x': 14.5, 'y':
+                                              5.5}, {'x': 14.5, 'y':
+                                                     4.5}, {'x': 14.5, 'y':
+                                                            3.5}, {'x': 14.5, 'y': 2.5
+                                                                   }, {'x': 14.5, 'y': 1.5
+                                                                       }, {'x': 13.5, 'y': 1.5}, {
+                                                                           'x': 13.5, 'y': 2.5
+                                                                       }, {'x': 13.5, 'y': 3.5}, {
+                                                                           'x': 13.5, 'y': 4.5
+                                                                       }, {'x': 13.5, 'y': 5.5}, {
+                                                                           'x': 13.5, 'y': 6.5
+                                                                       }, {'x': 13.5, 'y': 7.5}, {
+                                                                           'x': 13.5, 'y': 8.5
+                                                                       }, {'x': 13.5, 'y': 9.5}, {
+                                                                           'x': 13.5, 'y': 10.5
+                                                                       }, {'x': 13.5, 'y': 11.5}, {
+                                                                           'x': 13.5, 'y': 12.5
+                                                                       }, {'x': 13.5, 'y': 13.5}, {
+                                                                           'x': 13.5, 'y': 14.5
+                                                                       }, {'x': 13.5, 'y': 15.5}, {
+                                                                           'x': 13.5, 'y': 16.5
+                                                                       }, {'x': 13.5, 'y': 17.5}, {
+                                                                           'x': 13.5, 'y': 18.5
+                                                                       }, {'x': 13.5, 'y': 19.5}, {
+                                                                           'x': 13.5, 'y': 20.5
+                                                                       }, {'x': 13.5, 'y': 21.5}, {
+                                                                           'x': 13.5, 'y': 22.5
+                                                                       }, {'x': 13.5, 'y': 23.5}, {
+                                                                           'x': 13.5, 'y': 24.5
+                                                                       }, {'x': 12.5, 'y': 24.5}, {
+                                                                           'x': 12.5, 'y': 23.5
+                                                                       }, {'x': 12.5, 'y': 22.5}, {
+                                                                           'x': 12.5, 'y': 21.5
+                                                                       }, {'x': 12.5, 'y': 20.5}, {
+                                                                           'x': 12.5, 'y': 19.5
+                                                                       }, {'x': 12.5, 'y': 18.5}, {
+                                                                           'x': 12.5, 'y': 17.5
+                                                                       }, {'x': 12.5, 'y': 16.5}, {
+                                                                           'x': 12.5, 'y': 15.5
+                                                                       }, {'x': 12.5, 'y': 14.5}, {
+                                                                           'x': 12.5, 'y': 13.5
+                                                                       }, {'x': 12.5, 'y': 12.5}, {
+                                                                           'x': 12.5, 'y': 11.5
+                                                                       }, {'x': 12.5, 'y': 10.5}, {
+                                                                           'x': 12.5, 'y': 9.5
+                                                                       }, {'x': 12.5, 'y': 8.5}, {
+                                                                           'x': 12.5, 'y': 7.5
+                                                                       }, {'x': 12.5, 'y': 6.5}, {
+                                                                           'x': 12.5, 'y': 5.5
+                                                                       }, {'x': 12.5, 'y': 4.5}, {
+                                                                           'x': 12.5, 'y': 3.5
+                                                                       }, {'x': 12.5, 'y': 2.5}, {
+                                                                           'x': 12.5, 'y': 1.5
+                                                                       }, {'x': 11.5, 'y': 1.5}, {
+                                                                           'x': 11.5, 'y': 2.5
+                                                                       }, {'x': 11.5, 'y': 3.5}, {
+                                                                           'x': 11.5, 'y': 4.5
+                                                                       }, {'x': 11.5, 'y': 5.5}, {
+                                                                           'x': 11.5, 'y': 6.5
+                                                                       }, {'x': 11.5, 'y': 7.5}, {
+                                                                           'x': 11.5, 'y': 8.5
+                                                                       }, {'x': 11.5, 'y': 9.5}, {
+                                                                           'x': 11.5, 'y': 10.5
+                                                                       }, {'x': 11.5, 'y': 11.5}, {
+                                                                           'x': 11.5, 'y': 12.5
+                                                                       }, {'x': 11.5, 'y': 13.5}, {
+                                                                           'x': 11.5, 'y': 14.5
+                                                                       }, {'x': 11.5, 'y': 15.5}, {
+                                                                           'x': 11.5, 'y': 16.5
+                                                                       }, {'x': 11.5, 'y': 17.5}, {
+                                                                           'x': 11.5, 'y': 18.5
+                                                                       }, {'x': 11.5, 'y': 19.5}, {
+                                                                           'x': 11.5, 'y': 20.5
+                                                                       }, {'x': 11.5, 'y': 21.5}, {
+                                                                           'x': 11.5, 'y': 22.5
+                                                                       }, {'x': 11.5, 'y': 23.5}, {
+                                                                           'x': 11.5, 'y': 24.5
+                                                                       }, {'x': 10.5, 'y': 24.5}, {
+                                                                           'x': 10.5, 'y': 23.5
+                                                                       }, {'x': 10.5, 'y': 22.5}, {
+                                                                           'x': 10.5, 'y': 21.5
+                                                                       }, {'x': 10.5, 'y': 20.5}, {
+                                                                           'x': 10.5, 'y': 19.5
+                                                                       }, {'x': 10.5, 'y': 18.5}, {
+                                                                           'x': 10.5, 'y': 17.5
+                                                                       }, {'x': 10.5, 'y': 16.5}, {
+                                                                           'x': 10.5, 'y': 15.5
+                                                                       }, {'x': 10.5, 'y': 14.5}, {
+                                                                           'x': 10.5, 'y': 13.5
+                                                                       }, {'x': 10.5, 'y': 12.5}, {
+                                                                           'x': 10.5, 'y': 11.5
+                                                                       }, {'x': 10.5, 'y': 10.5
+                                                                           }, {'x': 10.5, 'y': 9.5},
+         {'x': 10.5, 'y':
+          8.5}, {'x': 10.5, 'y':
+                 7.5}, {'x': 10.5, 'y':
+                        6.5}, {'x': 10.5, 'y':
+                               5.5}, {'x': 10.5, 'y':
+                                      4.5}, {'x': 10.5, 'y':
+                                             3.5}, {'x': 10.5, 'y':
+                                                    2.5}, {'x': 10.5, 'y':
+                                                           1.5}, {'x': 9.5, 'y':
+                                                                  1.5}, {'x': 9.5, 'y': 2.5}, {
+                                                                      'x': 9.5,
+                                                                      'y': 3.5
+                                                                  }, {'x': 9.5, 'y':
+                                                                      4.5}, {'x': 9.5, 'y': 5.5}, {
+                                                                          'x': 9.5, 'y': 6.5
+                                                                      }, {'x': 9.5, 'y': 7.5}, {
+                                                                          'x': 9.5, 'y': 8.5
+                                                                      }, {'x': 9.5, 'y': 9.5}, {
+                                                                          'x': 9.5, 'y': 10.5
+                                                                      }, {'x': 9.5, 'y': 11.5}, {
+                                                                          'x': 9.5, 'y': 12.5
+                                                                      }, {'x': 9.5, 'y': 13.5}, {
+                                                                          'x': 9.5, 'y': 14.5
+                                                                      }, {'x': 9.5, 'y': 15.5}, {
+                                                                          'x': 9.5, 'y': 16.5
+                                                                      }, {'x': 9.5, 'y': 17.5}, {
+                                                                          'x': 9.5, 'y': 18.5
+                                                                      }, {'x': 9.5, 'y': 19.5}, {
+                                                                          'x': 9.5, 'y': 20.5
+                                                                      }, {'x': 9.5, 'y': 21.5}, {
+                                                                          'x': 9.5, 'y': 22.5
+                                                                      }, {'x': 9.5, 'y': 23.5}, {
+                                                                          'x': 9.5, 'y': 24.5
+                                                                      }, {'x': 8.5, 'y': 24.5}, {
+                                                                          'x': 8.5, 'y': 23.5
+                                                                      }, {'x': 8.5, 'y': 22.5}, {
+                                                                          'x': 8.5, 'y': 21.5
+                                                                      }, {'x': 8.5, 'y': 20.5}, {
+                                                                          'x': 8.5, 'y': 19.5
+                                                                      }, {'x': 8.5, 'y': 18.5}, {
+                                                                          'x': 8.5, 'y': 17.5
+                                                                      }, {'x': 8.5, 'y': 16.5}, {
+                                                                          'x': 8.5, 'y': 15.5
+                                                                      }, {'x': 8.5, 'y': 14.5}, {
+                                                                          'x': 8.5, 'y': 13.5
+                                                                      }, {'x': 8.5, 'y': 12.5}, {
+                                                                          'x': 8.5, 'y': 11.5
+                                                                      }, {'x': 8.5, 'y': 10.5}, {
+                                                                          'x': 8.5, 'y': 9.5
+                                                                      }, {'x': 8.5, 'y': 8.5}, {
+                                                                          'x': 8.5, 'y': 7.5
+                                                                      }, {'x': 8.5, 'y': 6.5}, {
+                                                                          'x': 8.5, 'y': 5.5
+                                                                      }, {'x': 8.5, 'y': 4.5}, {
+                                                                          'x': 8.5, 'y': 3.5
+                                                                      }, {'x': 8.5, 'y': 2.5
+                                                                          }, {'x': 8.5, 'y': 1.5},
+         {'x': 7.5, 'y':
+          1.5}, {'x': 7.5, 'y':
+                 2.5}, {'x': 7.5, 'y':
+                        3.5}, {'x': 7.5, 'y':
+                               4.5}, {'x': 7.5, 'y':
+                                      5.5}, {'x': 7.5, 'y':
+                                             6.5}, {'x': 7.5, 'y':
+                                                    7.5}, {'x': 7.5, 'y':
+                                                           8.5}, {'x': 7.5, 'y':
+                                                                  9.5}, {'x': 7.5, 'y': 10.5
+                                                                         }, {'x': 7.5, 'y': 11.5}, {
+                                                                             'x': 7.5, 'y': 12.5
+                                                                         }, {'x': 7.5, 'y': 13.5}, {
+                                                                             'x': 7.5, 'y': 14.5
+                                                                         }, {'x': 7.5, 'y': 15.5}, {
+                                                                             'x': 7.5, 'y': 16.5
+                                                                         }, {'x': 7.5, 'y': 17.5}, {
+                                                                             'x': 7.5, 'y': 18.5
+                                                                         }, {'x': 7.5, 'y': 19.5}, {
+                                                                             'x': 7.5, 'y': 20.5
+                                                                         }, {'x': 7.5, 'y': 21.5}, {
+                                                                             'x': 7.5, 'y': 22.5
+                                                                         }, {'x': 7.5, 'y': 23.5}, {
+                                                                             'x': 7.5, 'y': 24.5
+                                                                         }, {'x': 6.5, 'y': 24.5}, {
+                                                                             'x': 6.5, 'y': 23.5
+                                                                         }, {'x': 6.5, 'y': 22.5}, {
+                                                                             'x': 6.5, 'y': 21.5
+                                                                         }, {'x': 6.5, 'y': 20.5}, {
+                                                                             'x': 6.5, 'y': 19.5
+                                                                         }, {'x': 6.5, 'y': 18.5}, {
+                                                                             'x': 6.5, 'y': 17.5
+                                                                         }, {'x': 6.5, 'y': 16.5}, {
+                                                                             'x': 6.5, 'y': 15.5
+                                                                         }, {'x': 6.5, 'y': 14.5}, {
+                                                                             'x': 6.5, 'y': 13.5
+                                                                         }, {'x': 6.5, 'y': 12.5}, {
+                                                                             'x': 6.5, 'y': 11.5
+                                                                         }, {'x': 6.5, 'y': 10.5},
+         {'x': 6.5, 'y':
+          9.5}, {'x': 6.5, 'y':
+                 8.5}, {'x': 6.5, 'y':
+                        7.5}, {'x': 6.5, 'y':
+                               6.5}, {'x': 6.5, 'y':
+                                      5.5}, {'x': 6.5, 'y':
+                                             4.5}, {'x': 6.5, 'y':
+                                                    3.5}, {'x': 6.5, 'y':
+                                                           2.5}, {'x': 6.5, 'y':
+                                                                  1.5}, {'x': 5.5, 'y': 1.5}, {
+                                                                      'x': 5.5,
+                                                                      'y': 2.5
+                                                                  }, {'x': 5.5, 'y':
+                                                                      3.5}, {'x': 5.5, 'y': 4.5}, {
+                                                                          'x': 5.5, 'y': 5.5
+                                                                      }, {'x': 5.5, 'y': 6.5}, {
+                                                                          'x': 5.5, 'y': 7.5
+                                                                      }, {'x': 5.5, 'y': 8.5}, {
+                                                                          'x': 5.5, 'y': 9.5
+                                                                      }, {'x': 5.5, 'y': 10.5}, {
+                                                                          'x': 5.5, 'y': 11.5
+                                                                      }, {'x': 5.5, 'y': 12.5}, {
+                                                                          'x': 5.5, 'y': 13.5
+                                                                      }, {'x': 5.5, 'y': 14.5}, {
+                                                                          'x': 5.5, 'y': 15.5
+                                                                      }, {'x': 5.5, 'y': 16.5}, {
+                                                                          'x': 5.5, 'y': 17.5
+                                                                      }, {'x': 5.5, 'y': 18.5}, {
+                                                                          'x': 5.5, 'y': 19.5
+                                                                      }, {'x': 5.5, 'y': 20.5}, {
+                                                                          'x': 5.5, 'y': 21.5
+                                                                      }, {'x': 5.5, 'y': 22.5}, {
+                                                                          'x': 5.5, 'y': 23.5
+                                                                      }, {'x': 5.5, 'y': 24.5}, {
+                                                                          'x': 4.5, 'y': 24.5
+                                                                      }, {'x': 4.5, 'y': 23.5}, {
+                                                                          'x': 4.5, 'y': 22.5
+                                                                      }, {'x': 4.5, 'y': 21.5}, {
+                                                                          'x': 4.5, 'y': 20.5
+                                                                      }, {'x': 4.5, 'y': 19.5}, {
+                                                                          'x': 4.5, 'y': 18.5
+                                                                      }, {'x': 4.5, 'y': 17.5}, {
+                                                                          'x': 4.5, 'y': 16.5
+                                                                      }, {'x': 4.5, 'y': 15.5}, {
+                                                                          'x': 4.5, 'y': 14.5
+                                                                      }, {'x': 4.5, 'y': 13.5}, {
+                                                                          'x': 4.5, 'y': 12.5
+                                                                      }, {'x': 4.5, 'y': 11.5}, {
+                                                                          'x': 4.5, 'y': 10.5
+                                                                      }, {'x': 4.5, 'y': 9.5}, {
+                                                                          'x': 4.5, 'y': 8.5
+                                                                      }, {'x': 4.5, 'y': 7.5}, {
+                                                                          'x': 4.5, 'y': 6.5
+                                                                      }, {'x': 4.5, 'y': 5.5}, {
+                                                                          'x': 4.5, 'y': 4.5
+                                                                      }, {'x': 4.5, 'y': 3.5}, {
+                                                                          'x': 4.5, 'y': 2.5
+                                                                      }, {'x': 4.5, 'y': 1.5}, {
+                                                                          'x': 3.5, 'y': 1.5
+                                                                      }, {'x': 3.5, 'y': 2.5}, {
+                                                                          'x': 3.5, 'y': 3.5
+                                                                      }, {'x': 3.5, 'y': 4.5}, {
+                                                                          'x': 3.5, 'y': 5.5
+                                                                      }, {'x': 3.5, 'y': 6.5}, {
+                                                                          'x': 3.5, 'y': 7.5
+                                                                      }, {'x': 3.5, 'y': 8.5}, {
+                                                                          'x': 3.5, 'y': 9.5
+                                                                      }, {'x': 3.5, 'y': 10.5}, {
+                                                                          'x': 3.5, 'y': 11.5
+                                                                      }, {'x': 3.5, 'y': 12.5}, {
+                                                                          'x': 3.5, 'y': 13.5
+                                                                      }, {'x': 3.5, 'y': 14.5}, {
+                                                                          'x': 3.5, 'y': 15.5
+                                                                      }, {'x': 3.5, 'y': 16.5}, {
+                                                                          'x': 3.5, 'y': 17.5
+                                                                      }, {'x': 3.5, 'y': 18.5}, {
+                                                                          'x': 3.5, 'y': 19.5
+                                                                      }, {'x': 3.5, 'y': 20.5}, {
+                                                                          'x': 3.5, 'y': 21.5
+                                                                      }, {'x': 3.5, 'y': 22.5}, {
+                                                                          'x': 3.5, 'y': 23.5
+                                                                      }, {'x': 3.5, 'y': 24.5}, {
+                                                                          'x': 2.5, 'y': 24.5
+                                                                      }, {'x': 2.5, 'y': 23.5}, {
+                                                                          'x': 2.5, 'y': 22.5
+                                                                      }, {'x': 2.5, 'y': 21.5}, {
+                                                                          'x': 2.5, 'y': 20.5
+                                                                      }, {'x': 2.5, 'y': 19.5}, {
+                                                                          'x': 2.5, 'y': 18.5
+                                                                      }, {'x': 2.5, 'y': 17.5}, {
+                                                                          'x': 2.5, 'y': 16.5
+                                                                      }, {'x': 2.5, 'y': 15.5}, {
+                                                                          'x': 2.5, 'y': 14.5
+                                                                      }, {'x': 2.5, 'y': 13.5}, {
+                                                                          'x': 2.5, 'y': 12.5
+                                                                      }, {'x': 2.5, 'y': 11.5}, {
+                                                                          'x': 2.5, 'y': 10.5
+                                                                      }, {'x': 2.5, 'y': 9.5}, {
+                                                                          'x': 2.5, 'y': 8.5
+                                                                      }, {'x': 2.5, 'y': 7.5}, {
+                                                                          'x': 2.5, 'y': 6.5
+                                                                      }, {'x': 2.5, 'y': 5.5}, {
+                                                                          'x': 2.5, 'y': 4.5
+                                                                      }, {'x': 2.5, 'y': 3.5}, {
+                                                                          'x': 2.5, 'y': 2.5
+                                                                      }, {'x': 2.5, 'y': 1.5}, {
+                                                                          'x': 1.5, 'y': 1.5
+                                                                      }, {'x': 1.5, 'y': 2.5}, {
+                                                                          'x': 1.5, 'y': 3.5
+                                                                      }, {'x': 1.5, 'y': 4.5}, {
+                                                                          'x': 1.5, 'y': 5.5
+                                                                      }, {'x': 1.5, 'y': 6.5}, {
+                                                                          'x': 1.5, 'y': 7.5
+                                                                      }, {'x': 1.5, 'y': 8.5}, {
+                                                                          'x': 1.5, 'y': 9.5
+                                                                      }, {'x': 1.5, 'y': 10.5}, {
+                                                                          'x': 1.5, 'y': 11.5
+                                                                      }, {'x': 1.5, 'y': 12.5}, {
+                                                                          'x': 1.5, 'y': 13.5
+                                                                      }, {'x': 1.5, 'y': 14.5}, {
+                                                                          'x': 1.5, 'y': 15.5
+                                                                      }, {'x': 1.5, 'y': 16.5}, {
+                                                                          'x': 1.5, 'y': 17.5
+                                                                      }, {'x': 1.5, 'y': 18.5}, {
+                                                                          'x': 1.5, 'y': 19.5
+                                                                      }, {'x': 1.5, 'y': 20.5}, {
+                                                                          'x': 1.5, 'y': 21.5
+                                                                      }, {'x': 1.5, 'y': 22.5}, {
+                                                                          'x': 1.5, 'y': 23.5
+                                                                      }, {'x': 1.5, 'y': 24.5}, {
+                                                                          'x': 0.5, 'y': 24.5
+                                                                      }, {'x': 0.5, 'y': 23.5}, {
+                                                                          'x': 0.5, 'y': 22.5
+                                                                      }, {'x': 0.5, 'y': 21.5}, {
+                                                                          'x': 0.5, 'y': 20.5
+                                                                      }, {'x': 0.5, 'y': 19.5}, {
+                                                                          'x': 0.5, 'y': 18.5
+                                                                      }, {'x': 0.5, 'y': 17.5}, {
+                                                                          'x': 0.5, 'y': 16.5
+                                                                      }, {'x': 0.5, 'y': 15.5}, {
+                                                                          'x': 0.5, 'y': 14.5
+                                                                      }, {'x': 0.5, 'y': 13.5}, {
+                                                                          'x': 0.5, 'y': 12.5
+                                                                      }, {'x': 0.5, 'y': 11.5}, {
+                                                                          'x': 0.5, 'y': 10.5
+                                                                      }, {'x': 0.5, 'y': 9.5}, {
+                                                                          'x': 0.5, 'y': 8.5
+                                                                      }, {'x': 0.5, 'y': 7.5}, {
+                                                                          'x': 0.5, 'y': 6.5
+                                                                      }, {'x': 0.5, 'y': 5.5}, {
+                                                                          'x': 0.5, 'y': 4.5
+                                                                      }, {'x': 0.5, 'y': 3.5}, {
+                                                                          'x': 0.5, 'y': 2.5
+                                                                      }, {'x': 0.5, 'y': 1.5}]
+    }, ""
 
-    if questionNum == 14 and subPass == 1:
-        # Question 14 _ 1 Just test we can do squares
-        return {
-            "lines": [
-                {
-                    "a": float("inf"),
-                    "b": 10
-                },
-                {
-                    "a": 0,
-                    "b": 8
-                },
-            ]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 12 and subPass == 7:
+    return {
+        'points':
+        [{'x': 12, 'y': 1}, {'x': 11, 'y': 1}, {'x': 10, 'y': 1}, {'x': 9, 'y': 1},
+         {'x': 8, 'y': 1}, {'x': 7, 'y': 1}, {'x': 6, 'y': 1}, {'x': 5, 'y': 1}, {'x': 4, 'y': 1},
+         {'x': 3, 'y': 1}, {'x': 2, 'y': 1}, {'x': 1, 'y': 1}, {'x': 1.9682458366, 'y':
+                                                                1.25}, {'x': 1, 'y':
+                                                                        1.5}, {'x': 2, 'y': 1.5},
+         {'x': 3, 'y': 1.5}, {'x': 4, 'y': 1.5}, {'x': 5, 'y': 1.5}, {'x': 6, 'y':
+                                                                      1.5}, {'x': 7, 'y': 1.5},
+         {'x': 8, 'y': 1.5}, {'x': 9, 'y': 1.5}, {'x': 10, 'y': 1.5}, {'x': 11, 'y':
+                                                                       1.5}, {'x': 12, 'y': 1.5},
+         {'x': 11.0317541634, 'y':
+          1.75}, {'x': 12, 'y': 2}, {'x': 11, 'y': 2}, {'x': 10, 'y':
+                                                        2}, {'x': 9, 'y': 2}, {'x': 8, 'y':
+                                                                               2}, {'x': 7, 'y': 2},
+         {'x': 6, 'y': 2}, {'x': 5, 'y':
+                            2}, {'x': 4, 'y':
+                                 2}, {'x': 3, 'y':
+                                      2}, {'x': 2, 'y':
+                                           2}, {'x': 1, 'y':
+                                                2}, {'x': 1.9682458366, 'y':
+                                                     2.25}, {'x': 1, 'y':
+                                                             2.5}, {'x': 2, 'y':
+                                                                    2.5}, {'x': 3, 'y':
+                                                                           2.5}, {'x': 4, 'y': 2.5},
+         {'x': 5, 'y':
+          2.5}, {'x': 6, 'y':
+                 2.5}, {'x': 7, 'y':
+                        2.5}, {'x': 8, 'y':
+                               2.5}, {'x': 9, 'y':
+                                      2.5}, {'x': 10, 'y':
+                                             2.5}, {'x': 11, 'y':
+                                                    2.5}, {'x': 12, 'y':
+                                                           2.5}, {'x': 11.0317541634, 'y':
+                                                                  2.75}, {'x': 12, 'y':
+                                                                          3}, {'x': 11, 'y': 3},
+         {'x': 10, 'y':
+          3}, {'x': 9, 'y':
+               3}, {'x': 8, 'y':
+                    3}, {'x': 7, 'y':
+                         3}, {'x': 6, 'y':
+                              3}, {'x': 5, 'y':
+                                   3}, {'x': 4, 'y':
+                                        3}, {'x': 3, 'y':
+                                             3}, {'x': 2, 'y':
+                                                  3}, {'x': 1, 'y':
+                                                       3}, {'x': 1.9682458366, 'y':
+                                                            3.25}, {'x': 1, 'y':
+                                                                    3.5}, {'x': 2, 'y':
+                                                                           3.5}, {'x': 3, 'y': 3.5},
+         {'x': 4, 'y': 3.5}, {'x': 5, 'y':
+                              3.5}, {'x': 6, 'y':
+                                     3.5}, {'x': 7, 'y':
+                                            3.5}, {'x': 8, 'y':
+                                                   3.5}, {'x': 9, 'y':
+                                                          3.5}, {'x': 10, 'y':
+                                                                 3.5}, {'x': 11, 'y':
+                                                                        3.5}, {'x': 12, 'y': 3.5},
+         {'x': 11.0317541634, 'y':
+          3.75}, {'x': 12, 'y':
+                  4}, {'x': 11, 'y':
+                       4}, {'x': 10, 'y':
+                            4}, {'x': 9, 'y': 4}, {'x': 8, 'y': 4}, {'x': 7, 'y':
+                                                                     4}, {'x': 6, 'y':
+                                                                          4}, {'x': 5, 'y':
+                                                                               4}, {'x': 4, 'y': 4},
+         {'x': 3, 'y':
+          4}, {'x': 2, 'y':
+               4}, {'x': 1, 'y':
+                    4}, {'x': 1.9682458366, 'y':
+                         4.25}, {'x': 1, 'y':
+                                 4.5}, {'x': 2, 'y':
+                                        4.5}, {'x': 3, 'y':
+                                               4.5}, {'x': 4, 'y':
+                                                      4.5}, {'x': 5, 'y':
+                                                             4.5}, {'x': 6, 'y':
+                                                                    4.5}, {'x': 7, 'y':
+                                                                           4.5}, {'x': 8, 'y': 4.5},
+         {'x': 9, 'y':
+          4.5}, {'x': 10, 'y':
+                 4.5}, {'x': 11, 'y':
+                        4.5}, {'x': 12, 'y':
+                               4.5}, {'x': 11.0317541634, 'y':
+                                      4.75}, {'x': 12, 'y':
+                                              5}, {'x': 11, 'y':
+                                                   5}, {'x': 10, 'y':
+                                                        5}, {'x': 9, 'y':
+                                                             5}, {'x': 8, 'y':
+                                                                  5}, {'x': 7, 'y':
+                                                                       5}, {'x': 6, 'y':
+                                                                            5}, {'x': 5, 'y': 5},
+         {'x': 4, 'y':
+          5}, {'x': 3, 'y':
+               5}, {'x': 2, 'y':
+                    5}, {'x': 1, 'y':
+                         5}, {'x': 1.9682458366, 'y':
+                              5.25}, {'x': 1, 'y':
+                                      5.5}, {'x': 2, 'y':
+                                             5.5}, {'x': 3, 'y':
+                                                    5.5}, {'x': 4, 'y':
+                                                           5.5}, {'x': 5, 'y':
+                                                                  5.5}, {'x': 6, 'y':
+                                                                         5.5}, {'x': 7, 'y': 5.5},
+         {'x': 8, 'y':
+          5.5}, {'x': 9, 'y':
+                 5.5}, {'x': 10, 'y':
+                        5.5}, {'x': 11, 'y':
+                               5.5}, {'x': 12, 'y':
+                                      5.5}, {'x': 11.0317541634, 'y':
+                                             5.75}, {'x': 12, 'y':
+                                                     6}, {'x': 11, 'y':
+                                                          6}, {'x': 10, 'y':
+                                                               6}, {'x': 9, 'y':
+                                                                    6}, {'x': 8, 'y':
+                                                                         6}, {'x': 7, 'y':
+                                                                              6}, {'x': 6, 'y': 6},
+         {'x': 5, 'y':
+          6}, {'x': 4, 'y':
+               6}, {'x': 3, 'y':
+                    6}, {'x': 2, 'y':
+                         6}, {'x': 1, 'y':
+                              6}, {'x': 1.9682458366, 'y':
+                                   6.25}, {'x': 1, 'y':
+                                           6.5}, {'x': 2, 'y':
+                                                  6.5}, {'x': 3, 'y':
+                                                         6.5}, {'x': 4, 'y':
+                                                                6.5}, {'x': 5, 'y':
+                                                                       6.5}, {'x': 6, 'y': 6.5},
+         {'x': 7, 'y':
+          6.5}, {'x': 8, 'y':
+                 6.5}, {'x': 9, 'y':
+                        6.5}, {'x': 10, 'y':
+                               6.5}, {'x': 11, 'y':
+                                      6.5}, {'x': 12, 'y':
+                                             6.5}, {'x': 11.0317541634, 'y':
+                                                    6.75}, {'x': 12, 'y':
+                                                            7}, {'x': 11, 'y':
+                                                                 7}, {'x': 10, 'y':
+                                                                      7}, {'x': 9, 'y':
+                                                                           7}, {'x': 8, 'y': 7},
+         {'x': 7, 'y':
+          7}, {'x': 6, 'y':
+               7}, {'x': 5, 'y':
+                    7}, {'x': 4, 'y':
+                         7}, {'x': 3, 'y':
+                              7}, {'x': 2, 'y':
+                                   7}, {'x': 1, 'y':
+                                        7}, {'x': 1.9682458366, 'y':
+                                             7.25}, {'x': 1, 'y':
+                                                     7.5}, {'x': 2, 'y':
+                                                            7.5}, {'x': 3, 'y':
+                                                                   7.5}, {'x': 4, 'y':
+                                                                          7.5}, {'x': 5, 'y': 7.5},
+         {'x': 6, 'y': 7.5}, {'x': 7, 'y': 7.5}, {'x': 8, 'y': 7.5}, {'x': 9, 'y': 7.5}, {
+             'x': 10, 'y': 7.5
+         }, {'x': 11, 'y':
+             7.5}, {'x': 12, 'y':
+                    7.5}, {'x': 11.0317541634, 'y':
+                           7.75}, {'x': 12, 'y':
+                                   8}, {'x': 11, 'y':
+                                        8}, {'x': 10, 'y':
+                                             8}, {'x': 9, 'y':
+                                                  8}, {'x': 8, 'y':
+                                                       8}, {'x': 7, 'y':
+                                                            8}, {'x': 6, 'y':
+                                                                 8}, {'x': 5, 'y':
+                                                                      8}, {'x': 4, 'y':
+                                                                           8}, {'x': 3, 'y': 8},
+         {'x': 2, 'y':
+          8}, {'x': 1, 'y':
+               8}, {'x': 1.9682458366, 'y':
+                    8.25}, {'x': 1, 'y':
+                            8.5}, {'x': 2, 'y':
+                                   8.5}, {'x': 3, 'y':
+                                          8.5}, {'x': 4, 'y':
+                                                 8.5}, {'x': 5, 'y':
+                                                        8.5}, {'x': 6, 'y':
+                                                               8.5}, {'x': 7, 'y':
+                                                                      8.5}, {'x': 8, 'y': 8.5},
+         {'x': 9, 'y':
+          8.5}, {'x': 10, 'y':
+                 8.5}, {'x': 11, 'y':
+                        8.5}, {'x': 12, 'y':
+                               8.5}, {'x': 11.0317541634, 'y':
+                                      8.75}, {'x': 12, 'y':
+                                              9}, {'x': 11, 'y':
+                                                   9}, {'x': 10, 'y':
+                                                        9}, {'x': 9, 'y':
+                                                             9}, {'x': 8, 'y':
+                                                                  9}, {'x': 7, 'y':
+                                                                       9}, {'x': 6, 'y':
+                                                                            9}, {'x': 5, 'y': 9},
+         {'x': 4, 'y':
+          9}, {'x': 3, 'y':
+               9}, {'x': 2, 'y':
+                    9}, {'x': 1, 'y':
+                         9}, {'x': 1.9682458366, 'y':
+                              9.25}, {'x': 1, 'y':
+                                      9.5}, {'x': 2, 'y':
+                                             9.5}, {'x': 3, 'y':
+                                                    9.5}, {'x': 4, 'y':
+                                                           9.5}, {'x': 5, 'y':
+                                                                  9.5}, {'x': 6, 'y':
+                                                                         9.5}, {'x': 7, 'y': 9.5},
+         {'x': 8, 'y':
+          9.5}, {'x': 9, 'y':
+                 9.5}, {'x': 10, 'y':
+                        9.5}, {'x': 11, 'y':
+                               9.5}, {'x': 12, 'y':
+                                      9.5}, {'x': 11.0317541634, 'y':
+                                             9.75}, {'x': 12, 'y':
+                                                     10}, {'x': 11, 'y':
+                                                           10}, {'x': 10, 'y':
+                                                                 10}, {'x': 9, 'y':
+                                                                       10}, {'x': 8, 'y':
+                                                                             10}, {'x': 7, 'y': 10},
+         {'x': 6, 'y':
+          10}, {'x': 5, 'y':
+                10}, {'x': 4, 'y':
+                      10}, {'x': 3, 'y':
+                            10}, {'x': 2, 'y':
+                                  10}, {'x': 1, 'y':
+                                        10}, {'x': 1.9682458366, 'y':
+                                              10.25}, {'x': 1, 'y':
+                                                       10.5}, {'x': 2, 'y':
+                                                               10.5}, {'x': 3, 'y':
+                                                                       10.5}, {'x': 4, 'y': 10.5},
+         {'x': 5, 'y':
+          10.5}, {'x': 6, 'y':
+                  10.5}, {'x': 7, 'y':
+                          10.5}, {'x': 8, 'y':
+                                  10.5}, {'x': 9, 'y':
+                                          10.5}, {'x': 10, 'y': 10.5}, {'x': 11, 'y': 10.5}, {
+                                              'x': 12, 'y': 10.5
+                                          }, {'x': 11.0317541634, 'y':
+                                              10.75}, {'x': 12, 'y':
+                                                       11}, {'x': 11, 'y':
+                                                             11}, {'x': 10, 'y':
+                                                                   11}, {'x': 9, 'y':
+                                                                         11}, {'x': 8, 'y': 11},
+         {'x': 7, 'y':
+          11}, {'x': 6, 'y':
+                11}, {'x': 5, 'y':
+                      11}, {'x': 4, 'y':
+                            11}, {'x': 3, 'y':
+                                  11}, {'x': 2, 'y':
+                                        11}, {'x': 1, 'y':
+                                              11}, {'x': 1.9682458366, 'y':
+                                                    11.25}, {'x': 1, 'y':
+                                                             11.5}, {'x': 2, 'y':
+                                                                     11.5}, {'x': 3, 'y': 11.5},
+         {'x': 4, 'y':
+          11.5}, {'x': 5, 'y':
+                  11.5}, {'x': 6, 'y':
+                          11.5}, {'x': 7, 'y':
+                                  11.5}, {'x': 8, 'y':
+                                          11.5}, {'x': 9, 'y':
+                                                  11.5}, {'x': 10, 'y':
+                                                          11.5}, {'x': 11, 'y':
+                                                                  11.5}, {'x': 12, 'y': 11.5},
+         {'x': 11.0317541634, 'y':
+          11.75}, {'x': 12, 'y':
+                   12}, {'x': 11, 'y':
+                         12}, {'x': 10, 'y':
+                               12}, {'x': 9, 'y':
+                                     12}, {'x': 8, 'y':
+                                           12}, {'x': 7, 'y':
+                                                 12}, {'x': 6, 'y':
+                                                       12}, {'x': 5, 'y':
+                                                             12}, {'x': 4, 'y':
+                                                                   12}, {'x': 3, 'y':
+                                                                         12}, {'x': 2, 'y': 12},
+         {'x': 1, 'y':
+          12}, {'x': 1.9682458366, 'y':
+                12.25}, {'x': 1, 'y':
+                         12.5}, {'x': 2, 'y':
+                                 12.5}, {'x': 3, 'y':
+                                         12.5}, {'x': 4, 'y':
+                                                 12.5}, {'x': 5, 'y':
+                                                         12.5}, {'x': 6, 'y':
+                                                                 12.5}, {'x': 7, 'y':
+                                                                         12.5}, {'x': 8, 'y': 12.5},
+         {'x': 9, 'y':
+          12.5}, {'x': 10, 'y':
+                  12.5}, {'x': 11, 'y':
+                          12.5}, {'x': 12, 'y':
+                                  12.5}, {'x': 11.0317541634, 'y':
+                                          12.75}, {'x': 12, 'y':
+                                                   13}, {'x': 11, 'y':
+                                                         13}, {'x': 10, 'y':
+                                                               13}, {'x': 9, 'y':
+                                                                     13}, {'x': 8, 'y':
+                                                                           13}, {'x': 7, 'y': 13},
+         {'x': 6, 'y':
+          13}, {'x': 5, 'y':
+                13}, {'x': 4, 'y':
+                      13}, {'x': 3, 'y':
+                            13}, {'x': 2, 'y':
+                                  13}, {'x': 1, 'y':
+                                        13}, {'x': 1.9682458366, 'y':
+                                              13.25}, {'x': 1, 'y':
+                                                       13.5}, {'x': 2, 'y':
+                                                               13.5}, {'x': 3, 'y':
+                                                                       13.5}, {'x': 4, 'y': 13.5},
+         {'x': 5, 'y':
+          13.5}, {'x': 6, 'y':
+                  13.5}, {'x': 7, 'y':
+                          13.5}, {'x': 8, 'y':
+                                  13.5}, {'x': 9, 'y':
+                                          13.5}, {'x': 10, 'y': 13.5}, {'x': 11, 'y': 13.5}, {
+                                              'x': 12, 'y': 13.5
+                                          }, {'x': 11.0317541634, 'y':
+                                              13.75}, {'x': 12, 'y': 14}, {'x': 11, 'y': 14}, {
+                                                  'x': 10, 'y': 14
+                                              }, {'x': 9, 'y':
+                                                  14}, {'x': 8, 'y':
+                                                        14}, {'x': 7, 'y':
+                                                              14}, {'x': 6, 'y':
+                                                                    14}, {'x': 5, 'y':
+                                                                          14}, {'x': 4, 'y': 14},
+         {'x': 3, 'y':
+          14}, {'x': 2, 'y':
+                14}, {'x': 1, 'y':
+                      14}, {'x': 1.9682458366, 'y':
+                            14.25}, {'x': 1, 'y':
+                                     14.5}, {'x': 2, 'y':
+                                             14.5}, {'x': 3, 'y':
+                                                     14.5}, {'x': 4, 'y':
+                                                             14.5}, {'x': 5, 'y':
+                                                                     14.5}, {'x': 6, 'y': 14.5
+                                                                             }, {'x': 7, 'y': 14.5},
+         {'x': 8, 'y':
+          14.5}, {'x': 9, 'y':
+                  14.5}, {'x': 10, 'y':
+                          14.5}, {'x': 11, 'y':
+                                  14.5}, {'x': 12, 'y': 14.5}, {'x': 11.0317541634, 'y': 14.75}, {
+                                      'x': 12, 'y': 15
+                                  }, {'x': 11, 'y':
+                                      15}, {'x': 10, 'y':
+                                            15}, {'x': 9, 'y':
+                                                  15}, {'x': 8, 'y':
+                                                        15}, {'x': 7, 'y':
+                                                              15}, {'x': 6, 'y':
+                                                                    15}, {'x': 5, 'y':
+                                                                          15}, {'x': 4, 'y': 15},
+         {'x': 3, 'y':
+          15}, {'x': 2, 'y':
+                15}, {'x': 1, 'y':
+                      15}, {'x': 1.9682458366, 'y':
+                            15.25}, {'x': 1, 'y':
+                                     15.5}, {'x': 2, 'y':
+                                             15.5}, {'x': 3, 'y':
+                                                     15.5}, {'x': 4, 'y':
+                                                             15.5}, {'x': 5, 'y':
+                                                                     15.5}, {'x': 6, 'y': 15.5
+                                                                             }, {'x': 7, 'y': 15.5},
+         {'x': 8, 'y':
+          15.5}, {'x': 9, 'y':
+                  15.5}, {'x': 10, 'y':
+                          15.5}, {'x': 11, 'y':
+                                  15.5}, {'x': 12, 'y': 15.5}, {'x': 11.0317541634, 'y': 15.75}, {
+                                      'x': 12, 'y': 16
+                                  }, {'x': 11, 'y':
+                                      16}, {'x': 10, 'y':
+                                            16}, {'x': 9, 'y':
+                                                  16}, {'x': 8, 'y':
+                                                        16}, {'x': 7, 'y':
+                                                              16}, {'x': 6, 'y':
+                                                                    16}, {'x': 5, 'y':
+                                                                          16}, {'x': 4, 'y': 16},
+         {'x': 3, 'y':
+          16}, {'x': 2, 'y':
+                16}, {'x': 1, 'y':
+                      16}, {'x': 1.9682458366, 'y':
+                            16.25}, {'x': 1, 'y':
+                                     16.5}, {'x': 2, 'y':
+                                             16.5}, {'x': 3, 'y':
+                                                     16.5}, {'x': 4, 'y':
+                                                             16.5}, {'x': 5, 'y':
+                                                                     16.5}, {'x': 6, 'y': 16.5
+                                                                             }, {'x': 7, 'y': 16.5},
+         {'x': 8, 'y':
+          16.5}, {'x': 9, 'y':
+                  16.5}, {'x': 10, 'y':
+                          16.5}, {'x': 11, 'y':
+                                  16.5}, {'x': 12, 'y': 16.5}, {'x': 11.0317541634, 'y': 16.75}, {
+                                      'x': 12, 'y': 17
+                                  }, {'x': 11, 'y':
+                                      17}, {'x': 10, 'y':
+                                            17}, {'x': 9, 'y':
+                                                  17}, {'x': 8, 'y':
+                                                        17}, {'x': 7, 'y':
+                                                              17}, {'x': 6, 'y':
+                                                                    17}, {'x': 5, 'y':
+                                                                          17}, {'x': 4, 'y': 17},
+         {'x': 3, 'y':
+          17}, {'x': 2, 'y':
+                17}, {'x': 1, 'y':
+                      17}, {'x': 1.9682458366, 'y':
+                            17.25}, {'x': 1, 'y':
+                                     17.5}, {'x': 2, 'y':
+                                             17.5}, {'x': 3, 'y':
+                                                     17.5}, {'x': 4, 'y':
+                                                             17.5}, {'x': 5, 'y':
+                                                                     17.5}, {'x': 6, 'y': 17.5
+                                                                             }, {'x': 7, 'y': 17.5},
+         {'x': 8, 'y':
+          17.5}, {'x': 9, 'y':
+                  17.5}, {'x': 10, 'y':
+                          17.5}, {'x': 11, 'y':
+                                  17.5}, {'x': 12, 'y': 17.5}, {'x': 11.0317541634, 'y': 17.75}, {
+                                      'x': 12, 'y': 18
+                                  }, {'x': 11, 'y':
+                                      18}, {'x': 10, 'y':
+                                            18}, {'x': 9, 'y':
+                                                  18}, {'x': 8, 'y':
+                                                        18}, {'x': 7, 'y':
+                                                              18}, {'x': 6, 'y':
+                                                                    18}, {'x': 5, 'y':
+                                                                          18}, {'x': 4, 'y': 18},
+         {'x': 3, 'y':
+          18}, {'x': 2, 'y':
+                18}, {'x': 1, 'y':
+                      18}, {'x': 1.9682458366, 'y':
+                            18.25}, {'x': 1, 'y':
+                                     18.5}, {'x': 2, 'y':
+                                             18.5}, {'x': 3, 'y':
+                                                     18.5}, {'x': 4, 'y':
+                                                             18.5}, {'x': 5, 'y':
+                                                                     18.5}, {'x': 6, 'y': 18.5
+                                                                             }, {'x': 7, 'y': 18.5},
+         {'x': 8, 'y':
+          18.5}, {'x': 9, 'y':
+                  18.5}, {'x': 10, 'y':
+                          18.5}, {'x': 11, 'y':
+                                  18.5}, {'x': 12, 'y': 18.5}, {'x': 11.0317541634, 'y': 18.75}, {
+                                      'x': 12, 'y': 19
+                                  }, {'x': 11, 'y':
+                                      19}, {'x': 10, 'y':
+                                            19}, {'x': 9, 'y':
+                                                  19}, {'x': 8, 'y':
+                                                        19}, {'x': 7, 'y':
+                                                              19}, {'x': 6, 'y':
+                                                                    19}, {'x': 5, 'y':
+                                                                          19}, {'x': 4, 'y': 19},
+         {'x': 3, 'y':
+          19}, {'x': 2, 'y':
+                19}, {'x': 1, 'y':
+                      19}, {'x': 1.9682458366, 'y':
+                            19.25}, {'x': 1, 'y':
+                                     19.5}, {'x': 2, 'y':
+                                             19.5}, {'x': 3, 'y':
+                                                     19.5}, {'x': 4, 'y':
+                                                             19.5}, {'x': 5, 'y':
+                                                                     19.5}, {'x': 6, 'y': 19.5
+                                                                             }, {'x': 7, 'y': 19.5},
+         {'x': 8, 'y':
+          19.5}, {'x': 9, 'y':
+                  19.5}, {'x': 10, 'y':
+                          19.5}, {'x': 11, 'y':
+                                  19.5}, {'x': 12, 'y':
+                                          19.5}, {'x': 11.0317541634, 'y':
+                                                  19.75}, {'x': 12, 'y':
+                                                           20}, {'x': 11, 'y':
+                                                                 20}, {'x': 10, 'y':
+                                                                       20}, {'x': 9, 'y':
+                                                                             20}, {'x': 8, 'y': 20},
+         {'x': 7, 'y':
+          20}, {'x': 6, 'y':
+                20}, {'x': 5, 'y':
+                      20}, {'x': 4, 'y':
+                            20}, {'x': 3, 'y':
+                                  20}, {'x': 2, 'y':
+                                        20}, {'x': 1, 'y':
+                                              20}, {'x': 1.9682458366, 'y':
+                                                    20.25}, {'x': 1, 'y':
+                                                             20.5}, {'x': 2, 'y':
+                                                                     20.5}, {'x': 3, 'y': 20.5
+                                                                             }, {'x': 4, 'y': 20.5},
+         {'x': 5, 'y':
+          20.5}, {'x': 6, 'y':
+                  20.5}, {'x': 7, 'y':
+                          20.5}, {'x': 8, 'y':
+                                  20.5}, {'x': 9, 'y':
+                                          20.5}, {'x': 10, 'y': 20.5}, {'x': 11, 'y': 20.5}, {
+                                              'x': 12, 'y': 20.5
+                                          }, {'x': 11.0317541634, 'y':
+                                              20.75}, {'x': 12, 'y': 21}, {'x': 11, 'y': 21}, {
+                                                  'x': 10, 'y': 21
+                                              }, {'x': 9, 'y':
+                                                  21}, {'x': 8, 'y':
+                                                        21}, {'x': 7, 'y':
+                                                              21}, {'x': 6, 'y':
+                                                                    21}, {'x': 5, 'y':
+                                                                          21}, {'x': 4, 'y': 21},
+         {'x': 3, 'y':
+          21}, {'x': 2, 'y':
+                21}, {'x': 1, 'y':
+                      21}, {'x': 1.9682458366, 'y':
+                            21.25}, {'x': 1, 'y':
+                                     21.5}, {'x': 2, 'y':
+                                             21.5}, {'x': 3, 'y':
+                                                     21.5}, {'x': 4, 'y':
+                                                             21.5}, {'x': 5, 'y':
+                                                                     21.5}, {'x': 6, 'y': 21.5
+                                                                             }, {'x': 7, 'y': 21.5},
+         {'x': 8, 'y':
+          21.5}, {'x': 9, 'y':
+                  21.5}, {'x': 10, 'y':
+                          21.5}, {'x': 11, 'y':
+                                  21.5}, {'x': 12, 'y':
+                                          21.5}, {'x': 11.0317541634, 'y':
+                                                  21.75}, {'x': 12, 'y':
+                                                           22}, {'x': 11, 'y':
+                                                                 22}, {'x': 10, 'y':
+                                                                       22}, {'x': 9, 'y':
+                                                                             22}, {'x': 8, 'y': 22},
+         {'x': 7, 'y':
+          22}, {'x': 6, 'y':
+                22}, {'x': 5, 'y':
+                      22}, {'x': 4, 'y':
+                            22}, {'x': 3, 'y':
+                                  22}, {'x': 2, 'y':
+                                        22}, {'x': 1, 'y':
+                                              22}, {'x': 1.9682458366, 'y':
+                                                    22.25}, {'x': 1, 'y':
+                                                             22.5}, {'x': 2, 'y':
+                                                                     22.5}, {'x': 3, 'y': 22.5
+                                                                             }, {'x': 4, 'y': 22.5},
+         {'x': 5, 'y':
+          22.5}, {'x': 6, 'y':
+                  22.5}, {'x': 7, 'y':
+                          22.5}, {'x': 8, 'y':
+                                  22.5}, {'x': 9, 'y':
+                                          22.5}, {'x': 10, 'y': 22.5}, {'x': 11, 'y': 22.5}, {
+                                              'x': 12, 'y': 22.5
+                                          }, {'x': 11.0317541634, 'y':
+                                              22.75}, {'x': 12, 'y':
+                                                       23}, {'x': 11, 'y':
+                                                             23}, {'x': 10, 'y':
+                                                                   23}, {'x': 9, 'y':
+                                                                         23}, {'x': 8, 'y': 23}, {
+                                                                             'x': 7, 'y': 23
+                                                                         }, {'x': 6, 'y':
+                                                                             23}, {'x': 5, 'y': 23},
+         {'x': 4, 'y':
+          23}, {'x': 3, 'y':
+                23}, {'x': 2, 'y':
+                      23}, {'x': 1, 'y':
+                            23}, {'x': 1.9682458366, 'y':
+                                  23.25}, {'x': 1, 'y':
+                                           23.5}, {'x': 2, 'y':
+                                                   23.5}, {'x': 3, 'y':
+                                                           23.5}, {'x': 4, 'y':
+                                                                   23.5}, {'x': 5, 'y': 23.5
+                                                                           }, {'x': 6, 'y': 23.5}, {
+                                                                               'x': 7, 'y': 23.5
+                                                                           }, {'x': 8, 'y': 23.5},
+         {'x': 9, 'y':
+          23.5}, {'x': 10, 'y':
+                  23.5}, {'x': 11, 'y':
+                          23.5}, {'x': 12, 'y':
+                                  23.5}, {'x': 12, 'y':
+                                          24.5}, {'x': 13, 'y': 24.5}, {'x': 13, 'y': 23.5}, {
+                                              'x': 14, 'y': 23.5
+                                          }, {'x': 15, 'y': 23.5}, {'x': 16, 'y': 23.5}, {
+                                              'x': 17, 'y': 23.5
+                                          }, {'x': 18, 'y': 23.5}, {'x': 19, 'y': 23.5}, {
+                                              'x': 20, 'y': 23.5
+                                          }, {'x': 21, 'y': 23.5}, {'x': 22, 'y': 23.5}, {
+                                              'x': 23, 'y': 23.5
+                                          }, {'x': 24, 'y':
+                                              23.5}, {'x': 23.0317541634, 'y':
+                                                      23.25}, {'x': 24, 'y':
+                                                               23}, {'x': 23, 'y':
+                                                                     23}, {'x': 22, 'y':
+                                                                           23}, {'x': 21, 'y': 23},
+         {'x': 20, 'y':
+          23}, {'x': 19, 'y':
+                23}, {'x': 18, 'y':
+                      23}, {'x': 17, 'y':
+                            23}, {'x': 16, 'y':
+                                  23}, {'x': 15, 'y':
+                                        23}, {'x': 14, 'y':
+                                              23}, {'x': 13, 'y':
+                                                    23}, {'x': 13.9682458366, 'y':
+                                                          22.75}, {'x': 13, 'y':
+                                                                   22.5}, {'x': 14, 'y': 22.5
+                                                                           }, {'x': 15, 'y': 22.5},
+         {'x': 16, 'y':
+          22.5}, {'x': 17, 'y':
+                  22.5}, {'x': 18, 'y':
+                          22.5}, {'x': 19, 'y':
+                                  22.5}, {'x': 20, 'y':
+                                          22.5}, {'x': 21, 'y':
+                                                  22.5}, {'x': 22, 'y':
+                                                          22.5}, {'x': 23, 'y':
+                                                                  22.5}, {'x': 24, 'y': 22.5}, {
+                                                                      'x': 23.0317541634, 'y': 22.25
+                                                                  }, {'x': 24, 'y':
+                                                                      22}, {'x': 23, 'y':
+                                                                            22}, {'x': 22, 'y': 22},
+         {'x': 21, 'y':
+          22}, {'x': 20, 'y':
+                22}, {'x': 19, 'y':
+                      22}, {'x': 18, 'y':
+                            22}, {'x': 17, 'y':
+                                  22}, {'x': 16, 'y':
+                                        22}, {'x': 15, 'y':
+                                              22}, {'x': 14, 'y':
+                                                    22}, {'x': 13, 'y':
+                                                          22}, {'x': 13.9682458366, 'y':
+                                                                21.75}, {'x': 13, 'y': 21.5}, {
+                                                                    'x': 14,
+                                                                    'y': 21.5
+                                                                }, {'x': 15, 'y':
+                                                                    21.5}, {'x': 16, 'y': 21.5}, {
+                                                                        'x': 17, 'y': 21.5
+                                                                    }, {'x': 18, 'y': 21.5}, {
+                                                                        'x': 19, 'y': 21.5
+                                                                    }, {'x': 20, 'y': 21.5}, {
+                                                                        'x': 21, 'y': 21.5
+                                                                    }, {'x': 22, 'y': 21.5}, {
+                                                                        'x': 23, 'y': 21.5
+                                                                    }, {'x': 24, 'y': 21.5}, {
+                                                                        'x': 23.0317541634, 'y':
+                                                                        21.25
+                                                                    }, {'x': 24, 'y':
+                                                                        21}, {'x': 23, 'y': 21
+                                                                              }, {'x': 22, 'y': 21},
+         {'x': 21, 'y':
+          21}, {'x': 20, 'y':
+                21}, {'x': 19, 'y':
+                      21}, {'x': 18, 'y':
+                            21}, {'x': 17, 'y':
+                                  21}, {'x': 16, 'y':
+                                        21}, {'x': 15, 'y':
+                                              21}, {'x': 14, 'y':
+                                                    21}, {'x': 13, 'y':
+                                                          21}, {'x': 13.9682458366, 'y': 20.75
+                                                                }, {'x': 13, 'y':
+                                                                    20.5}, {'x': 14, 'y': 20.5
+                                                                            }, {'x': 15, 'y': 20.5},
+         {'x': 16, 'y':
+          20.5}, {'x': 17, 'y':
+                  20.5}, {'x': 18, 'y':
+                          20.5}, {'x': 19, 'y':
+                                  20.5}, {'x': 20, 'y':
+                                          20.5}, {'x': 21, 'y':
+                                                  20.5}, {'x': 22, 'y':
+                                                          20.5}, {'x': 23, 'y':
+                                                                  20.5}, {'x': 24, 'y': 20.5}, {
+                                                                      'x': 23.0317541634, 'y': 20.25
+                                                                  }, {'x': 24, 'y':
+                                                                      20}, {'x': 23, 'y':
+                                                                            20}, {'x': 22, 'y': 20},
+         {'x': 21, 'y':
+          20}, {'x': 20, 'y':
+                20}, {'x': 19, 'y':
+                      20}, {'x': 18, 'y':
+                            20}, {'x': 17, 'y':
+                                  20}, {'x': 16, 'y':
+                                        20}, {'x': 15, 'y':
+                                              20}, {'x': 14, 'y':
+                                                    20}, {'x': 13, 'y':
+                                                          20}, {'x': 13.9682458366, 'y': 19.75
+                                                                }, {'x': 13, 'y':
+                                                                    19.5}, {'x': 14, 'y': 19.5}, {
+                                                                        'x': 15, 'y': 19.5
+                                                                    }, {'x': 16, 'y': 19.5}, {
+                                                                        'x': 17, 'y': 19.5
+                                                                    }, {'x': 18, 'y': 19.5}, {
+                                                                        'x': 19, 'y': 19.5
+                                                                    }, {'x': 20, 'y': 19.5}, {
+                                                                        'x': 21, 'y': 19.5
+                                                                    }, {'x': 22, 'y': 19.5}, {
+                                                                        'x': 23, 'y': 19.5
+                                                                    }, {'x': 24, 'y': 19.5}, {
+                                                                        'x': 23.0317541634, 'y':
+                                                                        19.25
+                                                                    }, {'x': 24, 'y':
+                                                                        19}, {'x': 23, 'y': 19}, {
+                                                                            'x': 22, 'y': 19
+                                                                        }, {'x': 21, 'y':
+                                                                            19}, {'x': 20, 'y': 19},
+         {'x': 19, 'y':
+          19}, {'x': 18, 'y':
+                19}, {'x': 17, 'y':
+                      19}, {'x': 16, 'y':
+                            19}, {'x': 15, 'y':
+                                  19}, {'x': 14, 'y':
+                                        19}, {'x': 13, 'y':
+                                              19}, {'x': 13.9682458366, 'y': 18.75
+                                                    }, {'x': 13, 'y':
+                                                        18.5}, {'x': 14, 'y':
+                                                                18.5}, {'x': 15, 'y': 18.5
+                                                                        }, {'x': 16, 'y': 18.5}, {
+                                                                            'x': 17, 'y': 18.5
+                                                                        }, {'x': 18, 'y': 18.5}, {
+                                                                            'x': 19, 'y': 18.5
+                                                                        }, {'x': 20, 'y': 18.5}, {
+                                                                            'x': 21, 'y': 18.5
+                                                                        }, {'x': 22, 'y': 18.5}, {
+                                                                            'x': 23, 'y': 18.5
+                                                                        }, {'x': 24, 'y': 18.5}, {
+                                                                            'x': 23.0317541634, 'y':
+                                                                            18.25
+                                                                        }, {'x': 24, 'y':
+                                                                            18}, {'x': 23, 'y': 18},
+         {'x': 22, 'y':
+          18}, {'x': 21, 'y':
+                18}, {'x': 20, 'y':
+                      18}, {'x': 19, 'y':
+                            18}, {'x': 18, 'y':
+                                  18}, {'x': 17, 'y':
+                                        18}, {'x': 16, 'y':
+                                              18}, {'x': 15, 'y':
+                                                    18}, {'x': 14, 'y':
+                                                          18}, {'x': 13, 'y': 18
+                                                                }, {'x': 13.9682458366, 'y':
+                                                                    17.75}, {'x': 13, 'y': 17.5}, {
+                                                                        'x': 14, 'y': 17.5
+                                                                    }, {'x': 15, 'y': 17.5}, {
+                                                                        'x': 16, 'y': 17.5
+                                                                    }, {'x': 17, 'y': 17.5}, {
+                                                                        'x': 18, 'y': 17.5
+                                                                    }, {'x': 19, 'y': 17.5}, {
+                                                                        'x': 20, 'y': 17.5
+                                                                    }, {'x': 21, 'y': 17.5}, {
+                                                                        'x': 22, 'y': 17.5
+                                                                    }, {'x': 23, 'y': 17.5
+                                                                        }, {'x': 24, 'y': 17.5}, {
+                                                                            'x': 23.0317541634, 'y':
+                                                                            17.25
+                                                                        }, {'x': 24, 'y':
+                                                                            17}, {'x': 23, 'y': 17},
+         {'x': 22, 'y':
+          17}, {'x': 21, 'y':
+                17}, {'x': 20, 'y':
+                      17}, {'x': 19, 'y':
+                            17}, {'x': 18, 'y':
+                                  17}, {'x': 17, 'y':
+                                        17}, {'x': 16, 'y':
+                                              17}, {'x': 15, 'y':
+                                                    17}, {'x': 14, 'y':
+                                                          17}, {'x': 13, 'y': 17
+                                                                }, {'x': 13.9682458366, 'y':
+                                                                    16.75}, {'x': 13, 'y': 16.5}, {
+                                                                        'x': 14, 'y': 16.5
+                                                                    }, {'x': 15, 'y': 16.5}, {
+                                                                        'x': 16, 'y': 16.5
+                                                                    }, {'x': 17, 'y': 16.5}, {
+                                                                        'x': 18, 'y': 16.5
+                                                                    }, {'x': 19, 'y': 16.5}, {
+                                                                        'x': 20, 'y': 16.5
+                                                                    }, {'x': 21, 'y': 16.5}, {
+                                                                        'x': 22, 'y': 16.5
+                                                                    }, {'x': 23, 'y': 16.5
+                                                                        }, {'x': 24, 'y': 16.5}, {
+                                                                            'x': 23.0317541634, 'y':
+                                                                            16.25
+                                                                        }, {'x': 24, 'y': 16}, {
+                                                                            'x': 23, 'y': 16
+                                                                        }, {'x': 22, 'y':
+                                                                            16}, {'x': 21, 'y': 16},
+         {'x': 20, 'y':
+          16}, {'x': 19, 'y':
+                16}, {'x': 18, 'y':
+                      16}, {'x': 17, 'y':
+                            16}, {'x': 16, 'y':
+                                  16}, {'x': 15, 'y':
+                                        16}, {'x': 14, 'y':
+                                              16}, {'x': 13, 'y':
+                                                    16}, {'x': 13.9682458366, 'y': 15.75}, {
+                                                        'x': 13,
+                                                        'y': 15.5
+                                                    }, {'x': 14, 'y':
+                                                        15.5}, {'x': 15, 'y':
+                                                                15.5}, {'x': 16, 'y': 15.5}, {
+                                                                    'x': 17,
+                                                                    'y': 15.5
+                                                                }, {'x': 18, 'y':
+                                                                    15.5}, {'x': 19, 'y': 15.5}, {
+                                                                        'x': 20, 'y': 15.5
+                                                                    }, {'x': 21, 'y': 15.5}, {
+                                                                        'x': 22, 'y': 15.5
+                                                                    }, {'x': 23, 'y':
+                                                                        15.5}, {'x': 24, 'y': 15.5},
+         {'x': 23.0317541634, 'y': 15.25
+          }, {'x': 24, 'y':
+              15}, {'x': 23, 'y':
+                    15}, {'x': 22, 'y':
+                          15}, {'x': 21, 'y':
+                                15}, {'x': 20, 'y':
+                                      15}, {'x': 19, 'y':
+                                            15}, {'x': 18, 'y':
+                                                  15}, {'x': 17, 'y':
+                                                        15}, {'x': 16, 'y':
+                                                              15}, {'x': 15, 'y':
+                                                                    15}, {'x': 14, 'y':
+                                                                          15}, {'x': 13, 'y': 15}, {
+                                                                              'x': 13.9682458366,
+                                                                              'y': 14.75
+                                                                          }, {'x': 13, 'y': 14.5}, {
+                                                                              'x': 14, 'y': 14.5
+                                                                          }, {'x': 15, 'y': 14.5},
+         {'x': 16, 'y':
+          14.5}, {'x': 17, 'y':
+                  14.5}, {'x': 18, 'y':
+                          14.5}, {'x': 19, 'y':
+                                  14.5}, {'x': 20, 'y':
+                                          14.5}, {'x': 21, 'y':
+                                                  14.5}, {'x': 22, 'y':
+                                                          14.5}, {'x': 23, 'y':
+                                                                  14.5}, {'x': 24, 'y': 14.5}, {
+                                                                      'x': 23.0317541634, 'y': 14.25
+                                                                  }, {'x': 24, 'y':
+                                                                      14}, {'x': 23, 'y':
+                                                                            14}, {'x': 22, 'y': 14},
+         {'x': 21, 'y':
+          14}, {'x': 20, 'y':
+                14}, {'x': 19, 'y':
+                      14}, {'x': 18, 'y':
+                            14}, {'x': 17, 'y':
+                                  14}, {'x': 16, 'y':
+                                        14}, {'x': 15, 'y':
+                                              14}, {'x': 14, 'y':
+                                                    14}, {'x': 13, 'y':
+                                                          14}, {'x': 13.9682458366, 'y': 13.75
+                                                                }, {'x': 13, 'y':
+                                                                    13.5}, {'x': 14, 'y': 13.5}, {
+                                                                        'x': 15, 'y': 13.5
+                                                                    }, {'x': 16, 'y': 13.5}, {
+                                                                        'x': 17, 'y': 13.5
+                                                                    }, {'x': 18, 'y': 13.5}, {
+                                                                        'x': 19, 'y': 13.5
+                                                                    }, {'x': 20, 'y': 13.5}, {
+                                                                        'x': 21, 'y': 13.5
+                                                                    }, {'x': 22, 'y': 13.5}, {
+                                                                        'x': 23, 'y': 13.5
+                                                                    }, {'x': 24, 'y': 13.5}, {
+                                                                        'x': 23.0317541634, 'y':
+                                                                        13.25
+                                                                    }, {'x': 24, 'y':
+                                                                        13}, {'x': 23, 'y': 13}, {
+                                                                            'x': 22, 'y': 13
+                                                                        }, {'x': 21, 'y':
+                                                                            13}, {'x': 20, 'y': 13},
+         {'x': 19, 'y':
+          13}, {'x': 18, 'y':
+                13}, {'x': 17, 'y':
+                      13}, {'x': 16, 'y':
+                            13}, {'x': 15, 'y':
+                                  13}, {'x': 14, 'y':
+                                        13}, {'x': 13, 'y':
+                                              13}, {'x': 13.9682458366, 'y': 12.75
+                                                    }, {'x': 13, 'y':
+                                                        12.5}, {'x': 14, 'y':
+                                                                12.5}, {'x': 15, 'y': 12.5
+                                                                        }, {'x': 16, 'y': 12.5}, {
+                                                                            'x': 17, 'y': 12.5
+                                                                        }, {'x': 18, 'y': 12.5}, {
+                                                                            'x': 19, 'y': 12.5
+                                                                        }, {'x': 20, 'y': 12.5}, {
+                                                                            'x': 21, 'y': 12.5
+                                                                        }, {'x': 22, 'y': 12.5}, {
+                                                                            'x': 23, 'y': 12.5
+                                                                        }, {'x': 24, 'y': 12.5}, {
+                                                                            'x': 23.0317541634, 'y':
+                                                                            12.25
+                                                                        }, {'x': 24, 'y':
+                                                                            12}, {'x': 23, 'y': 12},
+         {'x': 22, 'y':
+          12}, {'x': 21, 'y':
+                12}, {'x': 20, 'y':
+                      12}, {'x': 19, 'y':
+                            12}, {'x': 18, 'y':
+                                  12}, {'x': 17, 'y':
+                                        12}, {'x': 16, 'y':
+                                              12}, {'x': 15, 'y':
+                                                    12}, {'x': 14, 'y':
+                                                          12}, {'x': 13, 'y': 12
+                                                                }, {'x': 13.9682458366, 'y':
+                                                                    11.75}, {'x': 13, 'y': 11.5}, {
+                                                                        'x': 14, 'y': 11.5
+                                                                    }, {'x': 15, 'y': 11.5}, {
+                                                                        'x': 16, 'y': 11.5
+                                                                    }, {'x': 17, 'y': 11.5}, {
+                                                                        'x': 18, 'y': 11.5
+                                                                    }, {'x': 19, 'y': 11.5}, {
+                                                                        'x': 20, 'y': 11.5
+                                                                    }, {'x': 21, 'y': 11.5}, {
+                                                                        'x': 22, 'y': 11.5
+                                                                    }, {'x': 23, 'y': 11.5
+                                                                        }, {'x': 24, 'y': 11.5}, {
+                                                                            'x': 23.0317541634, 'y':
+                                                                            11.25
+                                                                        }, {'x': 24, 'y': 11}, {
+                                                                            'x': 23, 'y': 11
+                                                                        }, {'x': 22, 'y':
+                                                                            11}, {'x': 21, 'y': 11},
+         {'x': 20, 'y':
+          11}, {'x': 19, 'y':
+                11}, {'x': 18, 'y':
+                      11}, {'x': 17, 'y':
+                            11}, {'x': 16, 'y':
+                                  11}, {'x': 15, 'y':
+                                        11}, {'x': 14, 'y':
+                                              11}, {'x': 13, 'y':
+                                                    11}, {'x': 13.9682458366, 'y': 10.75}, {
+                                                        'x': 13,
+                                                        'y': 10.5
+                                                    }, {'x': 14, 'y':
+                                                        10.5}, {'x': 15, 'y':
+                                                                10.5}, {'x': 16, 'y': 10.5}, {
+                                                                    'x': 17,
+                                                                    'y': 10.5
+                                                                }, {'x': 18, 'y':
+                                                                    10.5}, {'x': 19, 'y': 10.5}, {
+                                                                        'x': 20, 'y': 10.5
+                                                                    }, {'x': 21, 'y': 10.5}, {
+                                                                        'x': 22, 'y': 10.5
+                                                                    }, {'x': 23, 'y': 10.5
+                                                                        }, {'x': 24, 'y': 10.5}, {
+                                                                            'x': 23.0317541634, 'y':
+                                                                            10.25
+                                                                        }, {'x': 24, 'y': 10}, {
+                                                                            'x': 23, 'y': 10
+                                                                        }, {'x': 22, 'y':
+                                                                            10}, {'x': 21, 'y': 10},
+         {'x': 20, 'y':
+          10}, {'x': 19, 'y':
+                10}, {'x': 18, 'y':
+                      10}, {'x': 17, 'y':
+                            10}, {'x': 16, 'y':
+                                  10}, {'x': 15, 'y':
+                                        10}, {'x': 14, 'y':
+                                              10}, {'x': 13, 'y':
+                                                    10}, {'x': 13.9682458366, 'y': 9.75}, {
+                                                        'x': 13,
+                                                        'y': 9.5
+                                                    }, {'x': 14, 'y':
+                                                        9.5}, {'x': 15, 'y':
+                                                               9.5}, {'x': 16, 'y': 9.5
+                                                                      }, {'x': 17, 'y': 9.5
+                                                                          }, {'x': 18, 'y': 9.5}, {
+                                                                              'x': 19, 'y': 9.5
+                                                                          }, {'x': 20, 'y': 9.5}, {
+                                                                              'x': 21, 'y': 9.5
+                                                                          }, {'x': 22, 'y': 9.5}, {
+                                                                              'x': 23, 'y': 9.5
+                                                                          }, {'x': 24, 'y': 9.5}, {
+                                                                              'x': 23.0317541634,
+                                                                              'y': 9.25
+                                                                          }, {'x': 24, 'y':
+                                                                              9}, {'x': 23, 'y': 9},
+         {'x': 22, 'y':
+          9}, {'x': 21, 'y':
+               9}, {'x': 20, 'y':
+                    9}, {'x': 19, 'y':
+                         9}, {'x': 18, 'y':
+                              9}, {'x': 17, 'y':
+                                   9}, {'x': 16, 'y':
+                                        9}, {'x': 15, 'y':
+                                             9}, {'x': 14, 'y':
+                                                  9}, {'x': 13, 'y':
+                                                       9}, {'x': 13.9682458366, 'y':
+                                                            8.75}, {'x': 13, 'y': 8.5}, {
+                                                                'x': 14,
+                                                                'y': 8.5
+                                                            }, {'x': 15, 'y':
+                                                                8.5}, {'x': 16, 'y':
+                                                                       8.5}, {'x': 17, 'y': 8.5}, {
+                                                                           'x': 18, 'y': 8.5
+                                                                       }, {'x': 19, 'y': 8.5}, {
+                                                                           'x': 20, 'y': 8.5
+                                                                       }, {'x': 21, 'y': 8.5}, {
+                                                                           'x': 22, 'y': 8.5
+                                                                       }, {'x': 23, 'y': 8.5
+                                                                           }, {'x': 24, 'y': 8.5}, {
+                                                                               'x': 23.0317541634,
+                                                                               'y': 8.25
+                                                                           }, {'x': 24, 'y': 8},
+         {'x': 23, 'y':
+          8}, {'x': 22, 'y':
+               8}, {'x': 21, 'y':
+                    8}, {'x': 20, 'y':
+                         8}, {'x': 19, 'y':
+                              8}, {'x': 18, 'y':
+                                   8}, {'x': 17, 'y':
+                                        8}, {'x': 16, 'y':
+                                             8}, {'x': 15, 'y':
+                                                  8}, {'x': 14, 'y':
+                                                       8}, {'x': 13, 'y':
+                                                            8}, {'x': 13.9682458366, 'y':
+                                                                 7.75}, {'x': 13, 'y': 7.5
+                                                                         }, {'x': 14, 'y': 7.5}, {
+                                                                             'x': 15, 'y': 7.5
+                                                                         }, {'x': 16, 'y': 7.5}, {
+                                                                             'x': 17, 'y': 7.5
+                                                                         }, {'x': 18, 'y': 7.5}, {
+                                                                             'x': 19, 'y': 7.5
+                                                                         }, {'x': 20, 'y': 7.5}, {
+                                                                             'x': 21, 'y': 7.5
+                                                                         }, {'x': 22, 'y': 7.5}, {
+                                                                             'x': 23, 'y': 7.5
+                                                                         }, {'x': 24, 'y': 7.5}, {
+                                                                             'x': 23.0317541634,
+                                                                             'y': 7.25
+                                                                         }, {'x': 24, 'y':
+                                                                             7}, {'x': 23, 'y': 7},
+         {'x': 22, 'y':
+          7}, {'x': 21, 'y':
+               7}, {'x': 20, 'y':
+                    7}, {'x': 19, 'y':
+                         7}, {'x': 18, 'y':
+                              7}, {'x': 17, 'y':
+                                   7}, {'x': 16, 'y':
+                                        7}, {'x': 15, 'y':
+                                             7}, {'x': 14, 'y':
+                                                  7}, {'x': 13, 'y':
+                                                       7}, {'x': 13.9682458366, 'y':
+                                                            6.75}, {'x': 13, 'y': 6.5}, {
+                                                                'x': 14,
+                                                                'y': 6.5
+                                                            }, {'x': 15, 'y':
+                                                                6.5}, {'x': 16, 'y':
+                                                                       6.5}, {'x': 17, 'y': 6.5}, {
+                                                                           'x': 18, 'y': 6.5
+                                                                       }, {'x': 19, 'y': 6.5}, {
+                                                                           'x': 20, 'y': 6.5
+                                                                       }, {'x': 21, 'y': 6.5}, {
+                                                                           'x': 22, 'y': 6.5
+                                                                       }, {'x': 23, 'y': 6.5
+                                                                           }, {'x': 24, 'y': 6.5}, {
+                                                                               'x': 23.0317541634,
+                                                                               'y': 6.25
+                                                                           }, {'x': 24, 'y': 6},
+         {'x': 23, 'y':
+          6}, {'x': 22, 'y':
+               6}, {'x': 21, 'y':
+                    6}, {'x': 20, 'y':
+                         6}, {'x': 19, 'y':
+                              6}, {'x': 18, 'y':
+                                   6}, {'x': 17, 'y':
+                                        6}, {'x': 16, 'y':
+                                             6}, {'x': 15, 'y':
+                                                  6}, {'x': 14, 'y':
+                                                       6}, {'x': 13, 'y':
+                                                            6}, {'x': 13.9682458366, 'y':
+                                                                 5.75}, {'x': 13, 'y': 5.5
+                                                                         }, {'x': 14, 'y': 5.5}, {
+                                                                             'x': 15, 'y': 5.5
+                                                                         }, {'x': 16, 'y': 5.5}, {
+                                                                             'x': 17, 'y': 5.5
+                                                                         }, {'x': 18, 'y': 5.5}, {
+                                                                             'x': 19, 'y': 5.5
+                                                                         }, {'x': 20, 'y': 5.5}, {
+                                                                             'x': 21, 'y': 5.5
+                                                                         }, {'x': 22, 'y': 5.5}, {
+                                                                             'x': 23, 'y': 5.5
+                                                                         }, {'x': 24, 'y': 5.5}, {
+                                                                             'x': 23.0317541634,
+                                                                             'y': 5.25
+                                                                         }, {'x': 24, 'y':
+                                                                             5}, {'x': 23, 'y': 5},
+         {'x': 22, 'y':
+          5}, {'x': 21, 'y':
+               5}, {'x': 20, 'y':
+                    5}, {'x': 19, 'y':
+                         5}, {'x': 18, 'y':
+                              5}, {'x': 17, 'y':
+                                   5}, {'x': 16, 'y':
+                                        5}, {'x': 15, 'y':
+                                             5}, {'x': 14, 'y':
+                                                  5}, {'x': 13, 'y':
+                                                       5}, {'x': 13.9682458366, 'y':
+                                                            4.75}, {'x': 13, 'y': 4.5}, {
+                                                                'x': 14,
+                                                                'y': 4.5
+                                                            }, {'x': 15, 'y':
+                                                                4.5}, {'x': 16, 'y':
+                                                                       4.5}, {'x': 17, 'y': 4.5}, {
+                                                                           'x': 18, 'y': 4.5
+                                                                       }, {'x': 19, 'y': 4.5}, {
+                                                                           'x': 20, 'y': 4.5
+                                                                       }, {'x': 21, 'y': 4.5}, {
+                                                                           'x': 22, 'y': 4.5
+                                                                       }, {'x': 23, 'y': 4.5
+                                                                           }, {'x': 24, 'y': 4.5}, {
+                                                                               'x': 23.0317541634,
+                                                                               'y': 4.25
+                                                                           }, {'x': 24, 'y': 4},
+         {'x': 23, 'y':
+          4}, {'x': 22, 'y':
+               4}, {'x': 21, 'y':
+                    4}, {'x': 20, 'y':
+                         4}, {'x': 19, 'y':
+                              4}, {'x': 18, 'y':
+                                   4}, {'x': 17, 'y':
+                                        4}, {'x': 16, 'y':
+                                             4}, {'x': 15, 'y':
+                                                  4}, {'x': 14, 'y':
+                                                       4}, {'x': 13, 'y':
+                                                            4}, {'x': 13.9682458366, 'y':
+                                                                 3.75}, {'x': 13, 'y': 3.5
+                                                                         }, {'x': 14, 'y': 3.5}, {
+                                                                             'x': 15, 'y': 3.5
+                                                                         }, {'x': 16, 'y': 3.5}, {
+                                                                             'x': 17, 'y': 3.5
+                                                                         }, {'x': 18, 'y': 3.5}, {
+                                                                             'x': 19, 'y': 3.5
+                                                                         }, {'x': 20, 'y': 3.5}, {
+                                                                             'x': 21, 'y': 3.5
+                                                                         }, {'x': 22, 'y': 3.5}, {
+                                                                             'x': 23, 'y': 3.5
+                                                                         }, {'x': 24, 'y': 3.5}, {
+                                                                             'x': 23.0317541634,
+                                                                             'y': 3.25
+                                                                         }, {'x': 24, 'y':
+                                                                             3}, {'x': 23, 'y': 3},
+         {'x': 22, 'y':
+          3}, {'x': 21, 'y':
+               3}, {'x': 20, 'y':
+                    3}, {'x': 19, 'y':
+                         3}, {'x': 18, 'y':
+                              3}, {'x': 17, 'y':
+                                   3}, {'x': 16, 'y':
+                                        3}, {'x': 15, 'y':
+                                             3}, {'x': 14, 'y':
+                                                  3}, {'x': 13, 'y':
+                                                       3}, {'x': 13.9682458366, 'y':
+                                                            2.75}, {'x': 13, 'y': 2.5}, {
+                                                                'x': 14,
+                                                                'y': 2.5
+                                                            }, {'x': 15, 'y':
+                                                                2.5}, {'x': 16, 'y':
+                                                                       2.5}, {'x': 17, 'y': 2.5}, {
+                                                                           'x': 18, 'y': 2.5
+                                                                       }, {'x': 19, 'y': 2.5}, {
+                                                                           'x': 20, 'y': 2.5
+                                                                       }, {'x': 21, 'y': 2.5}, {
+                                                                           'x': 22, 'y': 2.5
+                                                                       }, {'x': 23, 'y': 2.5
+                                                                           }, {'x': 24, 'y': 2.5}, {
+                                                                               'x': 23.0317541634,
+                                                                               'y': 2.25
+                                                                           }, {'x': 24, 'y': 2},
+         {'x': 23, 'y':
+          2}, {'x': 22, 'y':
+               2}, {'x': 21, 'y':
+                    2}, {'x': 20, 'y':
+                         2}, {'x': 19, 'y':
+                              2}, {'x': 18, 'y':
+                                   2}, {'x': 17, 'y':
+                                        2}, {'x': 16, 'y':
+                                             2}, {'x': 15, 'y':
+                                                  2}, {'x': 14, 'y':
+                                                       2}, {'x': 13, 'y':
+                                                            2}, {'x': 13.9682458366, 'y':
+                                                                 1.75}, {'x': 13, 'y': 1.5
+                                                                         }, {'x': 14, 'y': 1.5}, {
+                                                                             'x': 15, 'y': 1.5
+                                                                         }, {'x': 16, 'y': 1.5}, {
+                                                                             'x': 17, 'y': 1.5
+                                                                         }, {'x': 18, 'y': 1.5}, {
+                                                                             'x': 19, 'y': 1.5
+                                                                         }, {'x': 20, 'y': 1.5}, {
+                                                                             'x': 21, 'y': 1.5
+                                                                         }, {'x': 22, 'y': 1.5}, {
+                                                                             'x': 23, 'y': 1.5
+                                                                         }, {'x': 24, 'y': 1.5}, {
+                                                                             'x': 23.0317541634,
+                                                                             'y': 1.25
+                                                                         }, {'x': 24, 'y':
+                                                                             1}, {'x': 23, 'y': 1},
+         {'x': 22, 'y':
+          1}, {'x': 21, 'y':
+               1}, {'x': 20, 'y':
+                    1}, {'x': 19, 'y':
+                         1}, {'x': 18, 'y':
+                              1}, {'x': 17, 'y':
+                                   1}, {'x': 16, 'y':
+                                        1}, {'x': 15, 'y':
+                                             1}, {'x': 14, 'y':
+                                                  1}, {'x': 13, 'y':
+                                                       1}, {'x': 13.8660254038, 'y':
+                                                            0.5}, {'x': 12.8660254038, 'y':
+                                                                   0.5}, {'x': 12, 'y': 0}, {
+                                                                       'x': 11.1339745962, 'y': 0.5
+                                                                   }]
+    }, ""
 
-    if questionNum == 15:
-        # A rather poor tetris run:
+  if questionNum == 13:
+    import numpy as np
+    peopleCounts = [4, 20, 40, 80, 150, 200]
+    peopleCount = peopleCounts[subPass]
 
-        def block(x):
-            b = [
-                {
-                    "translationCount": x,
-                    "rotationCount": 3
-                },
-                {
-                    "translationCount": x + 1,
-                    "rotationCount": 1
-                },
-            ]
-            b.extend(b)
-            b.extend(b)
-            return b
+    xDiff = math.sqrt(peopleCount) / 3
+    yDiff = math.sqrt(peopleCount) / 3
+    people = []
+    for i in np.arange(-xDiff, xDiff, 0.6):
+      for j in np.arange(-yDiff, yDiff, 0.6):
+        people.append({"xy": [i - 12, j - 12]})
+        if len(people) == peopleCount:
+          break
+      if len(people) == peopleCount:
+        break
+    return {"people": people}, "Placebo thinking... hmmm..."
 
-        basicBlocks = block(0) + block(2) + block(4) + block(6) + block(8)
+  if questionNum == 14 and subPass == 0:
+    # Question 14 _ 0
+    return {"lines": [{"a": -0.5, "b": 4}, {"a": 0, "b": 7}]}, "Placebo thinking... hmmm..."
 
-        if subPass == 1:
-            basicBlocks.extend([
-                {
-                    "translationCount": 13,
-                    "rotationCount": 2
-                },
-                {
-                    "translationCount": 10,
-                    "rotationCount": 0
-                },
-            ] * 6)
-            basicBlocks.extend(block(14))
+  if questionNum == 14 and subPass == 1:
+    # Question 14 _ 1 Just test we can do squares
+    return {"lines": [
+        {"a": float("inf"), "b": 10},
+        {"a": 0, "b": 8},
+    ]}, "Placebo thinking... hmmm..."
 
-        if subPass >= 2:
-            basicBlocks.extend(block(10))
-            basicBlocks.extend(block(12))
-            basicBlocks.extend(block(14))
-            basicBlocks.extend(block(16))
-            basicBlocks.extend(block(18))
+  if questionNum == 14 and subPass == 2:
+    return {
+        'lines': [{'a': 1, 'b': -36.0}, {'a': 1, 'b': -30.0}, {'a': 1, 'b': -23.5},
+                  {'a': 1, 'b': -21.5}, {'a': 1, 'b': -19.5}, {'a': 1, 'b': -15.5},
+                  {'a': 1, 'b': -9.5}, {'a': 1, 'b': -4.0}, {'a': 1, 'b': -0.5}, {'a': 1, 'b': 3.5},
+                  {'a': 1, 'b': 7.5}, {'a': 1, 'b': 12.0}, {'a': 1, 'b': 19.0}, {'a': 1, 'b': 28.0}]
+    }, ""
 
-        if subPass >= 3:
-            basicBlocks.extend(block(20))
-            basicBlocks.extend(block(22))
-            basicBlocks.extend(block(24))
-            basicBlocks.extend(block(26))
-            basicBlocks.extend(block(28))
-            basicBlocks.extend(block(30))
-            basicBlocks.extend(block(32))
-            basicBlocks.extend(block(34))
-            basicBlocks.extend(block(36))
-            basicBlocks.extend(block(38))
+  if questionNum == 14 and subPass == 3:
+    return {
+        'lines':
+        [{'a': 0.125, 'b': 1.0625}, {'a': 0.125, 'b': 3.6875}, {'a': 0.125, 'b': 9.0625},
+         {'a': 0.125, 'b': 14.0}, {'a': 0.125, 'b': 18.0}, {'a': 0.125, 'b': 23.5625},
+         {'a': 0.125, 'b': 31.9375}, {'a': 0.125, 'b': 37.5}, {'a': 0.125, 'b':
+                                                               38.75}, {'a': 0.125, 'b': 42.1875},
+         {'a': 0.125, 'b': 46.125}, {'a': 0.125, 'b': 48.875}, {'a': 0.125, 'b':
+                                                                50.6875}, {'a': 0.125, 'b': 52.625},
+         {'a': 0.125, 'b': 54.875}, {'a': 0.125, 'b': 57.75}, {'a': 0.125, 'b':
+                                                               59.75}, {'a': 0.125, 'b': 61.1875},
+         {'a': 0.125, 'b': 63.5}, {'a': 0.125, 'b': 65.4375}, {'a': 0.125, 'b':
+                                                               66.6875}, {'a': 0.125, 'b': 69.8125},
+         {'a': 0.125, 'b':
+          72.8125}, {'a': 0.125, 'b':
+                     74.9375}, {'a': 0.125, 'b':
+                                77.75}, {'a': 0.125, 'b':
+                                         81.25}, {'a': 0.125, 'b':
+                                                  85.75}, {'a': 0.125, 'b':
+                                                           90.75}, {'a': 0.125, 'b': 96.25}]
+    }, ""
 
-        return {"moves": basicBlocks}, "Placebo thinking... hmmm..."
+  if questionNum == 15:
+    # A rather poor tetris run:
 
-    if questionNum == 16:
-        g = {}
-        exec(open("16.py").read(), g)
+    def block(x):
+      b = [
+          {"translationCount": x, "rotationCount": 3},
+          {"translationCount": x + 1, "rotationCount": 1},
+      ]
+      b.extend(b)
+      b.extend(b)
+      return b
 
-        prismList = g["prismList"][0:subPass + 1]
+    basicBlocks = block(0) + block(2) + block(4) + block(6) + block(8)
 
-        # Expand prismList into individual prisms with all rotation variants
-        prisms = []
-        for count, x, y, z in prismList:
-            dims = sorted([x, y, z], reverse=True)
-            for _ in range(count):
-                prisms.append(tuple(dims))
+    if subPass == 1:
+      basicBlocks.extend([
+          {"translationCount": 13, "rotationCount": 2},
+          {"translationCount": 10, "rotationCount": 0},
+      ] * 6)
+      basicBlocks.extend(block(14))
 
-        # Sort prisms by volume (largest first) for better packing
-        prisms.sort(key=lambda p: p[0] * p[1] * p[2], reverse=True)
+    if subPass >= 2:
+      basicBlocks.extend(block(10))
+      basicBlocks.extend(block(12))
+      basicBlocks.extend(block(14))
+      basicBlocks.extend(block(16))
+      basicBlocks.extend(block(18))
 
-        def get_rotations(dims):
-            """Get all unique rotations of a prism."""
-            x, y, z = dims
-            rotations = set()
-            for perm in [(x, y, z), (x, z, y), (y, x, z), (y, z, x), (z, x, y),
-                         (z, y, x)]:
-                rotations.add(perm)
-            return list(rotations)
+    if subPass >= 3:
+      basicBlocks.extend(block(20))
+      basicBlocks.extend(block(22))
+      basicBlocks.extend(block(24))
+      basicBlocks.extend(block(26))
+      basicBlocks.extend(block(28))
+      basicBlocks.extend(block(30))
+      basicBlocks.extend(block(32))
+      basicBlocks.extend(block(34))
+      basicBlocks.extend(block(36))
+      basicBlocks.extend(block(38))
 
-        def boxes_overlap(b1, b2):
-            """Check if two boxes overlap."""
-            return (b1['XyzMin'][0] < b2['XyzMax'][0]
-                    and b1['XyzMax'][0] > b2['XyzMin'][0]
-                    and b1['XyzMin'][1] < b2['XyzMax'][1]
-                    and b1['XyzMax'][1] > b2['XyzMin'][1]
-                    and b1['XyzMin'][2] < b2['XyzMax'][2]
-                    and b1['XyzMax'][2] > b2['XyzMin'][2])
+    return {"moves": basicBlocks}, "Placebo thinking... hmmm..."
 
-        def can_place(placed, new_box):
-            """Check if new_box can be placed without overlap."""
-            for box in placed:
-                if boxes_overlap(box, new_box):
-                    return False
-            return True
+  if questionNum == 16:
+    g = {}
+    exec(open("16.py").read(), g)
 
-        def get_candidate_positions(placed, max_coord):
-            """Get candidate positions (corners of existing boxes + origin)."""
-            positions = [(0, 0, 0)]
-            for box in placed:
-                # Add corners of existing boxes as candidates
-                for x in [box['XyzMin'][0], box['XyzMax'][0]]:
-                    for y in [box['XyzMin'][1], box['XyzMax'][1]]:
-                        for z in [box['XyzMin'][2], box['XyzMax'][2]]:
-                            if x <= max_coord and y <= max_coord and z <= max_coord:
-                                positions.append((x, y, z))
-            return list(set(positions))
+    prismList = g["prismList"][0:subPass + 1]
 
-        def bounding_volume(placed):
-            """Calculate bounding box volume of placed boxes."""
-            if not placed:
-                return 0
-            max_x = max(b['XyzMax'][0] for b in placed)
-            max_y = max(b['XyzMax'][1] for b in placed)
-            max_z = max(b['XyzMax'][2] for b in placed)
-            return max_x * max_y * max_z
+    # Expand prismList into individual prisms with all rotation variants
+    prisms = []
+    for count, x, y, z in prismList:
+      dims = sorted([x, y, z], reverse=True)
+      for _ in range(count):
+        prisms.append(tuple(dims))
 
-        def pack_greedy(prisms_to_place):
-            """Greedy bottom-left-back packing with rotation."""
-            placed = []
-            max_coord = sum(max(p) for p in prisms_to_place)  # Upper bound
+    # Sort prisms by volume (largest first) for better packing
+    prisms.sort(key=lambda p: p[0] * p[1] * p[2], reverse=True)
 
-            for dims in prisms_to_place:
-                best_pos = None
-                best_rot = None
-                best_score = float('inf')
+    def get_rotations(dims):
+      """Get all unique rotations of a prism."""
+      x, y, z = dims
+      rotations = set()
+      for perm in [(x, y, z), (x, z, y), (y, x, z), (y, z, x), (z, x, y), (z, y, x)]:
+        rotations.add(perm)
+      return list(rotations)
 
-                candidates = get_candidate_positions(placed, max_coord)
-                # Sort candidates by (z, y, x) for bottom-left-back preference
-                candidates.sort(key=lambda p: (p[2], p[1], p[0]))
+    def boxes_overlap(b1, b2):
+      """Check if two boxes overlap."""
+      return (b1['XyzMin'][0] < b2['XyzMax'][0] and b1['XyzMax'][0] > b2['XyzMin'][0]
+              and b1['XyzMin'][1] < b2['XyzMax'][1] and b1['XyzMax'][1] > b2['XyzMin'][1]
+              and b1['XyzMin'][2] < b2['XyzMax'][2] and b1['XyzMax'][2] > b2['XyzMin'][2])
 
-                for rot in get_rotations(dims):
-                    dx, dy, dz = rot
-                    for px, py, pz in candidates:
-                        new_box = {
-                            'XyzMin': [px, py, pz],
-                            'XyzMax': [px + dx, py + dy, pz + dz]
-                        }
-                        if can_place(placed, new_box):
-                            # Score by resulting bounding volume
-                            test_placed = placed + [new_box]
-                            score = bounding_volume(test_placed)
-                            if score < best_score:
-                                best_score = score
-                                best_pos = (px, py, pz)
-                                best_rot = rot
+    def can_place(placed, new_box):
+      """Check if new_box can be placed without overlap."""
+      for box in placed:
+        if boxes_overlap(box, new_box):
+          return False
+      return True
 
-                if best_pos is None:
-                    # Fallback: stack on top
-                    max_z = max((b['XyzMax'][2]
-                                 for b in placed), default=0) if placed else 0
-                    best_pos = (0, 0, max_z)
-                    best_rot = dims
+    def get_candidate_positions(placed, max_coord):
+      """Get candidate positions (corners of existing boxes + origin)."""
+      positions = [(0, 0, 0)]
+      for box in placed:
+        # Add corners of existing boxes as candidates
+        for x in [box['XyzMin'][0], box['XyzMax'][0]]:
+          for y in [box['XyzMin'][1], box['XyzMax'][1]]:
+            for z in [box['XyzMin'][2], box['XyzMax'][2]]:
+              if x <= max_coord and y <= max_coord and z <= max_coord:
+                positions.append((x, y, z))
+      return list(set(positions))
 
-                px, py, pz = best_pos
-                dx, dy, dz = best_rot
-                placed.append({
-                    'XyzMin': [px, py, pz],
-                    'XyzMax': [px + dx, py + dy, pz + dz]
-                })
+    def bounding_volume(placed):
+      """Calculate bounding box volume of placed boxes."""
+      if not placed:
+        return 0
+      max_x = max(b['XyzMax'][0] for b in placed)
+      max_y = max(b['XyzMax'][1] for b in placed)
+      max_z = max(b['XyzMax'][2] for b in placed)
+      return max_x * max_y * max_z
 
-            return placed
+    def pack_greedy(prisms_to_place):
+      """Greedy bottom-left-back packing with rotation."""
+      placed = []
+      max_coord = sum(max(p) for p in prisms_to_place)  # Upper bound
 
-        packings = pack_greedy(prisms)
+      for dims in prisms_to_place:
+        best_pos = None
+        best_rot = None
+        best_score = float('inf')
 
-        return {
-            'boxes': packings
-        }, "Calculated with greedy bottom-left-back packing"
+        candidates = get_candidate_positions(placed, max_coord)
+        # Sort candidates by (z, y, x) for bottom-left-back preference
+        candidates.sort(key=lambda p: (p[2], p[1], p[0]))
 
-    if questionNum == 17 and subPass == 0:
-        g = {}
-        exec(open("17.py").read(), g)
-        code = g["referenceScad"]
-        code = code.replace("module reference", "union")
-        return code, "I had to solve this for the reference implementation."
+        for rot in get_rotations(dims):
+          dx, dy, dz = rot
+          for px, py, pz in candidates:
+            new_box = {'XyzMin': [px, py, pz], 'XyzMax': [px + dx, py + dy, pz + dz]}
+            if can_place(placed, new_box):
+              # Score by resulting bounding volume
+              test_placed = placed + [new_box]
+              score = bounding_volume(test_placed)
+              if score < best_score:
+                best_score = score
+                best_pos = (px, py, pz)
+                best_rot = rot
 
-    if questionNum == 18:
-        g = {}
-        exec(open("18.py").read(), g)
-        code = g["prepareSubpassReferenceScad"](subPass)
-        code = code.replace("module reference", "union")
-        return code, "I had to solve this for the reference implementation."
+        if best_pos is None:
+          # Fallback: stack on top
+          max_z = max((b['XyzMax'][2] for b in placed), default=0) if placed else 0
+          best_pos = (0, 0, max_z)
+          best_rot = dims
 
-    if questionNum == 19 and subPass == 0:
-        return {
-            "tetrahedra": [
-                {
-                    "x": -1.500000,
-                    "y": 2.598076,
-                    "z": 0.000000,
-                    "q0": 0.000000,
-                    "q1": 0.000000,
-                    "q2": 0.000000,
-                    "q3": 1.000000
-                },
-            ]
-        }, "Placebo thinking... hmmm..."
+        px, py, pz = best_pos
+        dx, dy, dz = best_rot
+        placed.append({'XyzMin': [px, py, pz], 'XyzMax': [px + dx, py + dy, pz + dz]})
 
-    if questionNum == 20:
-        import base64
-        g = {}
-        exec(open("20.py").read(), g)
-        image = g["loadReferenceImage"]()
-        sys.set_int_max_str_digits(1000000)
-        gridSize = [256, 128, 64, 32, 8][subPass]
-        sampleSize = image.size[0] // gridSize
-        data = 0
-        for y in range(gridSize):
-            for x in range(gridSize):
-                px = x * sampleSize + sampleSize // 2
-                py = y * sampleSize + sampleSize // 2
-                if image.getpixel((px, py)) == 0:
-                    data |= (1 << (y * gridSize + x))
+      return placed
 
-        codeBook = [
-            "0" * 16, "f" * 16, "0" * 8, "f" * 8, "0000", "ffff", "00", "ff"
+    packings = pack_greedy(prisms)
+
+    return {'boxes': packings}, "Calculated with greedy bottom-left-back packing"
+
+  if questionNum == 17 and subPass == 0:
+    g = {}
+    exec(open("17.py").read(), g)
+    code = g["referenceScad"]
+    code = code.replace("module reference", "union")
+    return code, "I had to solve this for the reference implementation."
+
+  if questionNum == 18:
+    g = {}
+    exec(open("18.py").read(), g)
+    code = g["prepareSubpassReferenceScad"](subPass)
+    code = code.replace("module reference", "union")
+    return code, "I had to solve this for the reference implementation."
+
+  if questionNum == 19 and subPass == 0:
+    return {
+        "tetrahedra": [
+            {
+                "x": -1.500000, "y": 2.598076, "z": 0.000000, "q0": 0.000000, "q1": 0.000000, "q2":
+                0.000000, "q3": 1.000000
+            },
         ]
+    }, "Placebo thinking... hmmm..."
 
-        # So I actually tried getting AI engines to write this RLE encoder and
-        # they all failed in various ways... like ChatGPT5.1pro's would work
-        # unless it hit a run of 256 or more, then it'd corrupt. Some made
-        # encodings that needed base64ing and utf-8 encoding and stuff and
-        # that added way too many characters.
+  if questionNum == 20:
+    import base64
+    g = {}
+    exec(open("20.py").read(), g)
+    image = g["loadReferenceImage"]()
+    sys.set_int_max_str_digits(1000000)
+    gridSize = [256, 128, 64, 32, 8][subPass]
+    sampleSize = image.size[0] // gridSize
+    data = 0
+    for y in range(gridSize):
+      for x in range(gridSize):
+        px = x * sampleSize + sampleSize // 2
+        py = y * sampleSize + sampleSize // 2
+        if image.getpixel((px, py)) == 0:
+          data |= (1 << (y * gridSize + x))
 
-        def compressor(n: int) -> str:
-            n = hex(n)[2:]
-            o = ""
+    codeBook = ["0" * 16, "f" * 16, "0" * 8, "f" * 8, "0000", "ffff", "00", "ff"]
 
-            def realIndex(big: str, small: str) -> int:
-                try:
-                    return big.index(small)
-                except ValueError:
-                    return len(big) + 1  # Not found = beyond end
+    # So I actually tried getting AI engines to write this RLE encoder and
+    # they all failed in various ways... like ChatGPT5.1pro's would work
+    # unless it hit a run of 256 or more, then it'd corrupt. Some made
+    # encodings that needed base64ing and utf-8 encoding and stuff and
+    # that added way too many characters.
 
-            while n:
-                for k, v in enumerate(codeBook):
-                    if n.startswith(v):
-                        o += str(k)
-                        n = n[len(v):]
-                        break
-                else:
-                    nextRun = min(realIndex(n, "ffff"), realIndex(n, "0000"))
+    def compressor(n: int) -> str:
+      n = hex(n)[2:]
+      o = ""
 
-                    bytesToWrite = max(1, min(len(n), nextRun, 8))
-                    o += hex(bytesToWrite + 7)[2:]
-                    o += n[:bytesToWrite]
-                    n = n[bytesToWrite:]
+      def realIndex(big: str, small: str) -> int:
+        try:
+          return big.index(small)
+        except ValueError:
+          return len(big) + 1  # Not found = beyond end
 
-            return o
+      while n:
+        for k, v in enumerate(codeBook):
+          if n.startswith(v):
+            o += str(k)
+            n = n[len(v):]
+            break
+        else:
+          nextRun = min(realIndex(n, "ffff"), realIndex(n, "0000"))
 
-        def decompressor(n: str) -> str:
-            r = ""
-            while n:
-                o = int(n[0], 16)
-                if o < 8:
-                    r += codeBook[o]
-                    n = n[1:]
-                else:
-                    bytesToRead = o - 7
-                    r += n[1:bytesToRead + 1]
-                    n = n[bytesToRead + 1:]
+          bytesToWrite = max(1, min(len(n), nextRun, 8))
+          o += hex(bytesToWrite + 7)[2:]
+          o += n[:bytesToWrite]
+          n = n[bytesToWrite:]
 
-            return r
+      return o
 
-        compressed = compressor(data)
-        decompressCheck = decompressor(compressed)
+    def decompressor(n: str) -> str:
+      r = ""
+      while n:
+        o = int(n[0], 16)
+        if o < 8:
+          r += codeBook[o]
+          n = n[1:]
+        else:
+          bytesToRead = o - 7
+          r += n[1:bytesToRead + 1]
+          n = n[bytesToRead + 1:]
 
-        #print("Data going in:")
-        #print(hex(data))
+      return r
 
-        #print("\n\n Compressed:")
-        #print(compressed)
+    compressed = compressor(data)
+    decompressCheck = decompressor(compressed)
 
-        #print("\n\n Decompressed:")
-        #print(decompressCheck)
+    #print("Data going in:")
+    #print(hex(data))
 
-        #print("\n\n\n\n")
+    #print("\n\n Compressed:")
+    #print(compressed)
 
-        uncompressedSize = len(str(data))
-        compressedSize = len(compressed)
+    #print("\n\n Decompressed:")
+    #print(decompressCheck)
 
-        print(f"Uncompressed size: {uncompressedSize}")
-        print(f"Compressed size: {compressedSize} + decompressorSize")
+    #print("\n\n\n\n")
 
-        if uncompressedSize < compressedSize + 300:
-            return {
-                "minifiedCode":
-                dedent(f"""
+    uncompressedSize = len(str(data))
+    compressedSize = len(compressed)
+
+    print(f"Uncompressed size: {uncompressedSize}")
+    print(f"Compressed size: {compressedSize} + decompressorSize")
+
+    if uncompressedSize < compressedSize + 300:
+      return {
+          "minifiedCode":
+          dedent(f"""
            def f(x,y):
             d = {data}
             i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
             return (d >> i) & 1
             """)
-            }, ""
-        else:
-            code = dedent(f"""
+      }, ""
+    else:
+      code = dedent(f"""
            def l(n: str) -> str:
             r = ""
             while n:
@@ -4754,113 +5433,1260 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
             return (d >> i) & 1
             """)
-            #print(code)
-            return {"minifiedCode": code}, ""
+      #print(code)
+      return {"minifiedCode": code}, ""
 
-    if questionNum == 24:
-        g = {}
-        exec(open("24.py").read(), g)
-        count = g["pointsCount"][subPass]
-        pts = g["points"][:count]
+  if questionNum == 23 and subPass == 0:
+    return {
+        'reasoning':
+        '', 'voxels':
+        [{'xyz': [5, 5, 2], 'material': 'Air'}, {'xyz': [6, 5, 2], 'material':
+                                                 'Air'}, {'xyz': [7, 5, 2], 'material': 'Air'},
+         {'xyz': [8, 5, 2], 'material': 'Air'}, {'xyz': [9, 5, 2], 'material':
+                                                 'Air'}, {'xyz': [10, 5, 2], 'material': 'Air'},
+         {'xyz': [5, 6, 2], 'material':
+          'Air'}, {'xyz': [6, 6, 2], 'material':
+                   'Air'}, {'xyz': [7, 6, 2], 'material':
+                            'Air'}, {'xyz': [8, 6, 2], 'material':
+                                     'Air'}, {'xyz': [9, 6, 2], 'material':
+                                              'Air'}, {'xyz': [10, 6, 2], 'material': 'Air'},
+         {'xyz': [5, 7, 2], 'material':
+          'Air'}, {'xyz': [6, 7, 2], 'material':
+                   'Air'}, {'xyz': [7, 7, 2], 'material':
+                            'Air'}, {'xyz': [8, 7, 2], 'material':
+                                     'Air'}, {'xyz': [9, 7, 2], 'material':
+                                              'Air'}, {'xyz': [10, 7, 2], 'material': 'Air'},
+         {'xyz': [5, 8, 2], 'material':
+          'Air'}, {'xyz': [6, 8, 2], 'material':
+                   'Air'}, {'xyz': [7, 8, 2], 'material':
+                            'Air'}, {'xyz': [8, 8, 2], 'material':
+                                     'Air'}, {'xyz': [9, 8, 2], 'material':
+                                              'Air'}, {'xyz': [10, 8, 2], 'material': 'Air'},
+         {'xyz': [5, 9, 2], 'material':
+          'Air'}, {'xyz': [6, 9, 2], 'material':
+                   'Air'}, {'xyz': [7, 9, 2], 'material':
+                            'Air'}, {'xyz': [8, 9, 2], 'material':
+                                     'Air'}, {'xyz': [9, 9, 2], 'material':
+                                              'Air'}, {'xyz': [10, 9, 2], 'material': 'Air'},
+         {'xyz': [5, 10, 2], 'material':
+          'Air'}, {'xyz': [6, 10, 2], 'material':
+                   'Air'}, {'xyz': [7, 10, 2], 'material':
+                            'Air'}, {'xyz': [8, 10, 2], 'material':
+                                     'Air'}, {'xyz': [9, 10, 2], 'material':
+                                              'Air'}, {'xyz': [10, 10, 2], 'material': 'Air'}]
+    }, ""
 
-        from scipy.spatial import ConvexHull
-        hull = ConvexHull(pts)
-        return {
-            "pointSequence": hull.vertices.tolist(),
-            "reasoning": "SciPy is a tool."
-        }, ""
+  if questionNum == 23 and subPass == 1:
+    return {
+        'reasoning':
+        '', 'voxels':
+        [{'xyz': [10, 10, 2], 'material': 'Air'}, {'xyz': [10, 11, 2], 'material':
+                                                   'Air'}, {'xyz': [10, 12, 2], 'material': 'Air'},
+         {'xyz': [10, 13, 2], 'material': 'Air'}, {'xyz': [11, 10, 2], 'material':
+                                                   'Air'}, {'xyz': [11, 11, 2], 'material': 'Air'},
+         {'xyz': [11, 12, 2], 'material':
+          'Air'}, {'xyz': [11, 13, 2], 'material':
+                   'Air'}, {'xyz': [12, 10, 2], 'material':
+                            'Air'}, {'xyz': [12, 11, 2], 'material':
+                                     'Air'}, {'xyz': [12, 12, 2], 'material':
+                                              'Air'}, {'xyz': [12, 13, 2], 'material': 'Air'},
+         {'xyz': [13, 10, 2], 'material':
+          'Air'}, {'xyz': [13, 11, 2], 'material':
+                   'Air'}, {'xyz': [13, 12, 2], 'material':
+                            'Air'}, {'xyz': [13, 13, 2], 'material':
+                                     'Air'}, {'xyz': [6, 11, 2], 'material':
+                                              'Air'}, {'xyz': [6, 12, 2], 'material': 'Air'},
+         {'xyz': [7, 11, 2], 'material':
+          'Air'}, {'xyz': [7, 12, 2], 'material':
+                   'Air'}, {'xyz': [16, 11, 2], 'material':
+                            'Air'}, {'xyz': [16, 12, 2], 'material':
+                                     'Air'}, {'xyz': [17, 11, 2], 'material':
+                                              'Air'}, {'xyz': [17, 12, 2], 'material': 'Air'}]
+    }, ""
 
-    if questionNum == 25:
-        # Numpy and sciPy are tools, and this test is "human with tools, so..."
-        g = {}
-        exec(open("25.py").read(), g)
-        count = g["pointsCount"][subPass]
-        pts = g["points"][:count]
-        triangles = g["referenceDelaunay"](pts)
+  if questionNum == 23 and subPass == 2:
+    return {
+        'reasoning':
+        '', 'voxels':
+        [{'xyz': [13, 13, 5], 'material': 'Dirt'}, {'xyz': [14, 13, 5], 'material': 'Dirt'},
+         {'xyz': [15, 13, 5], 'material':
+          'Dirt'}, {'xyz': [16, 13, 5], 'material':
+                    'Dirt'}, {'xyz': [17, 13, 5], 'material':
+                              'Dirt'}, {'xyz': [18, 13, 5], 'material':
+                                        'Dirt'}, {'xyz': [13, 14, 5], 'material':
+                                                  'Dirt'}, {'xyz': [14, 14, 5], 'material': 'Dirt'},
+         {'xyz': [15, 14, 5], 'material':
+          'Dirt'}, {'xyz': [16, 14, 5], 'material':
+                    'Dirt'}, {'xyz': [17, 14, 5], 'material':
+                              'Dirt'}, {'xyz': [18, 14, 5], 'material':
+                                        'Dirt'}, {'xyz': [13, 15, 5], 'material':
+                                                  'Dirt'}, {'xyz': [14, 15, 5], 'material': 'Dirt'},
+         {'xyz': [15, 15, 5], 'material':
+          'Dirt'}, {'xyz': [16, 15, 5], 'material':
+                    'Dirt'}, {'xyz': [17, 15, 5], 'material':
+                              'Dirt'}, {'xyz': [18, 15, 5], 'material':
+                                        'Dirt'}, {'xyz': [13, 16, 5], 'material':
+                                                  'Dirt'}, {'xyz': [14, 16, 5], 'material': 'Dirt'},
+         {'xyz': [15, 16, 5], 'material':
+          'Dirt'}, {'xyz': [16, 16, 5], 'material':
+                    'Dirt'}, {'xyz': [17, 16, 5], 'material':
+                              'Dirt'}, {'xyz': [18, 16, 5], 'material':
+                                        'Dirt'}, {'xyz': [13, 17, 5], 'material':
+                                                  'Dirt'}, {'xyz': [14, 17, 5], 'material': 'Dirt'},
+         {'xyz': [15, 17, 5], 'material':
+          'Dirt'}, {'xyz': [16, 17, 5], 'material':
+                    'Dirt'}, {'xyz': [17, 17, 5], 'material':
+                              'Dirt'}, {'xyz': [18, 17, 5], 'material':
+                                        'Dirt'}, {'xyz': [13, 18, 5], 'material':
+                                                  'Dirt'}, {'xyz': [14, 18, 5], 'material': 'Dirt'},
+         {'xyz': [15, 18, 5], 'material':
+          'Dirt'}, {'xyz': [16, 18, 5], 'material':
+                    'Dirt'}, {'xyz': [17, 18, 5], 'material':
+                              'Dirt'}, {'xyz': [18, 18, 5], 'material':
+                                        'Dirt'}, {'xyz': [13, 13, 6], 'material':
+                                                  'Dirt'}, {'xyz': [14, 13, 6], 'material': 'Dirt'},
+         {'xyz': [15, 13, 6], 'material':
+          'Dirt'}, {'xyz': [16, 13, 6], 'material':
+                    'Dirt'}, {'xyz': [17, 13, 6], 'material':
+                              'Dirt'}, {'xyz': [18, 13, 6], 'material':
+                                        'Dirt'}, {'xyz': [13, 14, 6], 'material':
+                                                  'Dirt'}, {'xyz': [18, 14, 6], 'material': 'Dirt'},
+         {'xyz': [13, 15, 6], 'material':
+          'Dirt'}, {'xyz': [18, 15, 6], 'material':
+                    'Dirt'}, {'xyz': [13, 16, 6], 'material':
+                              'Dirt'}, {'xyz': [18, 16, 6], 'material':
+                                        'Dirt'}, {'xyz': [13, 17, 6], 'material':
+                                                  'Dirt'}, {'xyz': [18, 17, 6], 'material': 'Dirt'},
+         {'xyz': [13, 18, 6], 'material':
+          'Dirt'}, {'xyz': [14, 18, 6], 'material':
+                    'Dirt'}, {'xyz': [15, 18, 6], 'material':
+                              'Dirt'}, {'xyz': [16, 18, 6], 'material':
+                                        'Dirt'}, {'xyz': [17, 18, 6], 'material':
+                                                  'Dirt'}, {'xyz': [18, 18, 6], 'material': 'Dirt'},
+         {'xyz': [13, 13, 7], 'material':
+          'Dirt'}, {'xyz': [14, 13, 7], 'material':
+                    'Dirt'}, {'xyz': [15, 13, 7], 'material':
+                              'Dirt'}, {'xyz': [16, 13, 7], 'material':
+                                        'Dirt'}, {'xyz': [17, 13, 7], 'material':
+                                                  'Dirt'}, {'xyz': [18, 13, 7], 'material': 'Dirt'},
+         {'xyz': [13, 14, 7], 'material':
+          'Dirt'}, {'xyz': [18, 14, 7], 'material':
+                    'Dirt'}, {'xyz': [13, 15, 7], 'material':
+                              'Dirt'}, {'xyz': [18, 15, 7], 'material':
+                                        'Dirt'}, {'xyz': [13, 16, 7], 'material':
+                                                  'Dirt'}, {'xyz': [18, 16, 7], 'material': 'Dirt'},
+         {'xyz': [13, 17, 7], 'material': 'Dirt'}, {'xyz': [18, 17, 7], 'material': 'Dirt'}, {
+             'xyz': [13, 18,
+                     7], 'material': 'Dirt'
+         }, {'xyz': [14, 18, 7], 'material':
+             'Dirt'}, {'xyz': [15, 18, 7], 'material':
+                       'Dirt'}, {'xyz': [16, 18, 7], 'material':
+                                 'Dirt'}, {'xyz': [17, 18, 7], 'material':
+                                           'Dirt'}, {'xyz': [18, 18, 7], 'material': 'Dirt'}]
+    }, ""
 
-        return {"reasoning": "SciPy is a tool", "triangles": triangles}, ""
+  if questionNum == 23 and subPass == 3:
+    return {
+        'reasoning':
+        '', 'voxels':
+        [{'xyz': [19, 19, 2], 'material': 'Air'}, {'xyz': [19, 20, 2], 'material':
+                                                   'Air'}, {'xyz': [20, 19, 2], 'material': 'Air'},
+         {'xyz': [20, 20, 2], 'material': 'Air'}, {'xyz': [21, 19, 1], 'material':
+                                                   'Air'}, {'xyz': [21, 19, 2], 'material': 'Air'},
+         {'xyz': [21, 19, 3], 'material':
+          'Dirt'}, {'xyz': [21, 20, 1], 'material':
+                    'Air'}, {'xyz': [21, 20, 2], 'material':
+                             'Air'}, {'xyz': [21, 20, 3], 'material':
+                                      'Dirt'}, {'xyz': [21, 21, 1], 'material':
+                                                'Air'}, {'xyz': [21, 21, 2], 'material': 'Air'},
+         {'xyz': [21, 21, 3], 'material':
+          'Dirt'}, {'xyz': [21, 22, 1], 'material':
+                    'Air'}, {'xyz': [21, 22, 2], 'material':
+                             'Air'}, {'xyz': [21, 22, 3], 'material':
+                                      'Dirt'}, {'xyz': [21, 23, 1], 'material':
+                                                'Air'}, {'xyz': [21, 23, 2], 'material': 'Air'},
+         {'xyz': [21, 23, 3], 'material':
+          'Dirt'}, {'xyz': [22, 19, 1], 'material':
+                    'Air'}, {'xyz': [22, 19, 2], 'material':
+                             'Air'}, {'xyz': [22, 19, 3], 'material':
+                                      'Dirt'}, {'xyz': [22, 20, 1], 'material':
+                                                'Air'}, {'xyz': [22, 20, 2], 'material': 'Air'},
+         {'xyz': [22, 20, 3], 'material':
+          'Dirt'}, {'xyz': [22, 21, 1], 'material':
+                    'Air'}, {'xyz': [22, 21, 2], 'material':
+                             'Air'}, {'xyz': [22, 21, 3], 'material':
+                                      'Dirt'}, {'xyz': [22, 22, 1], 'material':
+                                                'Air'}, {'xyz': [22, 22, 2], 'material': 'Air'},
+         {'xyz': [22, 22, 3], 'material':
+          'Dirt'}, {'xyz': [22, 23, 1], 'material':
+                    'Air'}, {'xyz': [22, 23, 2], 'material':
+                             'Air'}, {'xyz': [22, 23, 3], 'material':
+                                      'Dirt'}, {'xyz': [19, 21, 2], 'material':
+                                                'Air'}, {'xyz': [19, 21, 3], 'material': 'Dirt'},
+         {'xyz': [19, 22, 2], 'material':
+          'Air'}, {'xyz': [19, 22, 3], 'material':
+                   'Dirt'}, {'xyz': [19, 23, 2], 'material':
+                             'Air'}, {'xyz': [19, 23, 3], 'material':
+                                      'Dirt'}, {'xyz': [19, 24, 2], 'material':
+                                                'Air'}, {'xyz': [19, 24, 3], 'material': 'Dirt'},
+         {'xyz': [19, 25, 2], 'material':
+          'Air'}, {'xyz': [19, 25, 3], 'material':
+                   'Dirt'}, {'xyz': [19, 26, 2], 'material':
+                             'Air'}, {'xyz': [19, 26, 3], 'material':
+                                      'Dirt'}, {'xyz': [19, 27, 2], 'material':
+                                                'Air'}, {'xyz': [19, 27, 3], 'material': 'Dirt'
+                                                         }, {'xyz': [19, 28, 2], 'material': 'Air'},
+         {'xyz': [19, 28, 3], 'material':
+          'Dirt'}, {'xyz': [19, 29, 2], 'material':
+                    'Air'}, {'xyz': [19, 29, 3], 'material':
+                             'Dirt'}, {'xyz': [19, 30, 2], 'material':
+                                       'Air'}, {'xyz': [19, 30, 3], 'material': 'Dirt'
+                                                }, {'xyz': [19, 30, 1], 'material':
+                                                    'Air'}, {'xyz': [19, 30, 0], 'material': 'Air'}]
+    }, ""
 
-    if questionNum == 26 and subPass == 1:
-        return {
-            'nodes': [
-                '0000011101', '0000011111', '0000101011', '0000101111',
-                '0001000110', '0001000111', '0001001110', '0001001111',
-                '0010101001', '0010101101', '0011000100', '0011000101',
-                '0011001100', '0011001101', '0100011001', '0100011011',
-                '0101000010', '0101000011', '0101001010', '0101001011',
-                '0111000000', '0111000001', '0111001000', '0111001001',
-                '1000010100', '1000010110', '1000100010', '1000100110',
-                '1010100000', '1010100100', '1100010000', '1100010010'
-            ]
-        }, ""
+  if questionNum == 24 and subPass == 4:
+    return {
+        'reasoning':
+        'Create three stepped, walled catchments in a line to the east of the rainfall point. Lake A (highest) surrounds the centre fall point and is dammed up to z=6, with only a small spillway opening at z=6 into Lake B. Lake B is dammed up to z=5 with a spillway at z=5 into Lake C. Lake C is dammed up to z=4 with a spillway at z=4 directly to the map edge so excess water is safely lost. During heavy rain, water fills A layer-by-layer and overflows only when it reaches z=6, then B overflows at z=5, and C sheds any z=4 water off-map. After rain stops and the system settles, the spill layers drain away, leaving stable pool surfaces at z=5 (A), z=4 (B), and z=3 (C): three lakes on three distinct z-levels.',
+        'voxels': [{'xyz': [19, 19, 3], 'material':
+                    'Dirt'}, {'xyz': [20, 19, 3], 'material':
+                              'Dirt'}, {'xyz': [21, 19, 3], 'material':
+                                        'Dirt'}, {'xyz': [22, 19, 3], 'material':
+                                                  'Dirt'}, {'xyz': [23, 19, 3], 'material': 'Dirt'},
+                   {'xyz': [24, 19, 3], 'material':
+                    'Dirt'}, {'xyz': [25, 19, 3], 'material':
+                              'Dirt'}, {'xyz': [26, 19, 3], 'material':
+                                        'Dirt'}, {'xyz': [27, 19, 3], 'material':
+                                                  'Dirt'}, {'xyz': [28, 19, 3], 'material': 'Dirt'},
+                   {'xyz': [29, 19, 3], 'material':
+                    'Dirt'}, {'xyz': [30, 19, 3], 'material':
+                              'Dirt'}, {'xyz': [31, 19, 3], 'material':
+                                        'Dirt'}, {'xyz': [32, 19, 3], 'material':
+                                                  'Dirt'}, {'xyz': [33, 19, 3], 'material': 'Dirt'},
+                   {'xyz': [34, 19, 3], 'material':
+                    'Dirt'}, {'xyz': [35, 19, 3], 'material':
+                              'Dirt'}, {'xyz': [36, 19, 3], 'material':
+                                        'Dirt'}, {'xyz': [37, 19, 3], 'material':
+                                                  'Dirt'}, {'xyz': [38, 19, 3], 'material': 'Dirt'},
+                   {'xyz': [39, 19, 3], 'material':
+                    'Dirt'}, {'xyz': [40, 19, 3], 'material':
+                              'Dirt'}, {'xyz': [41, 19, 3], 'material':
+                                        'Dirt'}, {'xyz': [42, 19, 3], 'material':
+                                                  'Dirt'}, {'xyz': [43, 19, 3], 'material': 'Dirt'},
+                   {'xyz': [44, 19, 3], 'material':
+                    'Dirt'}, {'xyz': [45, 19, 3], 'material':
+                              'Dirt'}, {'xyz': [46, 19, 3], 'material':
+                                        'Dirt'}, {'xyz': [19, 20, 3], 'material':
+                                                  'Dirt'}, {'xyz': [28, 20, 3], 'material': 'Dirt'},
+                   {'xyz': [37, 20, 3], 'material':
+                    'Dirt'}, {'xyz': [46, 20, 3], 'material':
+                              'Dirt'}, {'xyz': [19, 21, 3], 'material':
+                                        'Dirt'}, {'xyz': [28, 21, 3], 'material':
+                                                  'Dirt'}, {'xyz': [37, 21, 3], 'material': 'Dirt'},
+                   {'xyz': [46, 21, 3], 'material':
+                    'Dirt'}, {'xyz': [19, 22, 3], 'material':
+                              'Dirt'}, {'xyz': [28, 22, 3], 'material':
+                                        'Dirt'}, {'xyz': [37, 22, 3], 'material':
+                                                  'Dirt'}, {'xyz': [46, 22, 3], 'material': 'Dirt'},
+                   {'xyz': [19, 23, 3], 'material':
+                    'Dirt'}, {'xyz': [28, 23, 3], 'material':
+                              'Dirt'}, {'xyz': [37, 23, 3], 'material':
+                                        'Dirt'}, {'xyz': [46, 23, 3], 'material':
+                                                  'Dirt'}, {'xyz': [19, 24, 3], 'material': 'Dirt'},
+                   {'xyz': [28, 24, 3], 'material':
+                    'Dirt'}, {'xyz': [37, 24, 3], 'material':
+                              'Dirt'}, {'xyz': [46, 24, 3], 'material':
+                                        'Dirt'}, {'xyz': [19, 25, 3], 'material':
+                                                  'Dirt'}, {'xyz': [28, 25, 3], 'material': 'Dirt'},
+                   {'xyz': [37, 25, 3], 'material':
+                    'Dirt'}, {'xyz': [46, 25, 3], 'material':
+                              'Dirt'}, {'xyz': [19, 26, 3], 'material':
+                                        'Dirt'}, {'xyz': [28, 26, 3], 'material':
+                                                  'Dirt'}, {'xyz': [37, 26, 3], 'material': 'Dirt'},
+                   {'xyz': [46, 26, 3], 'material':
+                    'Dirt'}, {'xyz': [19, 27, 3], 'material':
+                              'Dirt'}, {'xyz': [28, 27, 3], 'material':
+                                        'Dirt'}, {'xyz': [37, 27, 3], 'material':
+                                                  'Dirt'}, {'xyz': [46, 27, 3], 'material': 'Dirt'},
+                   {'xyz': [19, 28, 3], 'material':
+                    'Dirt'}, {'xyz': [20, 28, 3], 'material':
+                              'Dirt'}, {'xyz': [21, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [22, 28, 3], 'material':
+                                                  'Dirt'}, {'xyz': [23, 28, 3], 'material': 'Dirt'},
+                   {'xyz': [24, 28, 3], 'material':
+                    'Dirt'}, {'xyz': [25, 28, 3], 'material':
+                              'Dirt'}, {'xyz': [26, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [27, 28, 3], 'material':
+                                                  'Dirt'}, {'xyz': [28, 28, 3], 'material': 'Dirt'},
+                   {'xyz': [29, 28, 3], 'material':
+                    'Dirt'}, {'xyz': [30, 28, 3], 'material':
+                              'Dirt'}, {'xyz': [31, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [32, 28, 3], 'material':
+                                                  'Dirt'}, {'xyz': [33, 28, 3], 'material': 'Dirt'},
+                   {'xyz': [34, 28, 3], 'material':
+                    'Dirt'}, {'xyz': [35, 28, 3], 'material':
+                              'Dirt'}, {'xyz': [36, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [37, 28, 3], 'material':
+                                                  'Dirt'}, {'xyz': [38, 28, 3], 'material': 'Dirt'},
+                   {'xyz': [39, 28, 3], 'material':
+                    'Dirt'}, {'xyz': [40, 28, 3], 'material':
+                              'Dirt'}, {'xyz': [41, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [42, 28, 3], 'material':
+                                                  'Dirt'}, {'xyz': [43, 28, 3], 'material': 'Dirt'},
+                   {'xyz': [44, 28, 3], 'material':
+                    'Dirt'}, {'xyz': [45, 28, 3], 'material':
+                              'Dirt'}, {'xyz': [46, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [19, 19, 4], 'material':
+                                                  'Dirt'}, {'xyz': [20, 19, 4], 'material': 'Dirt'},
+                   {'xyz': [21, 19, 4], 'material':
+                    'Dirt'}, {'xyz': [22, 19, 4], 'material':
+                              'Dirt'}, {'xyz': [23, 19, 4], 'material':
+                                        'Dirt'}, {'xyz': [24, 19, 4], 'material':
+                                                  'Dirt'}, {'xyz': [25, 19, 4], 'material': 'Dirt'},
+                   {'xyz': [26, 19, 4], 'material':
+                    'Dirt'}, {'xyz': [27, 19, 4], 'material':
+                              'Dirt'}, {'xyz': [28, 19, 4], 'material':
+                                        'Dirt'}, {'xyz': [29, 19, 4], 'material':
+                                                  'Dirt'}, {'xyz': [30, 19, 4], 'material': 'Dirt'},
+                   {'xyz': [31, 19, 4], 'material':
+                    'Dirt'}, {'xyz': [32, 19, 4], 'material':
+                              'Dirt'}, {'xyz': [33, 19, 4], 'material':
+                                        'Dirt'}, {'xyz': [34, 19, 4], 'material': 'Dirt'}, {
+                                            'xyz': [35, 19,
+                                                    4], 'material': 'Dirt'
+                                        }, {'xyz': [36, 19, 4], 'material':
+                                            'Dirt'}, {'xyz': [37, 19, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [38, 19, 4], 'material': 'Dirt'},
+                   {'xyz': [39, 19, 4], 'material':
+                    'Dirt'}, {'xyz': [40, 19, 4], 'material':
+                              'Dirt'}, {'xyz': [41, 19, 4], 'material':
+                                        'Dirt'}, {'xyz': [42, 19, 4], 'material':
+                                                  'Dirt'}, {'xyz': [43, 19, 4], 'material': 'Dirt'},
+                   {'xyz': [44, 19, 4], 'material':
+                    'Dirt'}, {'xyz': [45, 19, 4], 'material':
+                              'Dirt'}, {'xyz': [46, 19, 4], 'material':
+                                        'Dirt'}, {'xyz': [19, 20, 4], 'material':
+                                                  'Dirt'}, {'xyz': [28, 20, 4], 'material': 'Dirt'},
+                   {'xyz': [37, 20, 4], 'material':
+                    'Dirt'}, {'xyz': [46, 20, 4], 'material':
+                              'Dirt'}, {'xyz': [19, 21, 4], 'material':
+                                        'Dirt'}, {'xyz': [28, 21, 4], 'material':
+                                                  'Dirt'}, {'xyz': [37, 21, 4], 'material': 'Dirt'},
+                   {'xyz': [46, 21, 4], 'material':
+                    'Dirt'}, {'xyz': [19, 22, 4], 'material':
+                              'Dirt'}, {'xyz': [28, 22, 4], 'material':
+                                        'Dirt'}, {'xyz': [37, 22, 4], 'material':
+                                                  'Dirt'}, {'xyz': [46, 22, 4], 'material': 'Dirt'},
+                   {'xyz': [19, 23, 4], 'material':
+                    'Dirt'}, {'xyz': [28, 23, 4], 'material':
+                              'Dirt'}, {'xyz': [37, 23, 4], 'material':
+                                        'Dirt'}, {'xyz': [46, 23, 4], 'material':
+                                                  'Dirt'}, {'xyz': [19, 24, 4], 'material': 'Dirt'},
+                   {'xyz': [28, 24, 4], 'material':
+                    'Dirt'}, {'xyz': [37, 24, 4], 'material':
+                              'Dirt'}, {'xyz': [46, 24, 4], 'material':
+                                        'Dirt'}, {'xyz': [19, 25, 4], 'material':
+                                                  'Dirt'}, {'xyz': [28, 25, 4], 'material': 'Dirt'},
+                   {'xyz': [37, 25, 4], 'material':
+                    'Dirt'}, {'xyz': [46, 25, 4], 'material':
+                              'Dirt'}, {'xyz': [19, 26, 4], 'material':
+                                        'Dirt'}, {'xyz': [28, 26, 4], 'material': 'Dirt'
+                                                  }, {'xyz': [37, 26, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [46, 26, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 27, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 27, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [37, 27, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [46, 27, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [20, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [21, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [22, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [23, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [24, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [25, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [26, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [27, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [29, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [30, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [31, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [32, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [33, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [34, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [35, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [36, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [37, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [38, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [39, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [40, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [41, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [42, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [43, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [44, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [45, 28, 4], 'material': 'Dirt'
+                                                      }, {'xyz': [46, 28, 4], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [20, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [21, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [22, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [23, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [24, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [25, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [26, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [27, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [29, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [30, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [31, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [32, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [33, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [34, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [35, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [36, 19, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [37, 19, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 20, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [28, 20, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [37, 20, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 21, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 21, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [37, 21, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 22, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [28, 22, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [37, 22, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 23, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 23, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [37, 23, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 24, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [28, 24, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 25, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [28, 25, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 26, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [28, 26, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [37, 26, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 27, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 27, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [37, 27, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [20, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [21, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [22, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [23, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [24, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [25, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [26, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [27, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [28, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [29, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [30, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [31, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [32, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [33, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [34, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [35, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [36, 28, 5], 'material': 'Dirt'
+                                                      }, {'xyz': [37, 28, 5], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 19, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [20, 19, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [21, 19, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [22, 19, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [23, 19, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [24, 19, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [25, 19, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [26, 19, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [27, 19, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 19, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 20, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 20, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 21, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 21, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 22, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 22, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 23, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 23, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 24, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [19, 25, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 26, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 26, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 27, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 27, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [19, 28, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [20, 28, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [21, 28, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [22, 28, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [23, 28, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [24, 28, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [25, 28, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [26, 28, 6], 'material': 'Dirt'}, {
+                                                          'xyz': [27, 28, 6], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 28, 6], 'material': 'Dirt'}]
+    }, ""
 
-    if questionNum == 26 and subPass == 2:
-        return {'nodes': ['001010101101', '101010001001']}
+  if questionNum == 24 and subPass == 5:
+    return {
+        'reasoning':
+        'Create a sealed cistern under the rainfall point: excavate the interior down to z=1 (leave z=0 as dirt so water cannot touch the world bottom and be lost), and build a 1-voxel-thick perimeter wall up to z=7 to stop lateral runoff to the map edges. With thousands of rain voxels, the cistern will fill to at least z=7, giving a water depth of 6+ voxels (from z=1 up).',
+        'voxels':
+        [{'xyz': [26, 26, 1], 'material': 'Air'}, {'xyz': [27, 26, 1], 'material':
+                                                   'Air'}, {'xyz': [28, 26, 1], 'material': 'Air'},
+         {'xyz': [29, 26, 1], 'material': 'Air'}, {'xyz': [30, 26, 1], 'material':
+                                                   'Air'}, {'xyz': [31, 26, 1], 'material': 'Air'},
+         {'xyz': [26, 27, 1], 'material':
+          'Air'}, {'xyz': [27, 27, 1], 'material':
+                   'Air'}, {'xyz': [28, 27, 1], 'material':
+                            'Air'}, {'xyz': [29, 27, 1], 'material':
+                                     'Air'}, {'xyz': [30, 27, 1], 'material':
+                                              'Air'}, {'xyz': [31, 27, 1], 'material': 'Air'},
+         {'xyz': [26, 28, 1], 'material':
+          'Air'}, {'xyz': [27, 28, 1], 'material':
+                   'Air'}, {'xyz': [28, 28, 1], 'material':
+                            'Air'}, {'xyz': [29, 28, 1], 'material':
+                                     'Air'}, {'xyz': [30, 28, 1], 'material':
+                                              'Air'}, {'xyz': [31, 28, 1], 'material': 'Air'},
+         {'xyz': [26, 29, 1], 'material':
+          'Air'}, {'xyz': [27, 29, 1], 'material':
+                   'Air'}, {'xyz': [28, 29, 1], 'material':
+                            'Air'}, {'xyz': [29, 29, 1], 'material':
+                                     'Air'}, {'xyz': [30, 29, 1], 'material':
+                                              'Air'}, {'xyz': [31, 29, 1], 'material': 'Air'},
+         {'xyz': [26, 30, 1], 'material':
+          'Air'}, {'xyz': [27, 30, 1], 'material':
+                   'Air'}, {'xyz': [28, 30, 1], 'material':
+                            'Air'}, {'xyz': [29, 30, 1], 'material':
+                                     'Air'}, {'xyz': [30, 30, 1], 'material':
+                                              'Air'}, {'xyz': [31, 30, 1], 'material': 'Air'},
+         {'xyz': [26, 31, 1], 'material':
+          'Air'}, {'xyz': [27, 31, 1], 'material':
+                   'Air'}, {'xyz': [28, 31, 1], 'material':
+                            'Air'}, {'xyz': [29, 31, 1], 'material':
+                                     'Air'}, {'xyz': [30, 31, 1], 'material':
+                                              'Air'}, {'xyz': [31, 31, 1], 'material': 'Air'},
+         {'xyz': [26, 26, 2], 'material':
+          'Air'}, {'xyz': [27, 26, 2], 'material':
+                   'Air'}, {'xyz': [28, 26, 2], 'material':
+                            'Air'}, {'xyz': [29, 26, 2], 'material':
+                                     'Air'}, {'xyz': [30, 26, 2], 'material':
+                                              'Air'}, {'xyz': [31, 26, 2], 'material': 'Air'},
+         {'xyz': [26, 27, 2], 'material':
+          'Air'}, {'xyz': [27, 27, 2], 'material':
+                   'Air'}, {'xyz': [28, 27, 2], 'material':
+                            'Air'}, {'xyz': [29, 27, 2], 'material':
+                                     'Air'}, {'xyz': [30, 27, 2], 'material':
+                                              'Air'}, {'xyz': [31, 27, 2], 'material': 'Air'},
+         {'xyz': [26, 28, 2], 'material':
+          'Air'}, {'xyz': [27, 28, 2], 'material':
+                   'Air'}, {'xyz': [28, 28, 2], 'material':
+                            'Air'}, {'xyz': [29, 28, 2], 'material':
+                                     'Air'}, {'xyz': [30, 28, 2], 'material':
+                                              'Air'}, {'xyz': [31, 28, 2], 'material': 'Air'},
+         {'xyz': [26, 29, 2], 'material':
+          'Air'}, {'xyz': [27, 29, 2], 'material':
+                   'Air'}, {'xyz': [28, 29, 2], 'material':
+                            'Air'}, {'xyz': [29, 29, 2], 'material':
+                                     'Air'}, {'xyz': [30, 29, 2], 'material':
+                                              'Air'}, {'xyz': [31, 29, 2], 'material': 'Air'
+                                                       }, {'xyz': [26, 30, 2], 'material': 'Air'},
+         {'xyz': [27, 30, 2], 'material':
+          'Air'}, {'xyz': [28, 30, 2], 'material':
+                   'Air'}, {'xyz': [29, 30, 2], 'material':
+                            'Air'}, {'xyz': [30, 30, 2], 'material':
+                                     'Air'}, {'xyz': [31, 30, 2], 'material':
+                                              'Air'}, {'xyz': [26, 31, 2], 'material': 'Air'
+                                                       }, {'xyz': [27, 31, 2], 'material': 'Air'},
+         {'xyz': [28, 31, 2], 'material':
+          'Air'}, {'xyz': [29, 31, 2], 'material':
+                   'Air'}, {'xyz': [30, 31, 2], 'material':
+                            'Air'}, {'xyz': [31, 31, 2], 'material':
+                                     'Air'}, {'xyz': [25, 25, 3], 'material':
+                                              'Dirt'}, {'xyz': [26, 25, 3], 'material': 'Dirt'
+                                                        }, {'xyz': [27, 25, 3], 'material': 'Dirt'},
+         {'xyz': [28, 25, 3], 'material':
+          'Dirt'}, {'xyz': [29, 25, 3], 'material':
+                    'Dirt'}, {'xyz': [30, 25, 3], 'material':
+                              'Dirt'}, {'xyz': [31, 25, 3], 'material':
+                                        'Dirt'}, {'xyz': [32, 25, 3], 'material':
+                                                  'Dirt'}, {'xyz': [25, 26, 3], 'material': 'Dirt'},
+         {'xyz': [32, 26, 3], 'material':
+          'Dirt'}, {'xyz': [25, 27, 3], 'material':
+                    'Dirt'}, {'xyz': [32, 27, 3], 'material':
+                              'Dirt'}, {'xyz': [25, 28, 3], 'material':
+                                        'Dirt'}, {'xyz': [32, 28, 3], 'material':
+                                                  'Dirt'}, {'xyz': [25, 29, 3], 'material': 'Dirt'},
+         {'xyz': [32, 29, 3], 'material':
+          'Dirt'}, {'xyz': [25, 30, 3], 'material':
+                    'Dirt'}, {'xyz': [32, 30, 3], 'material':
+                              'Dirt'}, {'xyz': [25, 31, 3], 'material':
+                                        'Dirt'}, {'xyz': [32, 31, 3], 'material':
+                                                  'Dirt'}, {'xyz': [25, 32, 3], 'material': 'Dirt'},
+         {'xyz': [26, 32, 3], 'material':
+          'Dirt'}, {'xyz': [27, 32, 3], 'material':
+                    'Dirt'}, {'xyz': [28, 32, 3], 'material':
+                              'Dirt'}, {'xyz': [29, 32, 3], 'material':
+                                        'Dirt'}, {'xyz': [30, 32, 3], 'material':
+                                                  'Dirt'}, {'xyz': [31, 32, 3], 'material': 'Dirt'},
+         {'xyz': [32, 32, 3], 'material':
+          'Dirt'}, {'xyz': [25, 25, 4], 'material':
+                    'Dirt'}, {'xyz': [26, 25, 4], 'material':
+                              'Dirt'}, {'xyz': [27, 25, 4], 'material':
+                                        'Dirt'}, {'xyz': [28, 25, 4], 'material':
+                                                  'Dirt'}, {'xyz': [29, 25, 4], 'material': 'Dirt'},
+         {'xyz': [30, 25, 4], 'material':
+          'Dirt'}, {'xyz': [31, 25, 4], 'material':
+                    'Dirt'}, {'xyz': [32, 25, 4], 'material':
+                              'Dirt'}, {'xyz': [25, 26, 4], 'material':
+                                        'Dirt'}, {'xyz': [32, 26, 4], 'material':
+                                                  'Dirt'}, {'xyz': [25, 27, 4], 'material': 'Dirt'},
+         {'xyz': [32, 27, 4], 'material':
+          'Dirt'}, {'xyz': [25, 28, 4], 'material':
+                    'Dirt'}, {'xyz': [32, 28, 4], 'material':
+                              'Dirt'}, {'xyz': [25, 29, 4], 'material':
+                                        'Dirt'}, {'xyz': [32, 29, 4], 'material':
+                                                  'Dirt'}, {'xyz': [25, 30, 4], 'material': 'Dirt'},
+         {'xyz': [32, 30, 4], 'material':
+          'Dirt'}, {'xyz': [25, 31, 4], 'material':
+                    'Dirt'}, {'xyz': [32, 31, 4], 'material':
+                              'Dirt'}, {'xyz': [25, 32, 4], 'material':
+                                        'Dirt'}, {'xyz': [26, 32, 4], 'material':
+                                                  'Dirt'}, {'xyz': [27, 32, 4], 'material': 'Dirt'},
+         {'xyz': [28, 32, 4], 'material':
+          'Dirt'}, {'xyz': [29, 32, 4], 'material':
+                    'Dirt'}, {'xyz': [30, 32, 4], 'material':
+                              'Dirt'}, {'xyz': [31, 32, 4], 'material':
+                                        'Dirt'}, {'xyz': [32, 32, 4], 'material':
+                                                  'Dirt'}, {'xyz': [25, 25, 5], 'material': 'Dirt'},
+         {'xyz': [26, 25, 5], 'material':
+          'Dirt'}, {'xyz': [27, 25, 5], 'material':
+                    'Dirt'}, {'xyz': [28, 25, 5], 'material':
+                              'Dirt'}, {'xyz': [29, 25, 5], 'material':
+                                        'Dirt'}, {'xyz': [30, 25, 5], 'material':
+                                                  'Dirt'}, {'xyz': [31, 25, 5], 'material': 'Dirt'},
+         {'xyz': [32, 25, 5], 'material':
+          'Dirt'}, {'xyz': [25, 26, 5], 'material':
+                    'Dirt'}, {'xyz': [32, 26, 5], 'material':
+                              'Dirt'}, {'xyz': [25, 27, 5], 'material':
+                                        'Dirt'}, {'xyz': [32, 27, 5], 'material':
+                                                  'Dirt'}, {'xyz': [25, 28, 5], 'material': 'Dirt'},
+         {'xyz': [32, 28, 5], 'material':
+          'Dirt'}, {'xyz': [25, 29, 5], 'material':
+                    'Dirt'}, {'xyz': [32, 29, 5], 'material':
+                              'Dirt'}, {'xyz': [25, 30, 5], 'material':
+                                        'Dirt'}, {'xyz': [32, 30, 5], 'material':
+                                                  'Dirt'}, {'xyz': [25, 31, 5], 'material': 'Dirt'},
+         {'xyz': [32, 31, 5], 'material':
+          'Dirt'}, {'xyz': [25, 32, 5], 'material':
+                    'Dirt'}, {'xyz': [26, 32, 5], 'material':
+                              'Dirt'}, {'xyz': [27, 32, 5], 'material':
+                                        'Dirt'}, {'xyz': [28, 32, 5], 'material':
+                                                  'Dirt'}, {'xyz': [29, 32, 5], 'material': 'Dirt'},
+         {'xyz': [30, 32, 5], 'material':
+          'Dirt'}, {'xyz': [31, 32, 5], 'material':
+                    'Dirt'}, {'xyz': [32, 32, 5], 'material':
+                              'Dirt'}, {'xyz': [25, 25, 6], 'material':
+                                        'Dirt'}, {'xyz': [26, 25, 6], 'material':
+                                                  'Dirt'}, {'xyz': [27, 25, 6], 'material': 'Dirt'},
+         {'xyz': [28, 25, 6], 'material':
+          'Dirt'}, {'xyz': [29, 25, 6], 'material':
+                    'Dirt'}, {'xyz': [30, 25, 6], 'material':
+                              'Dirt'}, {'xyz': [31, 25, 6], 'material':
+                                        'Dirt'}, {'xyz': [32, 25, 6], 'material':
+                                                  'Dirt'}, {'xyz': [25, 26, 6], 'material': 'Dirt'},
+         {'xyz': [32, 26, 6], 'material':
+          'Dirt'}, {'xyz': [25, 27, 6], 'material':
+                    'Dirt'}, {'xyz': [32, 27, 6], 'material':
+                              'Dirt'}, {'xyz': [25, 28, 6], 'material':
+                                        'Dirt'}, {'xyz': [32, 28, 6], 'material':
+                                                  'Dirt'}, {'xyz': [25, 29, 6], 'material': 'Dirt'},
+         {'xyz': [32, 29, 6], 'material':
+          'Dirt'}, {'xyz': [25, 30, 6], 'material':
+                    'Dirt'}, {'xyz': [32, 30, 6], 'material':
+                              'Dirt'}, {'xyz': [25, 31, 6], 'material':
+                                        'Dirt'}, {'xyz': [32, 31, 6], 'material':
+                                                  'Dirt'}, {'xyz': [25, 32, 6], 'material': 'Dirt'},
+         {'xyz': [26, 32, 6], 'material':
+          'Dirt'}, {'xyz': [27, 32, 6], 'material':
+                    'Dirt'}, {'xyz': [28, 32, 6], 'material':
+                              'Dirt'}, {'xyz': [29, 32, 6], 'material':
+                                        'Dirt'}, {'xyz': [30, 32, 6], 'material':
+                                                  'Dirt'}, {'xyz': [31, 32, 6], 'material': 'Dirt'},
+         {'xyz': [32, 32, 6], 'material':
+          'Dirt'}, {'xyz': [25, 25, 7], 'material':
+                    'Dirt'}, {'xyz': [26, 25, 7], 'material': 'Dirt'}, {
+                        'xyz':
+                        [27, 25,
+                         7], 'material': 'Dirt'
+                    }, {'xyz': [28, 25, 7], 'material':
+                        'Dirt'}, {'xyz': [29, 25, 7], 'material':
+                                  'Dirt'}, {'xyz': [30, 25, 7], 'material':
+                                            'Dirt'}, {'xyz': [31, 25, 7], 'material': 'Dirt'}, {
+                                                'xyz':
+                                                [32, 25,
+                                                 7], 'material': 'Dirt'
+                                            }, {'xyz': [25, 26, 7], 'material':
+                                                'Dirt'}, {'xyz': [32, 26, 7], 'material': 'Dirt'}, {
+                                                    'xyz': [25, 27,
+                                                            7], 'material': 'Dirt'
+                                                }, {'xyz': [32, 27, 7], 'material': 'Dirt'
+                                                    }, {'xyz': [25, 28, 7], 'material': 'Dirt'
+                                                        }, {'xyz': [32, 28, 7], 'material': 'Dirt'},
+         {'xyz': [25, 29, 7], 'material':
+          'Dirt'}, {'xyz': [32, 29, 7], 'material':
+                    'Dirt'}, {'xyz': [25, 30, 7], 'material': 'Dirt'
+                              }, {'xyz': [32, 30, 7], 'material': 'Dirt'
+                                  }, {'xyz': [25, 31, 7], 'material': 'Dirt'
+                                      }, {'xyz': [32, 31, 7], 'material': 'Dirt'
+                                          }, {'xyz': [25, 32, 7], 'material': 'Dirt'
+                                              }, {'xyz': [26, 32, 7], 'material': 'Dirt'
+                                                  }, {'xyz': [27, 32, 7], 'material': 'Dirt'
+                                                      }, {'xyz': [28, 32, 7], 'material': 'Dirt'}, {
+                                                          'xyz': [29, 32, 7], 'material': 'Dirt'
+                                                      }, {'xyz': [30, 32, 7], 'material': 'Dirt'}, {
+                                                          'xyz': [31, 32, 7], 'material': 'Dirt'
+                                                      }, {'xyz': [32, 32, 7], 'material': 'Dirt'}]
+    }, ""
 
-    if questionNum == 26 and subPass == 4:
-        return {
-            'nodes': [
-                '0000000000000001', '0000000000000010', '0000000000000100',
-                '0010010010010000', '0010010010010011', '0010010010010110',
-                '0100100100100000', '0100100100100101', '0100100100100110',
-                '0110110110110010', '0110110110110100', '0110110110110111',
-                '1001001001001000', '1001001001001011', '1001001001001101',
-                '1011011011011001', '1011011011011010', '1011011011011111',
-                '1101101101101001', '1101101101101100', '1101101101101111',
-                '1111111111111011', '1111111111111101', '1111111111111110'
-            ]
-        }, ""
+  if questionNum == 24 and subPass == 6:
+    return {
+        'reasoning':
+        'Excavate two separate rectangular basins (open to the sky) by removing dirt at z=2 and z=1, leaving the z=0 dirt layer intact as an impermeable floor. Each basin is 11x10x2 = 220 voxels of capacity, so after thousands of rainfall voxels they will fill and remain as two distinct lakes (>200 voxels each), while any excess surface water can still run off the map edges.',
+        'voxels':
+        [{'xyz': [18, 27, 1], 'material': 'Air'}, {'xyz': [18, 27, 2], 'material':
+                                                   'Air'}, {'xyz': [18, 28, 1], 'material': 'Air'},
+         {'xyz': [18, 28, 2], 'material': 'Air'}, {'xyz': [18, 29, 1], 'material':
+                                                   'Air'}, {'xyz': [18, 29, 2], 'material': 'Air'},
+         {'xyz': [18, 30, 1], 'material':
+          'Air'}, {'xyz': [18, 30, 2], 'material':
+                   'Air'}, {'xyz': [18, 31, 1], 'material':
+                            'Air'}, {'xyz': [18, 31, 2], 'material':
+                                     'Air'}, {'xyz': [18, 32, 1], 'material':
+                                              'Air'}, {'xyz': [18, 32, 2], 'material': 'Air'},
+         {'xyz': [18, 33, 1], 'material':
+          'Air'}, {'xyz': [18, 33, 2], 'material':
+                   'Air'}, {'xyz': [18, 34, 1], 'material':
+                            'Air'}, {'xyz': [18, 34, 2], 'material':
+                                     'Air'}, {'xyz': [18, 35, 1], 'material':
+                                              'Air'}, {'xyz': [18, 35, 2], 'material': 'Air'},
+         {'xyz': [18, 36, 1], 'material':
+          'Air'}, {'xyz': [18, 36, 2], 'material':
+                   'Air'}, {'xyz': [19, 27, 1], 'material':
+                            'Air'}, {'xyz': [19, 27, 2], 'material':
+                                     'Air'}, {'xyz': [19, 28, 1], 'material':
+                                              'Air'}, {'xyz': [19, 28, 2], 'material': 'Air'},
+         {'xyz': [19, 29, 1], 'material':
+          'Air'}, {'xyz': [19, 29, 2], 'material':
+                   'Air'}, {'xyz': [19, 30, 1], 'material':
+                            'Air'}, {'xyz': [19, 30, 2], 'material':
+                                     'Air'}, {'xyz': [19, 31, 1], 'material':
+                                              'Air'}, {'xyz': [19, 31, 2], 'material': 'Air'},
+         {'xyz': [19, 32, 1], 'material':
+          'Air'}, {'xyz': [19, 32, 2], 'material':
+                   'Air'}, {'xyz': [19, 33, 1], 'material':
+                            'Air'}, {'xyz': [19, 33, 2], 'material':
+                                     'Air'}, {'xyz': [19, 34, 1], 'material':
+                                              'Air'}, {'xyz': [19, 34, 2], 'material': 'Air'},
+         {'xyz': [19, 35, 1], 'material':
+          'Air'}, {'xyz': [19, 35, 2], 'material':
+                   'Air'}, {'xyz': [19, 36, 1], 'material':
+                            'Air'}, {'xyz': [19, 36, 2], 'material':
+                                     'Air'}, {'xyz': [20, 27, 1], 'material':
+                                              'Air'}, {'xyz': [20, 27, 2], 'material': 'Air'},
+         {'xyz': [20, 28, 1], 'material':
+          'Air'}, {'xyz': [20, 28, 2], 'material':
+                   'Air'}, {'xyz': [20, 29, 1], 'material':
+                            'Air'}, {'xyz': [20, 29, 2], 'material':
+                                     'Air'}, {'xyz': [20, 30, 1], 'material':
+                                              'Air'}, {'xyz': [20, 30, 2], 'material': 'Air'},
+         {'xyz': [20, 31, 1], 'material':
+          'Air'}, {'xyz': [20, 31, 2], 'material':
+                   'Air'}, {'xyz': [20, 32, 1], 'material':
+                            'Air'}, {'xyz': [20, 32, 2], 'material':
+                                     'Air'}, {'xyz': [20, 33, 1], 'material':
+                                              'Air'}, {'xyz': [20, 33, 2], 'material': 'Air'},
+         {'xyz': [20, 34, 1], 'material':
+          'Air'}, {'xyz': [20, 34, 2], 'material':
+                   'Air'}, {'xyz': [20, 35, 1], 'material':
+                            'Air'}, {'xyz': [20, 35, 2], 'material':
+                                     'Air'}, {'xyz': [20, 36, 1], 'material':
+                                              'Air'}, {'xyz': [20, 36, 2], 'material': 'Air'},
+         {'xyz': [21, 27, 1], 'material':
+          'Air'}, {'xyz': [21, 27, 2], 'material':
+                   'Air'}, {'xyz': [21, 28, 1], 'material':
+                            'Air'}, {'xyz': [21, 28, 2], 'material':
+                                     'Air'}, {'xyz': [21, 29, 1], 'material':
+                                              'Air'}, {'xyz': [21, 29, 2], 'material': 'Air'},
+         {'xyz': [21, 30, 1], 'material':
+          'Air'}, {'xyz': [21, 30, 2], 'material':
+                   'Air'}, {'xyz': [21, 31, 1], 'material':
+                            'Air'}, {'xyz': [21, 31, 2], 'material':
+                                     'Air'}, {'xyz': [21, 32, 1], 'material':
+                                              'Air'}, {'xyz': [21, 32, 2], 'material': 'Air'},
+         {'xyz': [21, 33, 1], 'material':
+          'Air'}, {'xyz': [21, 33, 2], 'material':
+                   'Air'}, {'xyz': [21, 34, 1], 'material':
+                            'Air'}, {'xyz': [21, 34, 2], 'material':
+                                     'Air'}, {'xyz': [21, 35, 1], 'material':
+                                              'Air'}, {'xyz': [21, 35, 2], 'material': 'Air'},
+         {'xyz': [21, 36, 1], 'material':
+          'Air'}, {'xyz': [21, 36, 2], 'material':
+                   'Air'}, {'xyz': [22, 27, 1], 'material':
+                            'Air'}, {'xyz': [22, 27, 2], 'material':
+                                     'Air'}, {'xyz': [22, 28, 1], 'material':
+                                              'Air'}, {'xyz': [22, 28, 2], 'material': 'Air'},
+         {'xyz': [22, 29, 1], 'material':
+          'Air'}, {'xyz': [22, 29, 2], 'material':
+                   'Air'}, {'xyz': [22, 30, 1], 'material':
+                            'Air'}, {'xyz': [22, 30, 2], 'material':
+                                     'Air'}, {'xyz': [22, 31, 1], 'material':
+                                              'Air'}, {'xyz': [22, 31, 2], 'material': 'Air'
+                                                       }, {'xyz': [22, 32, 1], 'material': 'Air'},
+         {'xyz': [22, 32, 2], 'material':
+          'Air'}, {'xyz': [22, 33, 1], 'material':
+                   'Air'}, {'xyz': [22, 33, 2], 'material':
+                            'Air'}, {'xyz': [22, 34, 1], 'material':
+                                     'Air'}, {'xyz': [22, 34, 2], 'material':
+                                              'Air'}, {'xyz': [22, 35, 1], 'material': 'Air'
+                                                       }, {'xyz': [22, 35, 2], 'material': 'Air'},
+         {'xyz': [22, 36, 1], 'material':
+          'Air'}, {'xyz': [22, 36, 2], 'material':
+                   'Air'}, {'xyz': [23, 27, 1], 'material':
+                            'Air'}, {'xyz': [23, 27, 2], 'material':
+                                     'Air'}, {'xyz': [23, 28, 1], 'material':
+                                              'Air'}, {'xyz': [23, 28, 2], 'material': 'Air'
+                                                       }, {'xyz': [23, 29, 1], 'material': 'Air'},
+         {'xyz': [23, 29, 2], 'material':
+          'Air'}, {'xyz': [23, 30, 1], 'material':
+                   'Air'}, {'xyz': [23, 30, 2], 'material':
+                            'Air'}, {'xyz': [23, 31, 1], 'material':
+                                     'Air'}, {'xyz': [23, 31, 2], 'material':
+                                              'Air'}, {'xyz': [23, 32, 1], 'material': 'Air'
+                                                       }, {'xyz': [23, 32, 2], 'material': 'Air'},
+         {'xyz': [23, 33, 1], 'material':
+          'Air'}, {'xyz': [23, 33, 2], 'material':
+                   'Air'}, {'xyz': [23, 34, 1], 'material':
+                            'Air'}, {'xyz': [23, 34, 2], 'material':
+                                     'Air'}, {'xyz': [23, 35, 1], 'material':
+                                              'Air'}, {'xyz': [23, 35, 2], 'material': 'Air'
+                                                       }, {'xyz': [23, 36, 1], 'material': 'Air'},
+         {'xyz': [23, 36, 2], 'material':
+          'Air'}, {'xyz': [24, 27, 1], 'material':
+                   'Air'}, {'xyz': [24, 27, 2], 'material':
+                            'Air'}, {'xyz': [24, 28, 1], 'material':
+                                     'Air'}, {'xyz': [24, 28, 2], 'material':
+                                              'Air'}, {'xyz': [24, 29, 1], 'material': 'Air'
+                                                       }, {'xyz': [24, 29, 2], 'material': 'Air'},
+         {'xyz': [24, 30, 1], 'material':
+          'Air'}, {'xyz': [24, 30, 2], 'material':
+                   'Air'}, {'xyz': [24, 31, 1], 'material':
+                            'Air'}, {'xyz': [24, 31, 2], 'material':
+                                     'Air'}, {'xyz': [24, 32, 1], 'material':
+                                              'Air'}, {'xyz': [24, 32, 2], 'material': 'Air'
+                                                       }, {'xyz': [24, 33, 1], 'material': 'Air'},
+         {'xyz': [24, 33, 2], 'material':
+          'Air'}, {'xyz': [24, 34, 1], 'material':
+                   'Air'}, {'xyz': [24, 34, 2], 'material':
+                            'Air'}, {'xyz': [24, 35, 1], 'material':
+                                     'Air'}, {'xyz': [24, 35, 2], 'material':
+                                              'Air'}, {'xyz': [24, 36, 1], 'material': 'Air'
+                                                       }, {'xyz': [24, 36, 2], 'material': 'Air'},
+         {'xyz': [25, 27, 1], 'material':
+          'Air'}, {'xyz': [25, 27, 2], 'material':
+                   'Air'}, {'xyz': [25, 28, 1], 'material':
+                            'Air'}, {'xyz': [25, 28, 2], 'material':
+                                     'Air'}, {'xyz': [25, 29, 1], 'material':
+                                              'Air'}, {'xyz': [25, 29, 2], 'material': 'Air'}, {
+                                                  'xyz': [25, 30,
+                                                          1], 'material': 'Air'
+                                              }, {'xyz': [25, 30, 2], 'material':
+                                                  'Air'}, {'xyz': [25, 31, 1], 'material': 'Air'},
+         {'xyz': [25, 31, 2], 'material':
+          'Air'}, {'xyz': [25, 32, 1], 'material':
+                   'Air'}, {'xyz': [25, 32, 2], 'material':
+                            'Air'}, {'xyz': [25, 33, 1], 'material':
+                                     'Air'}, {'xyz': [25, 33, 2], 'material':
+                                              'Air'}, {'xyz': [25, 34, 1], 'material': 'Air'
+                                                       }, {'xyz': [25, 34, 2], 'material': 'Air'},
+         {'xyz': [25, 35, 1], 'material':
+          'Air'}, {'xyz': [25, 35, 2], 'material':
+                   'Air'}, {'xyz': [25, 36, 1], 'material':
+                            'Air'}, {'xyz': [25, 36, 2], 'material':
+                                     'Air'}, {'xyz': [26, 27, 1], 'material':
+                                              'Air'}, {'xyz': [26, 27, 2], 'material': 'Air'}, {
+                                                  'xyz': [26, 28,
+                                                          1], 'material': 'Air'
+                                              }, {'xyz': [26, 28, 2], 'material':
+                                                  'Air'}, {'xyz': [26, 29, 1], 'material': 'Air'},
+         {'xyz': [26, 29, 2], 'material':
+          'Air'}, {'xyz': [26, 30, 1], 'material':
+                   'Air'}, {'xyz': [26, 30, 2], 'material':
+                            'Air'}, {'xyz': [26, 31, 1], 'material':
+                                     'Air'}, {'xyz': [26, 31, 2], 'material':
+                                              'Air'}, {'xyz': [26, 32, 1], 'material': 'Air'
+                                                       }, {'xyz': [26, 32, 2], 'material': 'Air'},
+         {'xyz': [26, 33, 1], 'material':
+          'Air'}, {'xyz': [26, 33, 2], 'material':
+                   'Air'}, {'xyz': [26, 34, 1], 'material':
+                            'Air'}, {'xyz': [26, 34, 2], 'material':
+                                     'Air'}, {'xyz': [26, 35, 1], 'material':
+                                              'Air'}, {'xyz': [26, 35, 2], 'material': 'Air'}, {
+                                                  'xyz': [26, 36,
+                                                          1], 'material': 'Air'
+                                              }, {'xyz': [26, 36, 2], 'material':
+                                                  'Air'}, {'xyz': [27, 27, 1], 'material': 'Air'},
+         {'xyz': [27, 27, 2], 'material':
+          'Air'}, {'xyz': [27, 28, 1], 'material':
+                   'Air'}, {'xyz': [27, 28, 2], 'material':
+                            'Air'}, {'xyz': [27, 29, 1], 'material':
+                                     'Air'}, {'xyz': [27, 29, 2], 'material':
+                                              'Air'}, {'xyz': [27, 30, 1], 'material': 'Air'}, {
+                                                  'xyz': [27, 30,
+                                                          2], 'material': 'Air'
+                                              }, {'xyz': [27, 31, 1], 'material':
+                                                  'Air'}, {'xyz': [27, 31, 2], 'material': 'Air'},
+         {'xyz': [27, 32, 1], 'material':
+          'Air'}, {'xyz': [27, 32, 2], 'material':
+                   'Air'}, {'xyz': [27, 33, 1], 'material':
+                            'Air'}, {'xyz': [27, 33, 2], 'material':
+                                     'Air'}, {'xyz': [27, 34, 1], 'material':
+                                              'Air'}, {'xyz': [27, 34, 2], 'material': 'Air'}, {
+                                                  'xyz': [27, 35,
+                                                          1], 'material': 'Air'
+                                              }, {'xyz': [27, 35, 2], 'material':
+                                                  'Air'}, {'xyz': [27, 36, 1], 'material': 'Air'},
+         {'xyz': [27, 36, 2], 'material':
+          'Air'}, {'xyz': [28, 27, 1], 'material':
+                   'Air'}, {'xyz': [28, 27, 2], 'material':
+                            'Air'}, {'xyz': [28, 28, 1], 'material':
+                                     'Air'}, {'xyz': [28, 28, 2], 'material':
+                                              'Air'}, {'xyz': [28, 29, 1], 'material': 'Air'}, {
+                                                  'xyz': [28, 29,
+                                                          2], 'material': 'Air'
+                                              }, {'xyz': [28, 30, 1], 'material':
+                                                  'Air'}, {'xyz': [28, 30, 2], 'material': 'Air'},
+         {'xyz': [28, 31, 1], 'material':
+          'Air'}, {'xyz': [28, 31, 2], 'material':
+                   'Air'}, {'xyz': [28, 32, 1], 'material':
+                            'Air'}, {'xyz': [28, 32, 2], 'material':
+                                     'Air'}, {'xyz': [28, 33, 1], 'material':
+                                              'Air'}, {'xyz': [28, 33, 2], 'material': 'Air'}, {
+                                                  'xyz': [28, 34,
+                                                          1], 'material': 'Air'
+                                              }, {'xyz': [28, 34, 2], 'material':
+                                                  'Air'}, {'xyz': [28, 35, 1], 'material': 'Air'},
+         {'xyz': [28, 35, 2], 'material':
+          'Air'}, {'xyz': [28, 36, 1], 'material':
+                   'Air'}, {'xyz': [28, 36, 2], 'material':
+                            'Air'}, {'xyz': [36, 27, 1], 'material':
+                                     'Air'}, {'xyz': [36, 27, 2], 'material':
+                                              'Air'}, {'xyz': [36, 28, 1], 'material': 'Air'}, {
+                                                  'xyz': [36, 28,
+                                                          2], 'material': 'Air'
+                                              }, {'xyz': [36, 29, 1], 'material':
+                                                  'Air'}, {'xyz': [36, 29, 2], 'material': 'Air'},
+         {'xyz': [36, 30, 1], 'material':
+          'Air'}, {'xyz': [36, 30, 2], 'material':
+                   'Air'}, {'xyz': [36, 31, 1], 'material':
+                            'Air'}, {'xyz': [36, 31, 2], 'material':
+                                     'Air'}, {'xyz': [36, 32, 1], 'material':
+                                              'Air'}, {'xyz': [36, 32, 2], 'material': 'Air'}, {
+                                                  'xyz': [36, 33,
+                                                          1], 'material': 'Air'
+                                              }, {'xyz': [36, 33, 2], 'material':
+                                                  'Air'}, {'xyz': [36, 34, 1], 'material': 'Air'}, {
+                                                      'xyz': [36, 34,
+                                                              2], 'material': 'Air'
+                                                  }, {'xyz': [36, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [36, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [36, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [36, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [37, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [37, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [38, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [38, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [39, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [39, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [40, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [40, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [41, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [41, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [42, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [42, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [43, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [43, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [44, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [44, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 29, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 30, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 30, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 31, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 31, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 32, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 32, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 33, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 33, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 34, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 34, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 35, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 35, 2], 'material': 'Air'}, {
+                                                          'xyz': [45, 36, 1], 'material': 'Air'
+                                                      }, {'xyz': [45, 36, 2], 'material': 'Air'}, {
+                                                          'xyz': [46, 27, 1], 'material': 'Air'
+                                                      }, {'xyz': [46, 27, 2], 'material': 'Air'}, {
+                                                          'xyz': [46, 28, 1], 'material': 'Air'
+                                                      }, {'xyz': [46, 28, 2], 'material': 'Air'}, {
+                                                          'xyz': [46, 29, 1], 'material': 'Air'
+                                                      }, {'xyz': [46, 29, 2], 'material': 'Air'},
+         {'xyz': [46, 30, 1], 'material':
+          'Air'}, {'xyz': [46, 30, 2], 'material':
+                   'Air'}, {'xyz': [46, 31, 1], 'material':
+                            'Air'}, {'xyz': [46, 31, 2], 'material':
+                                     'Air'}, {'xyz': [46, 32, 1], 'material':
+                                              'Air'}, {'xyz': [46, 32, 2], 'material': 'Air'
+                                                       }, {'xyz': [46, 33, 1], 'material': 'Air'},
+         {'xyz': [46, 33, 2], 'material':
+          'Air'}, {'xyz': [46, 34, 1], 'material':
+                   'Air'}, {'xyz': [46, 34, 2], 'material':
+                            'Air'}, {'xyz': [46, 35, 1], 'material':
+                                     'Air'}, {'xyz': [46, 35, 2], 'material':
+                                              'Air'}, {'xyz': [46, 36, 1], 'material': 'Air'
+                                                       }, {'xyz': [46, 36, 2], 'material': 'Air'}]
+    }, ""
 
-    if questionNum == 26:
-        return {
-            "reasoning":
-            "Ash is not even trying here. Sorry it's late and I have a meeting in the morning.",
-            "nodes": ["000000", "111111"]
-        }, "Placebo thinking... hmmm..."
+  if questionNum == 24:
+    g = {}
+    exec(open("24.py").read(), g)
+    count = g["pointsCount"][subPass]
+    pts = g["points"][:count]
 
-    if questionNum == 27:
-        moves = []
-        gridSize = [[32, 8], [48, 12], [56, 16], [64, 24], [72, 32]]
+    from scipy.spatial import ConvexHull
+    hull = ConvexHull(pts)
+    return {"pointSequence": hull.vertices.tolist(), "reasoning": "SciPy is a tool."}, ""
 
-        for i in range(1000):
-            moves.append({
-                "cellX":
-                random.randint(1, gridSize[subPass][0] - 2),
-                "cellY":
-                random.randint(1, gridSize[subPass][1] // 2),
-                "direction":
-                random.choice(["up", "down", "left", "right"])
-            })
-        return {"moves": moves}, "Placebo thinking... hmmm..."
+  if questionNum == 25:
+    # Numpy and sciPy are tools, and this test is "human with tools, so..."
+    g = {}
+    exec(open("25.py").read(), g)
+    count = g["pointsCount"][subPass]
+    pts = g["points"][:count]
+    triangles = g["referenceDelaunay"](pts)
 
-    if questionNum == 28:
-        g = {}
-        exec(open("28.py").read(), g)
-        sizes = g["sizes"]
-        size = sizes[subPass]
+    return {"reasoning": "SciPy is a tool", "triangles": triangles}, ""
 
-        heightMap = g["heightMaps"][subPass]
+  if questionNum == 26 and subPass == 1:
+    return {
+        'nodes': [
+            '0000011101', '0000011111', '0000101011', '0000101111', '0001000110', '0001000111',
+            '0001001110', '0001001111', '0010101001', '0010101101', '0011000100', '0011000101',
+            '0011001100', '0011001101', '0100011001', '0100011011', '0101000010', '0101000011',
+            '0101001010', '0101001011', '0111000000', '0111000001', '0111001000', '0111001001',
+            '1000010100', '1000010110', '1000100010', '1000100110', '1010100000', '1010100100',
+            '1100010000', '1100010010'
+        ]
+    }, ""
 
-        averageHeight = sum(map(sum, heightMap)) / (size * size)
+  if questionNum == 26 and subPass == 2:
+    return {'nodes': ['001010101101', '101010001001']}
 
-        blasts = []
-        for x in range(size):
-            for y in range(size):
-                if heightMap[x][y] > averageHeight + 1:
-                    blasts.append({
-                        "x": x,
-                        "y": y,
-                        "z": heightMap[x][y] - averageHeight
-                    })
+  if questionNum == 26 and subPass == 4:
+    return {
+        'nodes': [
+            '0000000000000001', '0000000000000010', '0000000000000100', '0010010010010000',
+            '0010010010010011', '0010010010010110', '0100100100100000', '0100100100100101',
+            '0100100100100110', '0110110110110010', '0110110110110100', '0110110110110111',
+            '1001001001001000', '1001001001001011', '1001001001001101', '1011011011011001',
+            '1011011011011010', '1011011011011111', '1101101101101001', '1101101101101100',
+            '1101101101101111', '1111111111111011', '1111111111111101', '1111111111111110'
+        ]
+    }, ""
 
-        blasts.sort(key=lambda b: b["z"], reverse=False)
+  if questionNum == 26:
+    return {
+        "reasoning":
+        "Ash is not even trying here. Sorry it's late and I have a meeting in the morning.",
+        "nodes": ["000000", "111111"]
+    }, "Placebo thinking... hmmm..."
 
-        return {
-            "blasts": blasts
-        }, "Blast our way up the hillsides from the middle"
+  if questionNum == 27:
+    moves = []
+    gridSize = [[32, 8], [48, 12], [56, 16], [64, 24], [72, 32]]
 
-    if questionNum == 29 and subPass == 0:
-        corePart = dedent("""
+    for i in range(1000):
+      moves.append({
+          "cellX": random.randint(1, gridSize[subPass][0] - 2), "cellY":
+          random.randint(1, gridSize[subPass][1] // 2), "direction":
+          random.choice(["up", "down", "left", "right"])
+      })
+    return {"moves": moves}, "Placebo thinking... hmmm..."
+
+  if questionNum == 28:
+    g = {}
+    exec(open("28.py").read(), g)
+    sizes = g["sizes"]
+    size = sizes[subPass]
+
+    heightMap = g["heightMaps"][subPass]
+
+    averageHeight = sum(map(sum, heightMap)) / (size * size)
+
+    blasts = []
+    for x in range(size):
+      for y in range(size):
+        if heightMap[x][y] > averageHeight + 1:
+          blasts.append({"x": x, "y": y, "z": heightMap[x][y] - averageHeight})
+
+    blasts.sort(key=lambda b: b["z"], reverse=False)
+
+    return {"blasts": blasts}, "Blast our way up the hillsides from the middle"
+
+  if questionNum == 29 and subPass == 0:
+    corePart = dedent("""
             union()
             {
                 for (x = [-370/2+5:72:220])
@@ -4875,10 +6701,10 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             }
                     """)
 
-        def corePartMinus(s: str):
-            return "translate([0,0,5]) difference(){" + corePart + s + "}"
+    def corePartMinus(s: str):
+      return "translate([0,0,5]) difference(){" + corePart + s + "}"
 
-        bottomAndTopPart = corePartMinus("""
+    bottomAndTopPart = corePartMinus("""
                 # Bottom and top part are identical.
                 for (x = [360/2, -360/2])
                 for (y = [360/2, -360/2])
@@ -4887,7 +6713,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
                 }
                 """)
 
-        northAndSouthLower = corePartMinus("""
+    northAndSouthLower = corePartMinus("""
             translate([364,0,0]) cube([380,380,20], center=true);
             
             translate([0,220,0]) cube([80,100,20], center=true);
@@ -4897,7 +6723,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
         """)
 
-        northAndSouthUpper = corePartMinus("""
+    northAndSouthUpper = corePartMinus("""
             translate([364,0,0]) cube([380,380,20], center=true);
             translate([-364,0,0]) cube([380,380,20], center=true);
             
@@ -4908,7 +6734,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
         """)
 
-        eastAndWestLower = corePartMinus("""
+    eastAndWestLower = corePartMinus("""
             translate([364,0,0]) cube([380,380,20], center=true);
             
             translate([-140,220,0]) cube([200,100,20], center=true);
@@ -4920,7 +6746,7 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
         """)
 
-        eastAndWestUpper = corePartMinus("""
+    eastAndWestUpper = corePartMinus("""
             translate([364,0,0]) cube([380,380,20], center=true);
             translate([-364,0,0]) cube([380,380,20], center=true);
             
@@ -4933,135 +6759,130 @@ def PlaceboAIHook(prompt: str, structure: dict | None, questionNum: int,
             translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
         """)
 
-        return {
-            "parts": [
-                {
-                    "fileContents": bottomAndTopPart,
-                    "fileType": "OpenScad",
-                    "transform":
-                    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-                },
-                {
-                    "fileContents": bottomAndTopPart,
-                    "fileType": "OpenScad",
-                    "transform":
-                    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 720, 1]
-                },
-                {
-                    "fileContents":
-                    northAndSouthLower,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, -1.0, -180.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-                        0.0, 185.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    northAndSouthLower,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, -1.0, 180.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-                        0.0, 185.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    northAndSouthUpper,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, -1.0, 540.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-                        0.0, 185.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    northAndSouthUpper,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, -1.0, -540.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-                        0.0, 185.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    eastAndWestLower,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 180.0, 1.0, 0.0,
-                        0.0, 185.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    eastAndWestLower,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -180.0, 1.0, 0.0,
-                        0.0, 185.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    eastAndWestUpper,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 180.0, 1.0, 0.0,
-                        0.0, -540.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-                {
-                    "fileContents":
-                    eastAndWestUpper,
-                    "fileType":
-                    "OpenScad",
-                    "transform": [
-                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -180.0, 1.0, 0.0,
-                        0.0, -540.0, 0.0, 0.0, 0.0, 1.0
-                    ]
-                },
-            ],
-            "reasoning":
-            "Ash spent an hour messing about in OpenSCAD and created it."
-        }, "They looked nice."
-
-    if questionNum == 30 and subPass == 0:
-        result = []
-        for i in str(888_999_6969_666_333_777_11):
-            result.append({
-                "digit": int(i),
-                "orientation": "flat" if i != 6 else "rotate180Z"
-            })
-
-        result.append({"digit": 7, "orientation": "rotate90X"})
-
-        result.append({"digit": 1, "orientation": "rotate90X"})
-
-        result.append({"digit": 1, "orientation": "rotate90X"})
-
-        return {"numberSequence": result}, "Placebo thinking... hmmm..."
-
-    if questionNum == 31 and subPass == 0:
-        return {
-            "hole": {
-                "transform": [
-                    math.sqrt(0.25),
-                    math.sqrt(0.25),
-                    math.sqrt(0.25),
-                    math.sqrt(0.5)
+    return {
+        "parts": [
+            {
+                "fileContents": bottomAndTopPart, "fileType": "OpenScad", "transform":
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+            },
+            {
+                "fileContents": bottomAndTopPart, "fileType": "OpenScad", "transform":
+                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 720, 1]
+            },
+            {
+                "fileContents":
+                northAndSouthLower, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, -1.0, -180.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
+                    1.0
                 ]
             },
-            "solid": {
-                "transform": [0, 0, 0, 1]
-            }
-        }, "Placebo thinking... hmmm..."
+            {
+                "fileContents":
+                northAndSouthLower, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, -1.0, 180.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
+                    1.0
+                ]
+            },
+            {
+                "fileContents":
+                northAndSouthUpper, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, -1.0, 540.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
+                    1.0
+                ]
+            },
+            {
+                "fileContents":
+                northAndSouthUpper, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, -1.0, -540.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
+                    1.0
+                ]
+            },
+            {
+                "fileContents":
+                eastAndWestLower, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 180.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
+                    1.0
+                ]
+            },
+            {
+                "fileContents":
+                eastAndWestLower, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -180.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
+                    1.0
+                ]
+            },
+            {
+                "fileContents":
+                eastAndWestUpper, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 180.0, 1.0, 0.0, 0.0, -540.0, 0.0, 0.0, 0.0,
+                    1.0
+                ]
+            },
+            {
+                "fileContents":
+                eastAndWestUpper, "fileType":
+                "OpenScad", "transform": [
+                    0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -180.0, 1.0, 0.0, 0.0, -540.0, 0.0, 0.0,
+                    0.0, 1.0
+                ]
+            },
+        ], "reasoning":
+        "Ash spent an hour messing about in OpenSCAD and created it."
+    }, "They looked nice."
+
+  if questionNum == 30 and subPass == 0:
+    result = []
+    for i in str(888_999_6969_666_333_777_11):
+      result.append({"digit": int(i), "orientation": "flat" if i != 6 else "rotate180Z"})
+
+    result.append({"digit": 7, "orientation": "rotate90X"})
+
+    result.append({"digit": 1, "orientation": "rotate90X"})
+
+    result.append({"digit": 1, "orientation": "rotate90X"})
+
+    return {"numberSequence": result}, "Placebo thinking... hmmm..."
+
+  if questionNum == 31 and subPass == 0:
+    return {
+        "hole": {"transform": [math.sqrt(0.25),
+                               math.sqrt(0.25),
+                               math.sqrt(0.25),
+                               math.sqrt(0.5)]}, "solid": {"transform": [0, 0, 0, 1]}
+    }, "Placebo thinking... hmmm..."
+
+  if questionNum == 41 and subPass == 0:
+    # Pentagram interior angles are 360/5 = 72 degrees
+    # Half that is 36. degrees
+    return {
+        "reasoning" : "",
+        "beamSplitters" : [
+            {"position" : [50.0, 0.3], "normal": [math.cos(math.radians(63)), -math.sin(math.radians(63))]},
+            {"position" : [50.0, 0.01], "normal": [math.cos(math.radians(63)), math.sin(math.radians(63))]},
+        ],
+        "mirrors": [
+            {"position" : [100, 36.65], "normal" : [-math.cos(math.radians(10)),math.sin(math.radians(10))] },
+            {"position" : [0, 36.65], "normal" : [math.cos(math.radians(10)),math.sin(math.radians(10))] },
+             ]
+    }, ""
+    
+
+
+  if questionNum == 42:
+    return "eseeeneesessseeesseeeeseessseeeessseeesssssssssssssswwwwwwnnnnnnnnnnnnw"
+
+  if questionNum == 43:
+    g = {}
+    exec(open("43.py").read(), g)
+
+    return {"voxels": g["generate_voxels"](subPass)}, "Placebo thinking... hmmm..."
 
 
 #PlaceboAIHook("", {}, 20, 0)

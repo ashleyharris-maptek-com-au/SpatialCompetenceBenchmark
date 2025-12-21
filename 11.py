@@ -2,8 +2,7 @@ title = "Hyper-snake Challenge"
 
 promptChangeSummary = "Dimensions increase from 3D to 6D"
 subpassParamSummary = [
-    "3D grid 4x4x4", "4D grid 5x5x5x5", "5D grid 4x4x4x4x4",
-    "6D grid 3x3x3x3x3x3"
+    "3D grid 4x4x4", "4D grid 5x5x5x5", "5D grid 4x4x4x4x4", "6D grid 3x3x3x3x3x3"
 ]
 
 prompt = """
@@ -46,126 +45,123 @@ structure = {
 
 
 def prepareSubpassPrompt(index):
-    if index == 0:
-        return prompt.replace("PARAM_A",
-                              "3").replace("PARAM_B", "(4,4,4)").replace(
-                                  "PARAM_C", "[0, 0,0]")
-    if index == 1:
-        return prompt.replace("PARAM_A",
-                              "4").replace("PARAM_B", "(5,5,5,5)").replace(
-                                  "PARAM_C", "[0, 0,0,0]")
-    if index == 2:
-        return prompt.replace("PARAM_A",
-                              "5").replace("PARAM_B", "(4,4,4,4,4)").replace(
-                                  "PARAM_C", "[0, 0,0,0,0]")
-    if index == 3:
-        return prompt.replace("PARAM_A",
-                              "6").replace("PARAM_B", "(3,3,3,3,3,3)").replace(
-                                  "PARAM_C", "[0, 0,0,0,0,0]")
-    raise StopIteration
+  if index == 0:
+    return prompt.replace("PARAM_A", "3").replace("PARAM_B",
+                                                  "(4,4,4)").replace("PARAM_C", "[0, 0,0]")
+  if index == 1:
+    return prompt.replace("PARAM_A", "4").replace("PARAM_B",
+                                                  "(5,5,5,5)").replace("PARAM_C", "[0, 0,0,0]")
+  if index == 2:
+    return prompt.replace("PARAM_A", "5").replace("PARAM_B",
+                                                  "(4,4,4,4,4)").replace("PARAM_C", "[0, 0,0,0,0]")
+  if index == 3:
+    return prompt.replace("PARAM_A",
+                          "6").replace("PARAM_B",
+                                       "(3,3,3,3,3,3)").replace("PARAM_C", "[0, 0,0,0,0,0]")
+  raise StopIteration
 
 
 def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
-    # Define test parameters based on subPassIndex
-    if subPassIndex == 0:
-        dimensions = 3
-        grid_size = (4, 4, 4)
-        start_pos = [0, 0, 0]
-    elif subPassIndex == 1:
-        dimensions = 4
-        grid_size = (5, 5, 5, 5)
-        start_pos = [0, 0, 0, 0]
-    elif subPassIndex == 2:
-        dimensions = 5
-        grid_size = (4, 4, 4, 4, 4)
-        start_pos = [0, 0, 0, 0, 0]
-    elif subPassIndex == 3:
-        dimensions = 6
-        grid_size = (3, 3, 3, 3, 3, 3)
-        start_pos = [0, 0, 0, 0, 0, 0]
-    else:
-        return 0, "Invalid subPassIndex"
+  # Define test parameters based on subPassIndex
+  if subPassIndex == 0:
+    dimensions = 3
+    grid_size = (4, 4, 4)
+    start_pos = [0, 0, 0]
+  elif subPassIndex == 1:
+    dimensions = 4
+    grid_size = (5, 5, 5, 5)
+    start_pos = [0, 0, 0, 0]
+  elif subPassIndex == 2:
+    dimensions = 5
+    grid_size = (4, 4, 4, 4, 4)
+    start_pos = [0, 0, 0, 0, 0]
+  elif subPassIndex == 3:
+    dimensions = 6
+    grid_size = (3, 3, 3, 3, 3, 3)
+    start_pos = [0, 0, 0, 0, 0, 0]
+  else:
+    return 0, "Invalid subPassIndex"
 
-    # Extract path from answer
-    if "path" not in answer:
-        return 0, "No path in answer"
+  # Extract path from answer
+  if "path" not in answer:
+    return 0, "No path in answer"
 
-    path = answer["path"]
+  path = answer["path"]
 
-    # Path must have at least one position
-    if not path or len(path) == 0:
-        return 0, "Empty path"
+  # Path must have at least one position
+  if not path or len(path) == 0:
+    return 0, "Empty path"
 
-    # Check first position matches start
-    if len(path[0]["pos"]) != dimensions:
-        return 0, f"First position has wrong dimensions: {len(path[0]['pos'])} != {dimensions}"
+  # Check first position matches start
+  if len(path[0]["pos"]) != dimensions:
+    return 0, f"First position has wrong dimensions: {len(path[0]['pos'])} != {dimensions}"
 
-    if list(path[0]["pos"]) != start_pos:
-        return 0, f"First position doesn't match start: {path[0]['pos']} != {start_pos}"
+  if list(path[0]["pos"]) != start_pos:
+    return 0, f"First position doesn't match start: {path[0]['pos']} != {start_pos}"
 
-    # Track visited cells to detect repeats
-    visited = set()
-    visited.add(tuple(path[0]["pos"]))
+  # Track visited cells to detect repeats
+  visited = set()
+  visited.add(tuple(path[0]["pos"]))
 
-    # Validate each move
-    for i in range(1, len(path)):
-        curr_pos = path[i]["pos"]
-        prev_pos = path[i - 1]["pos"]
+  # Validate each move
+  for i in range(1, len(path)):
+    curr_pos = path[i]["pos"]
+    prev_pos = path[i - 1]["pos"]
 
-        # Check dimensionality
-        if len(curr_pos) != dimensions:
-            return 0, f"Position {i} has wrong dimensions"
+    # Check dimensionality
+    if len(curr_pos) != dimensions:
+      return 0, f"Position {i} has wrong dimensions"
 
-        # Count how many dimensions changed
-        changes = []
-        for dim in range(dimensions):
-            if curr_pos[dim] != prev_pos[dim]:
-                changes.append((dim, curr_pos[dim] - prev_pos[dim]))
+    # Count how many dimensions changed
+    changes = []
+    for dim in range(dimensions):
+      if curr_pos[dim] != prev_pos[dim]:
+        changes.append((dim, curr_pos[dim] - prev_pos[dim]))
 
-        # Must change exactly one dimension
-        if len(changes) != 1:
-            return 0, f"Move {i} changed {len(changes)} dimensions (must be 1)"
+    # Must change exactly one dimension
+    if len(changes) != 1:
+      return 0, f"Move {i} changed {len(changes)} dimensions (must be 1)"
 
-        # Must be a single cell move (+1 or -1)
-        dim, delta = changes[0]
-        if abs(delta) != 1:
-            return 0, f"Move {i} moved {abs(delta)} cells (must be 1)"
+    # Must be a single cell move (+1 or -1)
+    dim, delta = changes[0]
+    if abs(delta) != 1:
+      return 0, f"Move {i} moved {abs(delta)} cells (must be 1)"
 
-        # Check bounds
-        for dim in range(dimensions):
-            if curr_pos[dim] < 0 or curr_pos[dim] >= grid_size[dim]:
-                return 0, f"Position {i} is out of bounds"
+    # Check bounds
+    for dim in range(dimensions):
+      if curr_pos[dim] < 0 or curr_pos[dim] >= grid_size[dim]:
+        return 0, f"Position {i} is out of bounds"
 
-        # Check for repeats
-        pos_tuple = tuple(curr_pos)
-        if pos_tuple in visited:
-            return 0, f"Position {pos_tuple} visited more than once"
+    # Check for repeats
+    pos_tuple = tuple(curr_pos)
+    if pos_tuple in visited:
+      return 0, f"Position {pos_tuple} visited more than once"
 
-        visited.add(pos_tuple)
+    visited.add(pos_tuple)
 
-    # Score is the fraction of cells occupied
-    total_cells = 1
-    for size in grid_size:
-        total_cells *= size
+  # Score is the fraction of cells occupied
+  total_cells = 1
+  for size in grid_size:
+    total_cells *= size
 
-    score = len(path) / total_cells
-    return score, f"Visited {len(path)}/{total_cells} cells ({score*100:.1f}%)"
+  score = len(path) / total_cells
+  return score, f"Visited {len(path)}/{total_cells} cells ({score*100:.1f}%)"
 
 
 def resultToNiceReport(answer, subPassIndex, aiEngineName):
-    # Calculate total cells for the current subpass
-    if subPassIndex == 0:
-        total_cells = 4 * 4 * 4
-    elif subPassIndex == 1:
-        total_cells = 5 * 5 * 5 * 5
-    elif subPassIndex == 2:
-        total_cells = 4 * 4 * 4 * 4 * 4
-    elif subPassIndex == 3:
-        total_cells = 3 * 3 * 3 * 3 * 3 * 3
-    else:
-        total_cells = 0
+  # Calculate total cells for the current subpass
+  if subPassIndex == 0:
+    total_cells = 4 * 4 * 4
+  elif subPassIndex == 1:
+    total_cells = 5 * 5 * 5 * 5
+  elif subPassIndex == 2:
+    total_cells = 4 * 4 * 4 * 4 * 4
+  elif subPassIndex == 3:
+    total_cells = 3 * 3 * 3 * 3 * 3 * 3
+  else:
+    total_cells = 0
 
-    return f"Visited {len(answer['path'])} cells out of {total_cells} total cells."
+  return f"Visited {len(answer['path'])} cells out of {total_cells} total cells."
 
 
 highLevelSummary = """

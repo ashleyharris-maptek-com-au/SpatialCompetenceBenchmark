@@ -10,31 +10,31 @@ os.makedirs(_cache_dir, exist_ok=True)
 
 
 def _get_cache_key(answer: dict, subPass: int, aiEngineName: str) -> str:
-    """Generate a cache key from the answer, subPass, and engine name."""
-    data = json.dumps(answer, sort_keys=True) + str(subPass) + aiEngineName
-    return hashlib.sha256(data.encode()).hexdigest()
+  """Generate a cache key from the answer, subPass, and engine name."""
+  data = json.dumps(answer, sort_keys=True) + str(subPass) + aiEngineName
+  return hashlib.sha256(data.encode()).hexdigest()
 
 
 def _load_from_cache(cache_key: str, cache_type: str):
-    """Load result from cache if available."""
-    cache_file = os.path.join(_cache_dir, f"{cache_type}_{cache_key}.json")
-    if os.path.exists(cache_file):
-        try:
-            with open(cache_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-    return None
+  """Load result from cache if available."""
+  cache_file = os.path.join(_cache_dir, f"{cache_type}_{cache_key}.json")
+  if os.path.exists(cache_file):
+    try:
+      with open(cache_file, 'r', encoding='utf-8') as f:
+        return json.load(f)
+    except (json.JSONDecodeError, IOError):
+      pass
+  return None
 
 
 def _save_to_cache(cache_key: str, cache_type: str, result):
-    """Save result to cache."""
-    cache_file = os.path.join(_cache_dir, f"{cache_type}_{cache_key}.json")
-    try:
-        with open(cache_file, 'w', encoding='utf-8') as f:
-            json.dump(result, f)
-    except IOError:
-        pass
+  """Save result to cache."""
+  cache_file = os.path.join(_cache_dir, f"{cache_type}_{cache_key}.json")
+  try:
+    with open(cache_file, 'w', encoding='utf-8') as f:
+      json.dump(result, f)
+  except IOError:
+    pass
 
 
 title = "Fit a curve to partition 2D ascii patterns via cubic polynomials"
@@ -74,7 +74,7 @@ DO NOT OUTPUT ANYTHING ELSE THAN THE FUNCTION.
 """
 
 grids = [
-    """
+  """
 ###.....
 ##......
 ##......
@@ -183,168 +183,180 @@ grids = [
 ]
 
 structure = {
-    "type": "object",
-    "properties": {
-        "reasoning": {
-            "type": "string",
-            "description": "Optional free text for explaining your solution."
-        },
-        "function": {
-            "type":
-            "string",
-            "description":
-            "The function defintion as a string. Starting with 'def f(x,y):'"
-        }
-    },
-    "additionalProperties": False,
-    "propertyOrdering": ["reasoning", "function"],
-    "required": ["reasoning", "function"]
+  "type": "object", "properties": {
+    "reasoning":
+    {"type": "string", "description":
+     "Optional free text for explaining your solution."}, "function": {
+       "type": "string", "description":
+       "The function defintion as a string. Starting with 'def f(x,y):'"
+     }
+  }, "additionalProperties": False, "propertyOrdering": ["reasoning", "function"], "required":
+  ["reasoning", "function"]
 }
 
 
 def prepareSubpassPrompt(index):
-    if index == 0:
-        return prompt.replace("GRIDSIZE", "8").replace("GRIDDETAILS", grids[0])
-    if index == 1:
-        return prompt.replace("GRIDSIZE",
-                              "12").replace("GRIDDETAILS", grids[1])
-    if index == 2:
-        return prompt.replace("GRIDSIZE",
-                              "24").replace("GRIDDETAILS", grids[2])
-    if index == 3:
-        return prompt.replace("GRIDSIZE", "8").replace("GRIDDETAILS", grids[3])
-    if index == 4:
-        return prompt.replace("GRIDSIZE",
-                              "48").replace("GRIDDETAILS", grids[4])
-    raise StopIteration
+  if index == 0:
+    return prompt.replace("GRIDSIZE", "8").replace("GRIDDETAILS", grids[0])
+  if index == 1:
+    return prompt.replace("GRIDSIZE", "12").replace("GRIDDETAILS", grids[1])
+  if index == 2:
+    return prompt.replace("GRIDSIZE", "24").replace("GRIDDETAILS", grids[2])
+  if index == 3:
+    return prompt.replace("GRIDSIZE", "8").replace("GRIDDETAILS", grids[3])
+  if index == 4:
+    return prompt.replace("GRIDSIZE", "48").replace("GRIDDETAILS", grids[4])
+  raise StopIteration
 
 
 subpassParamSummary = ["<pre>" + g + "</pre>" for g in grids]
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
-    # Check cache first
-    cache_key = _get_cache_key(answer, subPass, aiEngineName)
-    cached = _load_from_cache(cache_key, "grade")
-    if cached is not None:
-        print(
-            f"Using cached grade result for {aiEngineName} subpass {subPass}")
-        return tuple(cached)
+  # Check cache first
+  cache_key = _get_cache_key(answer, subPass, aiEngineName)
+  cached = _load_from_cache(cache_key, "grade")
+  if cached is not None:
+    print(f"Using cached grade result for {aiEngineName} subpass {subPass}")
+    return tuple(cached)
 
-    result = _gradeAnswerImpl(answer, subPass, aiEngineName)
-    _save_to_cache(cache_key, "grade", list(result))
-    return result
+  result = _gradeAnswerImpl(answer, subPass, aiEngineName)
+  _save_to_cache(cache_key, "grade", list(result))
+  return result
 
 
 def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
-    answer = answer["function"]
-    validPass = answer
-    validPass = validPass.replace("def", "").strip()
-    validPass = validPass.replace("f", "").strip()
-    validPass = validPass.replace("return", "").strip()
-    validPass = validPass.replace("x", "").strip()
-    validPass = validPass.replace("y", "").strip()
-    validPass = validPass.replace("e", "").strip()  # Allow sci notation
+  answer = answer["function"]
+  validPass = answer
+  validPass = validPass.replace("def", "").strip()
+  validPass = validPass.replace("f", "").strip()
+  validPass = validPass.replace("return", "").strip()
+  validPass = validPass.replace("x", "").strip()
+  validPass = validPass.replace("y", "").strip()
+  validPass = validPass.replace("e", "").strip()  # Allow sci notation
 
-    if re.search(r'[A-Za-z]', validPass):
-        return 0.0, f"Invalid characters in answer: {answer}. It contained \"{validPass}\". Score is 0"
+  if re.search(r'[A-Za-z]', validPass):
+    return 0.0, f"Invalid characters in answer: {answer}. It contained \"{validPass}\". Score is 0"
 
-    gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
+  gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
 
-    if "def f(x,y):" not in answer.replace(", ", ""):
-        return 0.0, f"Invalid function signature in answer: {answer}. It must contain \"def f(x, y):\". Score is 0"
+  if "deff(x,y):" not in answer.replace(" ", ""):
 
-    if "return" not in answer:
-        return 0.0, f"Invalid function signature in answer: {answer}. It must contain \"return\". Score is 0"
+    print("deff(x,y): not in " + answer.replace(" ", ""))
 
-    if re.search(R"return [^x]*x", answer) == None:
-        return 0.0, "Invalid function - must use x in it's return calculation"
+    return 0.0, f"Invalid function signature in answer: {answer}. It must contain \"def f(x, y):\". Score is 0"
 
-    if re.search(R"return [^y]*y", answer) == None:
-        return 0.0, "Invalid function - must use y in it's return calculation"
+  if "return" not in answer:
+    return 0.0, f"Invalid function signature in answer: {answer}. It must contain \"return\". Score is 0"
 
-    g = {}
-    try:
-        exec(answer.strip(), g)
-    except Exception as e:
-        return 0.0, f"Error evaluating AI-generated python function: {e}"
+  if re.search(R"return [^x]*x", answer) == None:
+    return 0.0, "Invalid function - must use x in it's return calculation"
 
-    f = g["f"]
+  if re.search(R"return [^y]*y", answer) == None:
+    return 0.0, "Invalid function - must use y in it's return calculation"
 
-    grid = grids[subPass].splitlines()
-    score = 0
-    errors = []
+  g = {}
+  try:
+    exec(answer.strip(), g)
+  except Exception as e:
+    return 0.0, f"Error evaluating AI-generated python function: {e}"
 
-    generatedHashes = 0
+  f = g["f"]
 
-    for y in range(gridSize):
-        for x in range(gridSize):
-            try:
-                p = f(x, y)  # use the evaluated function
-                if p > 0:
-                    generatedHashes += 1
-                    if grid[y][x] == "#":
-                        score += 1
-                else:
-                    if grid[y][x] == ".":
-                        score += 1
-            except Exception as e:
-                errors.append(f"Error evaluating f({x}, {y}): {e}")
-                continue
+  grid = grids[subPass].splitlines()
+  score = 0
+  errors = []
 
-    if generatedHashes == 0 or generatedHashes == gridSize * gridSize:
-        return 0.0, f"Output was uniformly valued"
+  generatedHashes = 0
 
-    final_score = score / (gridSize * gridSize)
-    reasoning = f"Grid size: {gridSize}, matched {score}/{gridSize*gridSize} cells"
-    if errors:
-        reasoning += f"\n{len(errors)} evaluation errors occurred"
+  for y in range(gridSize):
+    for x in range(gridSize):
+      try:
+        p = f(x, y)  # use the evaluated function
+        if p > 0:
+          generatedHashes += 1
+          if grid[y][x] == "#":
+            score += 1
+        else:
+          if grid[y][x] == ".":
+            score += 1
+      except Exception as e:
+        errors.append(f"Error evaluating f({x}, {y}): {e}")
+        continue
 
-    if final_score < 0.75:
-        final_score = 0
+  if generatedHashes == 0 or generatedHashes == gridSize * gridSize:
+    return 0.0, f"Output was uniformly valued"
 
-    # Penalize "close but not quite right" answers a bit.
-    final_score = final_score**4
+  final_score = score / (gridSize * gridSize)
+  reasoning = f"Grid size: {gridSize}, matched {score}/{gridSize*gridSize} cells"
+  if errors:
+    reasoning += f"\n{len(errors)} evaluation errors occurred"
 
-    return final_score, reasoning
+  if final_score < 0.75:
+    final_score = 0
+
+  # Penalize "close but not quite right" answers a bit.
+  final_score = final_score**4
+
+  return final_score, reasoning
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
-    # Check cache first
-    cache_key = _get_cache_key(answer, subPass, aiEngineName)
-    cached = _load_from_cache(cache_key, "report")
-    if cached is not None:
-        print(f"Using cached report for {aiEngineName} subpass {subPass}")
-        return cached
+  # Check cache first
+  cache_key = _get_cache_key(answer, subPass, aiEngineName)
+  cached = _load_from_cache(cache_key, "report")
+  if cached is not None:
+    print(f"Using cached report for {aiEngineName} subpass {subPass}")
+    return cached
 
-    result = _resultToNiceReportImpl(answer, subPass, aiEngineName)
-    _save_to_cache(cache_key, "report", result)
-    return result
+  result = _resultToNiceReportImpl(answer, subPass, aiEngineName)
+  _save_to_cache(cache_key, "report", result)
+  return result
 
 
 def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
-    answer = answer["function"]
-    gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
-    gridRow = " " * gridSize
-    grid = [gridRow] * gridSize
+  answer = answer["function"]
+  gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
+  gridRow = " " * gridSize
+  grid = [gridRow] * gridSize
 
-    g = {}
-    try:
-        exec(answer.strip(), g)
-    except Exception as e:
-        return f"<td>{answer.replace('\n','<br/>')}</td><td>Error evaluating AI-generated python function: {e}</td>"
+  g = {}
+  try:
+    exec(answer.strip(), g)
+  except Exception as e:
+    if len(answer) > 200:
+      answer = answer[:200] + "... (truncated)"
+    return f"<td>{answer.replace('\n','<br/>')}</td><td>Error evaluating AI-generated python function: {e}</td>"
 
-    try:
-        f = g["f"]
+  if len(answer) > 200:
+    answer = answer[:200] + "... (truncated)"
 
-        for y in range(gridSize):
-            for x in range(gridSize):
-                grid[y] = grid[y][:x] + ("#" if f(x, y) > 0 else
-                                         ".") + grid[y][x + 1:]
+  gRef = grids[subPass].strip().split("\n")
 
-        return f"<td style='font-size: 8px'><div style='max-width:800px'>{answer.replace('\n','<br/>')}</div></td><td><pre>{'<br/>'.join(grid)}</pre></td>"
-    except Exception as e:
-        return f"<td>{answer.replace('\n','<br/>')}</td><td>Error evaluating AI-generated python function: {e}</td>"
+  try:
+    f = g["f"]
+
+    for y in range(gridSize):
+      for x in range(gridSize):
+        output = ("#" if f(x, y) > 0 else ".")
+
+        if output == gRef[y][x]:
+          pass
+        elif output == ".":
+          output = "?"
+        else:
+          output = "X"
+        grid[y] = grid[y][:x] + output + grid[y][x + 1:]
+
+    extraInfo = ""
+    if "?" in output:
+      extraInfo += "<br/> '?' = '#' was expected, '.' was provided."
+    if "X" in output:
+      extraInfo += "<br/> 'X' = '.' was expected, '#' was provided."
+
+    return f"<td style='font-size: 8px'><div style='max-width:800px'>{answer.replace('\n','<br/>')}</div></td><td><pre>{'<br/>'.join(grid)}</pre>{extraInfo}</td>"
+  except Exception as e:
+    return f"<td>{answer.replace('\n','<br/>')}</td><td>Error evaluating AI-generated python function: {e}</td>"
 
 
 highLevelSummary = """
@@ -353,3 +365,9 @@ Can the LLM roundtrip a 2D shape through a polynomial?
 Some of these are simple cubics, others require hundreds of terms including
 cross terms.
 """
+
+if __name__ == "__main__":
+  # Test the function with the copied code
+  test_answer = {"function": "def f(x, y):\n    return y - (x**2 / 8)"}
+  result = _resultToNiceReportImpl(test_answer, 0, "test")
+  print(result)

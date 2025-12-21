@@ -3,8 +3,6 @@ import random
 import VolumeComparison as vc
 import os
 
-skip = True
-
 title = "Net Folding - Can a 2D net fold into a 3D polyhedron?"
 
 prompt = """
@@ -83,13 +81,13 @@ Face D: Square at (0,1) to (1,2) - connected to A on the top (north side of A)
 Face E: Square at (1,1) to (2,2) - connected to B on top AND D on right
 Face F: Square at (1,2) to (2,3) - connected to E on top
 
-ASCII view (Y increases upward):
-    F
-    E
-  D A B C
-
-This folds into a unit cube centered at (0.5, 0.5, 0.5).
 """,
+        #ASCII view (Y increases upward):
+        #    F
+        #    E
+        #  D A B C
+        #
+        #This folds into a unit cube centered at (0.5, 0.5, 0.5).
         "expected_faces": {
             "A": {
                 "centroid": [0.5, 0.5, 0],
@@ -127,9 +125,8 @@ Face A: Equilateral triangle with vertices at (0,0), (2,0), (1, sqrt(3)) - BASE
 Face B: Triangle attached to edge (0,0)-(2,0) of A, folding downward in Y
 Face C: Triangle attached to edge (2,0)-(1,sqrt(3)) of A, on the right
 Face D: Triangle attached to edge (0,0)-(1,sqrt(3)) of A, on the left
-
-When folded, forms a tetrahedron with A as base sitting on Z=0.
 """,
+        #When folded, forms a tetrahedron with A as base sitting on Z=0.
         "expected_faces": {
             "A": {
                 "centroid": [1, math.sqrt(3) / 3, 0],
@@ -165,10 +162,7 @@ When folded, forms a tetrahedron with A as base sitting on Z=0.
     {
         "name": "Octahedron net",
         "description": """
-An octahedron net consisting of 8 equilateral triangles arranged in a strip:
-
-     D E F G
-    A B C H
+8 equilateral triangles arranged in a 2-strip:
 
 Face A: Triangle at base-left
 Face B: Triangle sharing edge with A (to its right)
@@ -221,21 +215,12 @@ When folded, A stays as base with normal pointing -Z.
     {
         "name": "Rectangular box net (2x1x1)",
         "description": """
-A net for a rectangular box of dimensions 2 (length) x 1 (width) x 1 (height):
-
-Face A: Rectangle 2x1 at origin - BASE (bottom of box)
-Face B: Rectangle 1x1 attached to left edge of A (folds up to become left end)
-Face C: Rectangle 1x1 attached to right edge of A (folds up to become right end)  
-Face D: Rectangle 2x1 attached to top edge of A (folds up to become back)
-Face E: Rectangle 2x1 attached to top edge of D (folds over to become top)
-Face F: Rectangle 2x1 attached to bottom edge of A (folds up to become front)
-
-      E
-      D
-  B   A   C
-      F
-
-When folded: box with A at bottom (Z=0), centered at (1, 0.5, 0.5)
+Face A: Rectangle 2x1 at origin - BASE 
+Face B: Rectangle 1x1 attached to left edge of A 
+Face C: Rectangle 1x1 attached to right edge of A 
+Face D: Rectangle 2x1 attached to top edge of A 
+Face E: Rectangle 2x1 attached to top edge of D 
+Face F: Rectangle 2x1 attached to bottom edge of A
 """,
         "expected_faces": {
             "A": {
@@ -271,8 +256,68 @@ When folded: box with A at bottom (Z=0), centered at (1, 0.5, 0.5)
 # These require a solver to compute the expected answers
 
 
+def rotation_matrix_from_vectors(vec_from, vec_to):
+    """Compute rotation matrix that rotates vec_from to vec_to."""
+    # Normalize inputs
+    a = vec_from
+    b = vec_to
+    mag_a = math.sqrt(sum(x**2 for x in a))
+    mag_b = math.sqrt(sum(x**2 for x in b))
+    a = [x / mag_a for x in a]
+    b = [x / mag_b for x in b]
+
+    # Cross product (rotation axis)
+    v = [
+        a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]
+    ]
+
+    # Dot product (cosine of angle)
+    c = sum(a[i] * b[i] for i in range(3))
+
+    # Handle parallel/anti-parallel cases
+    if c > 0.9999:
+        return [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    if c < -0.9999:
+        # 180 degree rotation - find perpendicular axis
+        if abs(a[0]) < 0.9:
+            perp = [0, -a[2], a[1]]
+        else:
+            perp = [-a[2], 0, a[0]]
+        mag = math.sqrt(sum(x**2 for x in perp))
+        perp = [x / mag for x in perp]
+        # Rotation by 180 degrees around perp
+        return [
+            [2 * perp[0]**2 - 1, 2 * perp[0] * perp[1], 2 * perp[0] * perp[2]],
+            [2 * perp[0] * perp[1], 2 * perp[1]**2 - 1, 2 * perp[1] * perp[2]],
+            [2 * perp[0] * perp[2], 2 * perp[1] * perp[2], 2 * perp[2]**2 - 1]
+        ]
+
+    # Rodrigues' rotation formula
+    s = math.sqrt(sum(x**2 for x in v))
+    kmat = [[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]]
+
+    # R = I + K + K^2 * (1-c)/s^2
+    factor = (1 - c) / (s * s)
+    k2 = [[sum(kmat[i][k] * kmat[k][j] for k in range(3)) for j in range(3)]
+          for i in range(3)]
+
+    rot = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    for i in range(3):
+        for j in range(3):
+            rot[i][j] = (1 if i == j else 0) + kmat[i][j] + k2[i][j] * factor
+
+    return rot
+
+
+def apply_rotation(rot_matrix, vec):
+    """Apply a 3x3 rotation matrix to a 3D vector."""
+    return [sum(rot_matrix[i][j] * vec[j] for j in range(3)) for i in range(3)]
+
+
 def compute_icosahedron_net():
-    """Generate an icosahedron net with 20 triangular faces and compute expected positions."""
+    """Generate an icosahedron net with 20 triangular faces and compute expected positions.
+    Rotated so Face A has normal pointing -Z and sits on Z=0 plane."""
     # Golden ratio
     phi = (1 + math.sqrt(5)) / 2
 
@@ -289,11 +334,39 @@ def compute_icosahedron_net():
                  [5, 2, 11], [5, 11, 9], [9, 11, 7], [9, 7, 1], [1, 7, 6],
                  [3, 6, 7], [3, 7, 11], [3, 11, 2], [3, 2, 10], [3, 10, 6]]
 
+    # First pass: compute Face A's normal to determine rotation
+    v0, v1, v2 = [vertices[j] for j in faces_idx[0]]
+    centroid_a = [(v0[k] + v1[k] + v2[k]) / 3 for k in range(3)]
+    e1 = [v1[k] - v0[k] for k in range(3)]
+    e2 = [v2[k] - v0[k] for k in range(3)]
+    normal_a = [
+        e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2],
+        e1[0] * e2[1] - e1[1] * e2[0]
+    ]
+    mag = math.sqrt(sum(n**2 for n in normal_a))
+    normal_a = [n / mag for n in normal_a]
+    if sum(centroid_a[k] * normal_a[k] for k in range(3)) < 0:
+        normal_a = [-n for n in normal_a]
+
+    # Compute rotation matrix to align normal_a with [0, 0, -1]
+    target = [0, 0, -1]
+    rot_matrix = rotation_matrix_from_vectors(normal_a, target)
+
+    # Apply rotation to all vertices
+    rotated_vertices = [apply_rotation(rot_matrix, v) for v in vertices]
+
+    # Translate so Face A centroid is on Z=0
+    v0r, v1r, v2r = [rotated_vertices[j] for j in faces_idx[0]]
+    centroid_a_rot = [(v0r[k] + v1r[k] + v2r[k]) / 3 for k in range(3)]
+    z_offset = centroid_a_rot[2]
+    rotated_vertices = [[v[0], v[1], v[2] - z_offset]
+                        for v in rotated_vertices]
+
     expected = {}
     labels = "ABCDEFGHIJKLMNOPQRST"
 
     for i, face in enumerate(faces_idx):
-        v0, v1, v2 = [vertices[j] for j in face]
+        v0, v1, v2 = [rotated_vertices[j] for j in face]
         centroid = [(v0[k] + v1[k] + v2[k]) / 3 for k in range(3)]
 
         # Normal = cross product of two edges, pointing outward
@@ -306,7 +379,8 @@ def compute_icosahedron_net():
         mag = math.sqrt(sum(n**2 for n in normal))
         normal = [n / mag for n in normal]
 
-        # Ensure normal points outward (away from origin)
+        # Ensure normal points outward (away from origin for most, but check dot with centroid)
+        # For rotated shape, origin may not be inside, so use original logic
         if sum(centroid[k] * normal[k] for k in range(3)) < 0:
             normal = [-n for n in normal]
 
@@ -319,44 +393,50 @@ def compute_icosahedron_net():
 
 
 def compute_dodecahedron_net():
-    """Generate a dodecahedron net with 12 pentagonal faces."""
+    """Generate a dodecahedron net with 12 pentagonal faces.
+    Rotated so Face A has normal pointing -Z and sits on Z=0 plane."""
     phi = (1 + math.sqrt(5)) / 2
 
-    # Dodecahedron vertices
-    vertices = []
-    # Cube vertices
-    for i in [-1, 1]:
-        for j in [-1, 1]:
-            for k in [-1, 1]:
-                vertices.append([i, j, k])
-    # Rectangle vertices
-    for i in [-1, 1]:
-        for j in [-1, 1]:
-            vertices.append([0, i / phi, j * phi])
-            vertices.append([i / phi, j * phi, 0])
-            vertices.append([i * phi, 0, j / phi])
+    # Face normals point toward these directions (normalized)
+    face_normals_raw = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1],
+                        [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1],
+                        [0, phi, 1 / phi], [0, phi, -1 / phi],
+                        [0, -phi, 1 / phi], [0, -phi, -1 / phi]]
 
     # Scale to unit edge
     edge_len = 2 / phi
-    vertices = [[v[i] / edge_len for i in range(3)] for v in vertices]
 
-    # Dodecahedron faces (12 pentagons) - computing face centroids
+    # Face A's original normal
+    normal_a = face_normals_raw[0]
+    mag = math.sqrt(sum(n**2 for n in normal_a))
+    normal_a = [n / mag for n in normal_a]
+
+    # Compute rotation matrix to align normal_a with [0, 0, -1]
+    target = [0, 0, -1]
+    rot_matrix = rotation_matrix_from_vectors(normal_a, target)
+
     expected = {}
     labels = "ABCDEFGHIJKL"
 
-    # Face normals point toward these directions (normalized)
-    face_normals = [[1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1], [-1, 1, 1],
-                    [-1, 1, -1], [-1, -1, 1], [-1, -1, -1], [0, phi, 1 / phi],
-                    [0, phi, -1 / phi], [0, -phi, 1 / phi],
-                    [0, -phi, -1 / phi]]
+    # First compute Face A's centroid after rotation to determine z offset
+    dist = phi**2 / math.sqrt(3)
+    centroid_a_orig = [normal_a[k] * dist / edge_len for k in range(3)]
+    centroid_a_rot = apply_rotation(rot_matrix, centroid_a_orig)
+    z_offset = centroid_a_rot[2]
 
-    for i, normal in enumerate(face_normals):
-        mag = math.sqrt(sum(n**2 for n in normal))
-        normal = [n / mag for n in normal]
+    for i, normal_raw in enumerate(face_normals_raw):
+        mag = math.sqrt(sum(n**2 for n in normal_raw))
+        normal_orig = [n / mag for n in normal_raw]
 
         # Centroid is at distance from origin
-        dist = phi**2 / math.sqrt(3)
-        centroid = [normal[k] * dist / edge_len for k in range(3)]
+        centroid_orig = [normal_orig[k] * dist / edge_len for k in range(3)]
+
+        # Apply rotation
+        centroid = apply_rotation(rot_matrix, centroid_orig)
+        normal = apply_rotation(rot_matrix, normal_orig)
+
+        # Translate so Face A is on Z=0
+        centroid[2] -= z_offset
 
         expected[labels[i]] = {
             "centroid": [round(c, 4) for c in centroid],
@@ -367,36 +447,58 @@ def compute_dodecahedron_net():
 
 
 def compute_truncated_tetrahedron_net():
-    """Truncated tetrahedron: 4 triangles + 4 hexagons = 8 faces."""
-    # Vertices of truncated tetrahedron
-    a = math.sqrt(8)
-    vertices = [[3, 1, 1], [1, 3, 1], [1, 1, 3], [-3, -1, 1], [-1, -3, 1],
-                [-1, -1, 3], [-3, 1, -1], [-1, 3, -1], [-1, 1, -3],
-                [3, -1, -1], [1, -3, -1], [1, -1, -3]]
+    """Truncated tetrahedron: 4 triangles + 4 hexagons = 8 faces.
+    Rotated so Face A has normal pointing -Z and sits on Z=0 plane."""
     scale = 1 / math.sqrt(8)
-    vertices = [[v[i] * scale for i in range(3)] for v in vertices]
+
+    # Triangle faces (at original tetrahedron vertices)
+    tri_normals_raw = [[1, 1, 1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]]
+    # Hexagon faces (at original tetrahedron faces)
+    hex_normals_raw = [[1, 1, -1], [1, -1, 1], [-1, 1, 1], [-1, -1, -1]]
+
+    # Face A's original normal is [1,1,1]
+    normal_a = [1, 1, 1]
+    mag = math.sqrt(sum(n**2 for n in normal_a))
+    normal_a = [n / mag for n in normal_a]
+
+    # Compute rotation matrix to align normal_a with [0, 0, -1]
+    target = [0, 0, -1]
+    rot_matrix = rotation_matrix_from_vectors(normal_a, target)
+
+    # Compute Face A's centroid before rotation to determine z offset
+    dist_tri = math.sqrt(3) * scale * 3
+    centroid_a_orig = [normal_a[k] * dist_tri for k in range(3)]
+    centroid_a_rot = apply_rotation(rot_matrix, centroid_a_orig)
+    z_offset = centroid_a_rot[2]
 
     expected = {}
 
-    # Triangle faces (at original tetrahedron vertices)
-    tri_centroids = [[1, 1, 1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]]
-    for i, c in enumerate(tri_centroids):
-        mag = math.sqrt(sum(x**2 for x in c))
-        dist = math.sqrt(3) * scale * 3
-        centroid = [x / mag * dist for x in c]
-        normal = [x / mag for x in c]
+    # Triangle faces
+    for i, n_raw in enumerate(tri_normals_raw):
+        mag = math.sqrt(sum(x**2 for x in n_raw))
+        normal_orig = [x / mag for x in n_raw]
+        centroid_orig = [normal_orig[k] * dist_tri for k in range(3)]
+
+        centroid = apply_rotation(rot_matrix, centroid_orig)
+        normal = apply_rotation(rot_matrix, normal_orig)
+        centroid[2] -= z_offset
+
         expected[chr(65 + i)] = {
             "centroid": [round(x, 4) for x in centroid],
             "normal": [round(x, 4) for x in normal]
         }
 
-    # Hexagon faces (at original tetrahedron faces)
-    hex_normals = [[1, 1, -1], [1, -1, 1], [-1, 1, 1], [-1, -1, -1]]
-    for i, n in enumerate(hex_normals):
-        mag = math.sqrt(sum(x**2 for x in n))
-        normal = [x / mag for x in n]
-        dist = math.sqrt(3) * scale * 2
-        centroid = [normal[k] * dist for k in range(3)]
+    # Hexagon faces
+    dist_hex = math.sqrt(3) * scale * 2
+    for i, n_raw in enumerate(hex_normals_raw):
+        mag = math.sqrt(sum(x**2 for x in n_raw))
+        normal_orig = [x / mag for x in n_raw]
+        centroid_orig = [normal_orig[k] * dist_hex for k in range(3)]
+
+        centroid = apply_rotation(rot_matrix, centroid_orig)
+        normal = apply_rotation(rot_matrix, normal_orig)
+        centroid[2] -= z_offset
+
         expected[chr(69 + i)] = {
             "centroid": [round(x, 4) for x in centroid],
             "normal": [round(x, 4) for x in normal]
@@ -410,22 +512,19 @@ nets.extend([
     {
         "name": "Icosahedron net (20 faces) - HARD",
         "description": """
-A net for a regular icosahedron with 20 equilateral triangle faces.
+The net is arranged as a strip of equalateral triangles:
 
-The net is arranged as a strip of triangles that folds into the icosahedron:
-
+```
 Row 1:    A   C   E   G   I
 Row 2:  B   D   F   H   J
 Row 3:    K   M   O   Q   S
 Row 4:  L   N   P   R   T
+```
 
 Face A: Base triangle at origin, normal pointing -Z after folding
 Faces B-T: Connected in sequence, alternating orientation
 
 All triangles have edge length 1.
-The final icosahedron should be centered roughly at origin.
-
-Note: The icosahedron has vertices at permutations of (0, ±1, ±φ) where φ = (1+√5)/2 ≈ 1.618
 """,
         "expected_faces": compute_icosahedron_net(),
         "tolerance": 0.3
@@ -433,26 +532,18 @@ Note: The icosahedron has vertices at permutations of (0, ±1, ±φ) where φ = 
     {
         "name": "Dodecahedron net (12 faces) - HARD",
         "description": """
-A net for a regular dodecahedron with 12 regular pentagon faces.
+The net layout (12 regular pentagons labeled A through L):
 
-The net layout (pentagons labeled A through L):
-
+```
         A
       B C D
     E   F   G
       H I J
         K
         L
-
-Face A: Top pentagon, after folding has normal pointing roughly toward (+1,+1,+1)
-Face L: Bottom pentagon, normal pointing roughly toward (-1,-1,-1)
-Faces B-K: Form the middle band
+```
 
 All pentagons are regular with edge length 1.
-The dodecahedron vertices lie at corners of three mutually perpendicular golden rectangles.
-
-Note: φ = (1+√5)/2 ≈ 1.618 (golden ratio)
-Vertices include (±1, ±1, ±1) and cyclic permutations of (0, ±1/φ, ±φ)
 """,
         "expected_faces": compute_dodecahedron_net(),
         "tolerance": 0.35
@@ -460,29 +551,21 @@ Vertices include (±1, ±1, ±1) and cyclic permutations of (0, ±1/φ, ±φ)
     {
         "name": "Truncated Tetrahedron net (8 faces) - HARD",
         "description": """
-A truncated tetrahedron has 8 faces: 4 equilateral triangles and 4 regular hexagons.
+8 faces: 4 equilateral triangles and 4 regular hexagons.
 
 The net layout:
 
+```
       A (triangle)
     E   F (hexagons)
   B       C (triangles)  
     G   H (hexagons)
       D (triangle)
-
-Triangles A, B, C, D are at the truncated vertices of the original tetrahedron.
-Hexagons E, F, G, H replace the original tetrahedron faces.
+```
 
 Triangle edge length: 1
 Hexagon edge length: 1
 
-After folding:
-- Face A has centroid near (0.612, 0.612, 0.612) with normal toward (+1,+1,+1)
-- Face D has centroid near (0.612, -0.612, -0.612) with normal toward (+1,-1,-1)
-- Hexagons connect between triangles
-
-The truncated tetrahedron is formed by cutting off each vertex of a tetrahedron 
-at 1/3 of the edge length.
 """,
         "expected_faces": compute_truncated_tetrahedron_net(),
         "tolerance": 0.3
@@ -542,7 +625,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             details.append(f"Face {label} centroid OK (dist={dist:.3f})")
         else:
             details.append(
-                f"Face {label} centroid wrong (dist={dist:.3f}, expected {exp_c})"
+                f"Face {label} centroid wrong (dist={dist:.3f}, given {centroid}, expected {exp_c})"
             )
 
         # Check normal (should be parallel, same direction)
@@ -554,20 +637,108 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             details.append(f"Face {label} normal OK (dot={dot:.3f})")
         else:
             details.append(
-                f"Face {label} normal wrong (dot={dot:.3f}, expected {exp_n})")
+                f"Face {label} normal wrong (dot={dot:.3f}, given {norm_n}, expected {exp_n})"
+            )
+
+    if len(details) > 4:
+        details = details[0:4] + [f"... (truncated {len(details) - 4} more)"]
 
     score = total_score / max_score if max_score > 0 else 0
     return score, "<br>".join(details)
 
 
+def get_face_shape_info(subPass):
+    """Return (num_sides, circumradius) for faces in each net type."""
+    if subPass == 0:  # Cube
+        return {"default": (4, 0.5 / math.cos(math.pi / 4))}  # squares, side=1
+    elif subPass == 1:  # Tetrahedron
+        return {"default": (3, 2 / math.sqrt(3))}  # triangles, side=2
+    elif subPass == 2:  # Octahedron
+        return {"default": (3, 1 / math.sqrt(3))}  # triangles, side=1
+    elif subPass == 3:  # Rectangular box 2x1x1
+        return {
+            "A": (4, 1.118),  # 2x1 rectangle
+            "B": (4, 0.707),  # 1x1 square
+            "C": (4, 0.707),
+            "D": (4, 1.118),
+            "E": (4, 1.118),
+            "F": (4, 1.118),
+            "default": (4, 0.707)
+        }
+    elif subPass == 4:  # Icosahedron
+        return {"default": (3, 1 / math.sqrt(3))}  # triangles, side=1
+    elif subPass == 5:  # Dodecahedron
+        return {"default": (5, 0.851)}  # pentagons, side=1
+    elif subPass == 6:  # Truncated tetrahedron
+        return {
+            "A": (3, 1 / math.sqrt(3)),  # triangles
+            "B": (3, 1 / math.sqrt(3)),
+            "C": (3, 1 / math.sqrt(3)),
+            "D": (3, 1 / math.sqrt(3)),
+            "E": (6, 1.0),  # hexagons
+            "F": (6, 1.0),
+            "G": (6, 1.0),
+            "H": (6, 1.0),
+            "default": (4, 0.5)
+        }
+    return {"default": (4, 0.5)}
+
+
+def generate_face_polygon(centroid, normal, num_sides, radius):
+    """Generate vertices for a regular polygon at centroid, perpendicular to normal."""
+    # Normalize the normal
+    n = normal
+    mag = math.sqrt(sum(x**2 for x in n))
+    if mag < 1e-9:
+        n = [0, 0, 1]
+    else:
+        n = [x / mag for x in n]
+
+    # Find two perpendicular vectors in the plane
+    if abs(n[2]) < 0.9:
+        up = [0, 0, 1]
+    else:
+        up = [1, 0, 0]
+
+    # u = up x n (normalized)
+    u = [
+        up[1] * n[2] - up[2] * n[1], up[2] * n[0] - up[0] * n[2],
+        up[0] * n[1] - up[1] * n[0]
+    ]
+    mag_u = math.sqrt(sum(x**2 for x in u))
+    u = [x / mag_u for x in u]
+
+    # v = n x u
+    v = [
+        n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2],
+        n[0] * u[1] - n[1] * u[0]
+    ]
+
+    # Generate polygon vertices
+    vertices = []
+    for i in range(num_sides):
+        angle = 2 * math.pi * i / num_sides + math.pi / num_sides  # offset for flat edge at bottom
+        px = centroid[0] + radius * (math.cos(angle) * u[0] +
+                                     math.sin(angle) * v[0])
+        py = centroid[1] + radius * (math.cos(angle) * u[1] +
+                                     math.sin(angle) * v[1])
+        pz = centroid[2] + radius * (math.cos(angle) * u[2] +
+                                     math.sin(angle) * v[2])
+        vertices.append([px, py, pz])
+
+    return vertices
+
+
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     faces = answer.get("faces", [])
+    shape_info = get_face_shape_info(subPass)
 
     scad_content = "union() {\n"
 
-    colors = [
-        "red", "green", "blue", "yellow", "cyan", "magenta", "orange", "purple"
-    ]
+    colors = [[1, 0, 0], [0, 0.8, 0], [0, 0, 1], [1, 1, 0], [0, 1,
+                                                             1], [1, 0, 1],
+              [1, 0.5, 0], [0.5, 0, 1], [0.5, 0.5, 0], [0, 0.5, 0.5],
+              [0.5, 0, 0.5], [0.8, 0.8, 0.8]]
 
     for i, face in enumerate(faces):
         centroid = face.get("centroid", [0, 0, 0])
@@ -575,14 +746,51 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
         label = face.get("label", str(i))
         color = colors[i % len(colors)]
 
-        # Draw a small cube at centroid
-        scad_content += f'  color("{color}") translate([{centroid[0]}, {centroid[1]}, {centroid[2]}]) sphere(0.1);\n'
+        # Get shape info for this face
+        if label in shape_info:
+            num_sides, radius = shape_info[label]
+        else:
+            num_sides, radius = shape_info.get("default", (4, 0.5))
 
-        # Draw normal as a line
-        end = [centroid[j] + normal[j] * 0.3 for j in range(3)]
-        scad_content += f'  color("{color}") hull() {{\n'
-        scad_content += f'    translate([{centroid[0]}, {centroid[1]}, {centroid[2]}]) sphere(0.02);\n'
-        scad_content += f'    translate([{end[0]}, {end[1]}, {end[2]}]) sphere(0.02);\n'
+        # Generate polygon vertices
+        verts = generate_face_polygon(centroid, normal, num_sides, radius)
+
+        # Draw the face as a thin polyhedron
+        scad_content += f'  color([{color[0]}, {color[1]}, {color[2]}, 0.7]) {{\n'
+
+        # Create polygon points for OpenSCAD
+        pts_str = ", ".join(
+            [f"[{v[0]:.4f}, {v[1]:.4f}, {v[2]:.4f}]" for v in verts])
+
+        # Extrude slightly along normal for visibility
+        thickness = 0.02
+        back_verts = [[v[j] - normal[j] * thickness for j in range(3)]
+                      for v in verts]
+        back_pts_str = ", ".join(
+            [f"[{v[0]:.4f}, {v[1]:.4f}, {v[2]:.4f}]" for v in back_verts])
+
+        all_pts = f"[{pts_str}, {back_pts_str}]"
+
+        # Build faces for the polyhedron
+        n = num_sides
+        top_face = list(range(n))
+        bottom_face = list(range(2 * n - 1, n - 1, -1))
+        side_faces = [[i, (i + 1) % n, (i + 1) % n + n, i + n]
+                      for i in range(n)]
+
+        faces_str = f"[{top_face}, {bottom_face}"
+        for sf in side_faces:
+            faces_str += f", {sf}"
+        faces_str += "]"
+
+        scad_content += f'    polyhedron(points={all_pts}, faces={faces_str});\n'
+        scad_content += f'  }}\n'
+
+        # Draw normal as a line (arrow)
+        end = [centroid[j] + normal[j] * 0.4 for j in range(3)]
+        scad_content += f'  color([{color[0]}, {color[1]}, {color[2]}]) hull() {{\n'
+        scad_content += f'    translate([{centroid[0]}, {centroid[1]}, {centroid[2]}]) sphere(0.03, $fn=12);\n'
+        scad_content += f'    translate([{end[0]}, {end[1]}, {end[2]}]) sphere(0.015, $fn=12);\n'
         scad_content += f'  }}\n'
 
     scad_content += "}\n"

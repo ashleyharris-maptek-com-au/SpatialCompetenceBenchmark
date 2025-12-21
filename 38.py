@@ -1,8 +1,6 @@
 import math
 import random
 
-skip = True
-
 title = "Balance and Center of Mass - Will it tip over?"
 
 prompt = """
@@ -13,12 +11,6 @@ OBJECTS_DESCRIPTION
 
 The bottom object rests on a flat surface (the ground). Objects are stacked on top of each other.
 Gravity pulls downward (-Z direction).
-
-For a stack to be stable:
-1. Each object's center of mass must be supported by the object(s) below it
-2. The combined center of mass of all objects above a support surface must fall within that surface's footprint
-3. An object "tips" if its center of mass (or the combined CoM of it plus everything above) 
-   falls outside its support region
 
 Determine:
 1. Is the entire stack stable?
@@ -42,7 +34,7 @@ structure = {
             "type":
             "integer",
             "description":
-            "Object number that tips first (1-indexed), or null if stable"
+            "Object number that tips first (1-indexed), or 0 if stable"
         },
         "combinedCenterOfMass": {
             "type": "array",
@@ -54,7 +46,8 @@ structure = {
     },
     "propertyOrdering":
     ["reasoning", "isStable", "tippingObject", "combinedCenterOfMass"],
-    "required": ["reasoning", "isStable", "combinedCenterOfMass"],
+    "required":
+    ["reasoning", "isStable", "combinedCenterOfMass", "tippingObject"],
     "additionalProperties":
     False
 }
@@ -593,6 +586,7 @@ promptChangeSummary = "Various stacking configurations testing stability"
 
 
 def prepareSubpassPrompt(index: int) -> str:
+
     if index >= len(problems):
         raise StopIteration
     return prompt.replace("OBJECTS_DESCRIPTION",
@@ -651,13 +645,114 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return score, "<br>".join(details)
 
 
+def generate_stack_scad(prob):
+    """Generate OpenSCAD code for stack visualization."""
+    objects = prob["objects"]
+
+    # Generate distinct colors for each object
+    colors = [
+        [0.8, 0.3, 0.3],  # red
+        [0.3, 0.8, 0.3],  # green
+        [0.3, 0.3, 0.8],  # blue
+        [0.8, 0.8, 0.3],  # yellow
+        [0.8, 0.3, 0.8],  # magenta
+        [0.3, 0.8, 0.8],  # cyan
+        [0.9, 0.6, 0.3],  # orange
+        [0.6, 0.3, 0.9],  # purple
+        [0.3, 0.9, 0.6],  # teal
+        [0.9, 0.5, 0.5],  # pink
+        [0.5, 0.7, 0.5],  # light green
+        [0.5, 0.5, 0.7],  # light blue
+    ]
+
+    scad = "// Stack visualization\n"
+    scad += "$fn = 32;\n"
+
+    # Draw ground plane
+    all_x = [obj["x_min"]
+             for obj in objects] + [obj["x_max"] for obj in objects]
+    all_y = [obj["y_min"]
+             for obj in objects] + [obj["y_max"] for obj in objects]
+    ground_margin = 2
+    ground_x_min = min(all_x) - ground_margin
+    ground_x_max = max(all_x) + ground_margin
+    ground_y_min = min(all_y) - ground_margin
+    ground_y_max = max(all_y) + ground_margin
+
+    scad += f"// Ground plane\n"
+    scad += f"color([0.6, 0.6, 0.6]) translate([{ground_x_min}, {ground_y_min}, -0.1]) "
+    scad += f"cube([{ground_x_max - ground_x_min}, {ground_y_max - ground_y_min}, 0.1]);\n"
+
+    # Draw each object as a box
+    for i, obj in enumerate(objects):
+        color = colors[i % len(colors)]
+        x_size = obj["x_max"] - obj["x_min"]
+        y_size = obj["y_max"] - obj["y_min"]
+        z_size = obj["z_max"] - obj["z_min"]
+
+        scad += f"// Object {i+1} (mass={obj['mass']}kg)\n"
+        scad += f"color([{color[0]}, {color[1]}, {color[2]}, 0.8]) "
+        scad += f"translate([{obj['x_min']}, {obj['y_min']}, {obj['z_min']}]) "
+        scad += f"cube([{x_size}, {y_size}, {z_size}]);\n"
+
+        # Add label at center of object
+        cx = (obj["x_min"] + obj["x_max"]) / 2
+        cy = (obj["y_min"] + obj["y_max"]) / 2
+        cz = (obj["z_min"] + obj["z_max"]) / 2
+        scad += f"color([1, 1, 1]) translate([{cx}, {cy}, {cz}]) "
+        scad += f"linear_extrude(0.01) text(\"{i+1}\", size={min(x_size, y_size, z_size)*0.5}, halign=\"center\", valign=\"center\");\n"
+
+    # Draw center of mass as a small sphere
+    com = prob["com"]
+    scad += f"// Combined Center of Mass\n"
+    scad += f"color([1, 0, 0]) translate([{com[0]}, {com[1]}, {com[2]}]) sphere(r=0.2);\n"
+
+    # Draw vertical line from CoM down to ground
+    scad += f"color([1, 0, 0, 0.5]) translate([{com[0]}, {com[1]}, 0]) cylinder(r=0.05, h={com[2]});\n"
+
+    return scad
+
+
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
+    import VolumeComparison as vc
+    import os
+
     prob = problems[subPass]
 
-    html = "<b>Problem:</b><br>"
-    html += prob["description"].replace("\n", "<br>")
+    # Generate visualization
+    vis_html = ""
+    try:
+        scad = generate_stack_scad(prob)
+        output_path = f"results/38_{subPass}_{aiEngineName}_stack.png"
 
-    html += "<br><br><b>Your answer:</b><br>"
+        # Calculate camera position for side view
+        objects = prob["objects"]
+        all_x = [obj["x_min"]
+                 for obj in objects] + [obj["x_max"] for obj in objects]
+        all_y = [obj["y_min"]
+                 for obj in objects] + [obj["y_max"] for obj in objects]
+        all_z = [obj["z_min"]
+                 for obj in objects] + [obj["z_max"] for obj in objects]
+
+        center_x = (min(all_x) + max(all_x)) / 2
+        center_y = (min(all_y) + max(all_y)) / 2
+        center_z = (min(all_z) + max(all_z)) / 2
+
+        extent = max(
+            max(all_x) - min(all_x),
+            max(all_y) - min(all_y),
+            max(all_z) - min(all_z))
+        cam_dist = extent * 2
+
+        # Side view - looking from +Y direction with slight angle
+        camera_arg = f"--camera={center_x},{center_y - cam_dist},{center_z + cam_dist/2},{center_x},{center_y},{center_z}"
+        vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
+        vis_html = f'<img src="{os.path.basename(output_path)}" />'
+    except Exception as e:
+        vis_html = f"<i>Visualization error: {e}</i>"
+
+    # Text content in left column
+    html = "<td><b>Your answer:</b><br>"
     html += f"Is Stable: {answer.get('isStable', 'not provided')}<br>"
     html += f"Tipping Object: {answer.get('tippingObject', 'not provided')}<br>"
     html += f"Center of Mass: {answer.get('combinedCenterOfMass', 'not provided')}<br>"
@@ -666,6 +761,8 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     html += f"Is Stable: {prob['is_stable']}<br>"
     html += f"Tipping Object: {prob['tipping_object']}<br>"
     html += f"Center of Mass: {[round(c, 2) for c in prob['com']]}<br>"
+
+    html += f"</td><td>{vis_html}</td>"
 
     return html
 

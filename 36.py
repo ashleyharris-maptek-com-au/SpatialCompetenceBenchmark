@@ -3,8 +3,6 @@ import random
 import VolumeComparison as vc
 import os
 
-skip = True
-
 title = "Cross-Section Slicing - What shape results from cutting a 3D object?"
 
 prompt = """
@@ -19,7 +17,7 @@ Describe the resulting 2D cross-section shape by providing its vertices in order
 when viewed from the positive side of the cutting plane's normal).
 
 Express all coordinates in the local 2D coordinate system of the cutting plane, where:
-- The origin is at the plane's intersection with the object's center
+- The origin is at the projection of the origin onto the cutting plane
 - U-axis and V-axis are as specified for each plane
 """
 
@@ -33,7 +31,7 @@ structure = {
             "type":
             "string",
             "description":
-            "Name of the shape (e.g., 'circle', 'ellipse', 'rectangle', 'triangle', 'hexagon', 'polygon')"
+            "Name of the shape (Prefer single word name of shape with most contraints - eg 'hexagon' over 'polygon', 'rectangle' over 'quadrilateral')"
         },
         "vertices": {
             "type":
@@ -46,14 +44,16 @@ structure = {
                 "description": "UV coordinates of each vertex"
             },
             "description":
-            "For polygonal shapes, list vertices in order. For circles/ellipses, provide center and radii instead."
+            "For polygonal shapes, list vertices in order. For circles/ellipses, leave empty and provide center and radii instead."
         },
         "center": {
-            "type": "array",
+            "type":
+            "array",
             "items": {
                 "type": "number"
             },
-            "description": "For circles/ellipses: [u, v] center point"
+            "description":
+            "For circles/ellipses: [u, v] center point. [] For everything else."
         },
         "radii": {
             "type":
@@ -62,12 +62,12 @@ structure = {
                 "type": "number"
             },
             "description":
-            "For circles: [r]. For ellipses: [major_radius, minor_radius]"
+            "For circles: [r]. For ellipses: [major_radius, minor_radius]. [] For everything else."
         }
     },
     "propertyOrdering":
     ["reasoning", "shapeType", "vertices", "center", "radii"],
-    "required": ["reasoning", "shapeType"],
+    "required": ["reasoning", "shapeType", "vertices", "center", "radii"],
     "additionalProperties": False
 }
 
@@ -387,6 +387,7 @@ promptChangeSummary = "Different 3D objects and cutting planes"
 
 
 def prepareSubpassPrompt(index: int) -> str:
+
     if index >= len(problems):
         raise StopIteration
     prob = problems[index]
@@ -487,7 +488,151 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return total_score, "<br>".join(details)
 
 
+def generate_3d_object_scad(prob):
+    """Generate OpenSCAD code for the 3D object in the problem."""
+    name = prob["name"].lower()
+
+    if "cube" in name and "unit" in prob["object"].lower():
+        if "±1" in prob["object"]:
+            # Cube centered at origin with vertices at ±1
+            return "translate([-1,-1,-1]) cube([2,2,2]);"
+        else:
+            # Unit cube at origin
+            return "cube([1,1,1]);"
+
+    elif "sphere" in name:
+        # Extract radius from problem
+        if "radius 5" in prob["object"]:
+            return "$fn=64; sphere(r=5);"
+        return "$fn=64; sphere(r=1);"
+
+    elif "cylinder" in name:
+        if "radius 2" in prob["object"].lower(
+        ) and "height 10" in prob["object"].lower():
+            return "$fn=64; cylinder(r=2, h=10);"
+        return "$fn=64; cylinder(r=1, h=5);"
+
+    elif "hexagonal prism" in name:
+        # Regular hexagonal prism, radius 2, height 6
+        return "$fn=6; cylinder(r=2, h=6);"
+
+    elif "torus" in name:
+        # Torus with R=5, r=2
+        return "$fn=64; rotate_extrude() translate([5,0,0]) circle(r=2);"
+
+    elif "cone" in name:
+        # Cone with apex at (0,0,10), base radius 5 at z=0
+        return "$fn=64; cylinder(r1=5, r2=0, h=10);"
+
+    elif "intersecting cylinders" in name or "steinmetz" in name.lower():
+        # Steinmetz solid - intersection of two perpendicular cylinders
+        return """$fn=64;
+intersection() {
+    cylinder(r=3, h=20, center=true);
+    rotate([0,90,0]) cylinder(r=3, h=20, center=true);
+}"""
+
+    elif "twisted prism" in name:
+        # Twisted triangular prism - approximate with linear_extrude and twist
+        return """$fn=32;
+linear_extrude(height=6, twist=60) 
+    polygon(points=[[2,0], [-1,1.732], [-1,-1.732]]);"""
+
+    elif "dodecahedron" in name:
+        # Approximate dodecahedron using OpenSCAD's polyhedron or hull
+        phi = 1.618
+        return f"""$fn=32;
+// Dodecahedron approximation
+scale([{phi},{phi},{phi}]) {{
+    hull() {{
+        for(i=[0:4]) rotate([0,0,i*72]) translate([1.17,0,0.85]) sphere(r=0.3);
+        for(i=[0:4]) rotate([0,0,i*72+36]) translate([1.17,0,-0.85]) sphere(r=0.3);
+        translate([0,0,1.4]) sphere(r=0.3);
+        translate([0,0,-1.4]) sphere(r=0.3);
+    }}
+}}"""
+
+    # Default cube
+    return "cube([1,1,1]);"
+
+
+def generate_cutting_plane_scad(prob, scale=10):
+    """Generate OpenSCAD code for the cutting plane visualization."""
+    name = prob["name"].lower()
+    plane_desc = prob["plane"].lower()
+
+    # Parse plane from description
+    if "z = 0.5" in plane_desc:
+        return f"color([1,0,0,0.3]) translate([-{scale},-{scale},0.5]) cube([{scale*2},{scale*2},0.01]);"
+    elif "z = 3" in plane_desc:
+        return f"color([1,0,0,0.3]) translate([-{scale},-{scale},3]) cube([{scale*2},{scale*2},0.01]);"
+    elif "z = 1" in plane_desc:
+        return f"color([1,0,0,0.3]) translate([-{scale},-{scale},1]) cube([{scale*2},{scale*2},0.01]);"
+    elif "z = 2" in plane_desc:
+        return f"color([1,0,0,0.3]) translate([-{scale},-{scale},2]) cube([{scale*2},{scale*2},0.01]);"
+    elif "z = 0" in plane_desc:
+        return f"color([1,0,0,0.3]) translate([-{scale},-{scale},0]) cube([{scale*2},{scale*2},0.01]);"
+    elif "z = 5" in plane_desc:
+        return f"color([1,0,0,0.3]) translate([-{scale},-{scale},5]) cube([{scale*2},{scale*2},0.01]);"
+    elif "diagonal" in plane_desc or "(1,1,1)" in plane_desc:
+        # Diagonal plane through cube
+        return f"color([1,0,0,0.3]) rotate([35.26,0,45]) translate([-{scale},-{scale},0]) cube([{scale*2},{scale*2},0.01]);"
+    elif "tilted 45" in plane_desc or "tilted 30" in plane_desc:
+        angle = 45 if "45" in plane_desc else 30
+        return f"color([1,0,0,0.3]) translate([0,0,5]) rotate([{angle},0,0]) translate([-{scale},-{scale},0]) cube([{scale*2},{scale*2},0.01]);"
+
+    # Default horizontal plane at z=0.5
+    return f"color([1,0,0,0.3]) translate([-{scale},-{scale},0.5]) cube([{scale*2},{scale*2},0.01]);"
+
+
+def generate_cross_section_scad(answer, prob):
+    """Generate OpenSCAD code for the 2D cross-section result."""
+    shape_type = answer.get("shapeType", "").lower()
+    vertices = answer.get("vertices", [])
+    center = answer.get("center", [0, 0])
+    radii = answer.get("radii", [1])
+
+    scad = "$fn=64;\n"
+
+    if shape_type in ["circle"] and radii:
+        r = radii[0] if radii else 1
+        cx, cy = center if len(center) >= 2 else [0, 0]
+        scad += f"translate([{cx},{cy},0]) circle(r={r});"
+
+    elif shape_type in ["ellipse"] and radii:
+        rx = radii[0] if len(radii) > 0 else 1
+        ry = radii[1] if len(radii) > 1 else rx
+        cx, cy = center if len(center) >= 2 else [0, 0]
+        scad += f"translate([{cx},{cy},0]) scale([{rx},{ry},1]) circle(r=1);"
+
+    elif shape_type == "two_circles" and radii:
+        # Two circles for torus slice
+        centers = answer.get("center", [[5, 0], [-5, 0]])
+        if isinstance(centers[0], list):
+            for i, c in enumerate(centers):
+                r = radii[i] if i < len(radii) else radii[0]
+                scad += f"translate([{c[0]},{c[1]},0]) circle(r={r});\n"
+        else:
+            r = radii[0] if radii else 1
+            scad += f"translate([5,0,0]) circle(r={r});\n"
+            scad += f"translate([-5,0,0]) circle(r={r});\n"
+
+    elif vertices and len(vertices) >= 3:
+        # Polygon from vertices
+        pts = ", ".join(f"[{v[0]},{v[1]}]" for v in vertices
+                        if isinstance(v, list) and len(v) >= 2)
+        if pts:
+            scad += f"polygon(points=[{pts}]);"
+
+    else:
+        # Fallback - just a small square
+        scad += "square([0.5, 0.5], center=true);"
+
+    return scad
+
+
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
+    prob = problems[subPass]
     shape_type = answer.get("shapeType", "unknown")
 
     html = f"<b>Shape type:</b> {shape_type}<br>"
@@ -500,6 +645,78 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
         html += f"<b>Vertices:</b><br>"
         for i, v in enumerate(answer["vertices"]):
             html += f"  {i}: {v}<br>"
+
+    # Generate 3D visualization with cutting plane
+    try:
+        object_scad = generate_3d_object_scad(prob)
+        plane_scad = generate_cutting_plane_scad(prob)
+
+        # Determine appropriate scale for the plane
+        name = prob["name"].lower()
+        if "sphere" in name or "torus" in name:
+            scale = 8
+        elif "cylinder" in name or "cone" in name:
+            scale = 5
+        else:
+            scale = 3
+
+        full_scad = f"""// 3D Object with cutting plane
+color([0.5, 0.7, 1.0, 0.7]) {{
+{object_scad}
+}}
+{plane_scad}
+"""
+
+        output_3d = f"results/36_{subPass}_{aiEngineName}_3d.png"
+        vc.render_scadText_to_png(full_scad, output_3d)
+        html += f'<br><b>3D Object with Cutting Plane:</b><br><img src="{os.path.basename(output_3d)}" /><br>'
+
+        # Generate 2D cross-section visualization
+        cross_section_scad = generate_cross_section_scad(answer, prob)
+
+        # Also show expected cross-section for comparison
+        expected_scad = "$fn=64;\n"
+        exp_type = prob.get("expected_type", "").lower()
+
+        if exp_type in ["circle", "ellipse"]:
+            exp_center = prob.get("expected_center", [0, 0])
+            exp_radii = prob.get("expected_radii", [1])
+            if exp_type == "circle":
+                expected_scad += f"color([0,1,0,0.5]) translate([{exp_center[0]},{exp_center[1]},0]) circle(r={exp_radii[0]});"
+            else:
+                rx = exp_radii[0]
+                ry = exp_radii[1] if len(exp_radii) > 1 else rx
+                expected_scad += f"color([0,1,0,0.5]) translate([{exp_center[0]},{exp_center[1]},0]) scale([{rx},{ry},1]) circle(r=1);"
+        elif exp_type == "two_circles":
+            exp_centers = prob.get("expected_center", [[5, 0], [-5, 0]])
+            exp_radii = prob.get("expected_radii", [1, 1])
+            for i, c in enumerate(exp_centers):
+                r = exp_radii[i] if i < len(exp_radii) else exp_radii[0]
+                expected_scad += f"color([0,1,0,0.5]) translate([{c[0]},{c[1]},0]) circle(r={r});\n"
+        else:
+            exp_vertices = prob.get("expected_vertices", [])
+            if exp_vertices:
+                pts = ", ".join(f"[{v[0]},{v[1]}]" for v in exp_vertices)
+                expected_scad += f"color([0,1,0,0.5]) polygon(points=[{pts}]);"
+
+        # Combine answer (red) and expected (green) cross-sections
+        combined_2d = f"""// Cross-section comparison: Red=Answer, Green=Expected
+color([1,0,0,0.7]) linear_extrude(height=0.1) {{
+{cross_section_scad}
+}}
+translate([0,0,-0.1]) {{
+{expected_scad.replace('color([0,1,0,0.5])', 'color([0,1,0,0.7]) linear_extrude(height=0.1)')}
+}}
+"""
+
+        output_2d = f"results/36_{subPass}_{aiEngineName}_cross_section.png"
+        vc.render_scadText_to_png(combined_2d,
+                                  output_2d,
+                                  cameraArg="--camera=0,0,10,0,0,0")
+        html += f'<br><b>Cross-Section (Red=Answer, Green=Expected):</b><br><img src="{os.path.basename(output_2d)}" /><br>'
+
+    except Exception as e:
+        html += f"<br><i>Visualization error: {e}</i><br>"
 
     return html
 

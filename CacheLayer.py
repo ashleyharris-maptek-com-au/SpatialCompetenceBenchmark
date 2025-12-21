@@ -12,6 +12,10 @@ FORCE_REFRESH = False
 # Global flag to keep us offline.
 OFFLINE_MODE = False
 
+# Try very hard to get a cache hit, even if it means using old
+# results months or years old.
+POOR_MODE = True
+
 
 class CacheLayer:
 
@@ -22,13 +26,28 @@ class CacheLayer:
         self.failCount = 0
 
     def AIHook(self, prompt: str, structure, index, subPass):
-        h = (hashlib.sha256(prompt.strip().encode()).hexdigest(),
-             hashlib.sha256(str(structure).encode()).hexdigest(), self.hash,
-             datetime.datetime.now().strftime("%b %Y"))
+        cacheDate = datetime.datetime.now()
+        while True:
+            h = (hashlib.sha256(prompt.strip().encode()).hexdigest(),
+                 hashlib.sha256(str(structure).encode()).hexdigest(),
+                 self.hash, cacheDate.strftime("%b %Y"))
 
-        h = hashlib.sha256(str(h).encode()).hexdigest()
+            h = hashlib.sha256(str(h).encode()).hexdigest()
 
-        cache_file = os.path.join(self.temp_dir, "cache_" + str(h) + ".txt")
+            cache_file = os.path.join(self.temp_dir,
+                                      "cache_" + str(h) + ".txt")
+
+            if POOR_MODE == False:
+                break
+
+            if os.path.exists(cache_file):
+                break
+
+            cacheDate -= datetime.timedelta(days=25)
+
+            if cacheDate < datetime.datetime(2025, 11, 30):
+                cacheDate = datetime.datetime.now()
+                break
 
         if self.failCount > 3:
             if structure:
@@ -76,8 +95,13 @@ class CacheLayer:
         if not result:
             self.failCount += 1
             if structure:
+                # We write an empty json object to the cache file so we don't keep retrying.
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump({}, f)
                 return {}, "AI didn't respond after 3 retries - failing test"
             else:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump("", f)
                 return "", "AI didn't respond after 3 retries - failing test"
 
         print("Finished at " + str(datetime.datetime.now()))

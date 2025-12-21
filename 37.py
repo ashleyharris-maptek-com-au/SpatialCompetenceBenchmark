@@ -2,8 +2,6 @@ import math
 import random
 import itertools
 
-skip = True
-
 title = "Mental Rotation - Identify which 3D shapes are rotations of each other"
 
 prompt = """
@@ -305,6 +303,7 @@ promptChangeSummary = "Increasing number of objects and unique shapes"
 
 
 def prepareSubpassPrompt(index: int) -> str:
+
     if index >= len(generated_problems):
         raise StopIteration
 
@@ -363,7 +362,19 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return score, f"Correct pairs: {correct}/{total}, Wrong pairs: {wrong}<br>Expected: {expected_norm}<br>Got: {given_norm}"
 
 
+def generate_polycube_scad(cubes, color_rgb):
+    """Generate OpenSCAD code for a polycube shape."""
+    scad = f"color([{color_rgb[0]},{color_rgb[1]},{color_rgb[2]}]) {{\n"
+    for x, y, z in cubes:
+        scad += f"  translate([{x},{y},{z}]) cube([0.95,0.95,0.95]);\n"
+    scad += "}\n"
+    return scad
+
+
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
+    import VolumeComparison as vc
+    import os
+
     prob = generated_problems[subPass]
 
     html = "<b>Objects:</b><br>"
@@ -377,6 +388,91 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     html += "<br><b>Expected groups:</b><br>"
     for g in prob["groups"]:
         html += f"{g}<br>"
+
+    # Generate visualization of all objects
+    try:
+        objects = prob["objects"]
+        expected_groups = prob["groups"]
+
+        # Assign colors to each expected group
+        group_colors = [
+            [1.0, 0.3, 0.3],  # Red
+            [0.3, 1.0, 0.3],  # Green
+            [0.3, 0.3, 1.0],  # Blue
+            [1.0, 1.0, 0.3],  # Yellow
+            [1.0, 0.3, 1.0],  # Magenta
+            [0.3, 1.0, 1.0],  # Cyan
+            [1.0, 0.6, 0.3],  # Orange
+            [0.6, 0.3, 1.0],  # Purple
+            [0.3, 0.6, 0.3],  # Dark green
+            [0.8, 0.8, 0.8],  # Gray
+        ]
+
+        # Map object index to group color
+        obj_to_color = {}
+        for group_idx, group in enumerate(expected_groups):
+            color = group_colors[group_idx % len(group_colors)]
+            for obj_num in group:
+                obj_to_color[obj_num - 1] = color  # Convert to 0-indexed
+
+        # Calculate grid layout for objects
+        num_objects = len(objects)
+        cols = min(4, num_objects)
+        rows = (num_objects + cols - 1) // cols
+
+        # Find max extent of any object for spacing
+        max_extent = 0
+        for obj in objects:
+            if obj:
+                for x, y, z in obj:
+                    max_extent = max(max_extent, abs(x), abs(y), abs(z))
+        spacing = max(max_extent + 3, 8)
+
+        scad = "// Polycube objects - same colors = same shape group\n"
+
+        for i, obj in enumerate(objects):
+            row = i // cols
+            col = i % cols
+
+            # Normalize object to origin
+            if obj:
+                min_x = min(c[0] for c in obj)
+                min_y = min(c[1] for c in obj)
+                min_z = min(c[2] for c in obj)
+                normalized = [(x - min_x, y - min_y, z - min_z)
+                              for x, y, z in obj]
+            else:
+                normalized = []
+
+            color = obj_to_color.get(i, [0.5, 0.5, 0.5])
+
+            # Position in grid
+            grid_x = col * spacing
+            grid_y = -row * spacing
+
+            scad += f"// Object {i+1}\n"
+            scad += f"translate([{grid_x},{grid_y},0]) {{\n"
+            scad += generate_polycube_scad(normalized, color)
+
+            # Add label
+            scad += f"  color([0,0,0]) translate([0,-1.5,0]) text(\"{i+1}\", size=1.5);\n"
+            scad += "}\n\n"
+
+        output_path = f"results/37_{subPass}_{aiEngineName}_objects.png"
+
+        # Calculate camera position based on grid size
+        center_x = (cols - 1) * spacing / 2
+        center_y = -(rows - 1) * spacing / 2
+        cam_dist = max(cols, rows) * spacing * 1.5
+        camera_arg = f"--camera={center_x},{center_y - cam_dist},{cam_dist},{center_x},{center_y},0"
+
+        vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
+        html += f'</td><td><br><b>Objects Visualization (same color = same shape group):</b><br>'
+        html += f'<img src="{os.path.basename(output_path)}" />'
+
+        html = "<td>" + html + "</td>"
+    except Exception as e:
+        html += f"<br><i>Visualization error: {e}</i><br>"
 
     return html
 

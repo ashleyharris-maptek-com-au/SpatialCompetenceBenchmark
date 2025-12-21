@@ -1,0 +1,231 @@
+Executive summary
+
+You have a structured, very-high-throughput scanner (two rotating mirrors with a fast vertical sweep and a slow azimuth sweep), with per-beam multi-returns, per-return high-resolution time-of-flight (16 GHz), a 12‑bit signal amplitude, 20‑bit encoder angles, optional RGB imagery registered to the beam grid, mostly-stationary origins and occasional GPS-updated moving origins, and scan sizes that routinely hit hundreds of millions of beams (and can reach hundreds of billions). The file format must be immutable and extremely compact while still being streamable, indexable, GPU-friendly, and able to represent all relevant information with at-most ADC-level loss (i.e., quantization up to the ADC resolutions is allowed; further loss is undesirable).
+
+Below I list every worthwhile optimization (and a selection of deliberately unwise ones for contrast), explain the trade-offs, and conclude with a recommended format strategy (concrete layout, chosen transforms and codecs, chunking, indexing, and metadata) and reasons.
+
+Top-level design goals (requirements derived from the scanner)
+- Preserve all information to ADC resolution: 12-bit intensity, time-of-flight sampled at 16 GHz, and 20-bit encoder angles. Loss up to these quantization levels is acceptable; larger loss is not.
+- File must be immutable, so optimize layout and index for read streaming / random-read queries and progressive view.
+- Support extremely large scale: hundreds of millions to hundreds of billions of beams.
+- Exploit structured acquisition geometry (fast vertical sweep × slow azimuth sweep) aggressively — it provides predictable ordering and strong locality.
+- Support variable numbers of returns per beam (including zero), image data registered on the same axis, and shared scanner/pose metadata (90% stationary).
+- Allow both real-time streaming write and later efficient read (but main focus since file is immutable is compact storage and efficient read).
+
+Overview of recommended approach (short)
+- Represent data in scan-blocks that preserve the fast-sweep scanline structure (structured grid tiles), not as unordered point lists.
+- Avoid storing per-beam full floating-point XYZ; store measured quantities (time-of-flight ticks / range, intensity, multi-return deltas) quantized to ADC resolution.
+- Do small transform passes that make data highly compressible (delta/differential along natural order, run-length for empty returns, bit‑pack fields) and then compress blocks with a fast, good general compressor (Zstandard) with an option of LZ4 for streaming cases.
+- Provide optional precomputed multi-resolution (decimated) levels and a spatial index (Morton / octree) to support progressive viewing and random access.
+- Store image data separately as compressed image tiles and reference them via compact mapping computed from scanner geometry (not per-beam pointers), avoiding per-beam image pointers.
+- Include per-block checksums, versioning, and a small global footer index for fast random access.
+
+Now the detailed options, trade-offs and recommendations.
+
+1) Use the structured-sensor model (strong win)
+Why: Your scanner produces beams in a predictable ordered pattern: a fast axis (vertical) sweeps -80°..+80° at a fixed rate and encoder resolution, the slow axis rotates slowly. This order yields extremely high spatial and statistical locality — neighboring beams are highly correlated — which you should exploit.
+
+How:
+- Organize data into blocks called "sweeps" or "tiles" that correspond to a contiguous span of the slow axis (e.g., an arc or full revolution) and contain an integer number of fast-axis scanlines. Inside a block data is stored in natural acquisition order: slow index major, fast index minor (or vice versa depending on streaming).
+- Each block contains a small header with parameters needed to reconstruct angles/times (start encoder tick, encoder ticks per fast-step if known, mirror speeds or encoder timestamps) so you do NOT need to store full 20-bit angles per beam in most cases.
+- Reason: you can re-synthesize each beam's azimuth & elevation from a small number of per-block encoder samples. That saves huge storage compared with naïvely storing 20 bits × beams.
+
+When to store explicit angles:
+- If you have jittered mirror encoders or per-beam encoder values are non-deterministic, store sparse encoder samples plus an occasional explicit encoder snapshot. In typical operation you will be able to derive per-beam angles exactly from encoder counts and rotation state; store corrections only where needed.
+
+2) Avoid storing Cartesian coordinates; store measured primitives (win)
+Why: Cartesian (X,Y,Z) floats are large and highly redundant. Storing direct measurements (time-of-flight ticks or range, and a compact classification/intensity) then reconstructing XYZ on read is much smaller and avoids loss of ADC-level detail.
+
+What to store:
+- Per-return: time-of-flight tick (integer tick count at 16 GHz resolution), intensity/signal (12 bits), return number (1..N).
+- Per-beam: number_of_returns (small integer), offset index into per-return array OR use a packed returns block (see below).
+- You may also choose to store first-return time-of-flight and per-return deltas (see below).
+
+3) Data packing & field widths — quantize to ADC and pack tightly (must)
+- Angles: 20-bit encoder resolution — store encoder ticks / encoder reading using 20-bit fields where needed. Better: store only per-block base encoder and delta-encoded increments in fewer bits where they compress well.
+- Time-of-flight: quantize to 16 GHz ticks. Fit them in the smallest container that covers dynamic range: analyze expected ranges. Example: For 2 km max unambiguous range, 2*2 km / c ≈ 13.3 μs → 213k ticks @16GHz, fits comfortably in 18 bits. But allow margin: choose 32-bit unsigned tick fields per return as baseline. You will compress this heavily; 32-bit gives headroom for firmware changes. Alternatively choose 24-bit if you want smaller—be careful to validate maximum plausible range + wrap.
+- Intensity / signal: 12 bits — pack into 12-bit fields (bit-packing multiple intensities into bytes/words).
+- Return counts: most beams have 0..a few returns. Store per-beam counts as 3..6 bits depending on worst-case expected returns. Use e.g., 6-bit (0..63) which is almost always enough; if more occur fall back to an escape code and extended integer stored elsewhere.
+- Per-return flags/class: small bitfields (reflectivity flags, classification, aliasing, saturated, specular indicator). Pack tightly.
+
+Use bit-packed streams with word-aligned buffers inside a block to reduce overhead. Then compress whole block with a compressor.
+
+4) Multi-return representation — compact and compressible (major win)
+Problems: variable length per beam: zero, one, or multiple returns.
+
+Recommended layout:
+- Per-block: Two arrays:
+  - Beam header array (one entry per beam in the tile), containing
+    - presence bitmap or one compact field containing number_of_returns (small integer),
+    - index into returns array (if many beams have 0 returns, store a dense pointer only for beams with returns, see sparse representation below) OR store an implicit running offset via prefix sum (delta-encoded).
+    - optionally an array of per-beam timing baseline (first-return tick) if first-return sometimes absent but others present.
+  - Returns array: contiguous packed fields for each return in acquisition order (or grouped per-beam depending on compression benefit): [tof_tick, intensity_12bit, flags]. For multiple returns, store the first-return absolute time and subsequent returns as small delta ticks (single- or multi-byte) — return-to-return deltas are usually small and compress extremely well.
+- Many beams have zero returns; store a run-length compressed presence bitmap per scanline or per block (RLE / Elias gamma / bit-packed with rank/select) to skip empty beams cheaply and keep arrays compact.
+- Alternative sparse representation: store only beam headers for beams with >0 returns (sparse index) and map them to fast-axis indexes via compressed deltas; use this when sky fraction is large. If you need to preserve mapping to image pixels per 2×2 cell, you may prefer a dense beam header but with a compressed "zeros" bitmap — it's small and very compressible.
+
+Return delta encoding:
+- Store first return time-of-flight as absolute (quantized ticks) or relative to per-block timebase, and store subsequent returns as small unsigned deltas (ticks) encoded in a variable-byte or LEB128-like scheme (or use fixed 8/16-bit if safe). This yields excellent compression because returns off reflective surfaces are often closely spaced.
+
+5) Exploit scanning order for delta and predictive coding (very large win)
+- Along the fast axis the expected angle increments are near-constant. Along slow axis, sequential blocks are similar. Use delta (difference) coding on:
+  - encoder ticks (store block start tick then deltas per-beam or per-line),
+  - time-of-flight values (store deltas between adjacent beams or run-length encode stretches of identical/no-return),
+  - intensities (neighboring beams on same object have correlated intensity).
+- Zig-zag encode signed deltas and bitpack them into small fields, then run-length encode zeros and compress.
+
+6) Block/chunk size, streaming and random access
+- Use moderately large blocks — tradeoff between compression ratio and random access latency. Recommended baseline: 64k–1M beams per block. For many point cloud use-cases 64k–256k beams gives good compression and fast decode; for extreme throughput use 1M.
+- Each block is independently decompressible and ends with a small footer (checksum, uncompressed size, block metadata). Because files are immutable, you may write final global index at file end that lists block byte offsets and spatial extents (bounding box) to enable random access without scanning the whole file.
+- Streaming writes: blocks are appended, each self-contained. For immutability you finalize the file with a footer that includes the list of blocks and index information. This allows streaming writes with finalization.
+
+7) Spatial indexing and multi-resolution (progressive viewing) (adopt)
+- Create a spatial index (octree or Morton / Z-order) stored in the footer that maps space boxes (or coarse tiles) to block ranges. For structured sensor tiles you can also store the tile's angular extents (azimuth range, elevation range) and timestamp range.
+- Precompute and store lower-density decimations (levels of detail, LOD), either:
+  - explicit downsampled blocks (fastest for viewers), or
+  - store points in Morton order inside blocks so that simple decimation (take every Nth sample) yields a coherent coarse view.
+- Entwine’s EPT / Octree approach is a proven model. For performance you can store a compact low-resolution point set in the header or as a small LOD0 block.
+
+8) Image data handling (best practice)
+- Image data is captured via a spherical mirror; one or more pixels per 2×2 cell.
+- Do NOT store per-beam pointers to pixels (expensive). Instead:
+  - store image(s) as standard compressed image tiles (e.g., WebP / JPEG / AVIF / PNG / per-tile WebP for high compression).
+  - store the mapping function from beam indices (fast/slow indices) to image pixel coordinates in the block header — this mapping is compact because the camera is rigidly mounted on the same axis. If camera geometry deforms across the sweep, store a small calibration table (e.g., per-scanline offsets) that allows deterministic mapping.
+  - If each 2×2 cell can have multiple pixels, describe a simple rule (e.g., pixel_count_per_cell), or store a small per-block index of pixel counts for those cells that deviate. Compress the per-cell counts via RLE.
+- Alternative: capture and store a per-block tiny color buffer aligned to the beam grid (e.g., one color per 2×2 beam cell) and compress it with an image compressor. This is compact and fast.
+
+9) Pose / origin handling (win)
+- Since 90% stationary, store a per-scan-session origin and compress away repeats:
+  - Per-block header references the current scanner pose (position + orientation) by index into a session pose table. Only store a new pose when it changes beyond a threshold or when the scanner moves. This reduces redundant storage of identical GPS/IMU data.
+- For mobile acquisition (moving platform), store a compact trajectory: time or beam index paired with position/orientation samples, then linear or spline interpolate poses per-beam on decode. Store only samples at reduced rate plus per-block correction if needed.
+
+10) Error checking, integrity, and versioning (must)
+- Include per-block CRC32/CRC64 or Blake2s checksums so readers can detect corruption quickly without scanning the whole file.
+- Global footer with file format version, producer information, encoder firmware version, calibration constants, and a block table with byte offsets for random access.
+- Support backward/forward compatibility via type tags and optional extension chunks.
+
+11) Compression strategy (adopt combined transform + Zstd)
+- Pipeline recommended:
+  - Stage 1: Transforms to make data entropy-friendly:
+    - Delta encoding for monotonic sequences (encoder ticks, beam times).
+    - Small-value encoding (first-return absolute, subsequent-return deltas).
+    - Bitpack fields into 8/32/64-bit words as appropriate (pack every 12-bit intensity fields together).
+    - Run-length encoding and presence bitmaps for no-returns along scanlines.
+    - Optionally use byte-shuffling or 64-bit word shuffle (like Blosc shuffle) before compressor to improve compressor effectiveness on integer arrays.
+  - Stage 2: Per-block compression with Zstandard (zstd). Reason: excellent compression vs CPU tradeoff, streaming-friendly decompression, adjustable compression level. For maximum read throughput choose lower zstd level or LZ4 for immediate decode.
+  - Optional: An alternative for extremely large-scale is to use a compressor tuned for integer arrays: e.g., LZ4 or zstd after bitpacking plus forging a static dictionary for repeated patterns (scanner metadata often repeats). Unless you have a reason to use specialized lossy FP compressors (zfp, SZ), stay with integer transforms + zstd (lossy only if you explicitly quantize beyond ADC resolution).
+- Avoid trying to use floating-point lossy compressors (ZFP, SZ) on raw results unless you consciously allow extra accuracy loss beyond ADC — the spec forbids that.
+
+12) Spatial reordering for maximal compression / access (choose carefully)
+- You can reorder points inside file for better compression (Morton/ Hilbert) but because data is acquired in a natural scan order, reordering costs are only worth it if you plan many spatial queries. Options:
+  - Keep acquisition order inside blocks (fast decode and streaming, predictable).
+  - For spatial queries, build a separate spatial index mapping bounding regions to block offsets; do not change the acquisition order inside blocks unless you also store a precomputed LOD and an index.
+  - If you want better compression at the expense of streaming locality, you can reorder most-correlated beams together (e.g., group returns by geometry), but this complicates image mapping and real-time streaming. Recommendation: keep acquisition order inside block; create an octree index for spatial access.
+
+13) Metadata & calibration (must-have)
+- Store calibration constants once per file or per session: mirror geometry, fixed offsets between scanner and camera, time offsets, systemic timing calibration, lens distortion / spherical mirror calibration lookup tables. These are small and pay significant dividends on decode and reprojection.
+- Include human-readable and machine-readable metadata blocks (JSON) with schema versioning. This allows forward compatibility.
+
+14) GPU / mmap friendliness (important)
+- Make blocks self-contained and tightly packed so they can be memory-mapped or directly uploaded to GPU with minimal reformatting.
+- Use little-endian layout (most GPU/CPU platforms) and alignment of arrays to 8/16 bytes boundaries inside blocks for SIMD-friendly copy.
+- Keep headers and small indices uncompressed or compressed separately to allow quick mapping into GPU buffers; optionally store a copy of unpacked LOD0 or compressed GPU-friendly cookbook chunk for immediate visualization.
+
+15) Error-prone or unwise optimizations (what NOT to do)
+- Unwise: storing only Cartesian floats and applying floating-point lossy compressors (ZFP) that introduce error beyond ADC resolution without clear bounds. This loses provenance of original ADC quantization and is hard to guarantee never exceeds acceptable error.
+- Unwise: extreme global dictionary compression across hundreds of millions of beams (e.g., sharing zstd dictionary across entire file) — memory/CPU heavy at decode, little practical benefit vs per-block zstd after transforms.
+- Unwise: tiny block sizes (~1–4 beams per block) — metadata overhead swamps compression and file grows.
+- Unwise: storing full per-beam per-return waveforms inline for every beam when only small subset actually requires them; better to store waveform as an optional external chunk referenced by beam index or store waveforms only when flagged.
+- Unwise: storing full per-beam 20-bit angles for every beam when encoder model can reconstruct them — wastes space.
+- Unwise: storing per-beam image pointers (expensive and large) versus a deterministic mapping from beam indices to pixel coordinates.
+- Unwise: complex, exotic compression schemes custom-written and untested under large-scale; prefer robust general-purpose zstd with simple transforms for predictable performance and maintainability.
+- Unwise: inline cryptographic signing for entire file that prevents streaming read; if integrity is needed do per-block signatures or external signature file.
+
+16) Special cases: waveform data, glass/multi-return specifics, and sensors that produce more per-return fields
+- Waveform returns (high-bandwidth waveforms) should be optional, compressed separately (e.g., lossless delta + zstd), and stored in separate blocks referenced by return index. Waveforms are large and rare; don't inline them for every return.
+- For glass/fog returns where there can be many small spurious returns per beam, cap stored returns per beam to a reasonable number (e.g., 63) and use an "overflow" mechanism that writes extra returns to a separate overflow stream (rare).
+- Provide flags for saturated returns, filtered noise, or returns that should be ignored for visualization.
+
+17) Put it together: recommended file layout
+
+High-level immutable file layout (concrete proposal)
+
+File header (fixed at file start)
+- Magic signature, format version, producer app/firmware ids.
+- Global calibration structure (mirror geometry, camera mapping param).
+- Global metadata JSON block (instrument config, capture parameters).
+- Optional small LOD0 (tiny coarse point set) for immediate preview.
+
+Blocks (appendable during capture; finalized)
+- Each block contains:
+  - Block header:
+    - Block ID, slow-axis angular range (start/end encoder ticks), fast-axis count, beam_count, beam_layout parameters (fast sweep counts per line), scanline stride, block timebase (timestamp / global tick), scanner pose index reference, optional per-block encoder snapshot (if needed).
+  - Presence bitmap or per-beam return_count array (bit-packed, compressed).
+  - If sparse: array of beam indices with returns (delta-encoded) or implicit offsets array (delta prefix sums).
+  - Returns stream:
+    - First-return time-of-flight ticks (uint32 or uint24) for beams that have returns.
+    - For beams with multiple returns: subsequent-return deltas encoded as variable-length small ints (8/16-bit).
+    - Intensities (12-bit) aligned/bitpacked; small flags bitfield.
+    - All of the above stored in separate arrays (SoA) per-block to improve compressor locality OR interleaved if profiling shows better results. The SoA approach commonly compresses better for large homogeneous columns.
+  - Optional image mapping parameters (so viewer can map pixel tiles to beams). Image binary data may be stored in separate image chunk(s).
+  - Block footer: uncompressed sizes, CRC, compressed size, offsets to arrays in block.
+
+Global index / footer (written at finalize)
+- Table of block offsets, bounding boxes (min/max XYZ or angular extents), timestamps, pose index ranges.
+- Spatial index (octree or Morton-grid) mapping to block IDs for quick spatial queries.
+- Pose table (unique poses with interpolation params).
+- File-level checksum and signature metadata.
+
+Compression & transforms
+- Inside each block, apply:
+  - Delta encoding on encoder ticks relative to block base
+  - Delta encoding on first-return times relative to block timebase; subsequent returns as small deltas
+  - Bitpack intensities and flags
+  - Shuffle bytes for better zstd compression
+  - Compress resulting arrays with zstd (configurable level; default medium e.g., 3–6)
+- Optionally offer a "fast-read" store compressed with LZ4 for interactive use, and a secondary "compact" store using zstd level 9 for archival.
+
+Indexing and LOD
+- Per-file octree-based index storing block IDs with pointers and coarse point-count per node.
+- Precomputed LODs: LOD0 embedded small preview, LOD1 stored as decimated block set (coarser but separate).
+
+18) Practical choices and numbers (to set expectations)
+- Typical storage per return: if you store 32-bit ticks + 12-bit intensity + 4 bits flags → ~48 bits (6 bytes) nominal raw per return. After delta, bitpack and zstd this will compress dramatically — typical compress ratios 3–10× depending on scene geometry and density. If many beams have zero returns you save further with presence bitmaps. With careful transforms you can expect (very roughly) 2–8 bytes per recorded return in typical urban scenes.
+- For hundreds of millions of beams with only single returns, file sizes in tens of GB are realistic; for dense vegetation with multiple returns file sizes grow accordingly.
+
+19) Features for robustness and interoperability
+- JSON metadata blocks to enable easy parsing by third-party tools.
+- Provide a small reference library for encoding/decoding and format description (open spec) for broad adoption.
+- Provide "sidecar" small index files for faster random access if users need extreme random queries without reading the full footer.
+
+20) Summary of which optimizations to adopt vs reject
+
+Adopt (strongly recommended):
+- Structured-block layout aligned with fast/slow mirrors.
+- Store measured primitives (ticks + intensity) quantized to ADC resolutions; reconstruct XYZ on read.
+- Delta coding for times, encoder ticks, intensity where appropriate.
+- Bitpacking and SoA layout per block.
+- Presence bitmaps / sparse beam representations for zero-return beams.
+- Per-return delta encoding for multi-returns.
+- Per-block independent compression (zstd with shuffle) and per-block checksum.
+- Per-file spatial index (Morton/octree) and optional LODs (decimated levels).
+- Separate compressed image tiles and deterministic beam→pixel mapping (no per-beam image pointers).
+- Per-scan session pose table and sparse pose sampling for moving platforms.
+- Optional separate storage for waveforms and overflow returns.
+
+Reject or use only carefully:
+- Storing full floats for every point or using lossy float compressors by default (unless user explicitly selects lossy beyond ADC).
+- Tiny blocks (very small blocks give overhead).
+- Per-beam image pointers.
+- Global compression dictionaries or monolithic cross-file compression unless profiling shows a net benefit.
+- Reordering acquisition sequence wholesale inside blocks (keep acquisition order for streaming).
+
+Final rationale
+
+This approach leverages the biggest win: the acquisition structure. From there, compactness comes from storing the minimal set of measured primitives at ADC resolution, using transforms and bitpacking that match the statistical structure of the data, and relying on a robust modern compressor (zstd). Independent blocks with a global index keep random access fast and streaming trivial. Optional LODs and a spatial index make visualization and large-scale queries practical.
+
+The unwise options above are listed because they may seem to squeeze a few extra percent of space in narrow cases, but in practice they harm streaming, software complexity, or risk violating the ADC fidelity constraint.
+
+If you want, I can:
+- produce a concrete binary layout specification with exact byte-level structures and sequence of fields for the block header and returns streams;
+- provide example pseudo-code for encoding/decoding each block and for building the footer index;
+- run a small simulation estimate of expected file size for sample scenarios (urban street scan vs forest vs open sky) given assumed densities and return multiplicities.
