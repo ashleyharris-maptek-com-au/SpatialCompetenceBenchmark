@@ -198,8 +198,9 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       earlyFailTriggered = True
       for subPass in range(1, len(prompts)):
         subpass_results[subPass] = {
-          "subpass": subPass, "score": 0, "scoreExplantion":
-          "Skipped due to earlyFail (first subpass scored under 50%)"
+          "subpass": subPass,
+          "score": 0,
+          "scoreExplantion": "Skipped due to earlyFail (first subpass scored under 50%)"
         }
     else:
       # First subpass passed, run remaining prompts in parallel
@@ -255,8 +256,10 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       subpass_results.append(subpass_data)
 
   return {
-    "average_score": totalScore / len(results) if results else 0, "total_score": max(0, totalScore),
-    "subpass_count": len(subpass_results), "subpass_results": subpass_results
+    "average_score": totalScore / len(results) if results else 0,
+    "total_score": max(0, totalScore),
+    "subpass_count": len(subpass_results),
+    "subpass_results": subpass_results
   }
 
 
@@ -365,7 +368,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
       if test_was_run:
         question_title = test_globals.get("title", f"Test {current_test_index}")
         per_question_scores[current_test_index] = {
-          "title": question_title, "score": test_result['total_score'], "max": max_score
+          "title": question_title,
+          "score": test_result['total_score'],
+          "max": max_score
         }
 
     except StopIteration:
@@ -612,7 +617,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
       if ":" in line:
         scores[line.split(":")[0].strip()] = line.split(":")[1].strip()
 
-  scores[aiEngineName] = overall_total_score / overall_max_score if overall_max_score > 0 else 0
+  if test_filter is None:
+    # Don't overwrite scores if we're running a subset of tests.
+    scores[aiEngineName] = overall_total_score / overall_max_score if overall_max_score > 0 else 0
 
   with open("results/results.txt", "w", encoding="utf-8") as f:
     for key, value in sorted(scores.items(), key=lambda item: float(item[1]), reverse=True):
@@ -968,70 +975,126 @@ def get_all_model_configs():
   openai_base_models = ["gpt-5-nano", "gpt-5-mini", "gpt-5.1", "gpt-5.2"]
   for model in openai_base_models:
     configs.append({
-      "name": model, "engine": "openai", "base_model": model, "reasoning": False, "tools": False,
+      "name": model,
+      "engine": "openai",
+      "base_model": model,
+      "reasoning": False,
+      "tools": False,
       "env_key": "OPENAI_API_KEY"
     })
     configs.append({
-      "name": f"{model}-HighReasoning", "engine": "openai", "base_model": model, "reasoning": 10,
-      "tools": False, "env_key": "OPENAI_API_KEY"
+      "name": f"{model}-HighReasoning",
+      "engine": "openai",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": False,
+      "env_key": "OPENAI_API_KEY"
     })
     configs.append({
-      "name": f"{model}-Reasoning-Tools", "engine": "openai", "base_model": model, "reasoning": 10,
-      "tools": True, "env_key": "OPENAI_API_KEY"
+      "name": f"{model}-Reasoning-Tools",
+      "engine": "openai",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": True,
+      "env_key": "OPENAI_API_KEY"
     })
 
   # Gemini models
   gemini_base_models = ["gemini-3-pro-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
   for model in gemini_base_models:
     configs.append({
-      "name": model, "engine": "gemini", "base_model": model, "reasoning": False, "tools": False,
+      "name": model,
+      "engine": "gemini",
+      "base_model": model,
+      "reasoning": False,
+      "tools": False,
       "env_key": "GEMINI_API_KEY"
     })
     configs.append({
-      "name": f"{model}-HighReasoning", "engine": "gemini", "base_model": model, "reasoning": 10,
-      "tools": False, "env_key": "GEMINI_API_KEY"
+      "name": f"{model}-HighReasoning",
+      "engine": "gemini",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": False,
+      "env_key": "GEMINI_API_KEY"
     })
     configs.append({
-      "name": f"{model}-Reasoning-Tools", "engine": "gemini", "base_model": model, "reasoning": 10,
-      "tools": True, "env_key": "GEMINI_API_KEY"
+      "name": f"{model}-Reasoning-Tools",
+      "engine": "gemini",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": True,
+      "env_key": "GEMINI_API_KEY"
     })
 
   # XAI/Grok models. These are a bit weird with their reasoning support.
   configs.append({
-    "name": "grok-4-1-fast-non-reasoning", "engine": "xai", "base_model":
-    "grok-4-1-fast-non-reasoning", "reasoning": False, "tools": False, "env_key": "XAI_API_KEY"
+    "name": "grok-4-1-fast-non-reasoning",
+    "engine": "xai",
+    "base_model": "grok-4-1-fast-non-reasoning",
+    "reasoning": False,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
   })
   configs.append({
-    "name": "grok-4-1-fast-reasoning", "engine": "xai", "base_model": "grok-4-1-fast-reasoning",
-    "reasoning": 10, "tools": False, "env_key": "XAI_API_KEY"
+    "name": "grok-4-1-fast-reasoning",
+    "engine": "xai",
+    "base_model": "grok-4-1-fast-reasoning",
+    "reasoning": 10,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
   })
   configs.append({
-    "name": "grok-4-0709-HighReasoning", "engine": "xai", "base_model": "grok-4-0709", "reasoning":
-    10, "tools": False, "env_key": "XAI_API_KEY"
+    "name": "grok-4-0709-HighReasoning",
+    "engine": "xai",
+    "base_model": "grok-4-0709",
+    "reasoning": 10,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
   })
   configs.append({
-    "name": "grok-4-0709", "engine": "xai", "base_model": "grok-4-0709", "reasoning": False,
-    "tools": False, "env_key": "XAI_API_KEY"
+    "name": "grok-4-0709",
+    "engine": "xai",
+    "base_model": "grok-4-0709",
+    "reasoning": False,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
   })
   configs.append({
-    "name": "grok-2-vision-1212", "engine": "xai", "base_model": "grok-2-vision-1212", "reasoning":
-    False, "tools": False, "env_key": "XAI_API_KEY"
+    "name": "grok-2-vision-1212",
+    "engine": "xai",
+    "base_model": "grok-2-vision-1212",
+    "reasoning": False,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
   })
 
   # Anthropic models
   anthropic_base_models = ["claude-sonnet-4-5"]
   for model in anthropic_base_models:
     configs.append({
-      "name": model, "engine": "anthropic", "base_model": model, "reasoning": False, "tools": False,
+      "name": model,
+      "engine": "anthropic",
+      "base_model": model,
+      "reasoning": False,
+      "tools": False,
       "env_key": "ANTHROPIC_API_KEY"
     })
     configs.append({
-      "name": f"{model}-HighReasoning", "engine": "anthropic", "base_model": model, "reasoning": 10,
-      "tools": False, "env_key": "ANTHROPIC_API_KEY"
+      "name": f"{model}-HighReasoning",
+      "engine": "anthropic",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": False,
+      "env_key": "ANTHROPIC_API_KEY"
     })
     configs.append({
-      "name": f"{model}-Reasoning-Tools", "engine": "anthropic", "base_model": model, "reasoning":
-      10, "tools": True, "env_key": "ANTHROPIC_API_KEY"
+      "name": f"{model}-Reasoning-Tools",
+      "engine": "anthropic",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": True,
+      "env_key": "ANTHROPIC_API_KEY"
     })
 
   # Amazon Bedrock models (Qwen, Llama, Mistral, etc.)
@@ -1042,8 +1105,13 @@ def get_all_model_configs():
   ]
   for name, model_id in bedrock_qwen_models:
     configs.append({
-      "name": name, "engine": "bedrock", "base_model": model_id, "reasoning": False, "tools": False,
-      "region": "us-east-1", "env_key": "AWS_ACCESS_KEY_ID"
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
     })
 
   # Llama models on Bedrock
@@ -1053,8 +1121,13 @@ def get_all_model_configs():
   ]
   for name, model_id in bedrock_llama_models:
     configs.append({
-      "name": name, "engine": "bedrock", "base_model": model_id, "reasoning": False, "tools": False,
-      "region": "us-east-1", "env_key": "AWS_ACCESS_KEY_ID"
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-west-2",
+      "env_key": "AWS_ACCESS_KEY_ID"
     })
 
   # Mistral models on Bedrock
@@ -1063,17 +1136,49 @@ def get_all_model_configs():
   ]
   for name, model_id in bedrock_mistral_models:
     configs.append({
-      "name": name, "engine": "bedrock", "base_model": model_id, "reasoning": False, "tools": False,
-      "region": "us-east-1", "env_key": "AWS_ACCESS_KEY_ID"
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
     })
 
-  nova_models = [("Nova-Pro", "amazon.nova-pro-v1:0"), ("Nova-2-lite", "amazon.nova-2-lite-v1:0")]
+  nova_models = [("nova-pro", "amazon.nova-pro-v1:0"), ("nova-lite", "amazon.nova-lite-v1:0"),
+                 ("nova-premier", "us.amazon.nova-premier-v1:0")]
 
   # Add Nova models to configs
   for name, model_id in nova_models:
     configs.append({
-      "name": name, "engine": "bedrock", "base_model": model_id, "reasoning": False, "tools": False,
-      "region": "us-east-1", "env_key": "AWS_ACCESS_KEY_ID"
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+
+    configs.append({
+      "name": name + "-HighReasoning",
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": 10,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+
+    # With tools (code interpreter + web grounding)
+    configs.append({
+      "name": name + "-Reasoning-Tools",
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": True,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
     })
 
   return configs
@@ -1154,6 +1259,8 @@ Examples:
   python TestRunner.py -t 5-10                  # Run tests 5 through 10
   python TestRunner.py -m gpt-5-nano            # Run only gpt-5-nano model
   python TestRunner.py -m "gpt-5-nano,gpt-5.1"  # Run multiple specific models
+  python TestRunner.py -m "nova-*"              # Run all models matching wildcard pattern
+  python TestRunner.py -m "*-HighReasoning"     # Run all HighReasoning variants
   python TestRunner.py -t 1 -m gpt-5-nano       # Run test 1 on gpt-5-nano only
   python TestRunner.py --force -m gpt-5-nano    # Re-run without using cached AI responses
         """)
@@ -1166,7 +1273,9 @@ Examples:
     "-m",
     "--models",
     type=str,
-    help="Comma-separated list of model names to run (use --list-models to see available names)")
+    help=
+    "Comma-separated list of model names or patterns with wildcards (* and ?) to run (use --list-models to see available names)"
+  )
   parser.add_argument("--list-models",
                       action="store_true",
                       help="List all available model names and exit")
@@ -1226,10 +1335,38 @@ Examples:
     test_filter = parse_test_filter(args.tests)
     print(f"Running tests: {sorted(test_filter)}")
 
-  # Parse model filter
+  # Parse model filter with wildcard support
   model_filter = None
   if args.models:
-    model_filter = set(m.strip() for m in args.models.split(","))
+    import fnmatch
+    all_model_names = [c["name"] for c in all_configs]
+    patterns = [m.strip() for m in args.models.split(",")]
+    matched_models = set()
+
+    for pattern in patterns:
+      # Check if pattern contains wildcards
+      if '*' in pattern or '?' in pattern:
+        matches = [
+          name for name in all_model_names if fnmatch.fnmatch(name.lower(), pattern.lower())
+        ]
+        if not matches:
+          print(f"Warning: Pattern '{pattern}' did not match any models")
+        matched_models.update(matches)
+      else:
+        # Exact match (case-insensitive)
+        exact_match = next((name for name in all_model_names if name.lower() == pattern.lower()),
+                           None)
+        if exact_match:
+          matched_models.add(exact_match)
+        else:
+          print(f"Error: Model '{pattern}' not found. Use --list-models to see available models.")
+
+    if not matched_models:
+      print("No models matched. Exiting.")
+      import sys
+      sys.exit(1)
+
+    model_filter = matched_models
     print(f"Running models: {sorted(model_filter)}")
 
   # Run selected configurations

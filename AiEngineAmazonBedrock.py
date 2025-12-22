@@ -38,24 +38,31 @@ REASONING = False
 
 # TOOLS enables tool capabilities:
 # - False: No tools available
-# - True: Enable tool use (model must support it)
+# - True: Enable hosted tools (Nova: code_interpreter + web_grounding)
 # - List of tool definitions: Enable specific custom tools
 TOOLS = False
 
-# AWS Region for Bedrock
+# AWS Region for Bedrock. Note not all models are available in all regions,
+# and no region supports all models.
 REGION = "us-east-1"
 
+# FLEX_TIER enables Flex service tier for cost savings (slower processing)
+# - False: Use standard tier
+# - True: Use flex tier (discounted pricing, may have delays)
+FLEX_TIER = False
+
 configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                       str(TOOLS).encode() + REGION.encode()).hexdigest()
+                                       str(TOOLS).encode()).hexdigest()
 
 forcedFailure = False
 
 
-def Configure(Model, Reasoning, Tools, Region=None):
+def Configure(Model, Reasoning, Tools, Region):
   global MODEL
   global REASONING
   global TOOLS
   global REGION
+  global FLEX_TIER
   global configAndSettingsHash
   global forcedFailure
   MODEL = Model
@@ -65,12 +72,60 @@ def Configure(Model, Reasoning, Tools, Region=None):
     REGION = Region
   forcedFailure = False
   configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                         str(TOOLS).encode() + REGION.encode()).hexdigest()
+                                         str(TOOLS).encode()).hexdigest()
 
 
 import os
 import json
 import PromptImageTagging as pit
+from typing import Any, List, Optional
+from pydantic import BaseModel, create_model
+
+
+def json_schema_to_pydantic(schema: dict, name: str = "DynamicModel") -> type[BaseModel]:
+  """
+    Convert a JSON schema dict to a Pydantic model class.
+    Supports basic types: string, number, integer, boolean, array, object.
+    """
+
+  def get_python_type(prop_schema: dict) -> Any:
+    """Convert JSON schema type to Python/Pydantic type."""
+    json_type = prop_schema.get("type", "string")
+
+    if json_type == "string":
+      return str
+    elif json_type == "number":
+      return float
+    elif json_type == "integer":
+      return int
+    elif json_type == "boolean":
+      return bool
+    elif json_type == "array":
+      items_schema = prop_schema.get("items", {})
+      item_type = get_python_type(items_schema)
+      return List[item_type]
+    elif json_type == "object":
+      # Nested object - create a nested model
+      nested_props = prop_schema.get("properties", {})
+      if nested_props:
+        return json_schema_to_pydantic(prop_schema, name + "Nested")
+      return dict
+    else:
+      return Any
+
+  properties = schema.get("properties", {})
+  required = set(schema.get("required", []))
+
+  # Build field definitions for create_model
+  field_definitions = {}
+  for prop_name, prop_schema in properties.items():
+    python_type = get_python_type(prop_schema)
+    if prop_name in required:
+      field_definitions[prop_name] = (python_type, ...)
+    else:
+      field_definitions[prop_name] = (Optional[python_type], None)
+
+  return create_model(name, **field_definitions)
 
 
 def build_bedrock_content(prompt: str) -> list[dict]:
@@ -126,7 +181,7 @@ def build_bedrock_content(prompt: str) -> list[dict]:
   return content_blocks
 
 
-def BedrockAIHook(prompt: str, structure: dict | None) -> tuple:
+def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
   """
     This function is called by the test runner to get the AI's response to a prompt.
     
@@ -158,8 +213,10 @@ def BedrockAIHook(prompt: str, structure: dict | None) -> tuple:
     # Build inference config
     inference_config = {"temperature": 0.7, "maxTokens": 8192}
 
-    if MODEL in ["meta.llama3-70b-instruct-v1:0"]:
+    if MODEL in ["meta.llama3-70b-instruct-v1:0", "meta.llama3-1-405b-instruct-v1:0"]:
       inference_config["maxTokens"] = 2048
+    elif "nova" in MODEL.lower():
+      inference_config["maxTokens"] = 10000
 
     # Additional model-specific fields
     additional_fields = {}
@@ -175,35 +232,63 @@ def BedrockAIHook(prompt: str, structure: dict | None) -> tuple:
         # Claude on Bedrock may support extended thinking
         pass  # Handled differently
 
-    # If structured output is requested, add schema instruction to prompt
+    # Build tool config
+    tool_config = None
+    use_tool_for_structure = False
+
+    # If structured output is requested, use Tool Use approach for better reliability
     if structure is not None:
-      schema_json = json.dumps(structure, indent=2)
-      schema_instruction = f"""
+      # Create a tool definition with the JSON schema as its input schema
+      # This forces the model to output structured data matching the schema
+      structured_tool = {
+        "toolSpec": {
+          "name": "structured_response",
+          "description":
+          "Submit your response in the required structured format. You MUST call this tool with your complete answer.",
+          "inputSchema": {
+            "json": structure
+          }
+        }
+      }
 
-You MUST respond with valid JSON that matches this exact schema:
-{schema_json}
+      tool_config = {"tools": [structured_tool]}
+      # Force the model to use this specific tool
+      tool_config["toolChoice"] = {"tool": {"name": "structured_response"}}
+      use_tool_for_structure = True
 
-Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation."""
-
-      # Append to last text block or add new one
+      # Also add instruction to prompt for clarity
+      schema_instruction = "\n\nYou must call the 'structured_response' tool with your complete answer."
       if content_blocks and "text" in content_blocks[-1]:
         content_blocks[-1]["text"] += schema_instruction
       else:
         content_blocks.append({"text": schema_instruction})
-
-      # Update messages with modified content
       messages = [{"role": "user", "content": content_blocks}]
 
-    # Build tool config if tools are enabled
-    tool_config = None
-    if TOOLS is True:
-      # Enable default tools - model dependent
-      pass  # Bedrock tool use requires specific tool definitions
-    elif TOOLS and TOOLS is not False and isinstance(TOOLS, list):
-      tool_config = {"tools": TOOLS}
+    # Add other tools if enabled (but don't override structured output tool)
+    if not use_tool_for_structure:
+      if TOOLS is True:
+        # Enable Nova hosted tools: code interpreter and web grounding
+        if "nova" in MODEL.lower():
+          tool_config = {
+            "tools": [{
+              "systemTool": {
+                "name": "nova_code_interpreter"
+              }
+            }, {
+              "systemTool": {
+                "name": "nova_grounding"
+              }
+            }]
+          }
+      elif TOOLS and TOOLS is not False and isinstance(TOOLS, list):
+        tool_config = {"tools": TOOLS}
 
     # Use streaming for real-time output
     converse_params = {"modelId": MODEL, "messages": messages, "inferenceConfig": inference_config}
+
+    # Apply flex tier if enabled (discounted pricing, may have delays)
+    if FLEX_TIER:
+      converse_params["performanceConfig"] = {"serviceTier": "flex"}
 
     if additional_fields:
       converse_params["additionalModelRequestFields"] = additional_fields
@@ -217,19 +302,43 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
     chainOfThought = ""
     output_text = ""
     current_thinking_line = ""
+    tool_use_input = ""  # For capturing tool use structured data
+    current_tool_name = None
+    stop_reason = None
 
     stream = response.get('stream')
+    chunk_count = 0
     if stream:
       for event in stream:
+        chunk_count += 1
         # Handle message start
         if 'messageStart' in event:
           pass  # Role info
 
-        # Handle content block delta (main text output)
+        # Handle content block start (may indicate tool use or thinking)
+        if 'contentBlockStart' in event:
+          block_start = event['contentBlockStart']
+          if 'start' in block_start:
+            start_info = block_start['start']
+            if 'reasoningContent' in start_info:
+              pass  # Reasoning block starting
+            # Check for tool use start
+            if 'toolUse' in start_info:
+              current_tool_name = start_info['toolUse'].get('name')
+              tool_use_input = ""  # Reset for new tool call
+              print(f"Tool use started: {current_tool_name}")
+
+        # Handle content block delta (main text output or tool input)
         if 'contentBlockDelta' in event:
           delta = event['contentBlockDelta'].get('delta', {})
           if 'text' in delta:
             output_text += delta['text']
+          # Tool use input comes as JSON string chunks
+          if 'toolUse' in delta:
+            chunk_input = delta['toolUse'].get('input', '')
+            tool_use_input += chunk_input
+            if len(tool_use_input) < 200:  # Only log for small amounts
+              print(f"Tool input chunk: {chunk_input[:100]}")
           # Some models may include reasoning in a separate field
           if 'reasoningContent' in delta:
             thinking = delta['reasoningContent'].get('text', '')
@@ -239,18 +348,10 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
               print(f"Thinking: {line}", flush=True)
               chainOfThought += line + "\n"
 
-        # Handle content block start (may indicate thinking vs output)
-        if 'contentBlockStart' in event:
-          block_start = event['contentBlockStart']
-          # Check if this is a thinking/reasoning block
-          if 'start' in block_start:
-            start_info = block_start['start']
-            if 'reasoningContent' in start_info:
-              pass  # Reasoning block starting
-
         # Handle message stop
         if 'messageStop' in event:
-          pass  # Stop reason
+          stop_reason = event['messageStop'].get('stopReason', 'unknown')
+          print(f"Stream stopped: {stop_reason}")
 
         # Handle metadata (token usage, etc.)
         if 'metadata' in event:
@@ -268,9 +369,25 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
     chainOfThought = chainOfThought.rstrip("\n")
 
     # Parse response
+    print(f"Total output length: {len(output_text)} chars, tool_use: {len(tool_use_input)} chars")
     if structure is not None:
+      # Prefer tool use input (from forced tool call) over text output
+      if use_tool_for_structure and tool_use_input:
+        # Tool use provides structured data directly
+        try:
+          # The tool input should already be valid JSON matching our schema
+          parsed_data = json.loads(tool_use_input)
+          # Validate with Pydantic
+          pydantic_model = json_schema_to_pydantic(structure, "ResponseModel")
+          parsed_obj = pydantic_model.model_validate(parsed_data)
+          return parsed_obj.model_dump(), chainOfThought
+        except Exception as e:
+          print(f"Warning: Tool use input failed validation: {e}")
+          print(f"Tool use input was: {tool_use_input[:500]}")
+          # Fall through to try text output
+
+      # Fallback: try to extract JSON from text output
       if output_text:
-        # Try to extract JSON from output
         json_text = output_text.strip()
 
         # Strip markdown code blocks if present
@@ -283,9 +400,12 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
         json_text = json_text.strip()
 
         try:
-          return json.loads(json_text), chainOfThought
-        except json.JSONDecodeError as e:
-          print(f"Warning: Failed to parse JSON response: {e}")
+          # Use Pydantic for full schema validation
+          pydantic_model = json_schema_to_pydantic(structure, "ResponseModel")
+          parsed_obj = pydantic_model.model_validate_json(json_text)
+          return parsed_obj.model_dump(), chainOfThought
+        except Exception as e:
+          print(f"Warning: Failed to validate JSON response against schema: {e}")
           print(f"Raw output was: {output_text[:500]}")
           return {}, chainOfThought
       return {}, chainOfThought
@@ -320,7 +440,15 @@ if __name__ == "__main__":
   print("\nTesting structured output...")
   result, cot = BedrockAIHook(
     "What is the capital of France?", {
-      "type": "object", "properties": {"city": {"type": "string"}, "country": {"type": "string"}},
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        }
+      },
       "required": ["city", "country"]
     })
   print(f"Structured Result: {result}")

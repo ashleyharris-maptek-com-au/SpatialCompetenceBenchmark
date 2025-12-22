@@ -183,15 +183,20 @@ grids = [
 ]
 
 structure = {
-  "type": "object", "properties": {
-    "reasoning":
-    {"type": "string", "description":
-     "Optional free text for explaining your solution."}, "function": {
-       "type": "string", "description":
-       "The function defintion as a string. Starting with 'def f(x,y):'"
-     }
-  }, "additionalProperties": False, "propertyOrdering": ["reasoning", "function"], "required":
-  ["reasoning", "function"]
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string",
+      "description": "Optional free text for explaining your solution."
+    },
+    "function": {
+      "type": "string",
+      "description": "The function defintion as a string. Starting with 'def f(x,y):'"
+    }
+  },
+  "additionalProperties": False,
+  "propertyOrdering": ["reasoning", "function"],
+  "required": ["reasoning", "function"]
 }
 
 
@@ -326,7 +331,8 @@ def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
   except Exception as e:
     if len(answer) > 200:
       answer = answer[:200] + "... (truncated)"
-    return f"<td>{answer.replace('\n','<br/>')}</td><td>Error evaluating AI-generated python function: {e}</td>"
+    answer_html = answer.replace('\n', '<br/>')
+    return f"<td>{answer_html}</td><td>Error evaluating AI-generated python function: {e}</td>"
 
   if len(answer) > 200:
     answer = answer[:200] + "... (truncated)"
@@ -354,9 +360,19 @@ def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
     if "X" in output:
       extraInfo += "<br/> 'X' = '.' was expected, '#' was provided."
 
-    return f"<td style='font-size: 8px'><div style='max-width:800px'>{answer.replace('\n','<br/>')}</div></td><td><pre>{'<br/>'.join(grid)}</pre>{extraInfo}</td>"
+    gridAndgRef = []
+    for y in range(gridSize):
+      gridAndgRef.append(grid[y] + " " + gRef[y])
+
+    return f"""
+    <td style='font-size: 8px'><div style='max-width:800px'>
+      {answer.replace(chr(10),'<br/>')}
+    </div></td><td><pre>{'<br/>'.join(gridAndgRef)}</pre><br/>
+      {extraInfo}
+    </td>"""
   except Exception as e:
-    return f"<td>{answer.replace('\n','<br/>')}</td><td>Error evaluating AI-generated python function: {e}</td>"
+    answer_html = answer.replace('\n', '<br/>')
+    return f"<td>{answer_html}</td><td>Error evaluating AI-generated python function: {e}</td>"
 
 
 highLevelSummary = """

@@ -1,6 +1,8 @@
 import math
 import random
 
+import numpy
+
 title = "Collision Prediction - Will moving objects collide?"
 
 prompt = """
@@ -372,6 +374,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       details.append(f"Collision point off by {dist:.2f}m: got {point}, expected {expected_point}")
   else:
     details.append(f"Collision point: got {point}, expected {expected_point}")
+
+  score = numpy.clip(score, 0, 1)
+  score = score**4  # Penalize wrong answers more, as this test is easy to get a few right
 
   return score, "<br>".join(details)
 

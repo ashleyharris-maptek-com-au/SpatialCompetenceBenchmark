@@ -114,35 +114,72 @@ def prepareSubpassReferenceScad(index):
 
 
 structure = {
-  "type": "object", "properties": {
-    "reasoning": {"type": "string"},
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
     "beamSplitters": {
-      "type": "array", "items": {
-        "type": "object", "properties": {
-          "position": {"type": "array", "items": {"type": "number"}}, "normal":
-          {"type": "array", "items": {"type": "number"}}
-        }, "additionalProperties": False, "required": ["position", "normal"], "propertyOrdering":
-        ["position",
-         "normal"], "description": "2D positions and 2D normal vectors of beam splitters"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "normal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "additionalProperties": False,
+        "required": ["position", "normal"],
+        "propertyOrdering": ["position", "normal"],
+        "description": "2D positions and 2D normal vectors of beam splitters"
       }
     },
     "mirrors": {
-      "type": "array", "items": {
-        "type": "object", "properties": {
-          "position": {"type": "array", "items": {"type": "number"}}, "normal":
-          {"type": "array", "items": {"type": "number"}}
-        }, "additionalProperties": False, "required": ["position", "normal"], "propertyOrdering":
-        ["position", "normal"]
-      }, "description": "2D positions and 2D normal vectors of mirrors"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "normal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "additionalProperties": False,
+        "required": ["position", "normal"],
+        "propertyOrdering": ["position", "normal"]
+      },
+      "description": "2D positions and 2D normal vectors of mirrors"
     },
     "observerLocation": {
       "type":
-      "array", "items": {"type": "number"}, "description":
+      "array",
+      "items": {
+        "type": "number"
+      },
+      "description":
       "The 2D location on the edge of the workspace, that the audience should enter the exhibit from, in order to recognise the art"
     },
-  }, "additionalProperties": False, "required":
-  ["reasoning", "beamSplitters", "mirrors", "observerLocation"], "propertyOrdering":
-  ["reasoning", "beamSplitters", "mirrors", "observerLocation"]
+  },
+  "additionalProperties": False,
+  "required": ["reasoning", "beamSplitters", "mirrors", "observerLocation"],
+  "propertyOrdering": ["reasoning", "beamSplitters", "mirrors", "observerLocation"]
 }
 
 
@@ -330,9 +367,9 @@ def resultToScad(answer: dict) -> str:
 color([1,0,0]) hull()
 {{
     translate({segment[0]})
-    cube([0.1,0.1,0.1],center=true);
+    cube([0.6,0.6,0.1],center=true);
     translate({segment[1]})
-    cube([0.1,0.1,0.1],center=true);
+    cube([0.6,0.6,0.1],center=true);
 }}
         """
 
@@ -371,27 +408,79 @@ if __name__ == "__main__":
     resultToScad({
       'reasoning':
       'I designed a center-origin laser network that traces a pentagram (the five star diagonals) and the five radii from the center to the pentagon vertices. The five pentagon vertices sit on a circle of radius 40 m around the center (50,50), giving a symmetric regular pentagram contained in the 100x100 workspace. Each of the five vertices hosts a thin, 50/50 beam-splitter that reflects half of the arriving center-to-vertex beam along the corresponding pentagram edge to the next vertex, while the other half continues outward along the radius, making the radius line visible up to the vertex. The star lines are then completed by mirrors placed along the five star edges, tiling each edge with a small sequence of 20 cm wide mirrors to ensure the reflected beam follows the straight star segment from vertex to vertex. The combination yields the pentagram plus the five lines from center to vertices that divide the space into five identical triangles. I chose an audience viewing point on a wall edge where the five lines and the star are most legible from a single vantage: the left edge midpoint (0,50). This maximizes visibility of both the internal pentagram and the radii when viewed from the edge. ',
-      'beamSplitters': [{'position': [50.0, 10.0], 'normal':
-                         [-0.157,
-                          -0.987]}, {'position': [88.0424, 37.6392], 'normal': [0.987, 0.156]},
-                        {'position': [73.5114, 82.3607], 'normal':
-                         [-0.987,
-                          -0.157]}, {'position': [26.4886, 82.3607], 'normal': [0.891, -0.454]},
-                        {'position': [11.9577, 37.6393], 'normal': [-0.454, 0.892]}], 'mirrors':
-      [{'position': [55.878, 28.09], 'normal':
-        [-0.951, 0.309]}, {'position': [61.756, 46.18], 'normal': [-0.951, 0.309]},
-       {'position': [67.634, 64.27], 'normal':
-        [-0.951, 0.309]}, {'position': [58.123, 71.18], 'normal': [0.598, -0.801]},
-       {'position': [42.734, 60.0], 'normal':
-        [0.598, -0.801]}, {'position': [27.344, 48.82], 'normal':
-                           [0.598, -0.801]}, {'position': [30.978, 37.64], 'normal': [0.0, -1.0]},
-       {'position': [50.0, 37.64], 'normal':
-        [0.0, -1.0]}, {'position': [69.022, 37.64], 'normal':
-                       [0.0, -1.0]}, {'position': [72.655, 48.82], 'normal': [-0.587, -0.809]},
-       {'position': [57.266, 60.0], 'normal':
-        [-0.587, -0.809]}, {'position': [41.876, 71.18], 'normal': [-0.587, -0.809]},
-       {'position': [32.366, 64.27], 'normal':
-        [0.951, 0.309]}, {'position': [38.244, 46.18], 'normal':
-                          [0.951, 0.309]}, {'position': [44.122, 28.09], 'normal':
-                                            [0.951, 0.309]}], 'observerLocation': [0, 50]
+      'beamSplitters': [{
+        'position': [50.0, 10.0],
+        'normal': [-0.157, -0.987]
+      }, {
+        'position': [88.0424, 37.6392],
+        'normal': [0.987, 0.156]
+      }, {
+        'position': [73.5114, 82.3607],
+        'normal': [-0.987, -0.157]
+      }, {
+        'position': [26.4886, 82.3607],
+        'normal': [0.891, -0.454]
+      }, {
+        'position': [11.9577, 37.6393],
+        'normal': [-0.454, 0.892]
+      }],
+      'mirrors': [{
+        'position': [55.878, 28.09],
+        'normal': [-0.951, 0.309]
+      }, {
+        'position': [61.756, 46.18],
+        'normal': [-0.951, 0.309]
+      }, {
+        'position': [67.634, 64.27],
+        'normal': [-0.951, 0.309]
+      }, {
+        'position': [58.123, 71.18],
+        'normal': [0.598, -0.801]
+      }, {
+        'position': [42.734, 60.0],
+        'normal': [0.598, -0.801]
+      }, {
+        'position': [27.344, 48.82],
+        'normal': [0.598, -0.801]
+      }, {
+        'position': [30.978, 37.64],
+        'normal': [0.0, -1.0]
+      }, {
+        'position': [50.0, 37.64],
+        'normal': [0.0, -1.0]
+      }, {
+        'position': [69.022, 37.64],
+        'normal': [0.0, -1.0]
+      }, {
+        'position': [72.655, 48.82],
+        'normal': [-0.587, -0.809]
+      }, {
+        'position': [57.266, 60.0],
+        'normal': [-0.587, -0.809]
+      }, {
+        'position': [41.876, 71.18],
+        'normal': [-0.587, -0.809]
+      }, {
+        'position': [32.366, 64.27],
+        'normal': [0.951, 0.309]
+      }, {
+        'position': [38.244, 46.18],
+        'normal': [0.951, 0.309]
+      }, {
+        'position': [44.122, 28.09],
+        'normal': [0.951, 0.309]
+      }],
+      'observerLocation': [0, 50]
     }), 0, "")
+
+highLevelSummary = """
+Using only mirrors and beam-splitters, can you create art work?
+
+The art increases in complexity, from a pentagram, to a star, to 'that cool S', to eventually
+the borders of the USA.
+
+The LLM is forced to consider the audience and it's appearence, as the laser source is fixed
+in the center of the room facding Y+, but the 'entrance door' is selectable to maximise the 
+recognoition of the artwork.
+
+"""

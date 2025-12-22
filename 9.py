@@ -203,7 +203,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if "steps" not in answer or len(answer["steps"]) == 0:
     return 0, "No steps provided"
 
-  expected_steps = [16, 64, 144, 256, 254, 256 - 64]
+  expected_steps = [
+    16, 64, 144, 256, 254, validSquaresForPass[5], validSquaresForPass[6], validSquaresForPass[7]
+  ]
   if subPass < len(expected_steps) and len(answer["steps"]) != expected_steps[subPass]:
     return 0, f"Expected {expected_steps[subPass]} steps, got {len(answer['steps'])}"
 
