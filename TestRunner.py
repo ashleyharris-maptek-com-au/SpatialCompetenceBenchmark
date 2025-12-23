@@ -411,7 +411,8 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
     score_class = "score-good" if test_result['total_score'] >= max_score * 0.7 else "score-bad"
 
     results_file.write("  <tr class='test-header'>\n")
-    results_file.write(f"    <th colspan=3>{test_name}: {test_purpose}</th>\n")
+    results_file.write(
+      f"    <th colspan=3><a name='q{testIndex-1}'>{test_name}: {test_purpose}</a></th>\n")
     results_file.write(
       f"    <th class='{score_class}'>Score: {test_result['total_score']:.2f} / {max_score}</th>\n")
     results_file.write("  </tr>\n")
@@ -711,7 +712,17 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
     plt.savefig(f"results/{filename}", dpi=150)
     plt.close()
 
-    question_graphs[q_num] = {"title": question_title, "filename": filename, "max": max_score}
+    best_engine, best_score = engine_scores[0] if engine_scores else ("", 0)
+    if best_engine == "Human with tools":
+      best_engine, best_score = engine_scores[1] if len(engine_scores) > 1 else ("", 0)
+
+    question_graphs[q_num] = {
+      "title": question_title,
+      "filename": filename,
+      "max": max_score,
+      "best_engine": best_engine,
+      "best_pct": best_score * 100
+    }
 
   # Generate index.html landing page
   with open("results/index.html", "w", encoding="utf-8") as index_file:
@@ -939,7 +950,11 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
         <img src="../images/{q_num}.png" style="float:right; max-width:400px">
         <a name="q{q_num}"><h2 style="margin-top: 0;">Q{q_num}: {html.escape(q_data['title'])}</h2></a>
         {g.get("highLevelSummary","")}
-        <img src="{q_data['filename']}" alt="Question {q_num} Results">
+        <p style='clear:both'><strong>Best result:</strong> <a href="{html.escape(q_data['best_engine'])}.html#q{q_num}">{html.escape(q_data['best_engine'])}</a> ({q_data['best_pct']:.1f}%)</p>
+        <details>
+            <summary style="cursor:pointer; color:#667eea;">Click to show comparison graph</summary>
+            <img src="{q_data['filename']}" alt="Question {q_num} Results" style="margin-top:10px;">
+        </details>
     </div>
 """)
 

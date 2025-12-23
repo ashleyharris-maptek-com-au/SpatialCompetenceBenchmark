@@ -29,18 +29,40 @@ rotation but before projection.
 """
 
 structure = {
-  "type": "object", "properties": {
+  "type": "object",
+  "properties": {
     "hole": {
-      "type": "object", "properties": {
-        "transform": {"type": "array", "items": {"type": "number"}},
-      }, "required": ["transform"], "additionalProperties": False, "propertyOrdering":
-      ["transform"]
-    }, "solid": {
-      "type": "object", "properties": {"transform": {"type": "array", "items": {"type": "number"}}},
-      "required": ["transform"], "additionalProperties": False, "propertyOrdering": ["transform"]
+      "type": "object",
+      "properties": {
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+      },
+      "required": ["transform"],
+      "additionalProperties": False,
+      "propertyOrdering": ["transform"]
+    },
+    "solid": {
+      "type": "object",
+      "properties": {
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": ["transform"],
+      "additionalProperties": False,
+      "propertyOrdering": ["transform"]
     }
-  }, "required": ["hole", "solid"], "additionalProperties": False, "propertyOrdering":
-  ["hole", "solid"]
+  },
+  "required": ["hole", "solid"],
+  "additionalProperties": False,
+  "propertyOrdering": ["hole", "solid"]
 }
 
 solidNames = [
@@ -114,14 +136,16 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   holePrefix = " color([1,0,0]) projection() " + holePrefix
 
   vc.render_scadText_to_png("$fn=90;" + solidPrefix + openScadShape,
-                            "results/31_solid_" + str(subPass) + ".png", "--camera=0,0,50,0,0,0")
+                            "results/31_solid_" + aiEngineName + "_" + str(subPass) + ".png",
+                            "--camera=0,0,50,0,0,0")
   vc.render_scadText_to_png("$fn=90;" + holePrefix + openScadShape,
-                            "results/31_hole_" + str(subPass) + ".png", "--camera=0,0,50,0,0,0")
+                            "results/31_hole_" + aiEngineName + "_" + str(subPass) + ".png",
+                            "--camera=0,0,50,0,0,0")
 
   import PIL
 
-  solidImage = PIL.Image.open("results/31_solid_" + str(subPass) + ".png")
-  holeImage = PIL.Image.open("results/31_hole_" + str(subPass) + ".png")
+  solidImage = PIL.Image.open("results/31_solid_" + aiEngineName + "_" + str(subPass) + ".png")
+  holeImage = PIL.Image.open("results/31_hole_" + aiEngineName + "_" + str(subPass) + ".png")
 
   overlay = PIL.Image.new("RGB", solidImage.size, (0, 0, 0))
 
@@ -148,13 +172,13 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       elif holePixel:
         overlay.putpixel((x, y), (0, 0, 255))
 
-  overlay.save("results/31_overlay_" + str(subPass) + ".png")
+  overlay.save("results/31_overlay_" + aiEngineName + "_" + str(subPass) + ".png")
 
   if solidMissedHole == 0:
     return 1.0, "Solid fits through the hole!"
 
-  if solidMissedHole < 10:
-    return 1.0 - solidMissedHole / 10, "Solid is VERY close to fitting through the hole, was off with a margin of " + str(
+  if solidMissedHole < 100:
+    return 1.0 - solidMissedHole / 100, "Solid is VERY close to fitting through the hole, was off with a margin of " + str(
       solidMissedHole) + " pixels"
 
   return 0.0, "Solid is too far from fitting through the hole, was off by " + str(
@@ -185,7 +209,7 @@ Green = solid and hole lining up<br>
 Red = Excess object not fitting through the hole<br>
 Blue = Unused hole.<br>
     
-    <img src='31_overlay_""" + str(subPass) + ".png'/>"
+    <img src='31_overlay_""" + aiEngineName + "_" + str(subPass) + ".png'/>"
 
 
 highLevelSummary = """

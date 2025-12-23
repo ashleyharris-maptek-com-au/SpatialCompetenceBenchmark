@@ -179,19 +179,20 @@ night sky as seen from your current location, determine your approximate positio
 The image shows the sky looking straight up (zenith at center). The horizon is the outer circle.
 Cardinal directions are marked: N (North) is at the top.
 
-You have a clock that is showing time in UTC, and can confirm that this observation was made on
-EXACTLY December 25th, 2025 at exactly 12pm (midday) UTC. You do not know your time zone or
-local time, but it's dark outside, and has been dark for several hours, and that can narrow your
-position down to a few dozen degrees.
+TIME_INFO 
 
-Your ship is (obviously) at sea level, it's 5 degrees Celsius, and the barometric pressure 
-is 1020 mbar. As you grab your sextant and compass, you recall that the atmosphere does
-distort star positions, and this information is important.
+You do not know your time zone or local time, but it's dark outside, dawn is far away, and has 
+been dark for several hours.
+
+Your ship is (obviously) at sea level, it's 5 degrees Celsius outside, no wind, and the barometric 
+pressure is 1020 mbar. As you grab your sextant and compass, you recall that the atmosphere does
+distort star positions, and this information is important for accurate navigation.
 
 EXTRA
 
-Determine your longitude and lattitude to the best of your ability. Guessing is acceptable,
-even getting the hemisphere right and relation to the international date line is helpful.
+Determine your longitude and lattitude to the best of your ability, up to 5 significant
+figures. If you are uncertain, guessing is acceptable, even getting the hemisphere right and 
+relation to the international date line is helpful.
 
 """
 
@@ -220,16 +221,32 @@ earlyFail = True
 
 
 def prepareSubpassPrompt(index: int) -> str:
-  if index == 2:
+  if index == 5:
     raise StopIteration
 
   nicePlanetDescriptions = ""
   for k, v in planetDescriptions.items():
-    nicePlanetDescriptions += f"{v}\n"
+    nicePlanetDescriptions += f"{v}\n".capitalize()
+
+  nicePlanetDescriptions += "\nNo other celestial bodies are visible to the naked eye."
+
+  timePrompts = [
+    """
+You have a clock that is showing time in UTC, and can confirm that this observation was made on
+EXACTLY December 25th, 2025 at 12pm (midday) UTC. """
+  ] * 3
+
+  timePrompts.append("You have a rough idea of the time: 2025/12/25, between 10am and 1pm UTC.")
+  timePrompts.append("You know it is late decemeber 2025.")
+  timePrompts.append("You know the date is somewhere between 2024 and 2028")
+
+  p = prompt.replace("TIME_INFO", timePrompts[index])
+
+  if index > 2: p = p.replace("pacific ", "")
 
   if index == 0:
-    return prompt.replace("EXTRA", nicePlanetDescriptions) + f"[[image:results/45_sky_0.png]]"
-  if index == 1: return prompt.replace("EXTRA", "") + f"[[image:results/45_sky_0.png]]"
+    return p.replace("EXTRA", nicePlanetDescriptions) + f"[[image:results/45_sky_0.png]]"
+  return p.replace("EXTRA", "") + f"[[image:results/45_sky_0.png]]"
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
@@ -244,12 +261,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   score = 0
   feedback = []
 
-  if answer_lat > 0 == target_lat > 0:
+  if (answer_lat > 0) == (target_lat > 0):
     score += 0.1
   else:
     feedback.append("Wrong hemisphere.")
 
-  if answer_lon > 0 == target_lon > 0:
+  if (answer_lon > 0) == (target_lon > 0):
     score += 0.1
   else:
     feedback.append("Wrong side of international date line.")
@@ -260,25 +277,51 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if abs(answer_lon - target_lon) < 10:
     score += 0.1
 
+  if abs(answer_lat - target_lat) < 5:
+    score += 0.1
+
+  if abs(answer_lon - target_lon) < 5:
+    score += 0.1
+
   if abs(answer_lat - target_lat) < 1:
     score += 0.1
 
   if abs(answer_lon - target_lon) < 1:
     score += 0.1
 
+  if abs(answer_lat - target_lat) < .5:
+    score += 0.05
+
+  if abs(answer_lon - target_lon) < .5:
+    score += 0.05
+
   if abs(answer_lat - target_lat) < .1:
-    score += 0.1
+    score += 0.05
 
   if abs(answer_lon - target_lon) < .1:
-    score += 0.1
+    score += 0.05
 
-  if abs(answer_lat - target_lat) < .01:
-    score += 0.1
+  lat1 = math.radians(target_lat)
+  lon1 = math.radians(target_lon)
+  lat2 = math.radians(answer_lat)
+  lon2 = math.radians(answer_lon)
 
-  if abs(answer_lon - target_lon) < .01:
-    score += 0.1
+  dlat = lat2 - lat1
+  dlon = lon2 - lon1
 
-  return score, f"Location was {target_name}. " + "<br>\n".join(feedback)
+  a = (math.sin(dlat / 2)**2) + (math.cos(lat1) * math.cos(lat2) * (math.sin(dlon / 2)**2))
+  central_angle_rad = 2 * math.asin(min(1.0, math.sqrt(a)))
+  central_angle_deg = math.degrees(central_angle_rad)
+
+  earth_radius_km = 6371.0088
+  greatCircleDistance = earth_radius_km * central_angle_rad
+  cartesianDistance = 2 * earth_radius_km * math.sin(central_angle_rad / 2)
+
+  feedback.append(
+    f"Error distance (along surface): {central_angle_deg:.2f}° ({greatCircleDistance:.1f} km)")
+  feedback.append(f"Error distance (through earth): {cartesianDistance:.1f} km")
+
+  return score, "<br>\n".join(feedback)
 
 
 def resultToNiceReport(answer, subPass, aiEngineName):
@@ -290,7 +333,27 @@ def resultToNiceReport(answer, subPass, aiEngineName):
   html = f"<p><b>Target location:</b> ({target_lat:.2f}°, {target_lon:.2f}°)</p>"
   html += f"<p><b>AI guess:</b> "
   html += f"({answer.get('latitude', '?')}°, {answer.get('longitude', '?')}°)</p>"
-  html += f"<img src='45_sky_0.png' width='400'>"
+
+  if subPass == 0:
+    html += """Scoring<ul>
+<li> +10% for the correct hemisphere.</li>
+<li> +10% for the correct side of the international date line</li>
+<li> +10% for within 10° of lattitude and longitude (each. 20% total)</li>
+<li> +10% for within 5° of lattitude and longitude (each 20% total)</li>
+<li> +10% for within 1° of lattitude and longitude ~110km (each 20% total)</li>
+<li> +5% for within 0.5° of lattitude and longitude ~55km (each 10% total)</li>
+<li> +5% for within 0.1° of lattitude and longitude ~12km (each 10% total)</li>
+<li> So within about 10km should get the AI 100%.</li>
+</ul>
+
+
+
+"""
+
+    html += f"<a href='45_sky_0.png'><img src='45_sky_0.png' style='min-width=400px'></a><br>"
+    html += "(Click to zoom in - picture is huge)"
+  else:
+    html += "(Same skymap as above)"
 
   return html
 
@@ -298,28 +361,39 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 highLevelSummary = """
 Can an AI navigate using only the stars?<br><br>
 
-On the easy subpass, the AI is given a 4096x4096 image of the night sky,
-enough information to place their lattitude within 40 degrees (ocean name, 
-exact time in london, and approx local sunset delta), and a handful of exact
-sextant observations to planetary bodies.<br><br>
+This pulls down ~100mb of star data, and calcualtes an exact night sky render,
+placing all planets and stars at correct brightness, even modelling atmospheric
+distortion and gravitational lensing, and then plots a high resolution image
+of the sky looking up from the location of the test.
 
-On level 2, it only gets the 4096x4096 photo, timing, and the ocean name.<br><br>
+On the easy subpass, the AI is given:<ul>
+<li>a 4096x4096 image of the night sky,</li>
+<li>ocean name,</li>
+<li>that they're far from land ('middle of the ocean')</li>
+<li>exact time in london / UTC</li>
+<li>approx local sunset delta</li>
+<li>a handful of exact sextant observations to visible planetary bodies.</li>
+<li>knowledge of what planetary bodies are NOT visible.</li>
+</ul>
+<br><br>
 
-This requires the AI to:
-<ul>
-<li>Recognize star patterns and constellations</li>
-<li>Understand the relationship between star positions and observer location</li>
-<li>Apply astronomical navigation principles</li>
-</ul><br>
+As the difficulty increases, the AI loses:<ol>
+<li>The exact sextant readings and celestial body positions/absent info..</li>
+<li>About 3 hours of uncertainty with time.</li>
+<li>The Ocean Name</li>
+<li>Which day of the month</li>
+<li>About 3 years of uncertainty with time.</li>
+</ol>
 
-A lot of progress can be made with common knowledge... eg: "Hey polaris isn't 
-visible from the southern hemisphere" sorta knowledge. I actually personally
-struggled with this one, being from the southern hemisphere I don't recognise
-this sky at all, but humans have been doing this for millenia, so I feel 
-confident declaring this solvable.
+I actually personally struggled with this one, being from the southern hemisphere the
+sky looked foriegn. But with some basic googling I could recognise Orion's belt and his bow, and
+the LLM needs to be able to either do this, or recognise the pattern as if it's a northern
+hemisphere native. Humans have been doing this for millenia, and the AI has access to full allamacs
+and can generate to-the-second accurate star maps via python, so I feel confident declaring this 
+solvable.
 
 <div style="max-width:650px">
-<img src="45_sky_0.png" width="300px" style="float:left; padding:4px">
+<a href="45_sky_0.png"><img src="45_sky_0.png" width="300px" style="float:left; padding:4px"></a>
 </div>
 """
 

@@ -185,4 +185,4 @@ it always lands on a 6.
 - Arrange 500 dominos so that when pushing over a single one, in a direction you
   choose, they fall over in a pattern that resembles a unit hypercube
   projected into 2D from the 4D camera location 10,10,10,10.
-- How many stanford bunnies
+- How many stanford bunnies can you fit into a 1 cubic meter box?

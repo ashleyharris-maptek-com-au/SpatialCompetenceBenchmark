@@ -24,8 +24,8 @@ structure = None
 referenceScad = """
 module reference()
 {
-cylinder(r=4.582, h=1.339);
-translate([0,0,1.339]) cylinder(r1=4.582, r2=0.017, h=2.970);
+cylinder(r=4.582, h=1.345);
+translate([0,0,1.345]) cylinder(r1=4.582, r2=0.017, h=2.970);
 }
 """
 
