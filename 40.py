@@ -17,26 +17,51 @@ For each mirror visible from your position:
 """
 
 structure = {
-  "type": "object", "properties": {
-    "reasoning": {"type": "string"}, "mirrorViews": {
-      "type": "array", "items": {
-        "type": "object", "properties": {
-          "mirrorName": {"type": "string"}, "visibleObjects": {
-            "type": "array", "items": {
-              "type": "object", "properties": {
-                "objectName": {"type": "string"}, "apparentPosition": {
-                  "type": "array", "items": {"type": "number"}, "description":
-                  "Where the object appears to be [x, y, z]"
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
+    "mirrorViews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "mirrorName": {
+            "type": "string"
+          },
+          "visibleObjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objectName": {
+                  "type": "string"
+                },
+                "apparentPosition": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "description": "Where the object appears to be [x, y, z]"
                 }
-              }, "required": ["objectName", "apparentPosition"], "additionalProperties": False
+              },
+              "required": ["objectName", "apparentPosition"],
+              "additionalProperties": False
             }
-          }, "canSeeYourself":
-          {"type": "boolean", "description": "Can you see your own reflection?"}
-        }, "required": ["mirrorName", "visibleObjects", "canSeeYourself"], "additionalProperties":
-        False
+          },
+          "canSeeYourself": {
+            "type": "boolean",
+            "description": "Can you see your own reflection?"
+          }
+        },
+        "required": ["mirrorName", "visibleObjects", "canSeeYourself"],
+        "additionalProperties": False
       }
     }
-  }, "propertyOrdering": ["reasoning", "mirrorViews"], "required": ["reasoning", "mirrorViews"],
+  },
+  "propertyOrdering": ["reasoning", "mirrorViews"],
+  "required": ["reasoning", "mirrorViews"],
   "additionalProperties": False
 }
 
@@ -112,7 +137,8 @@ def can_see_in_mirror(viewer_pos, object_pos, mirror):
 problems = [
   {
     "name":
-    "Simple wall mirror", "description":
+    "Simple wall mirror",
+    "description":
     """
 Room: 10m x 10m x 3m (X: 0-10, Y: 0-10, Z: 0-3)
 
@@ -127,18 +153,36 @@ Objects:
 
 Your position: (8, 5, 1.5)
 Looking direction: toward the mirror (-X direction)
-""", "mirrors": [{
-      "name": "Wall Mirror", "point": [0, 0, 0], "normal": [1, 0, 0], "bounds":
-      {"y": [2, 8], "z": [0.5, 2.5]}
-    }], "objects": [
-      {"name": "Red Ball", "pos": [3, 5, 1]},
-      {"name": "Blue Cube", "pos": [7, 3, 0.5]},
-      {"name": "Green Cone", "pos": [5, 8, 1.5]},
-    ], "viewer": [8, 5, 1.5]
+""",
+    "mirrors": [{
+      "name": "Wall Mirror",
+      "point": [0, 0, 0],
+      "normal": [1, 0, 0],
+      "bounds": {
+        "y": [2, 8],
+        "z": [0.5, 2.5]
+      }
+    }],
+    "objects": [
+      {
+        "name": "Red Ball",
+        "pos": [3, 5, 1]
+      },
+      {
+        "name": "Blue Cube",
+        "pos": [7, 3, 0.5]
+      },
+      {
+        "name": "Green Cone",
+        "pos": [5, 8, 1.5]
+      },
+    ],
+    "viewer": [8, 5, 1.5]
   },
   {
     "name":
-    "Corner mirrors", "description":
+    "Corner mirrors",
+    "description":
     """
 Room: 10m x 10m x 3m (X: 0-10, Y: 0-10, Z: 0-3)
 
@@ -154,20 +198,40 @@ Objects:
 
 Your position: (5, 5, 1.5)
 Looking toward the corner (toward -X and -Y)
-""", "mirrors": [{
-      "name": "Mirror A", "point": [0, 0, 0], "normal": [1, 0, 0], "bounds":
-      {"y": [0, 10], "z": [0, 3]}
+""",
+    "mirrors": [{
+      "name": "Mirror A",
+      "point": [0, 0, 0],
+      "normal": [1, 0, 0],
+      "bounds": {
+        "y": [0, 10],
+        "z": [0, 3]
+      }
     }, {
-      "name": "Mirror B", "point": [0, 0, 0], "normal": [0, 1, 0], "bounds":
-      {"x": [0, 10], "z": [0, 3]}
-    }], "objects": [
-      {"name": "Statue", "pos": [2, 3, 1]},
-      {"name": "Lamp", "pos": [7, 2, 2]},
-    ], "viewer": [5, 5, 1.5]
+      "name": "Mirror B",
+      "point": [0, 0, 0],
+      "normal": [0, 1, 0],
+      "bounds": {
+        "x": [0, 10],
+        "z": [0, 3]
+      }
+    }],
+    "objects": [
+      {
+        "name": "Statue",
+        "pos": [2, 3, 1]
+      },
+      {
+        "name": "Lamp",
+        "pos": [7, 2, 2]
+      },
+    ],
+    "viewer": [5, 5, 1.5]
   },
   {
     "name":
-    "Floor mirror", "description":
+    "Floor mirror",
+    "description":
     """
 Room: 10m x 10m x 5m
 
@@ -181,17 +245,32 @@ Objects:
 - Person (you) at standing position
 
 Your position: (5, 4, 1.6) (standing at edge of floor mirror, looking down)
-""", "mirrors": [{
-      "name": "Floor Mirror", "point": [0, 0, 0], "normal": [0, 0, 1], "bounds":
-      {"x": [3, 7], "y": [3, 7]}
-    }], "objects": [
-      {"name": "Chandelier", "pos": [5, 5, 4]},
-      {"name": "Chair", "pos": [4, 6, 0.5]},
-    ], "viewer": [5, 4, 1.6]
+""",
+    "mirrors": [{
+      "name": "Floor Mirror",
+      "point": [0, 0, 0],
+      "normal": [0, 0, 1],
+      "bounds": {
+        "x": [3, 7],
+        "y": [3, 7]
+      }
+    }],
+    "objects": [
+      {
+        "name": "Chandelier",
+        "pos": [5, 5, 4]
+      },
+      {
+        "name": "Chair",
+        "pos": [4, 6, 0.5]
+      },
+    ],
+    "viewer": [5, 4, 1.6]
   },
   {
     "name":
-    "Angled mirror", "description":
+    "Angled mirror",
+    "description":
     """
 Room with an angled mirror at 45 degrees.
 
@@ -204,13 +283,26 @@ Objects:
 - Clock at (8, 1, 2)
 
 Your position: (3, 6, 1.5)
-""", "mirrors": [{
-      "name": "Angled Mirror", "point": [5, 0, 0], "normal": [0.707, 0.707, 0], "bounds":
-      {"z": [0, 3]}
-    }], "objects": [
-      {"name": "Vase", "pos": [2, 2, 1]},
-      {"name": "Clock", "pos": [8, 1, 2]},
-    ], "viewer": [3, 6, 1.5]
+""",
+    "mirrors": [{
+      "name": "Angled Mirror",
+      "point": [5, 0, 0],
+      "normal": [0.707, 0.707, 0],
+      "bounds": {
+        "z": [0, 3]
+      }
+    }],
+    "objects": [
+      {
+        "name": "Vase",
+        "pos": [2, 2, 1]
+      },
+      {
+        "name": "Clock",
+        "pos": [8, 1, 2]
+      },
+    ],
+    "viewer": [3, 6, 1.5]
   },
 ]
 
@@ -227,11 +319,31 @@ def generate_mirror_problem(num_mirrors, num_objects, seed):
   mirrors = []
   # Generate mirrors on different walls/surfaces
   wall_options = [
-    {"point": [0, 0, 0], "normal": [1, 0, 0], "axis_bounds": ["y", "z"]},  # X=0 wall
-    {"point": [room_size, 0, 0], "normal": [-1, 0, 0], "axis_bounds": ["y", "z"]},  # X=max wall
-    {"point": [0, 0, 0], "normal": [0, 1, 0], "axis_bounds": ["x", "z"]},  # Y=0 wall
-    {"point": [0, room_size, 0], "normal": [0, -1, 0], "axis_bounds": ["x", "z"]},  # Y=max wall
-    {"point": [0, 0, 0], "normal": [0, 0, 1], "axis_bounds": ["x", "y"]},  # Floor
+    {
+      "point": [0, 0, 0],
+      "normal": [1, 0, 0],
+      "axis_bounds": ["y", "z"]
+    },  # X=0 wall
+    {
+      "point": [room_size, 0, 0],
+      "normal": [-1, 0, 0],
+      "axis_bounds": ["y", "z"]
+    },  # X=max wall
+    {
+      "point": [0, 0, 0],
+      "normal": [0, 1, 0],
+      "axis_bounds": ["x", "z"]
+    },  # Y=0 wall
+    {
+      "point": [0, room_size, 0],
+      "normal": [0, -1, 0],
+      "axis_bounds": ["x", "z"]
+    },  # Y=max wall
+    {
+      "point": [0, 0, 0],
+      "normal": [0, 0, 1],
+      "axis_bounds": ["x", "y"]
+    },  # Floor
   ]
 
   used_walls = random.sample(range(len(wall_options)), min(num_mirrors, len(wall_options)))
@@ -249,8 +361,10 @@ def generate_mirror_problem(num_mirrors, num_objects, seed):
       bounds["z"][0] = max(bounds["z"][0], random.uniform(0, 2))
 
     mirrors.append({
-      "name": f"Mirror {chr(65+i)}", "point": wall["point"], "normal": wall["normal"], "bounds":
-      bounds
+      "name": f"Mirror {chr(65+i)}",
+      "point": wall["point"],
+      "normal": wall["normal"],
+      "bounds": bounds
     })
 
   # Generate random objects
@@ -316,15 +430,18 @@ hard_mirror_data = [
 for num_m, num_o, seed in hard_mirror_data:
   mirrors, objects, viewer = generate_mirror_problem(num_m, num_o, seed)
   problems.append({
-    "name": f"{num_m} mirrors, {num_o} objects - HARD", "description":
-    format_mirror_description(mirrors, objects,
-                              viewer), "mirrors": mirrors, "objects": objects, "viewer": viewer
+    "name": f"{num_m} mirrors, {num_o} objects - HARD",
+    "description": format_mirror_description(mirrors, objects, viewer),
+    "mirrors": mirrors,
+    "objects": objects,
+    "viewer": viewer
   })
 
 # Add specific challenging scenarios
 problems.append({
   "name":
-  "Hall of mirrors (parallel mirrors) - HARD", "description":
+  "Hall of mirrors (parallel mirrors) - HARD",
+  "description":
   """
 Room: 10m x 20m x 3m
 
@@ -344,28 +461,60 @@ Objects:
 Your position: (5, 10, 1.6)
 
 Note: For this problem, only consider FIRST-ORDER reflections (direct reflections, not reflections of reflections).
-""", "mirrors": [
+""",
+  "mirrors": [
     {
-      "name": "Mirror A", "point": [0, 0, 0], "normal": [1, 0, 0], "bounds":
-      {"y": [0, 20], "z": [0, 3]}
+      "name": "Mirror A",
+      "point": [0, 0, 0],
+      "normal": [1, 0, 0],
+      "bounds": {
+        "y": [0, 20],
+        "z": [0, 3]
+      }
     },
     {
-      "name": "Mirror B", "point": [10, 0, 0], "normal": [-1, 0, 0], "bounds":
-      {"y": [0, 20], "z": [0, 3]}
+      "name": "Mirror B",
+      "point": [10, 0, 0],
+      "normal": [-1, 0, 0],
+      "bounds": {
+        "y": [0, 20],
+        "z": [0, 3]
+      }
     },
-  ], "objects": [
-    {"name": "Red Sphere", "pos": [3, 10, 1.5]},
-    {"name": "Blue Cube", "pos": [7, 10, 1]},
-    {"name": "Green Pyramid", "pos": [5, 5, 0.5]},
-    {"name": "Yellow Cylinder", "pos": [5, 15, 2]},
-    {"name": "Purple Cone", "pos": [2, 8, 1]},
-    {"name": "Orange Torus", "pos": [8, 12, 1.5]},
-  ], "viewer": [5, 10, 1.6]
+  ],
+  "objects": [
+    {
+      "name": "Red Sphere",
+      "pos": [3, 10, 1.5]
+    },
+    {
+      "name": "Blue Cube",
+      "pos": [7, 10, 1]
+    },
+    {
+      "name": "Green Pyramid",
+      "pos": [5, 5, 0.5]
+    },
+    {
+      "name": "Yellow Cylinder",
+      "pos": [5, 15, 2]
+    },
+    {
+      "name": "Purple Cone",
+      "pos": [2, 8, 1]
+    },
+    {
+      "name": "Orange Torus",
+      "pos": [8, 12, 1.5]
+    },
+  ],
+  "viewer": [5, 10, 1.6]
 })
 
 problems.append({
   "name":
-  "Corner cube (3 perpendicular mirrors) - HARD", "description":
+  "Corner cube (3 perpendicular mirrors) - HARD",
+  "description":
   """
 A corner cube reflector formed by three perpendicular mirrors meeting at origin:
 
@@ -386,29 +535,71 @@ Objects placed in the positive octant:
 Your position: (5, 5, 1.6)
 
 For each mirror, determine which objects you can see reflected.
-""", "mirrors": [
+""",
+  "mirrors": [
     {
-      "name": "Mirror X", "point": [0, 0, 0], "normal": [1, 0, 0], "bounds":
-      {"y": [0, 10], "z": [0, 5]}
+      "name": "Mirror X",
+      "point": [0, 0, 0],
+      "normal": [1, 0, 0],
+      "bounds": {
+        "y": [0, 10],
+        "z": [0, 5]
+      }
     },
     {
-      "name": "Mirror Y", "point": [0, 0, 0], "normal": [0, 1, 0], "bounds":
-      {"x": [0, 10], "z": [0, 5]}
+      "name": "Mirror Y",
+      "point": [0, 0, 0],
+      "normal": [0, 1, 0],
+      "bounds": {
+        "x": [0, 10],
+        "z": [0, 5]
+      }
     },
     {
-      "name": "Mirror Z", "point": [0, 0, 0], "normal": [0, 0, 1], "bounds":
-      {"x": [0, 10], "y": [0, 10]}
+      "name": "Mirror Z",
+      "point": [0, 0, 0],
+      "normal": [0, 0, 1],
+      "bounds": {
+        "x": [0, 10],
+        "y": [0, 10]
+      }
     },
-  ], "objects": [
-    {"name": "Sphere A", "pos": [2, 3, 2]},
-    {"name": "Cube B", "pos": [5, 2, 1]},
-    {"name": "Pyramid C", "pos": [3, 6, 3]},
-    {"name": "Cylinder D", "pos": [7, 7, 1.5]},
-    {"name": "Cone E", "pos": [4, 4, 4]},
-    {"name": "Lamp F", "pos": [8, 3, 2.5]},
-    {"name": "Vase G", "pos": [2, 8, 1]},
-    {"name": "Chair H", "pos": [6, 5, 0.5]},
-  ], "viewer": [5, 5, 1.6]
+  ],
+  "objects": [
+    {
+      "name": "Sphere A",
+      "pos": [2, 3, 2]
+    },
+    {
+      "name": "Cube B",
+      "pos": [5, 2, 1]
+    },
+    {
+      "name": "Pyramid C",
+      "pos": [3, 6, 3]
+    },
+    {
+      "name": "Cylinder D",
+      "pos": [7, 7, 1.5]
+    },
+    {
+      "name": "Cone E",
+      "pos": [4, 4, 4]
+    },
+    {
+      "name": "Lamp F",
+      "pos": [8, 3, 2.5]
+    },
+    {
+      "name": "Vase G",
+      "pos": [2, 8, 1]
+    },
+    {
+      "name": "Chair H",
+      "pos": [6, 5, 0.5]
+    },
+  ],
+  "viewer": [5, 5, 1.6]
 })
 
 # Pre-compute expected answers
@@ -421,8 +612,10 @@ for prob in problems:
     for obj in prob["objects"]:
       visible, reflected = can_see_in_mirror(prob["viewer"], obj["pos"], mirror)
       if visible:
-        view["visibleObjects"].append(
-          {"objectName": obj["name"], "apparentPosition": [round(r, 2) for r in reflected]})
+        view["visibleObjects"].append({
+          "objectName": obj["name"],
+          "apparentPosition": [round(r, 2) for r in reflected]
+        })
 
     # Check if can see self
     can_see_self, self_reflected = can_see_in_mirror(prob["viewer"], prob["viewer"], mirror)

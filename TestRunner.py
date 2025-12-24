@@ -98,8 +98,11 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
   if earlyFail and len(prompts) > 1:
     # Run first prompt sequentially
     results[0] = run_single_prompt(0, prompts[0])
+  elif "singleThreaded" in g:
+    for i, prompt in enumerate(prompts):
+      results[i] = run_single_prompt(i, prompt)
   else:
-    # Parallelize AI engine calls (original behavior)
+    # Parallelize AI engine calls
     with ThreadPoolExecutor() as executor:
       future_to_index = {
         executor.submit(run_single_prompt, i, prompt): i
@@ -120,6 +123,17 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
   def process_subpass(subPass, result):
     score = 0
     subpass_data = {"subpass": subPass, "score": 0, "startProcessingTime": time.time()}
+
+    # Check for content violation - always grade as 0
+    if isinstance(result, dict) and result.get("__content_violation__"):
+      print(f"Content violation for subpass {subPass} - grading as 0")
+      subpass_data["score"] = 0
+      subpass_data[
+        "scoreExplantion"] = f"Content violation: {result.get('reason', 'Policy violation')}"
+      subpass_data[
+        "output_nice"] = "<strong style='color:red'>FALSE-POSITIVE CONTENT VIOLATION</strong><br>This prompt was blocked by the AI provider's content policy. (LOL. Sad trombone failure sound. Instant 0.)"
+      subpass_data["endProcessingTime"] = time.time()
+      return 0, subpass_data
 
     if isinstance(result, dict) and "reasoning" in result:
       subpass_data["reasoning"] = result["reasoning"]
@@ -230,8 +244,13 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
           score, subpass_data = future.result()
           totalScore += score
           subpass_results[subPass] = subpass_data
+
+  elif "singleThreaded" in g:
+    for i, result in enumerate(results):
+      score, subpass_data = process_subpass(i, result)
+      totalScore += score
+      subpass_results[i] = subpass_data
   else:
-    # Original parallel behavior
     with ThreadPoolExecutor() as executor:
       future_to_subpass = {
         executor.submit(process_subpass, subPass, result): subPass
@@ -1218,26 +1237,27 @@ def run_model_config(config: dict, test_filter: Optional[Set[int]] = None):
     import AiEngineOpenAiChatGPT
     AiEngineOpenAiChatGPT.Configure(config["base_model"], config["reasoning"], config["tools"])
     cacheLayer = cl(AiEngineOpenAiChatGPT.configAndSettingsHash,
-                    AiEngineOpenAiChatGPT.ChatGPTAIHook)
+                    AiEngineOpenAiChatGPT.ChatGPTAIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
   elif engine == "gemini":
     import AiEngineGoogleGemini
     AiEngineGoogleGemini.Configure(config["base_model"], config["reasoning"], config["tools"])
-    cacheLayer = cl(AiEngineGoogleGemini.configAndSettingsHash, AiEngineGoogleGemini.GeminiAIHook)
+    cacheLayer = cl(AiEngineGoogleGemini.configAndSettingsHash, AiEngineGoogleGemini.GeminiAIHook,
+                    name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
   elif engine == "xai":
     import AiEngineXAIGrok
     AiEngineXAIGrok.Configure(config["base_model"], config["reasoning"], config["tools"])
-    cacheLayer = cl(AiEngineXAIGrok.configAndSettingsHash, AiEngineXAIGrok.GrokAIHook)
+    cacheLayer = cl(AiEngineXAIGrok.configAndSettingsHash, AiEngineXAIGrok.GrokAIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
   elif engine == "anthropic":
     import AiEngineAnthropicClaude
     AiEngineAnthropicClaude.Configure(config["base_model"], config["reasoning"], config["tools"])
     cacheLayer = cl(AiEngineAnthropicClaude.configAndSettingsHash,
-                    AiEngineAnthropicClaude.ClaudeAIHook)
+                    AiEngineAnthropicClaude.ClaudeAIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
   elif engine == "bedrock":
@@ -1245,7 +1265,7 @@ def run_model_config(config: dict, test_filter: Optional[Set[int]] = None):
     AiEngineAmazonBedrock.Configure(config["base_model"], config["reasoning"], config["tools"],
                                     config.get("region", "us-east-1"))
     cacheLayer = cl(AiEngineAmazonBedrock.configAndSettingsHash,
-                    AiEngineAmazonBedrock.BedrockAIHook)
+                    AiEngineAmazonBedrock.BedrockAIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
 
@@ -1262,12 +1282,82 @@ def parse_test_filter(test_arg: str) -> Set[int]:
   return tests
 
 
+def run_setup():
+  """
+  Execute all test files (1.py, 2.py, ...) to download and build reference data.
+  This triggers any asset downloads, reference model builds, etc. without running AI tests.
+  """
+  print("=" * 60)
+  print("SETUP MODE: Building reference data and downloading assets")
+  print("=" * 60)
+
+  test_index = 1
+  successful = 0
+  failed = 0
+
+  while True:
+    test_file = f"{test_index}.py"
+    if not os.path.exists(test_file):
+      break
+
+    print(f"\n[{test_index}] Loading {test_file}...")
+
+    try:
+      # Execute the test file to trigger any module-level setup
+      test_globals = {}
+      exec(open(test_file, encoding="utf-8").read(), test_globals)
+
+      # Get test title if available
+      title = test_globals.get("title", f"Test {test_index}")
+      print(f"    Title: {title}")
+
+      # If there's a setup function, call it
+      if "setup" in test_globals:
+        print(f"    Running setup()...")
+        test_globals["setup"]()
+
+      # If there's reference data generation, trigger it
+      if "prepareSubpassReferenceScad" in test_globals:
+        print(f"    Building OpenSCAD reference models...")
+        subpass = 0
+        while True:
+          try:
+            out = test_globals["prepareSubpassReferenceScad"](subpass)
+            subpass += 1
+            if out is None or out == "":
+              break
+          except StopIteration:
+            break
+          except Exception as e:
+            print(f"    Warning: Reference build for subpass {subpass} failed: {e}")
+            break
+        print(f"    Built {subpass} reference models")
+
+      successful += 1
+      print(f"    ✓ OK")
+
+    except Exception as e:
+      print(f"    ✗ Error: {e}")
+      failed += 1
+
+    test_index += 1
+
+  print("\n" + "=" * 60)
+  print(f"SETUP COMPLETE: {successful} tests loaded, {failed} failed")
+  print("=" * 60)
+
+  if failed > 0:
+    print(f"\nWarning: {failed} test(s) had errors during setup.")
+    print("Some reference data may not be available.")
+
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Run AI benchmark tests",
                                    formatter_class=argparse.RawDescriptionHelpFormatter,
                                    epilog="""
 Examples:
   python TestRunner.py                          # Run all tests on all available models
+  python TestRunner.py --setup                  # Download/build reference data (run first!)
   python TestRunner.py --parallel               # Run all models in parallel
   python TestRunner.py --list-models            # List all available model names
   python TestRunner.py -t 1,2,3                 # Run only tests 1, 2, 3
@@ -1306,6 +1396,13 @@ Examples:
 
   parser.add_argument("--parallel", action="store_true", help="Run all models in parallel")
 
+  parser.add_argument(
+    "--setup",
+    action="store_true",
+    help=
+    "Download and build all reference data without running tests. Execute all test files to trigger asset downloads/builds."
+  )
+
   args = parser.parse_args()
 
   # Set force refresh flag in CacheLayer
@@ -1320,6 +1417,11 @@ Examples:
     print("Offline mode: No API calls will be made, cache only.")
 
   if args.unskip: UNSKIP = True
+
+  # Handle --setup mode: execute all test files to build reference data
+  if args.setup:
+    run_setup()
+    exit(0)
 
   all_configs = get_all_model_configs()
 

@@ -24,12 +24,12 @@ how objects fit together, interact, move, or flow.
 
 Examples include:
 
-- Playing 1 player visual games, such as [Tetris(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q15) or [Bejewelled(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q27)
+- Playing 1 player visual games, such as [Tetris(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q15) or [Bejewelled(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q27) or [Angry Birds(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q48)
 - Planning a [rollercoaster ride](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q21) that isn't lethal.
-- Creating a [maze in 3D](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q7) which requires jumps and stair climbs.
+- Creating a [maze in 3D](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q7) which requires jumps and stair climbs, or [solving a maze from close up photos](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q43).
 - Catching and [redirecting water](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q23) within a voxel map.
-- [Stacking 3D printable digits](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q30) on top of each other without them sagging.
-- [Travelling salesman but in orbit](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q22).
+- [Stacking 3D printable digits](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q30) on top of each other without them sagging, or designing [complex interlocking 3D printable parts](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q29).
+- [Travelling salesman in orbit](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q22), or [navigating by the stars](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q45).
 - Modelling shadows.
 - Working with quaternion rotations.
 - Concepts like "hidden behind" or "falling"
@@ -39,37 +39,63 @@ Examples include:
 
 ### Prompt
 
-```
-You have a building at the origin, axis aligned, 2 meters wide and deep, and 5 meters tall.
+You are controlling a catapult to destroy a structure and its targets.
 
-A sniper is located at (100,100,20) and is looking at the building.
+**Scene Description:**
+A bridge with targets hiding underneath - requires indirect hits
 
-Position a crowd of 4 people (represented by a 0.5\*0.5\*2m axis aligned bounding box resting on the z=0 plane)
-in such a way that:
-- the sniper can not see any of them due to the building blocking their line of sight.
-- the people must be positioned entirely on the ground (z=0).
-- the people must not overlap with the building or each other.
-- nobody is more than 30 meters away from the building's center.
-```
+**Targets to destroy (green spheres):**
+  - target_under_center at position (3.0, 0.0, 0.3)
+  - target_under_front at position (2.5, 0.0, 0.3)
+  - target_under_back at position (3.5, 0.0, 0.3)
+
+**Catapult Position:** (-8.0, 0.0, 0.0)
+The catapult is located to the LEFT of the structure (negative X). The structure is centered around X=3.
+
+**Physics:**
+- Projectiles are spheres with radius 0.3m and mass 5.0kg
+- Gravity is 9.81 m/s²
+- Targets must be displaced by at least 0.5m to count as destroyed
+
+**Your Task:**
+Provide exactly 3 shots. For each shot, specify:
+1. **bearing** (degrees): Horizontal aim angle. 0° = straight toward +X (toward structure), positive = left (+Y direction)
+2. **elevation** (degrees): Vertical angle above horizontal. Range: 5° to 75°
+3. **speed** (m/s): Launch speed. Range: 5 to 30 m/s
+
+**SCENE IMAGES:**
+**1. Overview (side view of entire field):**
+![48_scene_0](results/48_scene_2.png)
+**2. Catapult's View (looking from catapult toward structure):**
+![48_scene_0_catapult_view.png](results/48_scene_2_catapult_view.png)
+**3. Behind Structure (looking back at catapult):**
+![48_scene_0_behind_target.png](results/48_scene_2_behind_target.png)
+**4. Structure Close-up (front-left angle):**
+![48_scene_0_structure_front.png](results/48_scene_2_structure_front.png)
+**5. Structure Close-up (front-right angle):**
+![48_scene_0_structure_side.png](results/48_scene_2_structure_side.png)
+**6. Top-Down View (aerial view of field):**
+![48_scene_0_top_down.png](results/48_scene_2_top_down.png)
+
+![48_scene_2](results/48_scene_2.png)
 
 ### LLM returns (structured JSON, following a provided schema)
 
 ```json
-{
-    "people": [
-        {"xy": [-5, -5]}, 
-        {"xy": [-6, -5]}, 
-        {"xy": [-7, -5]}, 
-        {"xy": [-8, -5]}
-    ]
-}
+{'shots': [
+  {'bearing': 0, 'elevation': 40, 'speed': 10.65}, 
+  {'bearing': 0, 'elevation': 35, 'speed': 10.69}, 
+  {'bearing': 0, 'elevation': 30, 'speed': 11.43}
+]}
 ```
 
-### Which, using Python and OpenSCAD, is converted into
+### Which, using Python, pyBullet physics engine and OpenSCAD, is converted into...
 
-![Example test](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/images/13.png)
+![Example test](results/48_scene_2_post_gpt-5-nano.png)
 
-Which we can check pixel colouring to see that, oops, someone is sticking out the side. Fail.
+This shows that it didn't understand the scene at all. It understood the physics of the problem, calculating 3 good balistic arcs, as it's training data likely included physics
+textbooks with very similar problems, and it has access to calculators to plug in the
+numbers, but it doesn't understand the geometry of the scene.
 
 ## Setup
 
@@ -87,6 +113,11 @@ cd MeshBenchmark
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Optional, but the first run builds reference models / downloads assets.
+# Expect 1gb of data transfer / 10 mins of building. This allows you to 
+# use --parallel later.
+python TestRunner.py --setup
 ```
 
 ### API Keys
@@ -177,9 +208,6 @@ it always lands on a 6.
 - Using pipes and offest crosses only, create a shape that supports a ragdoll in this pose.
 - Here is x renders of a scene of a ragdoll lying on the ground. Calculate his trajectory.
 - Here is a 3D mesh of a socket, design a connector that plugs into it.
-- Here is a pile of 2020 aluminimum extrusions, sides labed A,B,C,D. Here is a pile
-  of 2,3, and 4 way right angle connectors. Design a (...) by specifying which socket
-  of what connector plugs into what extrusion, rotated with side orientation considered.
 - Partition a standford bunny into two peices, both that can be 3D printed, and when
   assembled, click together with a snap with no visible seam.
 - Arrange 500 dominos so that when pushing over a single one, in a direction you

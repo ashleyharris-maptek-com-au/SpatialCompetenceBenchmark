@@ -83,38 +83,50 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
 
   scadModules = testGlobals.get("scadModules", "")
 
-  # Generate cache key from inputs
-  cache_key = _compute_cache_key(resultAsScad, referenceScad, scadModules)
-  cache_dir = os.path.join(tempfile.gettempdir(), "mesh_benchmark_cache", cache_key)
-  cache_meta_path = os.path.join(cache_dir, "cache_meta.json")
+  # Generate separate cache keys for reference (stable) and result (changes often)
+  reference_cache_key = _compute_reference_cache_key(referenceScad, scadModules)
+  result_cache_key = _compute_result_cache_key(resultAsScad, reference_cache_key)
 
-  # Check for cache hit
+  # Reference cache directory (for reference.stl, reference.png)
+  reference_cache_dir = os.path.join(tempfile.gettempdir(), "mesh_benchmark_cache", "ref",
+                                     reference_cache_key)
+
+  # Result cache directory (for comparison results)
+  result_cache_dir = os.path.join(tempfile.gettempdir(), "mesh_benchmark_cache", "res",
+                                  result_cache_key)
+  cache_meta_path = os.path.join(result_cache_dir, "cache_meta.json")
+
+  # Check for result cache hit
   if os.path.exists(cache_meta_path):
     cached = _load_cache(cache_meta_path)
     if cached is not None:
-      print(f"Cache hit for {cache_key[:12]}...")
+      print(f"Cache hit for result {result_cache_key[:12]}...")
       cached["scoreExplantion"] += "Results were <a href='" + cache_meta_path + "'>cached</a>."
       return cached
 
-  # Create cache directory for this comparison
-  os.makedirs(cache_dir, exist_ok=True)
-  temp_dir = cache_dir
+  # Create cache directories
+  os.makedirs(reference_cache_dir, exist_ok=True)
+  os.makedirs(result_cache_dir, exist_ok=True)
+  temp_dir = result_cache_dir
 
   # Define all file paths
+  # Reference files go in reference cache (stable, reused across results)
+  reference_scad_file = os.path.join(reference_cache_dir, "reference.scad")
+  reference_stl = os.path.join(reference_cache_dir, "reference.stl")
+  reference_png = os.path.join(reference_cache_dir, "reference.png")
+
+  # Result/comparison files go in result cache (specific to this comparison)
   result_scad = os.path.join(temp_dir, "result.scad")
   resultWithReference_scad = os.path.join(temp_dir, "resultWithReference.scad")
-  reference_scad = os.path.join(temp_dir, "reference.scad")
   compare1_scad = os.path.join(temp_dir, "compare1.scad")
   compare2_scad = os.path.join(temp_dir, "compare2.scad")
 
   output_stl = os.path.join(temp_dir, "output.stl")
-  reference_stl = os.path.join(temp_dir, "reference.stl")
   intersection_stl = os.path.join(temp_dir, "intersection.stl")
   difference_stl = os.path.join(temp_dir, "difference.stl")
 
   output_png = os.path.join(temp_dir, "output.png")
   output2_png = os.path.join(temp_dir, "output2.png")
-  reference_png = os.path.join(temp_dir, "reference.png")
 
   # Write SCAD files
   _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules"),
@@ -135,13 +147,17 @@ minkowski(){
     }
 }""")
 
-  _write_scad_file(reference_scad, referenceScad, testGlobals.get("scadModules"),
-                   "minkowski(){cube(0.001);reference();}")
+  # Write reference SCAD only if not already cached
+  if not os.path.exists(reference_scad_file):
+    _write_scad_file(reference_scad_file, referenceScad, testGlobals.get("scadModules"),
+                     "minkowski(){cube(0.001);reference();}")
 
-  # Write comparison SCAD files
+  # Write comparison SCAD files (use absolute path to reference since it's in different dir)
+  reference_scad_abs = reference_scad_file.replace("\\", "/")
+
   with open(compare1_scad, "w", encoding="utf-8") as f:
     f.write(f"use <result.scad>;\n")
-    f.write(f"use <reference.scad>;\n")
+    f.write(f"use <{reference_scad_abs}>;\n")
     if "scadModules" in testGlobals:
       f.write(testGlobals["scadModules"])
     f.write("""
@@ -155,7 +171,7 @@ minkowski(){
 
   with open(compare2_scad, "w", encoding="utf-8") as f:
     f.write(f"use <result.scad>;\n")
-    f.write(f"use <reference.scad>;\n")
+    f.write(f"use <{reference_scad_abs}>;\n")
     if "scadModules" in testGlobals:
       f.write(testGlobals["scadModules"])
     f.write("""
@@ -176,10 +192,15 @@ minkowski(){
   # Generate STL files
   print(f"Generating STL files in {temp_dir}...")
   openscad_errors = []
+
+  # Generate reference STL only if not already cached
   if not os.path.exists(reference_stl):
-    err = _run_openscad(reference_scad, reference_stl, timeout=600)
+    print(f"Building reference STL (not cached)...")
+    err = _run_openscad(reference_scad_file, reference_stl, timeout=600)
     if err:
       openscad_errors.append(err)
+  else:
+    print(f"Using cached reference STL: {reference_cache_key[:12]}...")
 
   # Run result SCAD with 10min timeout - complex/infinite renders get aborted
   try:
@@ -300,9 +321,15 @@ minkowski(){
   return result_dict
 
 
-def _compute_cache_key(resultAsScad: str, referenceScad: str, scadModules: str) -> str:
-  """Compute a hash key from the input SCAD texts."""
-  combined = f"{resultAsScad}\n---REFERENCE---\n{referenceScad}\n---MODULES---\n{scadModules}"
+def _compute_reference_cache_key(referenceScad: str, scadModules: str) -> str:
+  """Compute a hash key for reference data only (changes infrequently)."""
+  combined = f"{referenceScad}\n---MODULES---\n{scadModules or ''}"
+  return hashlib.sha256(combined.encode('utf-8')).hexdigest()
+
+
+def _compute_result_cache_key(resultAsScad: str, reference_cache_key: str) -> str:
+  """Compute a hash key for comparison results (depends on both result and reference)."""
+  combined = f"{resultAsScad}\n---REF_KEY---\n{reference_cache_key}"
   return hashlib.sha256(combined.encode('utf-8')).hexdigest()
 
 

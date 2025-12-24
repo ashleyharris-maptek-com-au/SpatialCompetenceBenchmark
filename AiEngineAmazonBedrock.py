@@ -415,6 +415,16 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
   except ClientError as err:
     error_message = err.response['Error']['Message']
     print(f"AWS Bedrock client error: {error_message}")
+
+    # Check for content policy violation
+    from ContentViolationHandler import is_content_violation_bedrock
+    if is_content_violation_bedrock(err):
+      print("CONTENT VIOLATION DETECTED (Bedrock)")
+      if structure is not None:
+        return {"__content_violation__": True, "reason": str(err)}, f"Content violation: {err}"
+      else:
+        return "__content_violation__", f"Content violation: {err}"
+
     if structure is not None:
       return {}, str(err)
     else:
@@ -422,6 +432,16 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
 
   except Exception as e:
     print(f"Error calling Amazon Bedrock API: {e}")
+
+    # Check for content policy violation
+    from ContentViolationHandler import is_content_violation_bedrock
+    if is_content_violation_bedrock(e):
+      print("CONTENT VIOLATION DETECTED (Bedrock)")
+      if structure is not None:
+        return {"__content_violation__": True, "reason": str(e)}, f"Content violation: {e}"
+      else:
+        return "__content_violation__", f"Content violation: {e}"
+
     if structure is not None:
       return {}, str(e)
     else:

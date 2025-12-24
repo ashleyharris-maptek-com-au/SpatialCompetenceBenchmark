@@ -41,26 +41,24 @@ REASONING = False
 # Note: Built-in tools require specific API access/models
 TOOLS = False
 
-configAndSettingsHash = hashlib.sha256(MODEL.encode() +
-                                       str(REASONING).encode() +
+configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
                                        str(TOOLS).encode()).hexdigest()
 
 forcedFailure = False
 
 
 def Configure(Model, Reasing, Tools):
-    global MODEL
-    global REASONING
-    global TOOLS
-    global configAndSettingsHash
-    global forcedFailure
-    MODEL = Model
-    REASONING = Reasing
-    TOOLS = Tools
-    forcedFailure = False
-    configAndSettingsHash = hashlib.sha256(MODEL.encode() +
-                                           str(REASONING).encode() +
-                                           str(TOOLS).encode()).hexdigest()
+  global MODEL
+  global REASONING
+  global TOOLS
+  global configAndSettingsHash
+  global forcedFailure
+  MODEL = Model
+  REASONING = Reasing
+  TOOLS = Tools
+  forcedFailure = False
+  configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
+                                         str(TOOLS).encode()).hexdigest()
 
 
 import os
@@ -69,33 +67,28 @@ import PromptImageTagging as pit
 
 
 def build_openai_input(prompt: str):
-    prompt_parts = pit.parse_prompt_parts(prompt)
-    has_images = any(part_type == "image" for part_type, _ in prompt_parts)
-    if not has_images:
-        return prompt
+  prompt_parts = pit.parse_prompt_parts(prompt)
+  has_images = any(part_type == "image" for part_type, _ in prompt_parts)
+  if not has_images:
+    return prompt
 
-    content: list[dict] = []
-    for part_type, part_value in prompt_parts:
-        if part_type == "text":
-            if part_value:
-                content.append({"type": "input_text", "text": part_value})
-        elif part_type == "image":
-            if pit.is_url(part_value) or pit.is_data_uri(part_value):
-                image_url = part_value
-            else:
-                image_url = pit.file_to_data_uri(
-                    pit.resolve_local_path(part_value))
-            content.append({
-                "type": "input_image",
-                "image_url": image_url,
-                "detail": "high"
-            })
+  content: list[dict] = []
+  for part_type, part_value in prompt_parts:
+    if part_type == "text":
+      if part_value:
+        content.append({"type": "input_text", "text": part_value})
+    elif part_type == "image":
+      if pit.is_url(part_value) or pit.is_data_uri(part_value):
+        image_url = part_value
+      else:
+        image_url = pit.file_to_data_uri(pit.resolve_local_path(part_value))
+      content.append({"type": "input_image", "image_url": image_url, "detail": "high"})
 
-    return [{"role": "user", "content": content}]
+  return [{"role": "user", "content": content}]
 
 
 def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
-    """
+  """
     This function is called by the test runner to get the AI's response to a prompt.
     
     Prompt is the question to ask the AI.
@@ -105,182 +98,181 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     
     Uses the OpenAI Responses API.
     """
-    global forcedFailure
+  global forcedFailure
 
-    if forcedFailure:
-        return {
-            "error": "Forced failure"
-        }, "Forced failure due to API instability"
-    from openai import OpenAI
+  if forcedFailure:
+    return {"error": "Forced failure"}, "Forced failure due to API instability"
+  from openai import OpenAI
 
-    try:
-        # Initialize the client - it will automatically use OPENAI_API_KEY environment variable
-        client = OpenAI(timeout=3600)
+  try:
+    # Initialize the client - it will automatically use OPENAI_API_KEY environment variable
+    client = OpenAI(timeout=3600)
 
-        # Determine model to use
-        model_to_use = MODEL
+    # Determine model to use
+    model_to_use = MODEL
 
-        # Override model if REASONING specifies an o1 model
-        if isinstance(REASONING,
-                      str) and REASONING in ["o1-preview", "o1-mini"]:
-            model_to_use = REASONING
+    # Override model if REASONING specifies an o1 model
+    if isinstance(REASONING, str) and REASONING in ["o1-preview", "o1-mini"]:
+      model_to_use = REASONING
 
-        # Build Responses API parameters
-        input_value = build_openai_input(prompt)
+    # Build Responses API parameters
+    input_value = build_openai_input(prompt)
 
-        response_params = {
-            "model": model_to_use,
-            "input": input_value,
-            "service_tier": "flex"
+    response_params = {"model": model_to_use, "input": input_value, "service_tier": "flex"}
+
+    # Add reasoning effort
+    if isinstance(REASONING, int) and REASONING > 0:
+      # Map 1-10 scale to low/medium/high
+      if REASONING <= 3:
+        response_params["reasoning"] = {"effort": "low"}
+      elif REASONING <= 7:
+        response_params["reasoning"] = {"effort": "medium"}
+      elif REASONING == 10 and model_to_use == "gpt-5.2":
+        response_params["reasoning"] = {"effort": "xhigh"}
+      else:
+        response_params["reasoning"] = {"effort": "high"}
+
+      response_params["reasoning"]["summary"] = "auto"
+
+    # Handle structured output using the text.format parameter
+    if structure is not None:
+      response_params["text"] = {
+        "format": {
+          "type": "json_schema",
+          "name": "structured_response",
+          "schema": structure,
+          "strict": True
         }
+      }
 
-        # Add reasoning effort
-        if isinstance(REASONING, int) and REASONING > 0:
-            # Map 1-10 scale to low/medium/high
-            if REASONING <= 3:
-                response_params["reasoning"] = {"effort": "low"}
-            elif REASONING <= 7:
-                response_params["reasoning"] = {"effort": "medium"}
-            elif REASONING == 10 and model_to_use == "gpt-5.2":
-                response_params["reasoning"] = {"effort": "xhigh"}
-            else:
-                response_params["reasoning"] = {"effort": "high"}
+    # Add tools if specified
+    if TOOLS is True:
+      # Enable built-in hosted tools
+      # Note: file_search requires a vector_store, so it's excluded
+      response_params["tools"] = [{
+        "type": "web_search"
+      }, {
+        "type": "code_interpreter",
+        "container": {
+          "type": "auto"
+        }
+      }]
+    elif TOOLS and TOOLS is not False:
+      # Convert function list to OpenAI tool format if needed
+      tools_list = []
+      for tool in (TOOLS if isinstance(TOOLS, list) else [TOOLS]):
+        if isinstance(tool, dict):
+          # Already in correct format
+          tools_list.append(tool)
+        elif callable(tool):
+          # Convert Python function to tool definition
+          import inspect
+          sig = inspect.signature(tool)
+          doc = inspect.getdoc(tool) or "No description"
 
-            response_params["reasoning"]["summary"] = "auto"
+          properties = {}
+          required = []
+          for param_name, param in sig.parameters.items():
+            param_type = "string"  # Default type
+            if param.annotation != inspect.Parameter.empty:
+              if param.annotation == int:
+                param_type = "integer"
+              elif param.annotation == float:
+                param_type = "number"
+              elif param.annotation == bool:
+                param_type = "boolean"
 
-        # Handle structured output using the text.format parameter
-        if structure is not None:
-            response_params["text"] = {
-                "format": {
-                    "type": "json_schema",
-                    "name": "structured_response",
-                    "schema": structure,
-                    "strict": True
-                }
+            properties[param_name] = {"type": param_type}
+            if param.default == inspect.Parameter.empty:
+              required.append(param_name)
+
+          tool_def = {
+            "type": "function",
+            "name": tool.__name__,
+            "description": doc,
+            "parameters": {
+              "type": "object",
+              "properties": properties,
+              "required": required
             }
+          }
+          tools_list.append(tool_def)
 
-        # Add tools if specified
-        if TOOLS is True:
-            # Enable built-in hosted tools
-            # Note: file_search requires a vector_store, so it's excluded
-            response_params["tools"] = [{
-                "type": "web_search"
-            }, {
-                "type": "code_interpreter",
-                "container": {
-                    "type": "auto"
-                }
-            }]
-        elif TOOLS and TOOLS is not False:
-            # Convert function list to OpenAI tool format if needed
-            tools_list = []
-            for tool in (TOOLS if isinstance(TOOLS, list) else [TOOLS]):
-                if isinstance(tool, dict):
-                    # Already in correct format
-                    tools_list.append(tool)
-                elif callable(tool):
-                    # Convert Python function to tool definition
-                    import inspect
-                    sig = inspect.signature(tool)
-                    doc = inspect.getdoc(tool) or "No description"
+      if tools_list:
+        response_params["tools"] = tools_list
 
-                    properties = {}
-                    required = []
-                    for param_name, param in sig.parameters.items():
-                        param_type = "string"  # Default type
-                        if param.annotation != inspect.Parameter.empty:
-                            if param.annotation == int:
-                                param_type = "integer"
-                            elif param.annotation == float:
-                                param_type = "number"
-                            elif param.annotation == bool:
-                                param_type = "boolean"
+    # Make the API call using Responses API with streaming
+    stream = client.responses.create(stream=True, timeout=3600, **response_params)
 
-                        properties[param_name] = {"type": param_type}
-                        if param.default == inspect.Parameter.empty:
-                            required.append(param_name)
+    chainOfThought = ""
+    output_text = ""
+    current_reasoning_line = ""
 
-                    tool_def = {
-                        "type": "function",
-                        "name": tool.__name__,
-                        "description": doc,
-                        "parameters": {
-                            "type": "object",
-                            "properties": properties,
-                            "required": required
-                        }
-                    }
-                    tools_list.append(tool_def)
+    # Process streaming events
+    for event in stream:
+      event_type = event.type
 
-            if tools_list:
-                response_params["tools"] = tools_list
+      # Handle reasoning summary deltas - print line by line as they arrive
+      if event_type == "response.reasoning_summary_text.delta":
+        delta = event.delta
+        current_reasoning_line += delta
+        # Print complete lines as they arrive
+        while "\n" in current_reasoning_line:
+          line, current_reasoning_line = current_reasoning_line.split("\n", 1)
+          print(f"Thinking: {line}", flush=True)
+          chainOfThought += line + "\n"
 
-        # Make the API call using Responses API with streaming
-        stream = client.responses.create(stream=True,
-                                         timeout=3600,
-                                         **response_params)
+      # Handle reasoning summary done - flush any remaining text
+      elif event_type == "response.reasoning_summary_text.done":
+        if current_reasoning_line:
+          print(f"Thinking: {current_reasoning_line}", flush=True)
+          chainOfThought += current_reasoning_line
+          current_reasoning_line = ""
 
-        chainOfThought = ""
-        output_text = ""
-        current_reasoning_line = ""
+      # Handle output text deltas - accumulate silently
+      elif event_type == "response.output_text.delta":
+        output_text += event.delta
 
-        # Process streaming events
-        for event in stream:
-            event_type = event.type
+      # Handle completion
+      elif event_type == "response.completed":
+        # Final response is available if needed
+        pass
 
-            # Handle reasoning summary deltas - print line by line as they arrive
-            if event_type == "response.reasoning_summary_text.delta":
-                delta = event.delta
-                current_reasoning_line += delta
-                # Print complete lines as they arrive
-                while "\n" in current_reasoning_line:
-                    line, current_reasoning_line = current_reasoning_line.split(
-                        "\n", 1)
-                    print(f"Thinking: {line}", flush=True)
-                    chainOfThought += line + "\n"
+    # Strip trailing newline from chain of thought if present
+    chainOfThought = chainOfThought.rstrip("\n")
 
-            # Handle reasoning summary done - flush any remaining text
-            elif event_type == "response.reasoning_summary_text.done":
-                if current_reasoning_line:
-                    print(f"Thinking: {current_reasoning_line}", flush=True)
-                    chainOfThought += current_reasoning_line
-                    current_reasoning_line = ""
+    #print(output_text)
 
-            # Handle output text deltas - accumulate silently
-            elif event_type == "response.output_text.delta":
-                output_text += event.delta
+    # Extract content
+    if structure is not None:
+      # Parse JSON response
+      if output_text:
+        return json.loads(output_text), chainOfThought
+      return {}, chainOfThought
+    else:
+      # Return text response
+      return output_text or "", chainOfThought
 
-            # Handle completion
-            elif event_type == "response.completed":
-                # Final response is available if needed
-                pass
+  except json.JSONDecodeError:
+    print(
+      "Error decoding JSON response. OpenAI has schema validation that's failing. Consider the whole service down when this is encountered."
+    )
+    forcedFailure = True
+    return {"unacceptableFailure": True}, ""  # to ensure we don't retry.
+  except Exception as e:
+    print(f"Error calling OpenAI API: {e}")
 
-        # Strip trailing newline from chain of thought if present
-        chainOfThought = chainOfThought.rstrip("\n")
+    # Check for content policy violation
+    from ContentViolationHandler import is_content_violation_openai
+    if is_content_violation_openai(e):
+      print("CONTENT VIOLATION DETECTED (OpenAI)")
+      if structure is not None:
+        return {"__content_violation__": True, "reason": str(e)}, f"Content violation: {e}"
+      else:
+        return "__content_violation__", f"Content violation: {e}"
 
-        #print(output_text)
-
-        # Extract content
-        if structure is not None:
-            # Parse JSON response
-            if output_text:
-                return json.loads(output_text), chainOfThought
-            return {}, chainOfThought
-        else:
-            # Return text response
-            return output_text or "", chainOfThought
-
-    except json.JSONDecodeError:
-        print(
-            "Error decoding JSON response. OpenAI has schema validation that's failing. Consider the whole service down when this is encountered."
-        )
-        forcedFailure = True
-        return {"unacceptableFailure": True}, ""  # to ensure we don't retry.
-    except Exception as e:
-        print(f"Error calling OpenAI API: {e}")
-
-        # Return appropriate empty response based on structure
-        if structure is not None:
-            return {}
-        else:
-            return ""
+    # Return appropriate empty response based on structure
+    if structure is not None:
+      return {}
+    else:
+      return ""

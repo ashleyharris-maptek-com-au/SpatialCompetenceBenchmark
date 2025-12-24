@@ -410,6 +410,16 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
 
   except Exception as e:
     print(f"Error calling Gemini API: {e}")
+
+    # Check for content policy violation
+    from ContentViolationHandler import is_content_violation_gemini
+    if is_content_violation_gemini(error=e):
+      print("CONTENT VIOLATION DETECTED (Gemini)")
+      if structure is not None:
+        return {"__content_violation__": True, "reason": str(e)}, f"Content violation: {e}"
+      else:
+        return "__content_violation__", f"Content violation: {e}"
+
     # Return appropriate empty response based on structure
     if structure is not None:
       return {}, ""
