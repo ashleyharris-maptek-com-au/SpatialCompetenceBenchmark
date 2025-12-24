@@ -33,7 +33,6 @@ Examples include:
 - Modelling shadows.
 - Working with quaternion rotations.
 - Concepts like "hidden behind" or "falling"
-- Designing interlocking parts.
 
 ## Example tests
 
@@ -50,7 +49,7 @@ A bridge with targets hiding underneath - requires indirect hits
   - target_under_back at position (3.5, 0.0, 0.3)
 
 **Catapult Position:** (-8.0, 0.0, 0.0)
-The catapult is located to the LEFT of the structure (negative X). The structure is centered around X=3.
+The catapult is located to the WEST of the structure (negative X). The structure is centered around X=3.
 
 **Physics:**
 - Projectiles are spheres with radius 0.3m and mass 5.0kg
@@ -136,6 +135,11 @@ export GEMINI_API_KEY="your-google-genai-key"
 
 # XAI Grok
 export XAI_API_KEY="your-xai-grok-key"
+
+# Amazon Bedrock
+export AWS_ACCESS_KEY_ID="your-aws-access-key"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
+export AWS_DEFAULT_REGION="your-aws-region"
 ```
 
 ## Running the Benchmark
@@ -143,6 +147,7 @@ export XAI_API_KEY="your-xai-grok-key"
 ### Run all configured tests
 
 ```bash
+# Get an overview of available options:
 python TestRunner.py --help
 ```
 
@@ -160,19 +165,17 @@ THIS Will run EVERYTHING. This will:
 2. Generate HTML reports in `results/`
 3. Create comparison charts and a landing page at `results/index.html`
 4. Take at least 24 hours. Or 7-10 days without "--parallel"
-5. Struggle if your machine has less than 128gb of RAM.
+5. Randomly redline your machine. My PC has 128gb and 64 core and the cursor freezes for multiple seconds under this load.
 6. Burn a $250 minimum hole in your wallet.
 
-To help keep costs down, caching is used to store responses from previous runs. These expire on the 1st of each month,
-and you can ignore the cache with --force argument.
+To help keep costs down, caching is used to store responses from previous runs. These expire on the 1st of each month, and you can ignore the cache with --force argument.
 
 ## Scoring guidelines
 
-- "Service not available", "Service over capacity", "Error 500 try again" is retried 3 times before declaring a failure.
+- "Service not available", "Service over capacity", "Error 500 try again" is retried 3 times before declaring a failure. Will score a 0 but will be reattempted next run.
 - Taking over an hour to respond to an API call 3 times (so 3 hours total) is considered a failure.
-- Violating JSON schemas is considered a failure, and after 3 retries it scores 0. This is why some LLMs degrade in performance when tools are added, as they loose structured validation. This is a weakness of the LLM and should be
-reflected in the scoring.
-- "This violates our content policy" is considered a failure, as nothing in here is risque. If an LLM thinks "jumping near heights" (Q7, 3d maze) or "Planting explosives" (Q28, terrain flatterning) is banned, that's a well deserved 0 for it.
+- Violating JSON schemas is considered a failure, and after 3 retries it scores 0. This is why some LLMs degrade in performance when tools are added, as they loose structured validation. This is a weakness of the LLM and should be reflected in the scoring.
+- "This violates our content policy" is considered a **dismal failure**, as nothing in here is risque. If an LLM thinks "jumping near heights" (Q7, 3d maze) or "Planting explosives" (Q28, terrain flatterning) is banned, that's a well deserved 0 for it. I'm pointing and laughing. To avoid permabanning, a prompt is never repeated when this is seen, and the failure prompt hash is committed to the repository in a *hall of shame*, resulting in a well-earned eternal 0 score. Fix your guardrails.
 - "Score of 1000/1" is used to indicate a test framework failure, as it should stand out in the graph clearly.
 - Not answering the question directly, but instead responding with clarification questions is considered a failure. 99% of the time when LLMs do this it's because they are either overwhelemed or not understanding the problem. Be alert to
 oppertunities to improve the prompt if confusion seems genuine however.
@@ -186,13 +189,13 @@ Some that I personally saw:
 
 - ChatGPT deep resaerch planned a brick fireplace build for me that had inconsistant dimensions.
 - Claude code struggling with a block-model slicing algorithm.
-- Gemini Deep Research planned an arcology for a sci-fi setting that had support legs 500m apart each with a diameter of 3km.
+- Gemini Deep Research planned an arcology for a sci-fi setting that had support legs with centres 500m apart, with a diameter of 3km.
 - Planning pipe-joiner projects (think a supermarket trolley bay) results in assembly instructions and BOMs that
 don't match.
 - Asking it for help with 3D printing part design was a waste of time.
 
-As a C++ dev primarily worlding with 3D graphics, having a powerful AI assistant to help with coding is wonderful, but
-if it didn't have Aphantasia that would be excellent.
+As a C++ dev primarily working with 3D graphics, having a powerful AI assistant to help with coding is wonderful, but
+if it didn't have aphantasia that would be excellent.
 
 ## License
 
@@ -206,7 +209,6 @@ MIT
 - A fair dice is dropped from ... at an orientation and angular momentum of ..., position cubes such that
 it always lands on a 6.
 - Using pipes and offest crosses only, create a shape that supports a ragdoll in this pose.
-- Here is x renders of a scene of a ragdoll lying on the ground. Calculate his trajectory.
 - Here is a 3D mesh of a socket, design a connector that plugs into it.
 - Partition a standford bunny into two peices, both that can be 3D printed, and when
   assembled, click together with a snap with no visible seam.
