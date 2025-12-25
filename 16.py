@@ -15,33 +15,51 @@ You can rotate the prisms as you see fit, return a list of min/max xyz coordinat
 """
 
 structure = {
-    "type": "object", "properties": {
-        "boxes": {
-            "type": "array", "items": {
-                "type": "object", "properties": {
-                    "XyzMin": {"type": "array", "items": {"type": "integer"}}, "XyzMax":
-                    {"type": "array", "items": {"type": "integer"}}
-                }, "propertyOrdering": ["XyzMin", "XyzMax"], "required": ["XyzMin", "XyzMax"],
-                "additionalProperties": False
+  "type": "object",
+  "properties": {
+    "boxes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "XyzMin": {
+            "type": "array",
+            "items": {
+              "type": "integer"
             }
-        }
-    }, "propertyOrdering": ["boxes"], "required": ["boxes"], "additionalProperties": False
+          },
+          "XyzMax": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "propertyOrdering": ["XyzMin", "XyzMax"],
+        "required": ["XyzMin", "XyzMax"],
+        "additionalProperties": False
+      }
+    }
+  },
+  "propertyOrdering": ["boxes"],
+  "required": ["boxes"],
+  "additionalProperties": False
 }
 
 prismList = [
-    [7, 5, 3, 2],
-    [11, 7, 5, 3],
-    [13, 11, 7, 5],
-    [17, 13, 11, 7],
-    [19, 17, 13, 11],
-    [23, 19, 17, 13],
+  [7, 5, 3, 2],
+  [11, 7, 5, 3],
+  [13, 11, 7, 5],
+  [17, 13, 11, 7],
+  [19, 17, 13, 11],
+  [23, 19, 17, 13],
 ]
 
 
 def preparePrismListString(index):
   return "\n".join([
-      str(a) + " prisms of " + str(b) + "x" + str(c) + "x" + str(d)
-      for a, b, c, d in prismList[0:index + 1]
+    str(a) + " prisms of " + str(b) + "x" + str(c) + "x" + str(d)
+    for a, b, c, d in prismList[0:index + 1]
   ])
 
 
@@ -53,12 +71,12 @@ def prepareSubpassPrompt(index):
 promptChangeSummary = "Adds additional prisms for each run"
 
 subpassParamSummary = [
-    preparePrismListString(0).replace("\n", "<br>"),
-    preparePrismListString(1).replace("\n", "<br>"),
-    preparePrismListString(2).replace("\n", "<br>"),
-    preparePrismListString(3).replace("\n", "<br>"),
-    preparePrismListString(4).replace("\n", "<br>"),
-    preparePrismListString(5).replace("\n", "<br>"),
+  preparePrismListString(0).replace("\n", "<br>"),
+  preparePrismListString(1).replace("\n", "<br>"),
+  preparePrismListString(2).replace("\n", "<br>"),
+  preparePrismListString(3).replace("\n", "<br>"),
+  preparePrismListString(4).replace("\n", "<br>"),
+  preparePrismListString(5).replace("\n", "<br>"),
 ]
 
 
@@ -75,7 +93,7 @@ def gradeAnswer(answer, subPass, aiEngineName):
   answerVolume = 0
   for box in answer["boxes"]:
     volume = (box["XyzMax"][0] - box["XyzMin"][0]) * (box["XyzMax"][1] - box["XyzMin"][1]) * (
-        box["XyzMax"][2] - box["XyzMin"][2])
+      box["XyzMax"][2] - box["XyzMin"][2])
     answerVolume += volume
 
   reasoning = f"Answer volume: {answerVolume}, Expected volume: {expectedVolume}"
@@ -87,8 +105,8 @@ def gradeAnswer(answer, subPass, aiEngineName):
   boxCountBySize = defaultdict(int)
   for box in answer["boxes"]:
     span = [
-        box["XyzMax"][0] - box["XyzMin"][0], box["XyzMax"][1] - box["XyzMin"][1],
-        box["XyzMax"][2] - box["XyzMin"][2]
+      box["XyzMax"][0] - box["XyzMin"][0], box["XyzMax"][1] - box["XyzMin"][1],
+      box["XyzMax"][2] - box["XyzMin"][2]
     ]
     span.sort(reverse=True)
     boxCountBySize[tuple(span)] += 1
@@ -99,14 +117,15 @@ def gradeAnswer(answer, subPass, aiEngineName):
       return 0, reasoning + f"\nBox count mismatch for {x}x{y}x{z}:"\
         " expected {boxCount}, got {boxCountBySize[(x,y,z)]}"
 
-  # check to see if any boxes overlap
-  for box in answer["boxes"]:
-    for otherBox in answer["boxes"]:
-      if box != otherBox:
+  # check to see if any boxes overlap (compare by index, not value, to catch identical boxes)
+  boxes = answer["boxes"]
+  for i, box in enumerate(boxes):
+    for j, otherBox in enumerate(boxes):
+      if i != j:
         if box["XyzMin"][0] < otherBox["XyzMax"][0] and box["XyzMax"][0] > otherBox["XyzMin"][
             0] and box["XyzMin"][1] < otherBox["XyzMax"][1] and box["XyzMax"][1] > otherBox[
-                "XyzMin"][1] and box["XyzMin"][2] < otherBox["XyzMax"][2] and box["XyzMax"][
-                    2] > otherBox["XyzMin"][2]:
+              "XyzMin"][1] and box["XyzMin"][2] < otherBox["XyzMax"][2] and box["XyzMax"][
+                2] > otherBox["XyzMin"][2]:
           return 0, reasoning + "\nBox overlap detected"
 
   # check to see if all coordinates are positive
@@ -134,8 +153,8 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
       return "Invalid box coordinates: " + str(box)
 
     span = [
-        box["XyzMax"][0] - box["XyzMin"][0], box["XyzMax"][1] - box["XyzMin"][1],
-        box["XyzMax"][2] - box["XyzMin"][2]
+      box["XyzMax"][0] - box["XyzMin"][0], box["XyzMax"][1] - box["XyzMin"][1],
+      box["XyzMax"][2] - box["XyzMin"][2]
     ]
     pos = [(box["XyzMax"][0] + box["XyzMin"][0]) / 2, (box["XyzMax"][1] + box["XyzMin"][1]) / 2,
            (box["XyzMax"][2] + box["XyzMin"][2]) / 2]

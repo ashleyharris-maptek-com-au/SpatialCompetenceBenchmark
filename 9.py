@@ -26,14 +26,29 @@ Give an ordered list of the SQUARED cell coordinates for the loop, starting anyw
 """
 
 structure = {
-  "type": "object", "properties": {
+  "type": "object",
+  "properties": {
     "steps": {
-      "type": "array", "items": {
-        "type": "object", "properties": {"xy": {"type": "array", "items": {"type": "number"}}},
-        "propertyOrdering": ["xy"], "additionalProperties": False, "required": ["xy"]
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "xy": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "propertyOrdering": ["xy"],
+        "additionalProperties": False,
+        "required": ["xy"]
       }
     }
-  }, "propertyOrdering": ["steps"], "additionalProperties": False, "required": ["steps"]
+  },
+  "propertyOrdering": ["steps"],
+  "additionalProperties": False,
+  "required": ["steps"]
 }
 
 equation5 = "x * 19 + y * 23 + x * y + 10000000028"
@@ -270,7 +285,7 @@ translate([{a['xy'][0]}, {a['xy'][1]}, 0]) linear_extrude(0.01) text("{i}",size=
         try:
           if validGridForPass[subPass][x - 1][y - 1] == "X":
             scadOutput += f"""
-translate([{x}, {y}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.15, halign="center", valign="center");
+translate([{x}, {y}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, halign="center", valign="center");
 """
         except:
           pass

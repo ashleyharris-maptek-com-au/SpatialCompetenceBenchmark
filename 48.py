@@ -17,6 +17,8 @@ import os
 import math
 import random
 import hashlib
+import json
+import tempfile
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Any, Optional
 
@@ -25,6 +27,39 @@ import pybullet_data
 import numpy as np
 
 title = "Can an AI aim a catapult to destroy a structure?"
+
+# Cache for grading and visualization results
+_cache_dir = os.path.join(tempfile.gettempdir(), "48_angrybirds_cache")
+os.makedirs(_cache_dir, exist_ok=True)
+
+
+def _get_cache_key(answer: dict, subPass: int, aiEngineName: str) -> str:
+  """Generate a cache key from the answer, subPass, and engine name."""
+  data = json.dumps(answer, sort_keys=True) + str(subPass) + aiEngineName
+  return hashlib.sha256(data.encode()).hexdigest()
+
+
+def _load_from_cache(cache_key: str, cache_type: str):
+  """Load result from cache if available."""
+  cache_file = os.path.join(_cache_dir, f"{cache_type}_{cache_key}.json")
+  if os.path.exists(cache_file):
+    try:
+      with open(cache_file, 'r', encoding='utf-8') as f:
+        return json.load(f)
+    except (json.JSONDecodeError, IOError):
+      pass
+  return None
+
+
+def _save_to_cache(cache_key: str, cache_type: str, result):
+  """Save result to cache."""
+  cache_file = os.path.join(_cache_dir, f"{cache_type}_{cache_key}.json")
+  try:
+    with open(cache_file, 'w', encoding='utf-8') as f:
+      json.dump(result, f)
+  except IOError:
+    pass
+
 
 Vec3 = Tuple[float, float, float]
 Quat = Tuple[float, float, float, float]
@@ -677,7 +712,7 @@ def simulate_salvo(structure_index: int, shots: List[Tuple[float, float, float]]
     path = []  # Track this projectile's path
 
     # Simulate for a bit before next shot (give time to hit)
-    for step in range(int(240 * 2.0)):  # 2 seconds per shot
+    for step in range(int(240 * 10.0)):  # 10 seconds per shot
       p.stepSimulation()
       # Sample position every 10 steps (~24 samples per second)
       if step % 10 == 0:
@@ -1116,7 +1151,8 @@ structure = {
 _salvo_results = {}
 
 
-def gradeAnswer(answer: dict, subPass: int, aiEngineName: str) -> Tuple[float, str]:
+def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str) -> Tuple[float, str]:
+  """Implementation of gradeAnswer without caching."""
   global _salvo_results
 
   if not isinstance(answer, dict):
@@ -1168,7 +1204,21 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str) -> Tuple[float, s
   return score, explanation
 
 
-def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str) -> str:
+def gradeAnswer(answer: dict, subPass: int, aiEngineName: str) -> Tuple[float, str]:
+  """Grade answer with caching."""
+  cache_key = _get_cache_key(answer, subPass, aiEngineName)
+  cached = _load_from_cache(cache_key, "grade")
+  if cached is not None:
+    print(f"Using cached grade result for {aiEngineName} subpass {subPass}")
+    return tuple(cached)
+
+  result = _gradeAnswerImpl(answer, subPass, aiEngineName)
+  _save_to_cache(cache_key, "grade", list(result))
+  return result
+
+
+def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str) -> str:
+  """Implementation of resultToNiceReport without caching."""
   result = _salvo_results.get((subPass, aiEngineName))
 
   if not result:
@@ -1212,6 +1262,22 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str) -> str:
   html += "</div>"
 
   return html
+
+
+def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str) -> str:
+  """Generate nice report with caching."""
+  cache_key = _get_cache_key(answer, subPass, aiEngineName)
+  cached = _load_from_cache(cache_key, "report")
+
+  # Also check if the output files exist
+  post_img = f"results/48_scene_{subPass}_post_{aiEngineName[:10]}.png"
+  if cached is not None and os.path.exists(post_img):
+    print(f"Using cached report for {aiEngineName} subpass {subPass}")
+    return cached
+
+  result = _resultToNiceReportImpl(answer, subPass, aiEngineName)
+  _save_to_cache(cache_key, "report", result)
+  return result
 
 
 highLevelSummary = """
