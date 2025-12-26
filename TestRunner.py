@@ -1094,12 +1094,12 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
             humanCompare = "<p style='color:#0f0'> Human is marginally better</p>"
           elif humanRatio < 1.01:
             humanCompare = "<p style='color:#ff0'> Human and AI are equal.</p>"
-          elif humanRatio < 1.1:
-            humanCompare = "<p style='color:#f00'> AI is marginally better</p>"
+          elif humanRatio < 1.5:
+            humanCompare = f"<p style='color:#f00'> AI is marginally better. Human scored {question_graphs[q_num]['human_score']:.1f}% </p>"
           else:
-            humanCompare = "<p style='color:#f00'> AI is considerably better</p>"
+            humanCompare = f"<p style='color:#f00'> AI is considerably better. Human scored {question_graphs[q_num]['human_score']:.1f}%</p>"
         else:
-          humanCompare = "<p style='color:#f00'> AI is considerably better</p>"
+          humanCompare = "<p style='color:#f00'> AI is considerably better, human scored 0 or hasn't attempted.</p>"
 
         q_data = question_graphs[q_num]
         index_file.write(f"""

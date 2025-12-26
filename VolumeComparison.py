@@ -129,12 +129,16 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
   output2_png = os.path.join(temp_dir, "output2.png")
 
   # Write SCAD files
-  _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules"),
-                   "minkowski(){cube(0.001);result();}")
+  if "minkowski" not in resultAsScad and "minkowski" not in testGlobals.get(
+      "scadModules", "") and "noMinkowski" not in testGlobals:
+    _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules", ""),
+                     "minkowski(){cube(0.001);result();}")
+  else:
+    _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules", ""),
+                     "cube(0.001);result();")
 
-  _write_scad_file(
-    resultWithReference_scad, resultAsScad + "\n" + referenceScad, testGlobals.get("scadModules"),
-    "minkowski(){cube(0.001);result();}\n" + """
+  if "noMinkowski" not in testGlobals:
+    suffix = "minkowski(){cube(0.001);result();}\n" + """
 color([1,0,0,0.8])
 minkowski(){
     cube(0.001);
@@ -145,7 +149,22 @@ minkowski(){
         }   
         result();
     }
-}""")
+}"""
+  else:
+    suffix = "result();\n" + """
+color([1,0,0,0.8])
+{
+    difference() {
+        union() {
+            result();   
+            reference();
+        }   
+        result();
+    }
+}"""
+
+  _write_scad_file(resultWithReference_scad, resultAsScad + "\n" + referenceScad,
+                   testGlobals.get("scadModules"), suffix)
 
   # Write reference SCAD only if not already cached
   if not os.path.exists(reference_scad_file):
@@ -160,9 +179,13 @@ minkowski(){
     f.write(f"use <{reference_scad_abs}>;\n")
     if "scadModules" in testGlobals:
       f.write(testGlobals["scadModules"])
+
+    if "noMinkowski" not in testGlobals:
+      f.write("  minkowski()")
+
+    f.write("{")
+    if "noMinkowski" not in testGlobals: f.write("    cube(0.001);")
     f.write("""
-minkowski(){
-    cube(0.001);
     intersection() {
         result();
         reference();
@@ -174,9 +197,13 @@ minkowski(){
     f.write(f"use <{reference_scad_abs}>;\n")
     if "scadModules" in testGlobals:
       f.write(testGlobals["scadModules"])
+
+    if "noMinkowski" not in testGlobals:
+      f.write("  minkowski()")
+
+    f.write("{")
+    if "noMinkowski" not in testGlobals: f.write("    cube(0.001);")
     f.write("""
-minkowski(){
-    cube(0.001);
     difference() {
         union() {
             result();   
@@ -196,7 +223,10 @@ minkowski(){
   # Generate reference STL only if not already cached
   if not os.path.exists(reference_stl):
     print(f"Building reference STL (not cached)...")
-    err = _run_openscad(reference_scad_file, reference_stl, timeout=600)
+    try:
+      err = _run_openscad(reference_scad_file, reference_stl, timeout=900)
+    except:
+      err = "Timeout generating reference stl"
     if err:
       openscad_errors.append(err)
   else:
@@ -205,11 +235,12 @@ minkowski(){
   # Run result SCAD with 10min timeout - complex/infinite renders get aborted
   try:
     err = _run_openscad(result_scad, output_stl, timeout=600)
-    if err:
-      openscad_errors.append(err)
-
+  except:
+    err = "Timeout"
+  if err:
+    try:
       openscad_errors.append(
-        "Attempting to rendering without minkowski - this can create non-watertight"
+        f"Error {err}. Attempting to rendering without minkowski - this can create non-watertight"
         "meshes.")
       _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules"),
                        "union(){result();}")
@@ -218,29 +249,39 @@ minkowski(){
       if err:
         openscad_errors.append("When running without minkowski:" + str(err))
 
-  except TimeoutError as e:
-    cache = {
-      "score": 0,
-      "output_image": None,
-      "output_mouseover_image": None,
-      "output_hyperlink": result_scad,
-      "reference_image": reference_png if os.path.exists(reference_png) else None,
-      "temp_dir": temp_dir,
-      "scoreExplantion": f"<div style='color:red;'>Render timeout: {e}</div>",
-      "resultVolume": 0,
-      "referenceVolume": 0,
-      "intersectionVolume": 0,
-      "differenceVolume": 0
-    }
-    _save_cache(cache_meta_path, cache)
-    return cache
+    except TimeoutError as e:
+      cache = {
+        "score": 0,
+        "output_image": None,
+        "output_mouseover_image": None,
+        "output_hyperlink": result_scad,
+        "reference_image": reference_png if os.path.exists(reference_png) else None,
+        "temp_dir": temp_dir,
+        "scoreExplantion": f"<div style='color:red;'>Render timeout: {e}</div>",
+        "resultVolume": 0,
+        "referenceVolume": 0,
+        "intersectionVolume": 0,
+        "differenceVolume": 0
+      }
+      _save_cache(cache_meta_path, cache)
+      return cache
 
-  err = _run_openscad(compare1_scad, intersection_stl, timeout=600)
-  if err:
-    openscad_errors.append(err)
-  err = _run_openscad(compare2_scad, difference_stl, timeout=600)
-  if err:
-    openscad_errors.append(err)
+  # Run the intersection and difference calculations in parallel with 20 minute timeouts.
+  # If we've gotten here then the result and reference scads rendered successfully,
+  # so all is good we just got to be patient.
+  with ThreadPoolExecutor(max_workers=2) as executor:
+    future_intersection = executor.submit(_run_openscad,
+                                          compare1_scad,
+                                          intersection_stl,
+                                          timeout=1200)
+    future_difference = executor.submit(_run_openscad, compare2_scad, difference_stl, timeout=1200)
+
+    err = future_intersection.result()
+    if err:
+      openscad_errors.append(err)
+    err = future_difference.result()
+    if err:
+      openscad_errors.append(err)
 
   # Generate PNG images with off-axis camera
   print(f"Rendering PNG images...")
@@ -300,6 +341,9 @@ minkowski(){
 
   if openscad_errors:
     score = 0
+
+  if score > 1:
+    score = 1
 
   result_dict = {
     "score": score,

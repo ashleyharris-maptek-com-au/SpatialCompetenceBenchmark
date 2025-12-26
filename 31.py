@@ -155,6 +155,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   solidInHole = 0
   solidMissedHole = 0
 
+  countSolidPixels = 0
+  countHolePixels = 0
+
   for x in range(solidImage.width):
     for y in range(solidImage.height):
       sp = solidP[x, y]
@@ -162,6 +165,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
       solidPixel = sp[1] > 50 and sp[0] < 50 and sp[2] < 50
       holePixel = hp[1] < 50 and hp[0] > 50 and hp[2] < 50
+
+      if solidPixel: countSolidPixels += 1
+      if holePixel: countHolePixels += 1
 
       if solidPixel and not holePixel:
         solidMissedHole += 1
@@ -173,6 +179,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
         overlay.putpixel((x, y), (0, 0, 255))
 
   overlay.save("results/31_overlay_" + aiEngineName + "_" + str(subPass) + ".png")
+
+  if countSolidPixels < 200:
+    return 0.0, "Solid transformed away from origin and out of field of view."
+
+  if countHolePixels < 200:
+    return 0.0, "Hole transformed away from origin and out of field of view."
 
   if solidMissedHole == 0:
     return 1.0, "Solid fits through the hole!"

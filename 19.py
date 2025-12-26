@@ -22,7 +22,8 @@ polyhedron(
     convexity = 4
 );
 
-We define a 7-part rigid transform of (x,y,z,q0,q1,q2,q3), where q0,q1,q2,q3 is a normalised quaternion, and x, y, z are the translation.
+We define an 8-part rigid transform of (x,y,z,q0,q1,q2,q3,m), where q0,q1,q2,q3 is a normalised quaternion, x, y, z are the translation, and m is an optional mirror flag.
+If m is non-zero, the tetrahedron is mirrored along the X-axis before rotation. This allows both chiralities of the tetrahedron to be used.
 Rotation is defined around the 0,0,0 point (Which is NOT THE CENTRE), and is performed before translation.
 
 We create a scene with multiple tetrahedra, each with a different transform. Now we can pack them in as tightly as possible
@@ -59,6 +60,12 @@ structure = {
           },
           "q3": {
             "type": "number"
+          },
+          "m": {
+            "type":
+            "number",
+            "description":
+            "Mirror flag. If non-zero, mirror along X-axis before rotation. Optional, defaults to 0."
           }
         },
         "additionalProperties": False,
@@ -84,6 +91,8 @@ subpassParamSummary = [
   "Itself, but scaled up by a factor of 10 ",
   "Create a sphere of radius 4",
 ]
+
+noMinkowski = True
 
 
 def prepareSubpassPrompt(index: int) -> str:
@@ -194,21 +203,13 @@ def quaternionToPitchRollYawInDegrees(q0, q1, q2, q3):
 scadModules = """
 module tetrahedron(){
     // Hill tetrahedron (trirectangular) - 1/6 of a unit cube, tiles 3D space
-    polyhedron(
-        points = [
-            [0, 0, 0],                               // 0 (origin corner)
-            [1, 0, 0],                               // 1 (along X)
-            [0, 1, 0],                               // 2 (along Y)
-            [0, 0, 1]                                // 3 (along Z)
-        ],
-        faces = [
-            [0, 2, 1],   // XY plane face (Z=0)
-            [0, 1, 3],   // XZ plane face (Y=0)
-            [0, 3, 2],   // YZ plane face (X=0)
-            [1, 2, 3]    // slanted face (x+y+z=1)
-        ],
-        convexity = 4
-    );
+    // CSG construction using hull of 4 vertices
+    hull() {
+        translate([0, 0, 0]) cube(0.001);
+        translate([1, 0, 0]) cube(0.001);
+        translate([0, 1, 0]) cube(0.001);
+        translate([0, 0, 1]) cube(0.001);
+    }
 }
 """
 
@@ -232,9 +233,10 @@ def resultToScad(result):
               str(transform))
         continue
 
-      scad += "translate([" + str(transform["x"]) + "," + \
+      mirror_str = "mirror([1,0,0]) " if transform.get("m", 0) != 0 else ""
+      scad += "render() translate([" + str(transform["x"]) + "," + \
           str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
-          str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") tetrahedron();\n"
+          str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") " + mirror_str + "tetrahedron();\n"
       printedTetrahedra += 1
     except Exception as e:
       print("Dropping a tetrahedron that wasn't valid: " + str(transform) + " " + str(e))
@@ -250,7 +252,8 @@ highLevelSummary = """
 Can the LLM create complex shapes out of Hill tetrahedra?
 <br><br>
 Hill tetrahedra (trirectangular tetrahedra) are special because they can tile 3D space
-perfectly - 6 of them combine to form a cube. This makes the problem solvable.
+perfectly - 6 of them combine to form a cube. However, they are chiral (come in left and right-handed versions),
+so both chiralities are needed for perfect tiling. The optional 'm' parameter allows mirroring.
 <br><br>
 The LLM needs to figure out the correct rotations and translations to pack these
 tetrahedra into the target shapes without gaps or overlaps.

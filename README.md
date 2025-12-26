@@ -197,6 +197,15 @@ don't match.
 As a C++ dev primarily working with 3D graphics, having a powerful AI assistant to help with coding is wonderful, but
 if it didn't have aphantasia that would be excellent.
 
+## Explain the "Human with tools" model?
+
+This is me trying to solve the problems, with every tool at my disposal. This was originally used to confirm the graders
+were working correctly, but I decided to keep it as a reference point. 
+
+I'm not the smartest human there is - but I think I'm a decent contender.
+
+"Tools" include everything humanity has invented and made available to me, including special tools, the AIs, and whatever compute, memory, spare time, and other resources a 39yr old geek can spare.
+
 ## License
 
 MIT
