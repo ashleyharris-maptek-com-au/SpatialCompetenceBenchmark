@@ -93,10 +93,8 @@ def get_response(subPass: int):
         "minifiedCode":
         dedent(f"""
                       def f(x,y):
-                        d = {data}
-                        i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
-                        return (d >> i) & 1
-                        """)
+                        d = {data};i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize};return (d >> i) & 1
+                        """.strip())
       }, ""
     else:
       code = dedent(f"""
@@ -111,13 +109,12 @@ def get_response(subPass: int):
                             b = o - 7
                             r += n[1:b + 1]
                             n = n[b + 1:]
-
                         return r
                       d = int(l("{compressed}"),16)
                       def f(x,y):
                         i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
                         return (d >> i) & 1
-                        """)
+                        """.strip())
       #print(code)
       return {"minifiedCode": code}, ""
 

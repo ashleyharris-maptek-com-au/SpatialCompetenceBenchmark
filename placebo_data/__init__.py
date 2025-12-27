@@ -3,7 +3,7 @@
 
 from . import q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15
 from . import q16, q17, q18, q19, q20, q23, q24, q25, q26, q27, q28, q29, q30, q31
-from . import q41, q42, q43, q21
+from . import q41, q42, q43, q21, q49
 
 _modules = {
   1: q1,
@@ -39,6 +39,7 @@ _modules = {
   41: q41,
   42: q42,
   43: q43,
+  49: q49,
 }
 
 
