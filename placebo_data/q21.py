@@ -41,15 +41,21 @@ def get_response(subPass: int):
     spiral = False
   elif subPass == 1:
     impulses.append([50, 0, 0, -0.2])
-    impulses.append([60, 0, 0, 0.8])
-    impulses.append([70, 0, 0, -0.5])
+    impulses.append([60, 0, 0, 1])
+    impulses.append([65, 0, 0, -1.5])
+    impulses.append([70, 0, 0, 0.8])
+    impulses.append([80, 0, 0, -.2])
   elif subPass == 2:
     vel[2] *= 1.5
   elif subPass == 3:
-    impulses.append([10, 0, 0, -0.5])
-    impulses.append([60, 0, 0, 1])
+    impulses.append([10, 0, 0, -0.6])
+    impulses.append([20, 0, 0, 1])
+    impulses.append([30, 0, 0, -1.9])
+    impulses.append([50, 0, 0, 2.6])
+    impulses.append([80, 0, 0, -1])
   elif subPass == 4:
-    vel[2] *= 2
+    impulses.append([10, 0, 0, -1])
+    impulses.append([100, 0, 0, 1])
 
   def vec3_length(v):
     return math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])

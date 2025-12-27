@@ -24,7 +24,7 @@ Track segments are represented by a list of points, where each point is a list o
 Track layout must follow these rules:
 - No segment longer than 1.8m.
 - No segment shorter than 90cm
-- The angle between 2 segments must not exceed 10 degrees.
+- The angle between 2 segments must not exceed 20 degrees.
 - When crossing existing track, a vertical clearence of 3m minimum is required.
 - All track segments must be within 0,0,0 -> {PARAM_A},{PARAM_A},{PARAM_A}
 
@@ -128,7 +128,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   MAX_G_FORCE = 5.0
   MIN_SEGMENT_LEN = 0.9
   MAX_SEGMENT_LEN = 1.8
-  MAX_ANGLE_DEG = 10.0
+  MAX_ANGLE_DEG = 21.0
   CROSSING_CLEARANCE = 3.0
 
   maxSize = PARAM_A[subPass]
@@ -344,7 +344,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       shown_errors = errors[:10] + [f"...and {len(errors)-10} more errors"]
     else:
       shown_errors = errors
-    reasoning += "ERRORS:\n- " + "\n- ".join(shown_errors)
+    shown_errors = [f"<nobr>- {e}</nobr>" for e in shown_errors]
+    reasoning += "ERRORS:\n<br>" + "<br>\n".join(shown_errors)
     return 0, reasoning
 
   # Score based on track quality
@@ -355,7 +356,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
 
 def resultToNiceReport(answer, subPass, aiEngineName):
-  scadOutput = ""
+  scadOutput = "color([1,0,1])"
   for a, b in itertools.pairwise(answer["trackPoints"]):
     xMid = (a[0] + b[0]) / 2
     yMid = (a[1] + b[1]) / 2
@@ -388,6 +389,7 @@ hull() {{
   os.unlink(scadFile)
 
   return f"""
+Visualised route starts with purple.<br>
 <a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
 <img src="{os.path.basename(output_path)}" alt="Rollercoaster Visualization" style="max-width: 100%;">
 </a>

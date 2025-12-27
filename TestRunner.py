@@ -446,7 +446,7 @@ def runAllTests(aiEngineHook: callable, aiEngineName: str, test_filter: Optional
         --score-good: #4CAF50;
         --score-bad: #ff6b6b;
     }
-    a { color: #55f}
+    a[href] { color: #55f}
 }
 body { background-color: var(--bg-color); color: var(--text-color); }
 table { border-collapse: collapse; width: 100%; margin: 20px 0; }
