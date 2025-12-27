@@ -1,9 +1,0 @@
-import("29_0_nova-pro-HighReasoning_posed.stl");
-import("29_1_nova-pro-HighReasoning_posed.stl");
-import("29_2_nova-pro-HighReasoning_posed.stl");
-import("29_3_nova-pro-HighReasoning_posed.stl");
-import("29_4_nova-pro-HighReasoning_posed.stl");
-import("29_5_nova-pro-HighReasoning_posed.stl");
-import("29_6_nova-pro-HighReasoning_posed.stl");
-import("29_7_nova-pro-HighReasoning_posed.stl");
-import("29_8_nova-pro-HighReasoning_posed.stl");

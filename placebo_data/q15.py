@@ -3,48 +3,38 @@ from textwrap import dedent
 
 
 def get_response(subPass: int):
-    """Get the placebo response for this question."""
-    if True:  # Catch-all for any subpass
-        # A rather poor tetris run:
+  """Get the placebo response for this question."""
+  if True:  # Catch-all for any subpass
+    # L-pieces tile a 2-column strip. We need to fill ALL columns in a row
+    # before it clears. So we interleave positions across the full width.
+    #
+    # Rotation 3: vertical L pointing up  [(0,0), (1,0), (0,-1), (0,-2)]
+    # Rotation 1: vertical L pointing down [(0,0), (-1,0), (0,1), (0,2)]
+    #
+    # Two pieces (rot 3 at x, rot 1 at x+1) tile a 2x4 area.
+    # For width W, we need W/2 pairs per layer.
 
-        def block(x):
-            b = [
-                    {"translationCount": x, "rotationCount": 3},
-                    {"translationCount": x + 1, "rotationCount": 1},
-            ]
-            b.extend(b)
-            b.extend(b)
-            return b
+    widths = [10, 16, 20, 40]
+    targets = [10, 15, 20, 30]
+    W = widths[subPass] if subPass < len(widths) else 10
+    target = targets[subPass] if subPass < len(targets) else 10
 
-        basicBlocks = block(0) + block(2) + block(4) + block(6) + block(8)
+    def one_layer(width):
+      """Generate one full layer of pieces across the width (clears 2 rows)."""
+      layer = []
+      for x in range(0, width, 2):
+        layer.append({"translationCount": x, "rotationCount": 3})
+        layer.append({"translationCount": x + 1, "rotationCount": 1})
+      return layer
 
-        if subPass == 1:
-            basicBlocks.extend([
-                    {"translationCount": 13, "rotationCount": 2},
-                    {"translationCount": 10, "rotationCount": 0},
-            ] * 6)
-            basicBlocks.extend(block(14))
+    # Each layer clears 2 rows (the 2x4 tiles stack to fill 2 complete rows)
+    # Need target rows cleared, so need target/2 layers (plus some buffer)
+    layers_needed = (target // 2) + 2
 
-        if subPass >= 2:
-            basicBlocks.extend(block(10))
-            basicBlocks.extend(block(12))
-            basicBlocks.extend(block(14))
-            basicBlocks.extend(block(16))
-            basicBlocks.extend(block(18))
+    basicBlocks = []
+    for _ in range(layers_needed):
+      basicBlocks.extend(one_layer(W))
 
-        if subPass >= 3:
-            basicBlocks.extend(block(20))
-            basicBlocks.extend(block(22))
-            basicBlocks.extend(block(24))
-            basicBlocks.extend(block(26))
-            basicBlocks.extend(block(28))
-            basicBlocks.extend(block(30))
-            basicBlocks.extend(block(32))
-            basicBlocks.extend(block(34))
-            basicBlocks.extend(block(36))
-            basicBlocks.extend(block(38))
+    return {"moves": basicBlocks}, "Placebo thinking... hmmm..."
 
-        return {"moves": basicBlocks}, "Placebo thinking... hmmm..."
-
-
-    return None
+  return None

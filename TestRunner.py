@@ -789,6 +789,17 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
 
   df = pd.read_csv("results/results.txt", sep=":", header=None, names=["Engine", "Score"])
 
+  di = df.to_dict()
+  for i in range(df.shape[0]):
+    e = di["Engine"][i]
+
+    e = e.replace("-HighReasoning", "+R")
+    e = e.replace("-Reasoning-Tools", "+RT")
+    e = e.replace("-bedrock", "")
+    di["Engine"][i] = e
+
+  df = df.from_dict(di)
+
   # Use horizontal bar chart for better label readability
   fig, ax = plt.subplots(figsize=(10, max(4, len(df) * 0.5)))
   ax.barh(df["Engine"], df["Score"], color='#1f77b4')
@@ -1093,19 +1104,27 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
           elif humanRatio < 0.99:
             humanCompare = "<p style='color:#0f0'> Human is marginally better</p>"
           elif humanRatio < 1.01:
-            humanCompare = "<p style='color:#ff0'> Human and AI are equal.</p>"
+            if question_graphs[q_num]['human_score'] == 0:
+              humanCompare = "<p style='color:#ff0'>Niether human nor AI have solved this.</p>"
+            elif question_graphs[q_num]['human_score'] == 1:
+              humanCompare = "<p style='color:#ff0'> Human and the best AI have both mastered this.</p>"
+            else:
+              humanCompare = "<p style='color:#ff0'> Human and the best AI are equal.</p>"
           elif humanRatio < 1.5:
-            humanCompare = f"<p style='color:#f00'> AI is marginally better. Human scored {question_graphs[q_num]['human_score']:.1f}% </p>"
+            humanCompare = f"<p style='color:#f00'> The best AI is marginally better. Human scored {question_graphs[q_num]['human_score'] * 100:.1f}% </p>"
           else:
-            humanCompare = f"<p style='color:#f00'> AI is considerably better. Human scored {question_graphs[q_num]['human_score']:.1f}%</p>"
+            humanCompare = f"<p style='color:#f00'> The best AI is considerably better. Human scored {question_graphs[q_num]['human_score'] * 100:.1f}%</p>"
         else:
-          humanCompare = "<p style='color:#f00'> AI is considerably better, human scored 0 or hasn't attempted.</p>"
+          if question_graphs[q_num]['best_pct'] == 0:
+            humanCompare = "<p style='color:#ff0'>Niether human nor AI have solved this.</p>"
+          else:
+            humanCompare = "<p style='color:#f00'> The best AI is considerably better, human scored 0 or hasn't attempted.</p>"
 
         q_data = question_graphs[q_num]
         index_file.write(f"""
     <div class="graph-container" id="q{q_num}">
         <img src="../images/{q_num}.png" style="float:right; max-width:400px">
-        <a name="q{q_num}"><h2 style="margin-top: 0;">Q{q_num}: {html.escape(q_data['title'])}</h2></a>
+        <a name="q{q_num}"><h2 style="margin-top: 0;color:#fff">Q{q_num}: {html.escape(q_data['title'])}</h2></a>
         {g.get("highLevelSummary","")}
         <p style='clear:both'><strong>Best result:</strong> <a href="{html.escape(q_data['best_engine'])}.html#q{q_num}">{html.escape(q_data['best_engine'])}</a> ({q_data['best_pct']:.1f}%)</p>
         {humanCompare}
