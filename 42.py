@@ -178,9 +178,6 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str) -> dict:
       gradedMaze[subPass] = "\n".join(m)
       return 0, "Path forms a loop. (Marked with a !)"
 
-    if currentChar == "B":
-      return 1, "Correct"
-
     m[y] = m[y][:x] + "." + m[y][x + 1:]
     gradedMaze[subPass] = "\n".join(m)
 
@@ -190,6 +187,10 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str) -> dict:
     elif step == "s": y += 1
     else:
       return 0, "Path contains invalid step: " + step
+
+    currentChar = m[y][x]
+    if currentChar == "B":
+      return 1, "Correct"
 
   return (len(answer) / maze.count(".") /
           2), "Path does not reach the blue sphere, path length was " + str(len(answer))

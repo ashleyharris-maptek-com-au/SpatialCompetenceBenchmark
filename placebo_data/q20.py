@@ -92,29 +92,29 @@ def get_response(subPass: int):
       return {
         "minifiedCode":
         dedent(f"""
-                      def f(x,y):
-                        d = {data};i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize};return (d >> i) & 1
-                        """.strip())
+def f(x,y):
+  d = {data};i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize};return (d >> i) & 1
+  """.strip()).strip()
       }, ""
     else:
       code = dedent(f"""
-                      def l(n: str) -> str:
-                        r = ""
-                        while n:
-                          o = int(n[0], 16)
-                          if o < 8:
-                            r += ["0"*16,"f"*16,"0"*8,"f"*8,"0000","ffff","00","ff"][o]
-                            n = n[1:]
-                          else:
-                            b = o - 7
-                            r += n[1:b + 1]
-                            n = n[b + 1:]
-                        return r
-                      d = int(l("{compressed}"),16)
-                      def f(x,y):
-                        i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
-                        return (d >> i) & 1
-                        """.strip())
+def l(n: str) -> str:
+  r = ""
+  while n:
+    o = int(n[0], 16)
+    if o < 8:
+      r += ["0"*16,"f"*16,"0"*8,"f"*8,"0000","ffff","00","ff"][o]
+      n = n[1:]
+    else:
+      b = o - 7
+      r += n[1:b + 1]
+      n = n[b + 1:]
+  return r
+d = int(l("{compressed}"),16)
+def f(x,y):
+  i = int(x * {gridSize}) + int(y * {gridSize}) * {gridSize}
+  return (d >> i) & 1
+  """.strip()).strip()
       #print(code)
       return {"minifiedCode": code}, ""
 

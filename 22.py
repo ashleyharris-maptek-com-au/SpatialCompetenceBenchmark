@@ -1096,7 +1096,7 @@ def _resultToNiceReportImpl(answer, subPass, aiEngineName):
 
   #print("Finished Drifting Pass:" + str(subPass))
 
-  import os
+  import os, scad_format
   os.makedirs("results", exist_ok=True)
   output_path = "results/22_Visualization_" + aiEngineName + "_" + str(subPass) + ".png"
   vc.render_scadText_to_png(scadOutput, output_path)
@@ -1105,6 +1105,8 @@ def _resultToNiceReportImpl(answer, subPass, aiEngineName):
   scadFile = "results/22_Visualization_" + aiEngineName + "_" + str(subPass) + "temp.scad"
 
   open(scadFile, "w").write(scadOutput)
+
+  scadOutput = scad_format.format(scadOutput, vc.formatConfig)
 
   import zipfile
   with zipfile.ZipFile(output_path.replace(".png", ".zip"), 'w') as zipf:

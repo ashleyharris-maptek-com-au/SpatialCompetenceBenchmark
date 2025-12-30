@@ -26,6 +26,8 @@ UNSKIP = False
 # Global to track model configs for perfect score propagation
 ALL_MODEL_CONFIGS = []
 
+FORCE_ARG = False
+
 
 def checkSavedPromptCache(aiEngineName: str, index: int, subPass: int, prompt: str):
   """
@@ -41,6 +43,9 @@ def checkSavedPromptCache(aiEngineName: str, index: int, subPass: int, prompt: s
     return None
 
   if aiEngineName == "Human with tools":
+    return None
+
+  if FORCE_ARG:
     return None
 
   try:
@@ -79,7 +84,7 @@ def propogateUpwardsHack(aiEngineName: str, index: int, subPass: int, score: flo
   Same company = same prefix before '-' in model name.
   Higher grade = appears later in ALL_MODEL_CONFIGS list.
   """
-  if score < 1.0:
+  if score != 1.0:
     return
 
   company_prefix = getCompanyPrefix(aiEngineName)
@@ -272,7 +277,8 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
     elif "referenceScad" in g or "prepareSubpassReferenceScad" in g:
       # Some tests require an OpenSCAD comparison to check if the generated
       # shape closely resembles some reference data.
-      comparison_result = VolumeComparison.compareVolumeAgainstOpenScad(index, subPass, result, g)
+      comparison_result = VolumeComparison.compareVolumeAgainstOpenScad(
+        index, subPass, result, g, aiEngineName)
       score = comparison_result["score"]
       subpass_data["score"] = score
       subpass_data["output_image"] = comparison_result.get("output_image")
@@ -522,7 +528,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
       if 'endProcessingTime' in subpass and 'startProcessingTime' in subpass:
         timeTaken = subpass['endProcessingTime'] - subpass['startProcessingTime']
         if timeTaken > longestProcessor[1]:
-          longestProcessor = ((testIndex, subpass['subpass']), timeTaken)
+          longestProcessor = ((testIndex - 1, subpass['subpass']), timeTaken)
 
     print("\n" + "=" * 60)
     print(f"TEST {testIndex-1} COMPLETED!")
@@ -780,6 +786,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
 
   with open(per_question_file, "w", encoding="utf-8") as f:
     json.dump(all_per_question, f, indent=2)
+
+  if test_filter is not None:
+    return
 
   # Generate a summary page of the results, suitable for use as a github landing page,
   # including a big graph of the results by engine name
@@ -1568,6 +1577,7 @@ Examples:
   if args.force:
     import CacheLayer
     CacheLayer.FORCE_REFRESH = True
+    FORCE_ARG = True
     print("Force mode: AI response cache will be bypassed (new responses still cached)")
 
   if args.offline:

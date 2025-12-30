@@ -14,7 +14,7 @@ The silo is 10 yards in dimeter, and negligible internal wind / air current.
 
 Return an OpenSCAD file containing the shape of the sand pile: Use metric within OpenSCAD. 1 unit = 1 meter.
 
-Keep the OpenSCAD file as simple as possible, using the fewest number of lines possible. 
+Keep the OpenSCAD file as simple as possible, using the fewest number of lines possible. Do not define any new modules.
 
 Do not output anything else than the OpenSCAD file, as commentary doesn't compile.
 """
@@ -30,7 +30,7 @@ translate([0,0,1.345]) cylinder(r1=4.582, r2=0.017, h=2.970);
 """
 
 
-def resultToScad(result):
+def resultToScad(result, aiEngineName):
   if "```" in result:
     result = result.split("```")[1]
     result = result.partition("\n")[2]  # Drop the first line as it might be "```openscad"

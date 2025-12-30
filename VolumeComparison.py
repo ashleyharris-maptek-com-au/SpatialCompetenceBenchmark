@@ -1,4 +1,4 @@
-import random
+import random, scad_format
 import subprocess
 import tempfile
 import StlVolume
@@ -13,6 +13,12 @@ if not os.path.exists(openScadPath):
   openScadPath = R"C:\Program Files (x86)\OpenSCAD\openscad.exe"
 if not os.path.exists(openScadPath):
   raise FileNotFoundError("OpenSCAD executable not found at expected paths")
+
+formatConfig = scad_format.FormatConfig(
+  IndentWidth=2,
+  ContinuationIndentWidth=2,
+  ColumnLimit=120,
+  BreakBeforeBraces=scad_format.config.BraceBreakingStyle.Allman)
 
 
 def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
@@ -50,7 +56,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
       }
 
   try:
-    resultAsScad = resultToScad(result)
+    resultAsScad = resultToScad(result, aiEngineName)
   except Exception as e:
     return {
       "score": 100000,  # Not an AI failure, framework failure.
@@ -66,7 +72,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
       "differenceVolume": 0
     }
 
-  if resultAsScad == "":
+  if resultAsScad == "" or resultAsScad is None:
     return {
       "score": 0,
       "output_image": None,
@@ -407,6 +413,7 @@ def _write_scad_file(filepath: str, content: str, modules: Optional[str], suffix
       f.write(modules)
     f.write(content)
     f.write(suffix)
+  scad_format.format_file(filepath, formatConfig)
 
 
 class TimeoutError(Exception):

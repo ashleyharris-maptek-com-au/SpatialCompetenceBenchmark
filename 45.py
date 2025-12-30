@@ -41,6 +41,8 @@ ts = load.timescale()
 
 planetDescriptions = {}
 
+starRenders = []
+
 
 def render_star_field(lat, lon, time, filename, subpass, img_size=2048):
   """Render the night sky as seen from a specific location and time."""
@@ -84,6 +86,7 @@ def render_star_field(lat, lon, time, filename, subpass, img_size=2048):
       # Draw star
       color = (brightness, brightness, int(brightness * 0.9))
       draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=color)
+      starRenders.append((alt_deg[i], az_deg[i], mag))
 
   # Plot planets
   for name, planet, color, mag in planet_targets:
@@ -277,30 +280,6 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if abs(answer_lon - target_lon) < 10:
     score += 0.1
 
-  if abs(answer_lat - target_lat) < 5:
-    score += 0.1
-
-  if abs(answer_lon - target_lon) < 5:
-    score += 0.1
-
-  if abs(answer_lat - target_lat) < 1:
-    score += 0.1
-
-  if abs(answer_lon - target_lon) < 1:
-    score += 0.1
-
-  if abs(answer_lat - target_lat) < .5:
-    score += 0.05
-
-  if abs(answer_lon - target_lon) < .5:
-    score += 0.05
-
-  if abs(answer_lat - target_lat) < .1:
-    score += 0.05
-
-  if abs(answer_lon - target_lon) < .1:
-    score += 0.05
-
   lat1 = math.radians(target_lat)
   lon1 = math.radians(target_lon)
   lat2 = math.radians(answer_lat)
@@ -317,9 +296,17 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   greatCircleDistance = earth_radius_km * central_angle_rad
   cartesianDistance = 2 * earth_radius_km * math.sin(central_angle_rad / 2)
 
-  feedback.append(
-    f"Error distance (along surface): {central_angle_deg:.2f}° ({greatCircleDistance:.1f} km)")
-  feedback.append(f"Error distance (through earth): {cartesianDistance:.1f} km")
+  if score == 0.4:
+    score += 0.6 * (1 - greatCircleDistance / 10000)
+
+  if greatCircleDistance < 2:
+    feedback.append(f"Error distance (along surface): ({greatCircleDistance * 1000:.1f} m)")
+    # we don't add chord or degree measurements, because at these scales they're within a few cm of each other.
+  else:
+
+    feedback.append(
+      f"Error distance (along surface): {central_angle_deg:.2f}° ({greatCircleDistance:.1f} km)")
+    feedback.append(f"Error distance (through earth): {cartesianDistance:.1f} km")
 
   return score, "<br>\n".join(feedback)
 
@@ -330,19 +317,16 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 
   target_lat, target_lon, target_name = test_location
 
-  html = f"<p><b>Target location:</b> ({target_lat:.2f}°, {target_lon:.2f}°)</p>"
+  html = f"<p><b>Target location:</b> ({target_lat:.4f}°, {target_lon:.4f}°)</p>"
   html += f"<p><b>AI guess:</b> "
-  html += f"({answer.get('latitude', '?')}°, {answer.get('longitude', '?')}°)</p>"
+  html += f"({answer.get('latitude', '?'):.4f}°, {answer.get('longitude', '?'):.4f}°)</p>"
 
   if subPass == 0:
     html += """Scoring<ul>
 <li> +10% for the correct hemisphere.</li>
 <li> +10% for the correct side of the international date line</li>
 <li> +10% for within 10° of lattitude and longitude (each. 20% total)</li>
-<li> +10% for within 5° of lattitude and longitude (each 20% total)</li>
-<li> +10% for within 1° of lattitude and longitude ~110km (each 20% total)</li>
-<li> +5% for within 0.5° of lattitude and longitude ~55km (each 10% total)</li>
-<li> +5% for within 0.1° of lattitude and longitude ~12km (each 10% total)</li>
+<li> The remaining 60% is based on the great circle distance. 100m is 100%</li>
 <li> So within about 10km should get the AI 100%.</li>
 </ul>
 
@@ -351,7 +335,7 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 """
 
     html += f"<a href='45_sky_0.png'><img src='45_sky_0.png' style='min-width=400px'></a><br>"
-    html += "(Click to zoom in - picture is huge)"
+    html += "(Click to zoom in - picture is huge and has ~100mb of star data)"
   else:
     html += "(Same skymap as above)"
 
@@ -390,7 +374,20 @@ sky looked foriegn. But with some basic googling I could recognise Orion's belt 
 the LLM needs to be able to either do this, or recognise the pattern as if it's a northern
 hemisphere native. Humans have been doing this for millenia, and the AI has access to full allamacs
 and can generate to-the-second accurate star maps via python, so I feel confident declaring this 
-solvable.
+solvable.<br><br>
+
+The 'human with tools' control does the following:<ul>
+<li> Binned index structure, 5 degree * 5 degree</li>
+<li> Starts with magnitute <= 1 stars only (the top 20)</li>
+<li> Starts with the area of uncertainty 100 degree * 100 degree centred on the ocean centre.</li>
+<li> randomly guesses, calculates where the stars would be, compares that to the given sky,</li>
+<li> moves to the best guess.</li>
+<li> shrinks the area of uncertainty, and adds dimmer and dimmer stars as we start getting more
+  certain.</li>
+</ul>
+
+Seems to be able to get it to within about 5km with only a few minutes of single threaded 
+python code, that only took an hour or so to write. So 100% solvable on an $80,000 GPU.
 
 <div style="max-width:650px">
 <a href="45_sky_0.png"><img src="45_sky_0.png" width="300px" style="float:left; padding:4px"></a>

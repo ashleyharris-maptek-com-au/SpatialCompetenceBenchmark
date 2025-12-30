@@ -4,4 +4,4 @@ def get_response(subPass: int):
 
   # I had to write a solver to generate 'expected' in order to grade these questions,
   # and I'm just going to re-use that same solver here.
-  return g["gear_systems"][subPass]["expected"], "Placebo thinking... hmmm..."
+  return {"gears": g["gear_systems"][subPass]["expected"]}, "Placebo thinking... hmmm..."

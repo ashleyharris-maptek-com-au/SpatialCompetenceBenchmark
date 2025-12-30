@@ -633,9 +633,15 @@ class Screen:
   def record_hit(self, ray: Ray, px: Tuple[int, int]):
     rgb = wavelength_to_rgb(ray.wavelength)
     scale = ray.intensity * self.photon_packet_size
-    self.image[px[1], px[0], 0] += rgb[0] * scale
-    self.image[px[1], px[0], 1] += rgb[1] * scale
-    self.image[px[1], px[0], 2] += rgb[2] * scale
+
+    for offsetX in range(-2, 3):
+      for offsetY in range(-2, 3):
+        try:
+          self.image[px[1] + offsetY, px[0] + offsetX, 0] += rgb[0] * scale / 4
+          self.image[px[1] + offsetY, px[0] + offsetX, 1] += rgb[1] * scale / 4
+          self.image[px[1] + offsetY, px[0] + offsetX, 2] += rgb[2] * scale / 4
+        except IndexError:
+          pass
 
   def get_image(self) -> Image.Image:
     img = self.image.copy()

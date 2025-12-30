@@ -748,10 +748,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       else:
         feedback.append(f"Expected dimensions {exp_dims}")
 
+  import scad_format
+
   # Save SCAD file for visualization
   scad_path = f"results/46_shape_{aiEngineName}_{subPass}.scad"
   with open(scad_path, "w") as f:
-    f.write(scad)
+    f.write(scad_format.format(scad, vc.formatConfig))
 
   # Render to PNG
   try:

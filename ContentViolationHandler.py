@@ -109,7 +109,9 @@ def is_content_violation_openai(error: Exception) -> bool:
 
   indicators = [
     "content_policy_violation", "content policy violation", "safety system",
-    "content that is not allowed", "violated our policy", "violates our policy"
+    "content that is not allowed", "violated our policy", "violates our policy",
+    "violating our usage policy", "violating our policy", "usage policy",
+    "flagged as potentially violating"
   ]
 
   for indicator in indicators:

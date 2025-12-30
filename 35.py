@@ -725,6 +725,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   system = gear_systems[subPass]
   expected = system["expected"]
 
+  if not isinstance(answer, dict):
+    return 0, "Answer must be a dictionary"
+
   gears = answer.get("gears", [])
   if not gears:
     return 0, "No gears provided"

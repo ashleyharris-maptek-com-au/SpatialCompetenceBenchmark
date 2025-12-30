@@ -409,7 +409,7 @@ module capsule(p1, p2, r) {
 
 def render_scenario_image(scenario_index: int, force_rebuild: bool = False) -> str:
   """Simulate scenario and render to PNG. Returns path to image."""
-  import VolumeComparison as vc
+  import VolumeComparison as vc, scad_format
 
   os.makedirs("results", exist_ok=True)
   image_path = f"results/47_scene_{scenario_index}.png"
@@ -428,7 +428,7 @@ def render_scenario_image(scenario_index: int, force_rebuild: bool = False) -> s
 
   # Save SCAD
   with open(scad_path, "w") as f:
-    f.write(scad)
+    f.write(scad_format.format(scad, vc.formatConfig))
 
   # Render to PNG
   # Camera format: --camera=x,y,z,rot_x,rot_y,rot_z,distance

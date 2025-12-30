@@ -14,35 +14,35 @@ Return a 5 element array of where each of the pipes are located:
 """
 
 structure = {
-    "type": "object",
-    "properties": {
-        "reasoning": {
-            "type": "string"
-        },
-        "pipes": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "xCentre": {
-                        "type": "number"
-                    },
-                    "yCentre": {
-                        "type": "number"
-                    },
-                    "rotationDegrees": {
-                        "type": "number"
-                    }
-                },
-                "propertyOrdering": ["xCentre", "yCentre", "rotationDegrees"],
-                "required": ["xCentre", "yCentre", "rotationDegrees"],
-                "additionalProperties": False,
-            }
-        }
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
     },
-    "propertyOrdering": ["reasoning", "pipes"],
-    "required": ["reasoning", "pipes"],
-    "additionalProperties": False,
+    "pipes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "xCentre": {
+            "type": "number"
+          },
+          "yCentre": {
+            "type": "number"
+          },
+          "rotationDegrees": {
+            "type": "number"
+          }
+        },
+        "propertyOrdering": ["xCentre", "yCentre", "rotationDegrees"],
+        "required": ["xCentre", "yCentre", "rotationDegrees"],
+        "additionalProperties": False,
+      }
+    }
+  },
+  "propertyOrdering": ["reasoning", "pipes"],
+  "required": ["reasoning", "pipes"],
+  "additionalProperties": False,
 }
 
 referenceScad = """
@@ -55,14 +55,14 @@ module reference()
 """
 
 
-def resultToScad(result):
-    scad = "module result(){ union(){"
-    for pipe in result["pipes"]:
-        scad += "translate([" + str(pipe["xCentre"]) + "," + \
-          str(pipe["yCentre"]) + "]) rotate([0,0," + \
-          str(pipe["rotationDegrees"]) + "]) cube([5,0.1,.1], center=true);\n"
+def resultToScad(result, aiEngineName):
+  scad = "module result(){ union(){"
+  for pipe in result["pipes"]:
+    scad += "translate([" + str(pipe["xCentre"]) + "," + \
+      str(pipe["yCentre"]) + "]) rotate([0,0," + \
+      str(pipe["rotationDegrees"]) + "]) cube([5,0.1,.1], center=true);\n"
 
-    return scad + "}}"
+  return scad + "}}"
 
 
 highLevelSummary = \
@@ -106,12 +106,12 @@ X--XXXX - - - - - - -
 
 
 def postProcessScore(score, subPassIndex):
-    # If you get it perfect, sometimes it reports 95% instead of 100%,
-    # so we round up to 100% if we get 95%
-    if score > 0.95: return 1
+  # If you get it perfect, sometimes it reports 95% instead of 100%,
+  # so we round up to 100% if we get 95%
+  if score > 0.95: return 1
 
-    # If you mess up (and overlay your pipes), it reports a score in
-    # the mid 20s. Ew. No round down to 0.
-    if score < 0.3: return 0
+  # If you mess up (and overlay your pipes), it reports a score in
+  # the mid 20s. Ew. No round down to 0.
+  if score < 0.3: return 0
 
-    return score
+  return score

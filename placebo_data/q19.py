@@ -286,7 +286,7 @@ def get_response(subPass: int):
     for pt in points:
       if inside(subPass, pt[0], pt[1], pt[2]):
         insideCount += 1
-    if insideCount >= 3:
+    if insideCount >= 2:
       shape.append(tetra)
 
   return {

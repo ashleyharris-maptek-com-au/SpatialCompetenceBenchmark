@@ -3,9 +3,9 @@ from textwrap import dedent
 
 
 def get_response(subPass: int):
-    """Get the placebo response for this question."""
-    if subPass == 0:
-        corePart = dedent("""
+  """Get the placebo response for this question."""
+  if subPass == 0:
+    corePart = dedent("""
                         union()
                         {
                                 for (x = [-370/2+5:72:220])
@@ -20,11 +20,11 @@ def get_response(subPass: int):
                         }
                                         """)
 
-        def corePartMinus(s: str):
-            return "translate([0,0,5]) difference(){" + corePart + s + "}"
+    def corePartMinus(s: str):
+      return "rotate([0,0,90]) translate([0,0,5]) difference(){" + corePart + s + "}"
 
-        bottomAndTopPart = corePartMinus("""
-                                # Bottom and top part are identical.
+    bottomAndTopPart = corePartMinus("""
+                                // Bottom and top part are identical.
                                 for (x = [360/2, -360/2])
                                 for (y = [360/2, -360/2])
                                 {
@@ -32,7 +32,7 @@ def get_response(subPass: int):
                                 }
                                 """)
 
-        northAndSouthLower = corePartMinus("""
+    northAndSouthLower = corePartMinus("""
                         translate([364,0,0]) cube([380,380,20], center=true);
 
                         translate([0,220,0]) cube([80,100,20], center=true);
@@ -42,7 +42,7 @@ def get_response(subPass: int):
                         translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
                 """)
 
-        northAndSouthUpper = corePartMinus("""
+    northAndSouthUpper = corePartMinus("""
                         translate([364,0,0]) cube([380,380,20], center=true);
                         translate([-364,0,0]) cube([380,380,20], center=true);
 
@@ -53,7 +53,7 @@ def get_response(subPass: int):
                         translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
                 """)
 
-        eastAndWestLower = corePartMinus("""
+    eastAndWestLower = corePartMinus("""
                         translate([364,0,0]) cube([380,380,20], center=true);
 
                         translate([-140,220,0]) cube([200,100,20], center=true);
@@ -65,7 +65,7 @@ def get_response(subPass: int):
                         translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
                 """)
 
-        eastAndWestUpper = corePartMinus("""
+    eastAndWestUpper = corePartMinus("""
                         translate([364,0,0]) cube([380,380,20], center=true);
                         translate([-364,0,0]) cube([380,380,20], center=true);
 
@@ -78,83 +78,61 @@ def get_response(subPass: int):
                         translate([0,-180,0]) rotate([0,90,0]) cylinder(h=1000, d=6.1, center=true);
                 """)
 
-        return {
-                "parts": [
-                        {
-                                "fileContents": bottomAndTopPart, "fileType": "OpenScad", "transform":
-                                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-                        },
-                        {
-                                "fileContents": bottomAndTopPart, "fileType": "OpenScad", "transform":
-                                [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 720, 1]
-                        },
-                        {
-                                "fileContents":
-                                northAndSouthLower, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, -1.0, -180.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                northAndSouthLower, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, -1.0, 180.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                northAndSouthUpper, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, -1.0, 540.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                northAndSouthUpper, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, -1.0, -540.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                eastAndWestLower, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 180.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                eastAndWestLower, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -180.0, 1.0, 0.0, 0.0, 185.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                eastAndWestUpper, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 180.0, 1.0, 0.0, 0.0, -540.0, 0.0, 0.0, 0.0,
-                                        1.0
-                                ]
-                        },
-                        {
-                                "fileContents":
-                                eastAndWestUpper, "fileType":
-                                "OpenScad", "transform": [
-                                        0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -180.0, 1.0, 0.0, 0.0, -540.0, 0.0, 0.0,
-                                        0.0, 1.0
-                                ]
-                        },
-                ], "reasoning":
-                "Ash spent an hour messing about in OpenSCAD and created it."
-        }, "They looked nice."
+    return {
+      "parts": [
+        {
+          "fileContents": bottomAndTopPart,
+          "fileType": "OpenScad",
+          "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": bottomAndTopPart,
+          "fileType": "OpenScad",
+          "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 720, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": northAndSouthLower,
+          "fileType": "OpenScad",
+          "transform": [1, 0, 0, 0, 0, 0, -1, 185, 0, 1, 0, 545, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": northAndSouthLower,
+          "fileType": "OpenScad",
+          "transform": [1, 0, 0, 0, 0, 0, -1, -175, 0, 1, 0, 545, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": northAndSouthUpper,
+          "fileType": "OpenScad",
+          "transform": [-1, 0, 0, 0, 0, 0, 1, -185, 0, 1, 0, 185, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": northAndSouthUpper,
+          "fileType": "OpenScad",
+          "transform": [-1, 0, 0, 0, 0, 0, 1, 175, 0, 1, 0, 185, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": eastAndWestLower,
+          "fileType": "OpenScad",
+          "transform": [0, 0, 1, 175, 1, 0, 0, 0, 0, 1, 0, 545, 0, 0, 0, 1]  # Done
+        },
+        {
+          "fileContents": eastAndWestLower,
+          "fileType": "OpenScad",
+          "transform": [0, 0, 1, -185, 1, 0, 0, 0, 0, 1, 0, 545, 0, 0, 0, 1]
+        },
+        {
+          "fileContents": eastAndWestUpper,
+          "fileType": "OpenScad",
+          "transform": [0, 0, -1, -175, -1, 0, 0, 0, 0, 1, 0, 185, 0, 0, 0, 1]
+        },
+        {
+          "fileContents": eastAndWestUpper,
+          "fileType": "OpenScad",
+          "transform": [0, 0, -1, 185, -1, 0, 0, 0, 0, 1, 0, 185, 0, 0, 0, 1]
+        },
+      ],
+      "reasoning":
+      "Ash spent an hour messing about in OpenSCAD and created it."
+    }, "They looked nice."
 
-
-    return None
+  return None

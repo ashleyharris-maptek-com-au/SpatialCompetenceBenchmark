@@ -1,3 +1,4 @@
+import scad_format
 import VolumeComparison as vc
 
 title = "What's the largest prime number you can 3D print without supports?"
@@ -82,231 +83,225 @@ Clarifications:
 """
 
 structure = {
-    "type": "object",
-    "properties": {
-        "reasoning": {
-            "type": "string"
-        },
-        "numberSequence": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "digit": {
-                        "type": "integer"
-                    },
-                    "orientation": {
-                        "type":
-                        "string",
-                        "enum": [
-                            "flat", "flippedX", "flippedY", "rotate90X",
-                            "rotate90Y", "rotate180Z"
-                        ],
-                        "description":
-                        "flat = as is. Flipped X turns a 3 into an E. Flipped Y turns a 5 into a 2. Rotate 90 X makes 7 have a short spike facing up in Z. Rotate 90 Y makes 7 have a long spike facing up in Z. Rotate 180Z turns a 6 into a 9. All other rotations do not produce anything printable. "
-                    },
-                },
-                "propertyOrdering": ["digit", "orientation"],
-                "required": ["digit", "orientation"],
-                "additionalProperties": False
-            },
-        },
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
     },
-    "required": ["numberSequence", "reasoning"],
-    "propertyOrdering": ["numberSequence", "reasoning"],
-    "additionalProperties": False
+    "numberSequence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "digit": {
+            "type": "integer"
+          },
+          "orientation": {
+            "type":
+            "string",
+            "enum": ["flat", "flippedX", "flippedY", "rotate90X", "rotate90Y", "rotate180Z"],
+            "description":
+            "flat = as is. Flipped X turns a 3 into an E. Flipped Y turns a 5 into a 2. Rotate 90 X makes 7 have a short spike facing up in Z. Rotate 90 Y makes 7 have a long spike facing up in Z. Rotate 180Z turns a 6 into a 9. All other rotations do not produce anything printable. "
+          },
+        },
+        "propertyOrdering": ["digit", "orientation"],
+        "required": ["digit", "orientation"],
+        "additionalProperties": False
+      },
+    },
+  },
+  "required": ["numberSequence", "reasoning"],
+  "propertyOrdering": ["numberSequence", "reasoning"],
+  "additionalProperties": False
 }
 
 
 def canPrintOnTop(num):
-    "Returns flat prints, and then side prints"
-    if num == 0: return [0, 1, 7], [1, 3, 7]
-    if num == 1: return [1], [1, 3, 7]
-    if num == 2: return [2, 5], []
-    if num == 3: return [1, 3, 7], [1, 3, 7]
-    if num == 4: return [1, 4], [1, 3, 7]
-    if num == 5: return [2, 5], []
-    if num == 6: return [1, 3, 5, 6, 7, 9, 4], [1, 3, 7]
-    if num == 7: return [1, 7], [1, 3, 7]
-    if num == 8: return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 3, 7]
-    if num == 9: return [1, 3, 5, 6, 7, 9], [1, 3, 7]
+  "Returns flat prints, and then side prints"
+  if num == 0: return [0, 1, 7], [1, 3, 7]
+  if num == 1: return [1], [1, 3, 7]
+  if num == 2: return [2, 5], []
+  if num == 3: return [1, 3, 7], [1, 3, 7]
+  if num == 4: return [1, 4], [1, 3, 7]
+  if num == 5: return [2, 5], []
+  if num == 6: return [1, 3, 5, 6, 7, 9, 4], [1, 3, 7]
+  if num == 7: return [1, 7], [1, 3, 7]
+  if num == 8: return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 3, 7]
+  if num == 9: return [1, 3, 5, 6, 7, 9], [1, 3, 7]
 
 
 def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
-    numberSequence = answer["numberSequence"]
+  numberSequence = answer["numberSequence"]
 
-    # Build the number from the digit sequence
-    number_str = ""
-    for item in numberSequence:
-        number_str += str(item["digit"])
+  # Build the number from the digit sequence
+  number_str = ""
+  for item in numberSequence:
+    number_str += str(item["digit"])
 
-    if number_str == "":
-        return 0, "Empty number"
+  if number_str == "":
+    return 0, "Empty number"
 
-    number = int(number_str)
+  number = int(number_str)
 
-    # Check for repeated 3-tuples
-    if containsAny3TupleMoreThanOnce(number_str):
-        return 0, str(
-            number
-        ) + " contains a sequence of 3 digits repeated more than once"
+  # Check for repeated 3-tuples
+  if containsAny3TupleMoreThanOnce(number_str):
+    return 0, str(number) + " contains a sequence of 3 digits repeated more than once"
 
-    # Check if each individual diget can be printed on it's own.
-    flatOrientations = ["flat", "flippedX", "flippedY", "rotate180Z"]
-    for n in numberSequence:
-        digit = n["digit"]
-        orientation = n["orientation"]
-        if orientation in flatOrientations:
-            # Everything can be printed flat.
-            continue
-        if orientation == "rotate90X":
-            if digit not in [1, 3, 7]:
-                return 0, f"Digit {digit} (orientation: {orientation}) has overhangs."
+  # Check if each individual diget can be printed on it's own.
+  flatOrientations = ["flat", "flippedX", "flippedY", "rotate180Z"]
+  for n in numberSequence:
+    digit = n["digit"]
+    orientation = n["orientation"]
+    if orientation in flatOrientations:
+      # Everything can be printed flat.
+      continue
+    if orientation == "rotate90X":
+      if digit not in [1, 3, 7]:
+        return 0, f"Digit {digit} (orientation: {orientation}) has overhangs."
 
-        if orientation == "rotate90Y":
-            if digit not in [1, 7]:
-                return 0, f"Digit {digit} (orientation: {orientation}) has overhangs."
+    if orientation == "rotate90Y":
+      if digit not in [1, 7]:
+        return 0, f"Digit {digit} (orientation: {orientation}) has overhangs."
 
-    # Check if it's prime
-    if not isPrime(number):
-        return 0, str(number) + " is not prime"
+  # Check if it's prime
+  if not isPrime(number):
+    return 0, str(number) + " is not prime"
 
-    i = 0
-    while i < len(numberSequence) - 1:
-        current_digit = numberSequence[i]["digit"]
-        current_orientation = numberSequence[i]["orientation"]
-        next_digit = numberSequence[i + 1]["digit"]
-        next_orientation = numberSequence[i + 1]["orientation"]
+  i = 0
+  while i < len(numberSequence) - 1:
+    current_digit = numberSequence[i]["digit"]
+    current_orientation = numberSequence[i]["orientation"]
+    next_digit = numberSequence[i + 1]["digit"]
+    next_orientation = numberSequence[i + 1]["orientation"]
 
-        if current_orientation in flatOrientations and \
-            next_orientation in flatOrientations:
-            # we're staying flat!
-            allowed_digits = canPrintOnTop(current_digit)[0]
-            # Check if the next digit can be printed on top
-            if next_digit not in allowed_digits:
-                return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
+    if current_orientation in flatOrientations and \
+        next_orientation in flatOrientations:
+      # we're staying flat!
+      allowed_digits = canPrintOnTop(current_digit)[0]
+      # Check if the next digit can be printed on top
+      if next_digit not in allowed_digits:
+        return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
 
-            i += 1
-            continue
+      i += 1
+      continue
 
-        if next_orientation in flatOrientations:
-            # We can only go back to flat if we're printing a 1 on top of a 1
-            if current_digit != 1 or next_digit != 1 or current_orientation == "rotate90Y":
-                return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
-            i += 1
-            continue
+    if next_orientation in flatOrientations:
+      # We can only go back to flat if we're printing a 1 on top of a 1
+      if current_digit != 1 or next_digit != 1 or current_orientation == "rotate90Y":
+        return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
+      i += 1
+      continue
 
-        if current_orientation == "rotate90Y":
-            # After anything sticking up, we can only print 1s in rotate90y
-            if next_digit != 1 or next_orientation != "rotate90Y":
-                return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
-            i += 1
-            continue
+    if current_orientation == "rotate90Y":
+      # After anything sticking up, we can only print 1s in rotate90y
+      if next_digit != 1 or next_orientation != "rotate90Y":
+        return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
+      i += 1
+      continue
 
-        if next_orientation == "rotate90X":
-            assert (next_digit in [1, 3, 7])  # Should've been caught earlier.
-            # This can go on top of anything.
-            i += 1
-            continue
+    if next_orientation == "rotate90X":
+      assert (next_digit in [1, 3, 7])  # Should've been caught earlier.
+      # This can go on top of anything.
+      i += 1
+      continue
 
-        if next_orientation == "rotate90Y":
-            assert (next_digit in [1, 7])
-            # This can go on top of anything except a 2 and a 5
-            if current_digit in [2, 5]:
-                return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
-            i += 1
-            continue
+    if next_orientation == "rotate90Y":
+      assert (next_digit in [1, 7])
+      # This can go on top of anything except a 2 and a 5
+      if current_digit in [2, 5]:
+        return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
+      i += 1
+      continue
 
-        return 100, f"Digit {next_digit} (orientation: {next_orientation}) wasn't coded if it could be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Grading code needs updating."
+    return 100, f"Digit {next_digit} (orientation: {next_orientation}) wasn't coded if it could be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Grading code needs updating."
 
-    # The solution (AFAIK) is all of these flat, rotating the 6's to fit on the 9's, then
-    # flipping the 3's to fit on the 6's, then a stack of 7's, then 2 * 1 flat, then
-    # a 7 on it's side, and then 2 * 1's stacked on top of it.
-    solution = 888_999_6969_666_333_777_11_7_11
-    solution_len = len(str(solution))
+  # The solution (AFAIK) is all of these flat, rotating the 6's to fit on the 9's, then
+  # flipping the 3's to fit on the 6's, then a stack of 7's, then 2 * 1 flat, then
+  # a 7 on it's side, and then 2 * 1's stacked on top of it.
+  solution = 888_999_6969_666_333_777_11_7_11
+  solution_len = len(str(solution))
 
-    # I am very confident I found the best solution, however, if I'm every proven wrong,
-    # this will need updating.
-    if number > solution:
-        return 100, "Test needs updating. Well done!"
+  # I am very confident I found the best solution, however, if I'm every proven wrong,
+  # this will need updating.
+  if number > solution:
+    return 100, "Test needs updating. Well done!"
 
-    return len(
-        number_str
-    ) / solution_len, f"Answer given was of length {len(number_str)} while the largest printable prime (I know of) is of length {solution_len}"
+  return len(
+    number_str
+  ) / solution_len, f"Answer given was of length {len(number_str)} while the largest printable prime (I know of) is of length {solution_len}"
 
 
 def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 
-    scad = ""
+  scad = ""
 
-    number = ""
+  number = ""
 
-    height = 0
+  height = 0
 
-    for item in answer["numberSequence"]:
-        d = ""
-        number += str(item["digit"])
-        if item["digit"] in [0, 2, 3, 5, 6, 7, 8, 9]:
-            d += "translate([0,-10,0]) cube([10,1,1], center=true);"
-        if item["digit"] in [2, 3, 4, 5, 6, 8, 9]:
-            d += "translate([0,0,0]) cube([10,1,1], center=true);"
-        if item["digit"] in [0, 2, 3, 5, 6, 8, 9]:
-            d += "translate([0,10,0]) cube([10,1,1], center=true);"
+  for item in answer["numberSequence"]:
+    d = ""
+    number += str(item["digit"])
+    if item["digit"] in [0, 2, 3, 5, 6, 7, 8, 9]:
+      d += "translate([0,-10,0]) cube([10,1,1], center=true);"
+    if item["digit"] in [2, 3, 4, 5, 6, 8, 9]:
+      d += "translate([0,0,0]) cube([10,1,1], center=true);"
+    if item["digit"] in [0, 2, 3, 5, 6, 8, 9]:
+      d += "translate([0,10,0]) cube([10,1,1], center=true);"
 
-        if item["digit"] in [4, 5, 6, 8, 9, 0]:
-            d += "translate([-5,-5,0]) cube([1,10,1], center=true);"
+    if item["digit"] in [4, 5, 6, 8, 9, 0]:
+      d += "translate([-5,-5,0]) cube([1,10,1], center=true);"
 
-        if item["digit"] in [0, 1, 2, 3, 4, 7, 8, 9]:
-            d += "translate([5,-5,0]) cube([1,10,1], center=true);"
+    if item["digit"] in [0, 1, 2, 3, 4, 7, 8, 9]:
+      d += "translate([5,-5,0]) cube([1,10,1], center=true);"
 
-        if item["digit"] in [2, 6, 8, 0]:
-            d += "translate([-5,5,0]) cube([1,10,1], center=true);"
+    if item["digit"] in [2, 6, 8, 0]:
+      d += "translate([-5,5,0]) cube([1,10,1], center=true);"
 
-        if item["digit"] in [1, 3, 4, 5, 6, 7, 8, 9, 0]:
-            d += "translate([5,5,0]) cube([1,10,1], center=true);"
+    if item["digit"] in [1, 3, 4, 5, 6, 7, 8, 9, 0]:
+      d += "translate([5,5,0]) cube([1,10,1], center=true);"
 
-        d = " union(){\n" + d + "}\n"
+    d = " union(){\n" + d + "}\n"
 
-        scad += f"translate([0,0,{height}])"
+    scad += f"translate([0,0,{height}])"
 
-        height += 1.5
+    height += 1.5
 
-        if item["orientation"] == "rotate90X":
-            d = "translate([5,0,10]) rotate([90,0,90])" + d
-            height += 20
-        if item["orientation"] == "rotate90Y":
-            d = "translate([5,4,0]) rotate([0,90,0])" + d
-            height += 4
-        if item["orientation"] == "rotate180Z":
-            d = "rotate([0,0,180])" + d
-        if item["orientation"] == "flippedX":
-            d = "mirror([1,0,0])" + d
-        if item["orientation"] == "flippedY":
-            d = "mirror([0,1,0])" + d
+    if item["orientation"] == "rotate90X":
+      d = "translate([5,0,10]) rotate([90,0,90])" + d
+      height += 20
+    if item["orientation"] == "rotate90Y":
+      d = "translate([5,4,0]) rotate([0,90,0])" + d
+      height += 4
+    if item["orientation"] == "rotate180Z":
+      d = "rotate([0,0,180])" + d
+    if item["orientation"] == "flippedX":
+      d = "mirror([1,0,0])" + d
+    if item["orientation"] == "flippedY":
+      d = "mirror([0,1,0])" + d
 
-        scad += d
-        scad += "\n\n"
+    scad += d
+    scad += "\n\n"
 
-    import os
-    os.makedirs("results", exist_ok=True)
-    output_path = "results/30_Visualization_" + aiEngineName + "_" + str(
-        len(answer["numberSequence"])) + ".png"
-    vc.render_scadText_to_png(scad, output_path,
-                              "--camera=-10,-10,10,55,0,25,100")
-    print(f"Saved visualization to {output_path}")
+  import os
+  os.makedirs("results", exist_ok=True)
+  output_path = "results/30_Visualization_" + aiEngineName + "_" + str(len(
+    answer["numberSequence"])) + ".png"
+  vc.render_scadText_to_png(scad, output_path, "--camera=-10,-10,10,55,0,25,100")
+  print(f"Saved visualization to {output_path}")
 
-    scadFile = "results/30_Visualization_" + aiEngineName + "_" + str(
-        len(answer["numberSequence"])) + "temp.scad"
+  scadFile = "results/30_Visualization_" + aiEngineName + "_" + str(len(
+    answer["numberSequence"])) + "temp.scad"
 
-    open(scadFile, "w").write(scad)
+  open(scadFile, "w").write(scad_format.format(scad, vc.formatConfig))
 
-    import zipfile
-    with zipfile.ZipFile(output_path.replace(".png", ".zip"), 'w') as zipf:
-        zipf.write(scadFile, os.path.basename(scadFile))
+  import zipfile
+  with zipfile.ZipFile(output_path.replace(".png", ".zip"), 'w') as zipf:
+    zipf.write(scadFile, os.path.basename(scadFile))
 
-    os.unlink(scadFile)
+  os.unlink(scadFile)
 
-    return f"""
+  return f"""
 <a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
 <img src="{os.path.basename(output_path)}" alt="Stacked digets Visualization" style="max-width: 100%; float:left">
 </a>
@@ -324,230 +319,229 @@ _prime_cache = None
 
 
 def _load_prime_cache():
-    global _prime_cache
-    if _prime_cache is None:
-        try:
-            with open(_prime_cache_path, 'r') as f:
-                _prime_cache = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            _prime_cache = {}
-    return _prime_cache
+  global _prime_cache
+  if _prime_cache is None:
+    try:
+      with open(_prime_cache_path, 'r') as f:
+        _prime_cache = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+      _prime_cache = {}
+  return _prime_cache
 
 
 def _save_prime_cache():
-    if _prime_cache is not None:
-        with open(_prime_cache_path, 'w') as f:
-            json.dump(_prime_cache, f)
+  if _prime_cache is not None:
+    with open(_prime_cache_path, 'w') as f:
+      json.dump(_prime_cache, f)
 
 
 def _miller_rabin_test(n, a):
-    """Single Miller-Rabin witness test."""
-    # Write n-1 as 2^r * d
-    d = n - 1
-    r = 0
-    while d % 2 == 0:
-        d //= 2
-        r += 1
+  """Single Miller-Rabin witness test."""
+  # Write n-1 as 2^r * d
+  d = n - 1
+  r = 0
+  while d % 2 == 0:
+    d //= 2
+    r += 1
 
-    # Compute a^d mod n
-    x = pow(a, d, n)
-    if x == 1 or x == n - 1:
-        return True
+  # Compute a^d mod n
+  x = pow(a, d, n)
+  if x == 1 or x == n - 1:
+    return True
 
-    for _ in range(r - 1):
-        x = pow(x, 2, n)
-        if x == n - 1:
-            return True
-    return False
+  for _ in range(r - 1):
+    x = pow(x, 2, n)
+    if x == n - 1:
+      return True
+  return False
 
 
 def isPrime(num: int) -> bool:
-    """Miller-Rabin primality test with caching. Deterministic for n < 3,317,044,064,679,887,385,961,981."""
-    if num < 2:
-        return False
+  """Miller-Rabin primality test with caching. Deterministic for n < 3,317,044,064,679,887,385,961,981."""
+  if num < 2:
+    return False
 
-    # Check cache first
-    cache = _load_prime_cache()
-    key = str(num)
-    if key in cache:
-        return cache[key]
+  # Check cache first
+  cache = _load_prime_cache()
+  key = str(num)
+  if key in cache:
+    return cache[key]
 
-    # Small primes
-    small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
-    if num in small_primes:
-        cache[key] = True
-        _save_prime_cache()
-        return True
-
-    # Quick divisibility check
-    for p in small_primes:
-        if num % p == 0:
-            cache[key] = False
-            _save_prime_cache()
-            return False
-
-    if num >= 3_317_044_064_679_887_385_961_981:
-        # fall back to a naive prime check for numbers too large for Miller-Rabin
-        cache[key] = all(num % i != 0 for i in range(2, int(num**0.5) + 1))
-        _save_prime_cache()
-        return cache[key]
-
-    # Miller-Rabin with deterministic witnesses for numbers up to 3,317,044,064,679,887,385,961,981
-    # These witnesses are proven sufficient for this range
-    witnesses = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
-
-    result = all(_miller_rabin_test(num, a) for a in witnesses if a < num)
-
-    cache[key] = result
+  # Small primes
+  small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+  if num in small_primes:
+    cache[key] = True
     _save_prime_cache()
-    return result
+    return True
+
+  # Quick divisibility check
+  for p in small_primes:
+    if num % p == 0:
+      cache[key] = False
+      _save_prime_cache()
+      return False
+
+  if num >= 3_317_044_064_679_887_385_961_981:
+    # fall back to a naive prime check for numbers too large for Miller-Rabin
+    cache[key] = all(num % i != 0 for i in range(2, int(num**0.5) + 1))
+    _save_prime_cache()
+    return cache[key]
+
+  # Miller-Rabin with deterministic witnesses for numbers up to 3,317,044,064,679,887,385,961,981
+  # These witnesses are proven sufficient for this range
+  witnesses = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+
+  result = all(_miller_rabin_test(num, a) for a in witnesses if a < num)
+
+  cache[key] = result
+  _save_prime_cache()
+  return result
 
 
 def containsAny3TupleMoreThanOnce(s: str) -> bool:
-    for i in range(0, len(s) - 2):
-        for j in range(i + 1, len(s) - 2):
-            if s[i] == s[i + 1] == s[i + 2] == s[j] == s[j + 1] == s[j + 2]:
-                return True
-    return False
+  for i in range(0, len(s) - 2):
+    for j in range(i + 1, len(s) - 2):
+      if s[i] == s[i + 1] == s[i + 2] == s[j] == s[j + 1] == s[j + 2]:
+        return True
+  return False
 
 
 printableFlats = []
 
 
 def finalAllFlatSequences(num: str):
-    lastDiget = num[-1]
+  lastDiget = num[-1]
 
-    suffixes = canPrintOnTop(int(lastDiget))[0]
-    for suffix in suffixes:
-        newNumber = num + str(suffix)
+  suffixes = canPrintOnTop(int(lastDiget))[0]
+  for suffix in suffixes:
+    newNumber = num + str(suffix)
 
-        if len(newNumber) >= 3:
-            last3Digets = str(newNumber)[-3:]
-            if newNumber.count(last3Digets) > 1:
-                continue
+    if len(newNumber) >= 3:
+      last3Digets = str(newNumber)[-3:]
+      if newNumber.count(last3Digets) > 1:
+        continue
 
-        printableFlats.append(newNumber)
-        finalAllFlatSequences(newNumber)
+    printableFlats.append(newNumber)
+    finalAllFlatSequences(newNumber)
 
-
-if __name__ == "__main__":
-    base = 888_999_6969_666_333_777
-    longestPrintablePrime = 7
-
-    for suffix in [
-            111711, 117111, 111311, 11311, 17111, 13111, 11711, 11311, 1711,
-            1311, 711, 311, 71, 31, 11, 1
-    ]:
-        num = str(base) + str(suffix)
-        if int(num) < longestPrintablePrime:
-            continue
-        if not containsAny3TupleMoreThanOnce(num) and isPrime(int(num)):
-            longestPrintablePrime = int(num)
-            print(longestPrintablePrime)
 
 if __name__ == "__main__":
-    print(
-        resultToNiceReport(
-            {
-                "numberSequence": [
-                    {
-                        "digit": 8,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 8,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 8,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 9,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 9,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 9,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 6,
-                        "orientation": "rotate180Z"
-                    },
-                    {
-                        "digit": 9,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 6,
-                        "orientation": "rotate180Z"
-                    },
-                    {
-                        "digit": 9,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 6,
-                        "orientation": "rotate180Z"
-                    },
-                    {
-                        "digit": 6,
-                        "orientation": "rotate180Z"
-                    },
-                    {
-                        "digit": 6,
-                        "orientation": "rotate180Z"
-                    },
-                    {
-                        "digit": 3,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 3,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 3,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 7,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 7,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 7,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 1,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 1,
-                        "orientation": "flat"
-                    },
-                    {
-                        "digit": 7,
-                        "orientation": "rotate90X"
-                    },
-                    {
-                        "digit": 1,
-                        "orientation": "rotate90X"
-                    },
-                    {
-                        "digit": 1,
-                        "orientation": "rotate90X"
-                    },
-                ]
-            }, 0, "Ash screwing around with Python"))
+  base = 888_999_6969_666_333_777
+  longestPrintablePrime = 7
+
+  for suffix in [
+      111711, 117111, 111311, 11311, 17111, 13111, 11711, 11311, 1711, 1311, 711, 311, 71, 31, 11, 1
+  ]:
+    num = str(base) + str(suffix)
+    if int(num) < longestPrintablePrime:
+      continue
+    if not containsAny3TupleMoreThanOnce(num) and isPrime(int(num)):
+      longestPrintablePrime = int(num)
+      print(longestPrintablePrime)
+
+if __name__ == "__main__":
+  print(
+    resultToNiceReport(
+      {
+        "numberSequence": [
+          {
+            "digit": 8,
+            "orientation": "flat"
+          },
+          {
+            "digit": 8,
+            "orientation": "flat"
+          },
+          {
+            "digit": 8,
+            "orientation": "flat"
+          },
+          {
+            "digit": 9,
+            "orientation": "flat"
+          },
+          {
+            "digit": 9,
+            "orientation": "flat"
+          },
+          {
+            "digit": 9,
+            "orientation": "flat"
+          },
+          {
+            "digit": 6,
+            "orientation": "rotate180Z"
+          },
+          {
+            "digit": 9,
+            "orientation": "flat"
+          },
+          {
+            "digit": 6,
+            "orientation": "rotate180Z"
+          },
+          {
+            "digit": 9,
+            "orientation": "flat"
+          },
+          {
+            "digit": 6,
+            "orientation": "rotate180Z"
+          },
+          {
+            "digit": 6,
+            "orientation": "rotate180Z"
+          },
+          {
+            "digit": 6,
+            "orientation": "rotate180Z"
+          },
+          {
+            "digit": 3,
+            "orientation": "flat"
+          },
+          {
+            "digit": 3,
+            "orientation": "flat"
+          },
+          {
+            "digit": 3,
+            "orientation": "flat"
+          },
+          {
+            "digit": 7,
+            "orientation": "flat"
+          },
+          {
+            "digit": 7,
+            "orientation": "flat"
+          },
+          {
+            "digit": 7,
+            "orientation": "flat"
+          },
+          {
+            "digit": 1,
+            "orientation": "flat"
+          },
+          {
+            "digit": 1,
+            "orientation": "flat"
+          },
+          {
+            "digit": 7,
+            "orientation": "rotate90X"
+          },
+          {
+            "digit": 1,
+            "orientation": "rotate90X"
+          },
+          {
+            "digit": 1,
+            "orientation": "rotate90X"
+          },
+        ]
+      }, 0, "Ash screwing around with Python"))
 
 highLevelSummary = """
 So this test has 2 components, a visual one and a maths one.<br><br>

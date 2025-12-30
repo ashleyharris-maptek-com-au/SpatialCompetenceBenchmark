@@ -739,10 +739,12 @@ def simulate_salvo(structure_index: int, shots: List[Tuple[float, float, float]]
     fallen = final_pos[2] < init_pos[2] - 0.3
 
     score = 0.0
-    if dislodged:
-      score = 1.0
-    if fallen:
-      score += TARGET_CRUSH_BONUS
+    if dislodged or fallen:
+      score = 1.5
+    elif displacement > TARGET_DISLODGE_THRESHOLD / 2:
+      score = 0.5
+    elif displacement > TARGET_DISLODGE_THRESHOLD / 4:
+      score = 0.1
 
     target_scores.append({
       "name": structure.targets[i].name,
@@ -937,7 +939,7 @@ def render_scene_image(structure_index: int,
                        force_rebuild: bool = False,
                        camera_angle: str = "overview") -> str:
   """Render a scene to PNG from a specific camera angle. Returns path to image."""
-  import VolumeComparison as vc
+  import VolumeComparison as vc, scad_format
 
   os.makedirs("results", exist_ok=True)
 
@@ -987,6 +989,8 @@ def render_scene_image(structure_index: int,
       show_catapult=True,
       show_grid=True,
     )
+
+  scad = scad_format.format(scad, vc.formatConfig)
 
   # Save SCAD (only once per structure, not per angle)
   if not os.path.exists(scad_path) or force_rebuild:

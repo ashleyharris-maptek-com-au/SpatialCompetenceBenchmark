@@ -75,12 +75,91 @@ def prepareSubpassReferenceScad(index):
   return "module reference()\n{\n" + scad + "\n}\n"
 
 
-def resultToScad(result):
-  import re
+def resultToScad(result, aiEngineName):
+  import CacheLayer as cl, re, scad_format
 
-  if "```" in result:
-    result = result.split("```")[1]
-    result = result.partition("\n")[2]  # Drop the first line as it might be "```openscad"
+  structure = {
+    "type": "object",
+    "properties": {
+      "primitiveCount": {
+        "type": "integer",
+        "description": "How many 'things'' are processed in this script?"
+      }
+    },
+    "required": ["primitiveCount"],
+    "additionalProperties": False,
+    "propertyOrdering": ["primitiveCount"]
+  }
+
+  if "gpt" in aiEngineName:
+    import AiEngineGoogleGemini
+    AiEngineGoogleGemini.Configure("gemini-2.5-flash-lite", False, False)
+    cacheLayer = cl.CacheLayer(AiEngineGoogleGemini.configAndSettingsHash,
+                               AiEngineGoogleGemini.GeminiAIHook, "gemini-2.5-flash-lite")
+
+    def answerQuestion(q: str) -> dict:
+      return cacheLayer.AIHook(q, structure, -1, -1)
+
+  else:
+    import AiEngineOpenAiChatGPT
+    AiEngineOpenAiChatGPT.Configure("gpt-5-nano", False, False)
+    cacheLayer = cl.CacheLayer(AiEngineOpenAiChatGPT.configAndSettingsHash,
+                               AiEngineOpenAiChatGPT.ChatGPTAIHook, "gpt-5-nano")
+
+    def answerQuestion(q: str) -> dict:
+      return cacheLayer.AIHook(q, structure, -1, -1)[0]
+
+  prompt = """
+Your job is to determine how many primitives are processed in a script.
+
+Eg:
+```
+for (i = [0:10])
+{
+  difference()
+  {
+    cube(1);
+    cube(0.9);
+  }
+} 
+```
+Would process 20 cubes, so you'd say it processes 20 primitives. 2 in each loop.
+
+```
+module b()
+{
+  for (i = [0:10])
+  {
+    for (j = [0:10])
+    {
+      translate([i,j,0]) sphere(1);
+    }
+  }
+}
+
+foo = 10;
+for (k = [0:foo]) b();
+```
+Would process 1000 spheres, (3 loops of 10) so 1000 primitives.
+
+Exact precision is not required here, magnitude is what is important.
+
+How many primitives are processed in this below script?
+
+-------------------------------------------------------------------------------
+""" + result
+
+  inspectionResult = answerQuestion(prompt)
+
+  if inspectionResult["primitiveCount"] > 10000:
+    return "module result(){text(\"Aborting due to " + str(
+      inspectionResult["primitiveCount"]) + " parts!\")}"
+  elif inspectionResult["primitiveCount"] > 100:
+    print("AI estimation of primitive count: " + str(inspectionResult["primitiveCount"]))
+    print("This is dubious and might break your machine, but we'll try.")
+  else:
+    print("AI estimation of primitive count: " + str(inspectionResult["primitiveCount"]))
+    print("Seems safe to continue.")
 
   # We need to extract things that can't be nested inside module result():
   # 1. Module definitions: module name(...) { ... }
@@ -150,7 +229,7 @@ def resultToScad(result):
   preamble = "\n".join(extracted) + "\n" + "\n".join(top_level_lines)
   body = "\n".join(inside_lines)
 
-  return preamble + "\nmodule result(){ union(){\n" + body + "\n}}"
+  return scad_format.format(preamble + "\nmodule result(){ union(){\n" + body + "\n}}")
 
 
 highLevelSummary = """
@@ -164,3 +243,62 @@ If it attempts to bruteforce a solution by rendering millions<br>
 of bricks as individual cubes, OpenSCAD will either crash from<br>
 std::bad_alloc or timeout after 600 seconds, both causing a score of 0.
 """
+
+if __name__ == "__main__":
+  print(
+    resultToScad(
+      """
+```openscad
+// Pharaoh's Pyramid Construction Plans
+// Specifications:
+//   - 20,000 stones available (500mm cubes)
+//   - 19,019 stones used
+//   - 38 layers
+//   - Height: 19,000mm (19 meters)
+//   - Base: 19,000mm × 19,000mm square
+//   - Orientation: North face aligned with +Y axis
+
+stone_size = 500; // millimeters
+n_base = 38;      // base layer is 38×38 stones
+
+// Smooth marble facade (final external surface)
+module smooth_pyramid() {
+    base = n_base * stone_size;    // 19,000mm
+    height = n_base * stone_size;  // 19,000mm
+    
+    polyhedron(
+        points = [
+            [-base/2, -base/2, 0],  // 0: Southwest corner
+            [base/2, -base/2, 0],   // 1: Southeast corner
+            [base/2, base/2, 0],    // 2: Northeast corner
+            [-base/2, base/2, 0],   // 3: Northwest corner
+            [0, 0, height]          // 4: Apex
+        ],
+        faces = [
+            [0,1,2,3],  // Base
+            [0,1,4],    // South face
+            [1,2,4],    // East face
+            [2,3,4],    // North face (+Y)
+            [3,0,4]     // West face
+        ]
+    );
+}
+
+// Internal stepped stone structure
+module stepped_pyramid() {
+    for (L = [0:n_base-1]) {
+        layer_size = n_base - L;
+        translate([0, 0, L * stone_size + stone_size/2])
+            cube([layer_size * stone_size, layer_size * stone_size, stone_size], center=true);
+    }
+}
+
+// Render marble facade
+color("white", 1.0) 
+    smooth_pyramid();
+
+// Render internal structure
+color("sandybrown", 0.4) 
+    stepped_pyramid();
+```
+  """, ""))

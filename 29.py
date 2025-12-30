@@ -112,6 +112,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   global earlyFail
   score = 0
   bugs = ""
+  import scad_format
 
   if "parts" not in answer:
     return 0, "Answer did not contain a 'parts' key."
@@ -120,20 +121,23 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return 0, "Answer contained too many parts. 10 max"
 
   if subPass == 0:
+    any_posed_changed = False
     for partIndex, part in enumerate(answer["parts"]):
       partName = "29_" + str(partIndex) + "_" + aiEngineName
       needs_regenerate = False
 
       # Determine source file path and check if content changed
-      if part["fileType"] == "STL":
+      if part["fileType"].lower() == "stl":
         source_path = "results/" + partName + ".stl"
         needs_regenerate = _write_if_changed(source_path, part["fileContents"])
 
-      elif part["fileType"] == "OpenSCAD":
+      elif part["fileType"].lower() == "openscad":
         source_path = "results/" + partName + ".scad"
-        needs_regenerate = _write_if_changed(source_path, part["fileContents"])
+        formatted = part["fileContents"]
+        formatted = scad_format.format(formatted, vc.formatConfig)
+        needs_regenerate = _write_if_changed(source_path, formatted)
 
-      elif part["fileType"] == "Python Generating OpenSCAD":
+      elif part["fileType"].lower() == "python generating openscad":
         source_path = "results/" + partName + ".py"
         needs_regenerate = _write_if_changed(source_path, part["fileContents"])
 
@@ -146,7 +150,10 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             bugs += "Python generating OpenSCAD for " + partName + " failed due to " + str(
               e) + "<br>"
 
-      elif part["fileType"] == "Python Generating STL":
+          scad_format.format_file("results/" + partName + ".scad", "results/" + partName + ".scad",
+                                  vc.formatConfig)
+
+      elif part["fileType"].lower() == "python generating stl":
         source_path = "results/" + partName + ".py"
         needs_regenerate = _write_if_changed(source_path, part["fileContents"])
 
@@ -157,6 +164,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                            cwd="results")
           except Exception as e:
             bugs += "Python generating STL for " + partName + " failed due to " + str(e) + "<br>"
+      else:
+        bugs += "Unknown file type '" + part["fileType"] + "' for " + partName + "<br>"
 
       # Generate STL from OpenSCAD if needed
       if os.path.exists("results/" + partName + ".scad") and (
@@ -175,7 +184,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
                 {part["transform"][12:16]}]) import("{partName}.stl");
                         """
       posed_scad_path = "results/" + partName + "_posed.scad"
-      posed_changed = _write_if_changed(posed_scad_path, posed_scad_content)
+      posed_changed = _write_if_changed(posed_scad_path,
+                                        scad_format.format(posed_scad_content, vc.formatConfig))
 
       if os.path.exists("results/" + partName + ".stl") and bugs == "" and (
           needs_regenerate or posed_changed
@@ -187,15 +197,21 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
           bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
             e) + "<br>"
 
+      if needs_regenerate or posed_changed:
+        any_posed_changed = True
+
     # Generate fullposed assembly
-    any_posed_changed = False
+    colourNames = [
+      "Red", "Green", "Blue", "Yellow", "Cyan", "Magenta", "Brown", "White", "Orange", "Grey"
+    ]
     fullposed_scad_content = ""
     for partIndex, part in enumerate(answer["parts"]):
       partName = "29_" + str(partIndex) + "_" + str(aiEngineName)
-      fullposed_scad_content += f"import(\"{partName}_posed.stl\");\n"
+      fullposed_scad_content += f"color(\"{colourNames[partIndex]}\") import(\"{partName}_posed.stl\");\n"
 
     fullposed_scad_path = "results/29_" + str(aiEngineName) + "_fullposed.scad"
-    any_posed_changed = _write_if_changed(fullposed_scad_path, fullposed_scad_content)
+    any_posed_changed |= _write_if_changed(
+      fullposed_scad_path, scad_format.format(fullposed_scad_content, vc.formatConfig))
 
     if bugs == "" and (any_posed_changed
                        or not os.path.exists("results/29_" + str(aiEngineName) + "_fullposed.stl")):
@@ -265,10 +281,10 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
     for i in range(32):
       tests4.append(
-        f"translate([{randomFloat(-350,350)},{randomFloat(-350,350)},0]) cube([40,40,40], center=true);"
+        f"translate([{randomFloat(-120,120)},{randomFloat(-120,120)},0]) cube([40,40,40], center=true);"
       )
       tests10.append(
-        f"translate([{randomFloat(-350,350)},{randomFloat(-350,350)},0]) cube([101,101,40], center=true);"
+        f"translate([{randomFloat(-160,160)},{randomFloat(-160,160)},0]) cube([101,101,40], center=true);"
       )
 
     for partIndex, part in enumerate(answer["parts"]):
@@ -285,6 +301,24 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
         bugs += "Part " + str(
           partIndex
         ) + ".stl allowed a 101mm cube to pass through. Gap between bars should be 100mm or lower.<br>"
+
+      if bugs == "":
+        for i in range(32):
+          if results4[i] == False:
+            scad = "color(\"grey\") import(\"" + partName + ".stl\");\n" + tests4[i]
+            scad = scad_format.format(scad, vc.formatConfig)
+            vc.render_scadText_to_png(
+              scad, "results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png")
+            break
+
+      if not all(results10):
+        for i in range(32):
+          if results10[i] == False:
+            scad = "color(\"grey\") import(\"" + partName + ".stl\");\n" + tests10[i]
+            scad = scad_format.format(scad, vc.formatConfig)
+            vc.render_scadText_to_png(
+              scad, "results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_101mm.png")
+            break
 
     return 1 if bugs == "" else 0, bugs
 
@@ -339,7 +373,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
         partNameB = "29_" + str(partIndexB) + "_" + aiEngineName
         stlFileB = "results/" + partNameB + "_posed.stl"
-        tests.append("difference() {" + stlFileA + "; " + stlFileB + ";}")
+        tests.append("difference() {import(\"" + stlFileA + "\") ; import(\"" + stlFileB + "\")}")
 
       results = vc.hit_tests(stlFileA, tests)
       if any(results):
@@ -349,32 +383,50 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return 1, ""
 
   if subPass == 6:
+    bugs = ""
     for partIndexA, partA in enumerate(answer["parts"]):
       partNameA = "29_" + str(partIndexA) + "_" + aiEngineName
       stlFileA = "results/" + partNameA + "_posed.stl"
 
       tests = [
-        "translate([-180, -180, 0]) cylinder(r=8, h=360, center=true);",
-        "translate([180, -180, 0]) cylinder(r=8, h=360, center=true);",
-        "translate([-180, 180, 0]) cylinder(r=8, h=360, center=true);",
-        "translate([180, 180, 0]) cylinder(r=8, h=360, center=true);",
+        "translate([-180, -180, 400]) cylinder(r=8, h=800, center=true);",
+        "translate([180, -180, 400]) cylinder(r=8, h=800, center=true);",
+        "translate([-180, 180, 400]) cylinder(r=8, h=800, center=true);",
+        "translate([180, 180, 400]) cylinder(r=8, h=800, center=true);",
       ]
 
       results = vc.hit_tests(stlFileA, tests)
       intersectionCount = sum(results)
       if intersectionCount == 0:
-        return 0, "When assembled, part " + str(
+        bugs += "When assembled, part " + str(
           partIndexA
-        ) + " is not held in place by the threaded rods, and will fall out from the build when assembled."
+        ) + " is not held in place by the threaded rods, and will fall out from the build when assembled.\n"
 
       if intersectionCount == 1:
-        return 0, "When assembled, part " + str(
+        bugs += "When assembled, part " + str(
             partIndexA
         ) + " is only held in place by one threaded rod, allowing" \
         " it to rotate around a rod. Since the design brief said no doors or lids," \
         " such a part should not appear in the final design."
 
-    return 1, ""
+      scad = ""
+      for i in range(4):
+        if results[i] == True:
+          scad += f"""
+color("red") intersection() {{
+{tests[i].replace('r=8','r=2')}
+hull() {{
+  translate([0,0,-50]) import("{partNameA}_posed.stl");
+  translate([0,0,50]) import("{partNameA}_posed.stl");
+}} 
+}}
+"""
+      scad += "color(\"grey\") import(\"" + partNameA + "_posed.stl\");\n"
+      scad = scad_format.format(scad, vc.formatConfig)
+      vc.render_scadText_to_png(
+        scad, "results/29_" + str(partIndexA) + "_" + str(aiEngineName) + "_6mm.png")
+
+    return 1 if bugs == "" else 0, bugs
 
   return 10000, "Nobody has gotten this far before... Need to write more parts of the test."
 
@@ -395,14 +447,24 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     return out
 
   if subPass == 2:
-    return "Check to see if the bars in cage segments are correctly sized and spaced."
+    out = ""
+    for partIndex in range(10):
+      if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png"):
+        out += "<img src='29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png' width=320/>"
+      if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_101mm.png"):
+        out += "<img src='29_" + str(partIndex) + "_" + str(
+          aiEngineName) + "_101mm.png' width=320/>"
+    return out + """
+<br>Check to see if the bars in cage segments are correctly sized and spaced. 
+Can a 50mm cube pass through the bars? Does a 100mm cube get blocked?
+"""
 
   if subPass == 3:
     out = "Check to see if the part transform matrices are correct and the cage is correctly sized."
 
     if os.path.exists("results/29_" + aiEngineName + "_fullposed.stl"):
-      vc._render_stl_to_png("results/29_" + aiEngineName + "_fullposed.stl",
-                            "results/29_" + aiEngineName + "_fullposed.png")
+      vc.render_scadText_to_png("include<29_" + aiEngineName + "_fullposed.scad>",
+                                "results/29_" + aiEngineName + "_fullposed.png")
 
       out += "<img src='29_" + aiEngineName + "_fullposed.png' width=640/>"
 
@@ -415,7 +477,11 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     return "Check to see if projected parts intersect each other."
 
   if subPass == 6:
-    return "Check to see if every part is connected via the rod."
+    out = ""
+    for partIndex in range(10):
+      if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_6mm.png"):
+        out += "<img src='29_" + str(partIndex) + "_" + str(aiEngineName) + "_6mm.png' width=320/>"
+    return out + "<br>Check to see if every part is connected via the rod."
 
 
 highLevelSummary = """
@@ -440,4 +506,6 @@ if __name__ == "__main__":
   sys.path.append("placebo_data")
   import q29
   answer = q29.get_response(0)[0]
-  print(gradeAnswer(answer, 0, "OpenSCAD"))
+  gradeAnswer(answer, 0, "OpenSCAD")
+  print(gradeAnswer(answer, 6, "OpenSCAD"))
+  print(resultToNiceReport(answer, 6, "OpenSCAD"))

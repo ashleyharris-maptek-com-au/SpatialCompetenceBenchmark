@@ -75,7 +75,8 @@ structure = {
             "description": "[pitch,yaw,roll] degrees"
           },
           "parameters": {
-            "type": "object"
+            "type": "string",
+            "description": "Any additional prarmeters, as a JSON string"
           }
         },
         "required": ["type", "position", "rotation"],
@@ -335,6 +336,11 @@ def prepareSubpassPrompt(index: int) -> str:
   p = prompt.replace("PARAM_LIGHTS", str(scenario["lights"]))
   p = p.replace("PARAM_SCREEN", str(scenario["screen"]))
   p = p.replace("PARAM_DEVICES", ", ".join(scenario["available_devices"]))
+
+  if not os.path.exists(f"results/49_ref_{index}.png"):
+    prepareSubpassImages(index)
+
+  p += f"[[image:results/49_ref_{index}.png]]"
 
   if index == 1: raise StopIteration
   return p

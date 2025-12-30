@@ -349,7 +349,7 @@ def propagate_laser(origin, direction, mirrors, beam_splitters, world_size, max_
   return segments
 
 
-def resultToScad(answer: dict) -> str:
+def resultToScad(answer: dict, aiEngineName) -> str:
   beamSplitters = answer.get("beamSplitters", [])
   mirrors = answer.get("mirrors", [])
 

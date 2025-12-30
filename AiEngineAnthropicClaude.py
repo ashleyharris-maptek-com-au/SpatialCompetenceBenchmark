@@ -115,6 +115,8 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
   # Get the model's max tokens
   if "claude-sonnet-4-5" in MODEL:
     max_tokens = 64000
+  elif "claude-opus-4-5" in MODEL:
+    max_tokens = 64000
   else:
     max_tokens = 6400000
 
@@ -164,6 +166,15 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
         if isinstance(schema, dict):
           if "propertyOrdering" in schema:
             del schema["propertyOrdering"]
+
+          if "maximum" in schema:
+            del schema["maximum"]
+          if "minimum" in schema:
+            del schema["minimum"]
+          if "minItems" in schema:
+            del schema["minItems"]
+          if "maxItems" in schema:
+            del schema["maxItems"]
           for key, value in schema.items():
             remove_property_ordering(value)
         elif isinstance(schema, list):

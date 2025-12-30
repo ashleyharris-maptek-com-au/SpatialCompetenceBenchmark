@@ -3,9 +3,8 @@ from textwrap import dedent
 
 
 def get_response(subPass: int):
-    """Get the placebo response for this question."""
-    if True:  # Catch-all for any subpass
-        return "eseeeneesessseeesseeeeseessseeeessseeesssssssssssssswwwwwwnnnnnnnnnnnnw"
+  """Get the placebo response for this question."""
+  if True:  # Catch-all for any subpass
+    return "eseeneesessseesseeeseessseeessseesssssssssssssssswwwwwnnnnnnnnnnnnw", ""
 
-
-    return None
+  return None

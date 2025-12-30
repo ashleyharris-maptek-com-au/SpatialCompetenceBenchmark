@@ -90,7 +90,7 @@ def prepareSubpassReferenceScad(index):
   raise StopIteration
 
 
-def resultToScad(result):
+def resultToScad(result, aiEngineName):
 
   if len(result["bricks"]) == 0:
     return ""

@@ -214,9 +214,10 @@ module tetrahedron(){
 """
 
 
-def resultToScad(result):
+def resultToScad(result, aiEngineName):
   scad = "module result(){ "
-  scad += "minkowski(){cube(0.001); union() { "
+  #scad += "minkowski(){cube(0.001); union() { "
+  tetras = []
   printedTetrahedra = 0
   for transform in result["tetrahedra"]:
     try:
@@ -234,9 +235,9 @@ def resultToScad(result):
         continue
 
       mirror_str = "mirror([1,0,0]) " if transform.get("m", 0) != 0 else ""
-      scad += "render() translate([" + str(transform["x"]) + "," + \
+      tetras.append("translate([" + str(transform["x"]) + "," + \
           str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
-          str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") " + mirror_str + "tetrahedron();\n"
+          str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") " + mirror_str + "tetrahedron();\n")
       printedTetrahedra += 1
     except Exception as e:
       print("Dropping a tetrahedron that wasn't valid: " + str(transform) + " " + str(e))
@@ -245,7 +246,18 @@ def resultToScad(result):
     print("Test 19: No valid tetrahedra were provided by the LLM.")
     return ""
 
-  return scad + "}}}\n\n"
+  def divideAndConquer(tetras: list) -> str:
+    if len(tetras) < 50:
+      return "union(){" + "\n".join(tetras) + "}"
+    else:
+      mid = len(tetras) // 2
+      s = "union(){" + divideAndConquer(tetras[:mid]) + "\n}"
+      s += "\n" + divideAndConquer(tetras[mid:])
+      s += "}\n"
+      return s
+
+  scad += divideAndConquer(tetras)
+  scad += "}\n\n"
 
 
 highLevelSummary = """

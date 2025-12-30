@@ -370,7 +370,7 @@ hull() {{
 
 """
 
-  import os
+  import os, scad_format
   os.makedirs("results", exist_ok=True)
   output_path = "results/21_Visualization_" + aiEngineName + "_" + str(len(
     answer["trackPoints"])) + ".png"
@@ -379,6 +379,8 @@ hull() {{
 
   scadFile = "results/21_Visualization_" + aiEngineName + "_" + str(len(
     answer["trackPoints"])) + "temp.scad"
+
+  scadOutput = scad_format.format(scadOutput, vc.formatConfig)
 
   open(scadFile, "w").write(scadOutput)
 
