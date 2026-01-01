@@ -3,8 +3,8 @@ import matplotlib
 
 matplotlib.use('Agg')  # Use non-interactive backend to avoid tkinter threading issues
 
-import VolumeComparison
 from typing import Dict, List, Any, Optional, Set
+from abc import ABC, abstractmethod
 import os
 import base64
 import html
@@ -23,6 +23,552 @@ IGNORE_CACHED_FAILURES = False
 ALL_MODEL_CONFIGS = []
 
 FORCE_ARG = False
+
+# Global reference to current benchmark runner instance (set by subclass)
+_current_runner = None
+
+
+class BenchmarkRunner(ABC):
+  """
+  Abstract base class for benchmark runners.
+  
+  Subclass this to create domain-specific benchmarks (e.g., spatial/geometry benchmarks).
+  Override the abstract methods to customize benchmark behavior.
+  """
+
+  def __init__(self):
+    global _current_runner
+    _current_runner = self
+
+  @abstractmethod
+  def get_benchmark_title(self) -> str:
+    """Return the benchmark title for reports and graphs."""
+    pass
+
+  @abstractmethod
+  def get_benchmark_subtitle(self) -> str:
+    """Return the benchmark subtitle for the landing page."""
+    pass
+
+  def get_benchmark_description(self) -> str:
+    """Return additional HTML description for the landing page header."""
+    return ""
+
+  def get_model_configs(self) -> List[Dict[str, Any]]:
+    """
+    Return list of model configurations to run.
+    Default implementation provides standard configs for major AI providers.
+    Override to add, filter, or replace model configurations.
+    """
+    return get_default_model_configs()
+
+  def get_additional_model_configs(self) -> List[Dict[str, Any]]:
+    """
+    Return additional model configurations to append to defaults.
+    Override to add domain-specific models without replacing the defaults.
+    """
+    return []
+
+  def filter_model_configs(self, configs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Filter or modify the model configurations before use.
+    Override to exclude certain models or modify their settings.
+    
+    Args:
+        configs: The combined list of default + additional configs
+        
+    Returns:
+        Filtered/modified list of configs
+    """
+    return configs
+
+  def can_handle_custom_scoring(self, test_globals: dict) -> bool:
+    """
+    Check if this runner can handle custom scoring for a test.
+    Override to detect domain-specific test patterns.
+    
+    Args:
+        test_globals: The globals dict from the test module
+        
+    Returns:
+        True if this runner should handle scoring for this test
+    """
+    return False
+
+  def process_custom_scoring(self, index: int, subPass: int, result: Any, test_globals: dict,
+                             aiEngineName: str) -> Dict[str, Any]:
+    """
+    Process custom scoring for a test result.
+    Override to implement domain-specific scoring logic.
+    
+    Args:
+        index: Test index
+        subPass: Subpass number
+        result: The AI's result
+        test_globals: The globals dict from the test module
+        aiEngineName: Name of the AI engine
+        
+    Returns:
+        Dict with keys: score, output_image, output_mouseover_image, 
+        reference_image, temp_dir, scoreExplanation, output_hyperlink
+    """
+    return {"score": 0, "scoreExplanation": "Custom scoring not implemented"}
+
+  def run_setup_for_test(self, test_globals: dict) -> None:
+    """
+    Run any custom setup needed for a test during --setup mode.
+    Override to implement domain-specific setup (e.g., building reference models).
+    
+    Args:
+        test_globals: The globals dict from the test module
+    """
+    pass
+
+  def add_arguments(self, parser: argparse.ArgumentParser) -> None:
+    """
+    Add additional command-line arguments.
+    Override to add domain-specific CLI options.
+    
+    Args:
+        parser: The argument parser to add arguments to
+    """
+    pass
+
+  def handle_arguments(self, args: argparse.Namespace) -> None:
+    """
+    Handle custom command-line arguments after parsing.
+    Override to process domain-specific CLI options.
+    
+    Args:
+        args: Parsed command-line arguments
+    """
+    pass
+
+  def get_final_model_configs(self) -> List[Dict[str, Any]]:
+    """Get the final list of model configs after all processing."""
+    configs = self.get_model_configs()
+    configs.extend(self.get_additional_model_configs())
+    return self.filter_model_configs(configs)
+
+  def run(self,
+          test_filter: Optional[Set[int]] = None,
+          model_filter: Optional[Set[str]] = None) -> None:
+    """
+    Run the benchmark with the given filters.
+    
+    Args:
+        test_filter: Optional set of test indices to run
+        model_filter: Optional set of model names to run
+    """
+    global ALL_MODEL_CONFIGS
+
+    configs = self.get_final_model_configs()
+    ALL_MODEL_CONFIGS.clear()
+    ALL_MODEL_CONFIGS.extend(configs)
+
+    for config in configs:
+      if model_filter and config["name"] not in model_filter:
+        continue
+      run_model_config(config, test_filter)
+
+
+def get_default_model_configs() -> List[Dict[str, Any]]:
+  """
+  Returns the default list of model configurations for all major AI providers.
+  """
+  configs = []
+
+  # Human with tools (Placebo)
+  configs.append({
+    "name": "Human with tools",
+    "engine": "placebo",
+    "env_key": None,
+  })
+
+  # OpenAI models
+  openai_base_models = ["gpt-5-nano", "gpt-5-mini", "gpt-5.1", "gpt-5.2"]
+  for model in openai_base_models:
+    configs.append({
+      "name": model,
+      "engine": "openai",
+      "base_model": model,
+      "reasoning": False,
+      "tools": False,
+      "env_key": "OPENAI_API_KEY"
+    })
+    configs.append({
+      "name": f"{model}-HighReasoning",
+      "engine": "openai",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": False,
+      "env_key": "OPENAI_API_KEY"
+    })
+    configs.append({
+      "name": f"{model}-Reasoning-Tools",
+      "engine": "openai",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": True,
+      "env_key": "OPENAI_API_KEY"
+    })
+
+  # Gemini models
+  gemini_base_models = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-pro-preview"]
+  for model in gemini_base_models:
+    configs.append({
+      "name": model,
+      "engine": "gemini",
+      "base_model": model,
+      "reasoning": False,
+      "tools": False,
+      "env_key": "GEMINI_API_KEY"
+    })
+    configs.append({
+      "name": f"{model}-HighReasoning",
+      "engine": "gemini",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": False,
+      "env_key": "GEMINI_API_KEY"
+    })
+    configs.append({
+      "name": f"{model}-Reasoning-Tools",
+      "engine": "gemini",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": True,
+      "env_key": "GEMINI_API_KEY"
+    })
+
+  # XAI/Grok models
+  configs.append({
+    "name": "grok-2-vision-1212",
+    "engine": "xai",
+    "base_model": "grok-2-vision-1212",
+    "reasoning": False,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
+  })
+  configs.append({
+    "name": "grok-4-1-fast-non-reasoning",
+    "engine": "xai",
+    "base_model": "grok-4-1-fast-non-reasoning",
+    "reasoning": False,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
+  })
+  configs.append({
+    "name": "grok-4-1-fast-reasoning",
+    "engine": "xai",
+    "base_model": "grok-4-1-fast-reasoning",
+    "reasoning": 10,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
+  })
+  configs.append({
+    "name": "grok-4-0709-HighReasoning",
+    "engine": "xai",
+    "base_model": "grok-4-0709",
+    "reasoning": 10,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
+  })
+  configs.append({
+    "name": "grok-4-0709",
+    "engine": "xai",
+    "base_model": "grok-4-0709",
+    "reasoning": False,
+    "tools": False,
+    "env_key": "XAI_API_KEY"
+  })
+
+  # Anthropic models
+  anthropic_base_models = ["claude-sonnet-4-5", "claude-opus-4-5"]
+  for model in anthropic_base_models:
+    configs.append({
+      "name": model,
+      "engine": "anthropic",
+      "base_model": model,
+      "reasoning": False,
+      "tools": False,
+      "env_key": "ANTHROPIC_API_KEY"
+    })
+    configs.append({
+      "name": f"{model}-HighReasoning",
+      "engine": "anthropic",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": False,
+      "env_key": "ANTHROPIC_API_KEY"
+    })
+    configs.append({
+      "name": f"{model}-Reasoning-Tools",
+      "engine": "anthropic",
+      "base_model": model,
+      "reasoning": 10,
+      "tools": True,
+      "env_key": "ANTHROPIC_API_KEY"
+    })
+
+  # Amazon Bedrock - Qwen models
+  bedrock_qwen_models = [
+    ("qwen3-32B", "qwen.qwen3-32b-v1:0"),
+    ("qwen3-VL-235B-22B", "qwen.qwen3-vl-235b-a22b"),
+  ]
+  for name, model_id in bedrock_qwen_models:
+    configs.append({
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+
+  # Amazon Bedrock - Llama models
+  bedrock_llama_models = [
+    ("llama3-70b-bedrock", "meta.llama3-70b-instruct-v1:0"),
+    ("llama3-1-405b-bedrock", "meta.llama3-1-405b-instruct-v1:0"),
+  ]
+  for name, model_id in bedrock_llama_models:
+    configs.append({
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-west-2",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+
+  # Amazon Bedrock - Mistral models
+  bedrock_mistral_models = [
+    ("mistral-large-bedrock", "mistral.mistral-large-2402-v1:0"),
+  ]
+  for name, model_id in bedrock_mistral_models:
+    configs.append({
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+
+  # Amazon Nova models
+  nova_models = [("nova-lite", "amazon.nova-lite-v1:0"), ("nova-pro", "amazon.nova-pro-v1:0"),
+                 ("nova-premier", "us.amazon.nova-premier-v1:0")]
+  for name, model_id in nova_models:
+    configs.append({
+      "name": name,
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+    configs.append({
+      "name": name + "-HighReasoning",
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": 10,
+      "tools": False,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+    configs.append({
+      "name": name + "-Reasoning-Tools",
+      "engine": "bedrock",
+      "base_model": model_id,
+      "reasoning": False,
+      "tools": True,
+      "region": "us-east-1",
+      "env_key": "AWS_ACCESS_KEY_ID"
+    })
+
+  return configs
+
+
+def create_argument_parser(runner: BenchmarkRunner) -> argparse.ArgumentParser:
+  """Create the standard argument parser with hooks for runner customization."""
+  parser = argparse.ArgumentParser(description=f"Run {runner.get_benchmark_title()}",
+                                   formatter_class=argparse.RawDescriptionHelpFormatter,
+                                   epilog="""
+Examples:
+  python <script>.py                          # Run all tests on all available models
+  python <script>.py --setup                  # Download/build reference data (run first!)
+  python <script>.py --parallel               # Run all models in parallel
+  python <script>.py --list-models            # List all available model names
+  python <script>.py -t 1,2,3                 # Run only tests 1, 2, 3
+  python <script>.py -t 5-10                  # Run tests 5 through 10
+  python <script>.py -m gpt-5-nano            # Run only gpt-5-nano model
+  python <script>.py -m "gpt-5-nano,gpt-5.1"  # Run multiple specific models
+  python <script>.py -m "nova-*"              # Run all models matching wildcard pattern
+  python <script>.py -m "*-HighReasoning"     # Run all HighReasoning variants
+  python <script>.py -t 1 -m gpt-5-nano       # Run test 1 on gpt-5-nano only
+  python <script>.py --force -m gpt-5-nano    # Re-run without using cached AI responses
+    """)
+
+  parser.add_argument(
+    "-t",
+    "--tests",
+    type=str,
+    help="Comma-separated list of test indices or ranges (e.g., '1,2,3' or '5-10' or '1,5-10,15')")
+  parser.add_argument(
+    "-m",
+    "--models",
+    type=str,
+    help="Comma-separated list of model names or patterns with wildcards (* and ?)")
+  parser.add_argument("--list-models",
+                      action="store_true",
+                      help="List all available model names and exit")
+  parser.add_argument("--force",
+                      action="store_true",
+                      help="Bypass AI response cache (still saves new responses to cache)")
+  parser.add_argument("--offline",
+                      action="store_true",
+                      help="Only use cached results. Do not make any API calls.")
+  parser.add_argument("--unskip", action="store_true", help="Run tests that are currently skipped.")
+  parser.add_argument("--parallel", action="store_true", help="Run all models in parallel")
+  parser.add_argument("--ignore-cached-failures",
+                      action="store_true",
+                      help="Ignore cached empty/error results")
+  parser.add_argument("--setup",
+                      action="store_true",
+                      help="Download and build all reference data without running tests.")
+
+  # Allow runner to add custom arguments
+  runner.add_arguments(parser)
+
+  return parser
+
+
+def run_benchmark_main(runner: BenchmarkRunner, script_file: str = None) -> None:
+  """
+  Main entry point for running a benchmark.
+  Handles argument parsing and dispatches to the runner.
+  
+  Args:
+      runner: The BenchmarkRunner instance
+      script_file: The script file path (for --parallel mode), defaults to __file__ of caller
+  """
+  global UNSKIP, IGNORE_CACHED_FAILURES, FORCE_ARG
+  import sys
+
+  if script_file is None:
+    script_file = sys.argv[0]
+
+  parser = create_argument_parser(runner)
+  args = parser.parse_args()
+
+  # Handle global flags
+  if args.ignore_cached_failures:
+    import CacheLayer
+    CacheLayer.IGNORE_CACHED_FAILURES = True
+    IGNORE_CACHED_FAILURES = True
+    print(
+      "Ignore cached failures: Cached results that are empty, bailed or errored out will be ignored."
+    )
+
+  if args.force:
+    import CacheLayer
+    CacheLayer.FORCE_REFRESH = True
+    FORCE_ARG = True
+    print("Force mode: AI response cache will be bypassed (new responses still cached)")
+
+  if args.offline:
+    import CacheLayer
+    CacheLayer.OFFLINE_MODE = True
+    print("Offline mode: No API calls will be made, cache only.")
+
+  if args.unskip:
+    UNSKIP = True
+
+  # Let runner handle custom arguments
+  runner.handle_arguments(args)
+
+  # Handle --setup mode
+  if args.setup:
+    run_setup()
+    sys.exit(0)
+
+  # Get model configs
+  all_configs = runner.get_final_model_configs()
+  ALL_MODEL_CONFIGS.clear()
+  ALL_MODEL_CONFIGS.extend(all_configs)
+
+  # Handle --parallel mode
+  if args.parallel:
+    if args.models:
+      print("--parallel and --models aren't compatible")
+    cli_args = sys.argv[1:]
+    cli_args.remove("--parallel")
+
+    tasks = []
+    for config in all_configs:
+      tasks.append(subprocess.Popen([sys.executable, script_file, "-m", config["name"], *cli_args]))
+    for task in tasks:
+      task.wait()
+    sys.exit(0)
+
+  # Handle --list-models
+  if args.list_models:
+    print("Available models:")
+    for config in all_configs:
+      env_key = config.get("env_key")
+      available = "✓" if (env_key is None or os.environ.get(env_key)) else f"✗ (needs {env_key})"
+      print(f"  {available} {config['name']}")
+    sys.exit(0)
+
+  # Parse test filter
+  test_filter = None
+  if args.tests:
+    test_filter = parse_test_filter(args.tests)
+    print(f"Running tests: {sorted(test_filter)}")
+
+  # Parse model filter with wildcard support
+  model_filter = None
+  if args.models:
+    import fnmatch
+
+    if args.models == "best":
+      args.models = "gpt-5.2-Reasoning-Tools,gemini-3-pro-preview-Reasoning-Tools,grok-4-0709-HighReasoning,claude-opus-4-5-Reasoning-Tools,qwen3-VL-235B-22B,llama3-1-405b-bedrock,mistral-large-bedrock,nova-premier-Reasoning-Tools"
+    elif args.models == "worst":
+      args.models = "nova-lite,llama3-70b-bedrock,qwen3-32B,claude-sonnet-4-5,grok-2-vision-1212,gemini-2.5-flash-lite,gpt-5-nano"
+
+    all_model_names = [c["name"] for c in all_configs]
+    patterns = [m.strip() for m in args.models.split(",")]
+    matched_models = set()
+
+    for pattern in patterns:
+      if '*' in pattern or '?' in pattern:
+        matches = [
+          name for name in all_model_names if fnmatch.fnmatch(name.lower(), pattern.lower())
+        ]
+        if not matches:
+          print(f"Warning: Pattern '{pattern}' did not match any models")
+        matched_models.update(matches)
+      else:
+        exact_match = next((name for name in all_model_names if name.lower() == pattern.lower()),
+                           None)
+        if exact_match:
+          matched_models.add(exact_match)
+        else:
+          print(f"Error: Model '{pattern}' not found. Use --list-models to see available models.")
+
+    if not matched_models:
+      print("No models matched. Exiting.")
+      sys.exit(1)
+
+    model_filter = matched_models
+    print(f"Running models: {sorted(model_filter)}")
+
+  # Run the benchmark
+  runner.run(test_filter, model_filter)
 
 
 def checkSavedPromptCache(aiEngineName: str, index: int, subPass: int, prompt: str):
@@ -279,11 +825,11 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       subpass_data["score"] = score
       subpass_data["scoreExplanation"] = explanation
 
-    elif "referenceScad" in g or "prepareSubpassReferenceScad" in g:
-      # Some tests require an OpenSCAD comparison to check if the generated
-      # shape closely resembles some reference data.
-      comparison_result = VolumeComparison.compareVolumeAgainstOpenScad(
-        index, subPass, result, g, aiEngineName)
+    elif _current_runner and _current_runner.can_handle_custom_scoring(g):
+      # Custom scoring hook - allows subclasses to handle domain-specific scoring
+      # (e.g., OpenSCAD volume comparison for spatial benchmarks)
+      comparison_result = _current_runner.process_custom_scoring(index, subPass, result, g,
+                                                                 aiEngineName)
       score = comparison_result["score"]
       subpass_data["score"] = score
       subpass_data["output_image"] = comparison_result.get("output_image")
@@ -827,7 +1373,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
   ax.barh(df["Engine"], df["Score"], color='#1f77b4')
   ax.set_xlabel("Score")
   ax.set_ylabel("")
-  ax.set_title("Mesh Benchmark Results")
+  ax.set_title(_current_runner.get_benchmark_title() if _current_runner else "Benchmark Results")
   ax.invert_yaxis()  # Highest score at top
   plt.tight_layout()
   plt.savefig("results/topLevelResults.png", dpi=600)
@@ -900,12 +1446,15 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
   # Generate index.html landing page
   index_lock = FileLock("results/index.html.lock")
   with index_lock, open("results/index.html", "w", encoding="utf-8") as index_file:
-    index_file.write("""<!DOCTYPE html>
+    index_file.write(
+      """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesh Benchmark Results</title>
+    <title>""" +
+      (_current_runner.get_benchmark_title() if _current_runner else "Benchmark Results") +
+      """</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -1045,9 +1594,11 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
 </head>
 <body>
     <div class="header">
-        <h1>Mesh Benchmark Results</h1>
-        <p class="subtitle">Model Evaluation of Spatial Heuristics.</p>
-        <p>Can LLMs use internal visualisation or spatial reasoning to solve problems?</p>
+        <h1>""" +
+      (_current_runner.get_benchmark_title() if _current_runner else "Benchmark Results") + """</h1>
+        <p class="subtitle">""" +
+      (_current_runner.get_benchmark_subtitle() if _current_runner else "") + """</p>
+        """ + (_current_runner.get_benchmark_description() if _current_runner else "") + """
     </div>
     
     <div class="graph-container">
@@ -1176,234 +1727,6 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
   print(f"Longest processing time: {longestProcessor[1]} seconds for test {longestProcessor[0]}")
 
 
-def get_all_model_configs():
-  """
-    Returns a list of all available model configurations.
-    Each config is a dict with: name, engine_module, configure_args, env_key
-    """
-  configs = []
-
-  # Human with tools (Placebo)
-  configs.append({
-    "name": "Human with tools",
-    "engine": "placebo",
-    "env_key": None,  # Always available
-  })
-
-  # OpenAI models
-  openai_base_models = ["gpt-5-nano", "gpt-5-mini", "gpt-5.1", "gpt-5.2"]
-  for model in openai_base_models:
-    configs.append({
-      "name": model,
-      "engine": "openai",
-      "base_model": model,
-      "reasoning": False,
-      "tools": False,
-      "env_key": "OPENAI_API_KEY"
-    })
-    configs.append({
-      "name": f"{model}-HighReasoning",
-      "engine": "openai",
-      "base_model": model,
-      "reasoning": 10,
-      "tools": False,
-      "env_key": "OPENAI_API_KEY"
-    })
-    configs.append({
-      "name": f"{model}-Reasoning-Tools",
-      "engine": "openai",
-      "base_model": model,
-      "reasoning": 10,
-      "tools": True,
-      "env_key": "OPENAI_API_KEY"
-    })
-
-  # Gemini models
-  gemini_base_models = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-pro-preview"]
-  for model in gemini_base_models:
-    configs.append({
-      "name": model,
-      "engine": "gemini",
-      "base_model": model,
-      "reasoning": False,
-      "tools": False,
-      "env_key": "GEMINI_API_KEY"
-    })
-    configs.append({
-      "name": f"{model}-HighReasoning",
-      "engine": "gemini",
-      "base_model": model,
-      "reasoning": 10,
-      "tools": False,
-      "env_key": "GEMINI_API_KEY"
-    })
-    configs.append({
-      "name": f"{model}-Reasoning-Tools",
-      "engine": "gemini",
-      "base_model": model,
-      "reasoning": 10,
-      "tools": True,
-      "env_key": "GEMINI_API_KEY"
-    })
-
-  # XAI/Grok models. These are a bit weird with their reasoning support.
-
-  configs.append({
-    "name": "grok-2-vision-1212",
-    "engine": "xai",
-    "base_model": "grok-2-vision-1212",
-    "reasoning": False,
-    "tools": False,
-    "env_key": "XAI_API_KEY"
-  })
-  configs.append({
-    "name": "grok-4-1-fast-non-reasoning",
-    "engine": "xai",
-    "base_model": "grok-4-1-fast-non-reasoning",
-    "reasoning": False,
-    "tools": False,
-    "env_key": "XAI_API_KEY"
-  })
-  configs.append({
-    "name": "grok-4-1-fast-reasoning",
-    "engine": "xai",
-    "base_model": "grok-4-1-fast-reasoning",
-    "reasoning": 10,
-    "tools": False,
-    "env_key": "XAI_API_KEY"
-  })
-  configs.append({
-    "name": "grok-4-0709-HighReasoning",
-    "engine": "xai",
-    "base_model": "grok-4-0709",
-    "reasoning": 10,
-    "tools": False,
-    "env_key": "XAI_API_KEY"
-  })
-  configs.append({
-    "name": "grok-4-0709",
-    "engine": "xai",
-    "base_model": "grok-4-0709",
-    "reasoning": False,
-    "tools": False,
-    "env_key": "XAI_API_KEY"
-  })
-
-  # Anthropic models
-  anthropic_base_models = ["claude-sonnet-4-5", "claude-opus-4-5"]
-  for model in anthropic_base_models:
-    configs.append({
-      "name": model,
-      "engine": "anthropic",
-      "base_model": model,
-      "reasoning": False,
-      "tools": False,
-      "env_key": "ANTHROPIC_API_KEY"
-    })
-    configs.append({
-      "name": f"{model}-HighReasoning",
-      "engine": "anthropic",
-      "base_model": model,
-      "reasoning": 10,
-      "tools": False,
-      "env_key": "ANTHROPIC_API_KEY"
-    })
-    configs.append({
-      "name": f"{model}-Reasoning-Tools",
-      "engine": "anthropic",
-      "base_model": model,
-      "reasoning": 10,
-      "tools": True,
-      "env_key": "ANTHROPIC_API_KEY"
-    })
-
-  # Amazon Bedrock models (Qwen, Llama, Mistral, etc.)
-  # Qwen3 models on Bedrock
-  bedrock_qwen_models = [
-    ("qwen3-32B", "qwen.qwen3-32b-v1:0"),
-    ("qwen3-VL-235B-22B", "qwen.qwen3-vl-235b-a22b"),
-  ]
-  for name, model_id in bedrock_qwen_models:
-    configs.append({
-      "name": name,
-      "engine": "bedrock",
-      "base_model": model_id,
-      "reasoning": False,
-      "tools": False,
-      "region": "us-east-1",
-      "env_key": "AWS_ACCESS_KEY_ID"
-    })
-
-  # Llama models on Bedrock
-  bedrock_llama_models = [
-    ("llama3-70b-bedrock", "meta.llama3-70b-instruct-v1:0"),
-    ("llama3-1-405b-bedrock", "meta.llama3-1-405b-instruct-v1:0"),
-  ]
-  for name, model_id in bedrock_llama_models:
-    configs.append({
-      "name": name,
-      "engine": "bedrock",
-      "base_model": model_id,
-      "reasoning": False,
-      "tools": False,
-      "region": "us-west-2",
-      "env_key": "AWS_ACCESS_KEY_ID"
-    })
-
-  # Mistral models on Bedrock
-  bedrock_mistral_models = [
-    ("mistral-large-bedrock", "mistral.mistral-large-2402-v1:0"),
-  ]
-  for name, model_id in bedrock_mistral_models:
-    configs.append({
-      "name": name,
-      "engine": "bedrock",
-      "base_model": model_id,
-      "reasoning": False,
-      "tools": False,
-      "region": "us-east-1",
-      "env_key": "AWS_ACCESS_KEY_ID"
-    })
-
-  nova_models = [("nova-lite", "amazon.nova-lite-v1:0"), ("nova-pro", "amazon.nova-pro-v1:0"),
-                 ("nova-premier", "us.amazon.nova-premier-v1:0")]
-
-  # Add Nova models to configs
-  for name, model_id in nova_models:
-    configs.append({
-      "name": name,
-      "engine": "bedrock",
-      "base_model": model_id,
-      "reasoning": False,
-      "tools": False,
-      "region": "us-east-1",
-      "env_key": "AWS_ACCESS_KEY_ID"
-    })
-
-    configs.append({
-      "name": name + "-HighReasoning",
-      "engine": "bedrock",
-      "base_model": model_id,
-      "reasoning": 10,
-      "tools": False,
-      "region": "us-east-1",
-      "env_key": "AWS_ACCESS_KEY_ID"
-    })
-
-    # With tools (code interpreter + web grounding)
-    configs.append({
-      "name": name + "-Reasoning-Tools",
-      "engine": "bedrock",
-      "base_model": model_id,
-      "reasoning": False,
-      "tools": True,
-      "region": "us-east-1",
-      "env_key": "AWS_ACCESS_KEY_ID"
-    })
-
-  return configs
-
-
 def run_model_config(config: dict, test_filter: Optional[Set[int]] = None):
   """Run tests for a single model configuration."""
   name = config["name"]
@@ -1499,22 +1822,9 @@ def run_setup():
         print(f"    Running setup()...")
         test_globals["setup"]()
 
-      # If there's reference data generation, trigger it
-      if "prepareSubpassReferenceScad" in test_globals:
-        print(f"    Building OpenSCAD reference models...")
-        subpass = 0
-        while True:
-          try:
-            out = test_globals["prepareSubpassReferenceScad"](subpass)
-            subpass += 1
-            if out is None or out == "":
-              break
-          except StopIteration:
-            break
-          except Exception as e:
-            print(f"    Warning: Reference build for subpass {subpass} failed: {e}")
-            break
-        print(f"    Built {subpass} reference models")
+      # If there's custom setup needed, let the runner handle it
+      if _current_runner:
+        _current_runner.run_setup_for_test(test_globals)
 
       successful += 1
       print(f"    ✓ OK")
@@ -1535,167 +1845,13 @@ def run_setup():
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="Run AI benchmark tests",
-                                   formatter_class=argparse.RawDescriptionHelpFormatter,
-                                   epilog="""
-Examples:
-  python TestRunner.py                          # Run all tests on all available models
-  python TestRunner.py --setup                  # Download/build reference data (run first!)
-  python TestRunner.py --parallel               # Run all models in parallel
-  python TestRunner.py --list-models            # List all available model names
-  python TestRunner.py -t 1,2,3                 # Run only tests 1, 2, 3
-  python TestRunner.py -t 5-10                  # Run tests 5 through 10
-  python TestRunner.py -m gpt-5-nano            # Run only gpt-5-nano model
-  python TestRunner.py -m "gpt-5-nano,gpt-5.1"  # Run multiple specific models
-  python TestRunner.py -m "nova-*"              # Run all models matching wildcard pattern
-  python TestRunner.py -m "*-HighReasoning"     # Run all HighReasoning variants
-  python TestRunner.py -t 1 -m gpt-5-nano       # Run test 1 on gpt-5-nano only
-  python TestRunner.py --force -m gpt-5-nano    # Re-run without using cached AI responses
-        """)
-  parser.add_argument(
-    "-t",
-    "--tests",
-    type=str,
-    help="Comma-separated list of test indices or ranges (e.g., '1,2,3' or '5-10' or '1,5-10,15')")
-  parser.add_argument(
-    "-m",
-    "--models",
-    type=str,
-    help=
-    "Comma-separated list of model names or patterns with wildcards (* and ?) to run (use --list-models to see available names)"
-  )
-  parser.add_argument("--list-models",
-                      action="store_true",
-                      help="List all available model names and exit")
-  parser.add_argument("--force",
-                      action="store_true",
-                      help="Bypass AI response cache (still saves new responses to cache)")
-
-  parser.add_argument("--offline",
-                      action="store_true",
-                      help="Only used cached results. Do not make any API calls.")
-
-  parser.add_argument("--unskip", action="store_true", help="Run tests that are currently skipped.")
-
-  parser.add_argument("--parallel", action="store_true", help="Run all models in parallel")
-
-  parser.add_argument(
-    "--ignore-cached-failures",
-    action="store_true",
-    help=
-    "If an AI returns empty, bails or errors out, that result is cached. This ignores those cached results."
-  )
-
-  parser.add_argument(
-    "--setup",
-    action="store_true",
-    help=
-    "Download and build all reference data without running tests. Execute all test files to trigger asset downloads/builds."
-  )
-
-  args = parser.parse_args()
-
-  if args.ignore_cached_failures:
-    import CacheLayer
-    CacheLayer.IGNORE_CACHED_FAILURES = True
-    IGNORE_CACHED_FAILURES = True
-    print(
-      "Ignore cached failures: Cached results that are empty, bailed or errored out will be ignored."
-    )
-
-  # Set force refresh flag in CacheLayer
-  if args.force:
-    import CacheLayer
-    CacheLayer.FORCE_REFRESH = True
-    FORCE_ARG = True
-    print("Force mode: AI response cache will be bypassed (new responses still cached)")
-
-  if args.offline:
-    import CacheLayer
-    CacheLayer.OFFLINE_MODE = True
-    print("Offline mode: No API calls will be made, cache only.")
-
-  if args.unskip: UNSKIP = True
-
-  # Handle --setup mode: execute all test files to build reference data
-  if args.setup:
-    run_setup()
-    exit(0)
-
-  # Populate global for perfect score propagation hack
-  all_configs = get_all_model_configs()
-  ALL_MODEL_CONFIGS.clear()
-  ALL_MODEL_CONFIGS.extend(all_configs)
-
-  if args.parallel:
-    if args.models: print("--parallel and --model aren't compatible")
-    import sys
-    args = sys.argv[1:]
-    args.remove("--parallel")
-
-    tasks = []
-    for config in all_configs:
-      tasks.append(subprocess.Popen([sys.executable, __file__, "-m", config["name"], *args]))
-    for task in tasks:
-      task.wait()
-    exit(0)
-
-  if args.list_models:
-    print("Available models:")
-    for config in all_configs:
-      env_key = config.get("env_key")
-      available = "✓" if (env_key is None or os.environ.get(env_key)) else f"✗ (needs {env_key})"
-      print(f"  {available} {config['name']}")
-    exit(0)
-
-  # Parse test filter
-  test_filter = None
-  if args.tests:
-    test_filter = parse_test_filter(args.tests)
-    print(f"Running tests: {sorted(test_filter)}")
-
-  # Parse model filter with wildcard support
-  model_filter = None
-  if args.models:
-    import fnmatch
-
-    if args.models == "best":
-      args.models = "gpt-5.2-Reasoning-Tools,gemini-3-pro-preview-Reasoning-Tools,grok-4-0709-HighReasoning,claude-opus-4-5-Reasoning-Tools,qwen3-VL-235B-22B,llama3-1-405b-bedrock,mistral-large-bedrock,nova-premier-Reasoning-Tools"
-    elif args.models == "worst":
-      args.models = "nova-lite,llama3-70b-bedrock,qwen3-32B,claude-sonnet-4-5,grok-2-vision-1212,gemini-2.5-flash-lite,gpt-5-nano"
-
-    all_model_names = [c["name"] for c in all_configs]
-    patterns = [m.strip() for m in args.models.split(",")]
-    matched_models = set()
-
-    for pattern in patterns:
-      # Check if pattern contains wildcards
-      if '*' in pattern or '?' in pattern:
-        matches = [
-          name for name in all_model_names if fnmatch.fnmatch(name.lower(), pattern.lower())
-        ]
-        if not matches:
-          print(f"Warning: Pattern '{pattern}' did not match any models")
-        matched_models.update(matches)
-      else:
-        # Exact match (case-insensitive)
-        exact_match = next((name for name in all_model_names if name.lower() == pattern.lower()),
-                           None)
-        if exact_match:
-          matched_models.add(exact_match)
-        else:
-          print(f"Error: Model '{pattern}' not found. Use --list-models to see available models.")
-
-    if not matched_models:
-      print("No models matched. Exiting.")
-      import sys
-      sys.exit(1)
-
-    model_filter = matched_models
-    print(f"Running models: {sorted(model_filter)}")
-
-  # Run selected configurations
-  for config in all_configs:
-    if model_filter and config["name"] not in model_filter:
-      continue
-    run_model_config(config, test_filter)
+  # TestRunner is now a library module. Use MeshBenchmark.py to run the spatial benchmark.
+  print("=" * 60)
+  print("TestRunner.py is now a library module.")
+  print("")
+  print("To run the Mesh Benchmark (spatial/geometry tests), use:")
+  print("  python MeshBenchmark.py")
+  print("")
+  print("To create your own benchmark, subclass BenchmarkRunner.")
+  print("See MeshBenchmark.py for an example implementation.")
+  print("=" * 60)
