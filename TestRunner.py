@@ -15,12 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from filelock import FileLock
 from CacheLayer import CacheLayer as cl
 
-try:
-  import PIL, numpy, scipy
-except ImportError:
-  print("WARNING: pillow, numpy and scipy are required by some tests. Please install them.")
-  exit(1)
-
 global UNSKIP
 UNSKIP = False
 IGNORE_CACHED_FAILURES = False
@@ -157,7 +151,10 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
   if not os.path.exists(str(index) + ".py"):
     raise StopIteration
 
-  exec(open("" + str(index) + ".py", encoding="utf-8").read(), g)
+  try:
+    exec(open("" + str(index) + ".py", encoding="utf-8").read(), g)
+  except ImportError:
+    print("Missing dependancy. Run 'pip install -r requirements.txt' before running!")
 
   if "skip" in g and not UNSKIP:
     return {"average_score": 0, "total_score": 0, "subpass_count": 0, "subpass_results": []}

@@ -883,7 +883,7 @@ def generate_room_scad(prob):
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
-  import VolumeComparison as vc
+  import OpenScad as vc
   import os
 
   prob = problems[subPass]

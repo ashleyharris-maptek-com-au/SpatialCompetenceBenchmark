@@ -5,7 +5,7 @@ import tempfile
 import json
 import hashlib
 
-import VolumeComparison as vc
+import OpenScad as vc
 
 # Cache for grading and visualization results
 _cache_dir = os.path.join(tempfile.gettempdir(), "22_orbital_cache")

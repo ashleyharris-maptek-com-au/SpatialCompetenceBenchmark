@@ -1,5 +1,5 @@
 import os
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "Painting a 3D scene in ASCII, with lighting."
 
@@ -26,18 +26,18 @@ Return the canvas as a string, with:
 """
 
 structure = {
-    "type": "object",
-    "properties": {
-        "reasoning": {
-            "type": "string"
-        },
-        "painting": {
-            "type": "string"
-        }
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
     },
-    "additionalProperties": False,
-    "propertyOrdering": ["reasoning", "painting"],
-    "required": ["reasoning", "painting"]
+    "painting": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": False,
+  "propertyOrdering": ["reasoning", "painting"],
+  "required": ["reasoning", "painting"]
 }
 
 
@@ -201,7 +201,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     answer_lines = [l[0:min(len(l), gridSize)] for l in answer_lines]
 
     html += "<td><pre style='font:monospace;font-size:4px;line-height:4px;'>" + "\n".join(
-        answer_lines) + "</pre>"
+      answer_lines) + "</pre>"
     html += f"</td><td>Answer has {len(answer_lines)} lines, reference has {len(reference_lines)} lines.</td>"
     return html
 
@@ -233,9 +233,9 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
 if __name__ == "__main__":
   gradeAnswer(
-      {
-          "painting":
-          """
+    {
+      "painting":
+      """
               ##
              ####
              "#''
@@ -269,7 +269,7 @@ if __name__ == "__main__":
         "''
          '
         """.rstrip().lstrip("\n")
-      }, 1, "Placebo")
+    }, 1, "Placebo")
 
 highLevelSummary = """
 This requires drawing and shading a 3D scene in ascii art, up to 256x256

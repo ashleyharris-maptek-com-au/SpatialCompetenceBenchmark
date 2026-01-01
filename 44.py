@@ -1,7 +1,7 @@
 import random, os, math, heapq
 import numpy as np
 from scipy.ndimage import gaussian_filter
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "Can you navigate a mountain range without a heightmap?"
 

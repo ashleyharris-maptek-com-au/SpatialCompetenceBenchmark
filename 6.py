@@ -1,5 +1,5 @@
 import itertools
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "Voxel Grid Projection - shadow coverage and no symmetries"
 

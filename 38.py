@@ -21,16 +21,29 @@ Assume uniform density for all objects (center of mass = geometric center).
 """
 
 structure = {
-  "type": "object", "properties": {
-    "reasoning": {"type": "string"}, "isStable": {"type": "boolean"}, "tippingObject":
-    {"type": "integer", "description":
-     "Object number that tips first (1-indexed), or 0 if stable"}, "combinedCenterOfMass": {
-       "type": "array", "items": {"type": "number"}, "description":
-       "[x, y, z] of the combined center of mass"
-     }
-  }, "propertyOrdering": ["reasoning", "isStable", "tippingObject", "combinedCenterOfMass"],
-  "required": ["reasoning", "isStable", "combinedCenterOfMass",
-               "tippingObject"], "additionalProperties": False
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
+    "isStable": {
+      "type": "boolean"
+    },
+    "tippingObject": {
+      "type": "integer",
+      "description": "Object number that tips first (1-indexed), or 0 if stable"
+    },
+    "combinedCenterOfMass": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "[x, y, z] of the combined center of mass"
+    }
+  },
+  "propertyOrdering": ["reasoning", "isStable", "tippingObject", "combinedCenterOfMass"],
+  "required": ["reasoning", "isStable", "combinedCenterOfMass", "tippingObject"],
+  "additionalProperties": False
 }
 
 
@@ -89,10 +102,28 @@ def check_stability(objects):
 problems = [
   {
     "name":
-    "Simple centered stack", "objects": [
-      {"mass": 10, "x_min": 0, "x_max": 4, "y_min": 0, "y_max": 4, "z_min": 0, "z_max": 2},
-      {"mass": 5, "x_min": 1, "x_max": 3, "y_min": 1, "y_max": 3, "z_min": 2, "z_max": 4},
-    ], "description":
+    "Simple centered stack",
+    "objects": [
+      {
+        "mass": 10,
+        "x_min": 0,
+        "x_max": 4,
+        "y_min": 0,
+        "y_max": 4,
+        "z_min": 0,
+        "z_max": 2
+      },
+      {
+        "mass": 5,
+        "x_min": 1,
+        "x_max": 3,
+        "y_min": 1,
+        "y_max": 3,
+        "z_min": 2,
+        "z_max": 4
+      },
+    ],
+    "description":
     """
 Object 1: Mass 10 kg, occupies region X:[0,4], Y:[0,4], Z:[0,2] (a 4x4x2 block on ground)
 Object 2: Mass 5 kg, occupies region X:[1,3], Y:[1,3], Z:[2,4] (a 2x2x2 block centered on top)
@@ -100,10 +131,28 @@ Object 2: Mass 5 kg, occupies region X:[1,3], Y:[1,3], Z:[2,4] (a 2x2x2 block ce
   },
   {
     "name":
-    "Offset but stable", "objects": [
-      {"mass": 20, "x_min": 0, "x_max": 6, "y_min": 0, "y_max": 4, "z_min": 0, "z_max": 1},
-      {"mass": 5, "x_min": 4, "x_max": 6, "y_min": 1, "y_max": 3, "z_min": 1, "z_max": 3},
-    ], "description":
+    "Offset but stable",
+    "objects": [
+      {
+        "mass": 20,
+        "x_min": 0,
+        "x_max": 6,
+        "y_min": 0,
+        "y_max": 4,
+        "z_min": 0,
+        "z_max": 1
+      },
+      {
+        "mass": 5,
+        "x_min": 4,
+        "x_max": 6,
+        "y_min": 1,
+        "y_max": 3,
+        "z_min": 1,
+        "z_max": 3
+      },
+    ],
+    "description":
     """
 Object 1: Mass 20 kg, occupies region X:[0,6], Y:[0,4], Z:[0,1] (a 6x4x1 base plate)
 Object 2: Mass 5 kg, occupies region X:[4,6], Y:[1,3], Z:[1,3] (a 2x2x2 block offset to one side)
@@ -111,10 +160,28 @@ Object 2: Mass 5 kg, occupies region X:[4,6], Y:[1,3], Z:[1,3] (a 2x2x2 block of
   },
   {
     "name":
-    "Overhang - will tip", "objects": [
-      {"mass": 5, "x_min": 0, "x_max": 2, "y_min": 0, "y_max": 2, "z_min": 0, "z_max": 2},
-      {"mass": 10, "x_min": 1, "x_max": 5, "y_min": 0, "y_max": 2, "z_min": 2, "z_max": 3},
-    ], "description":
+    "Overhang - will tip",
+    "objects": [
+      {
+        "mass": 5,
+        "x_min": 0,
+        "x_max": 2,
+        "y_min": 0,
+        "y_max": 2,
+        "z_min": 0,
+        "z_max": 2
+      },
+      {
+        "mass": 10,
+        "x_min": 1,
+        "x_max": 5,
+        "y_min": 0,
+        "y_max": 2,
+        "z_min": 2,
+        "z_max": 3
+      },
+    ],
+    "description":
     """
 Object 1: Mass 5 kg, occupies region X:[0,2], Y:[0,2], Z:[0,2] (small base block)
 Object 2: Mass 10 kg, occupies region X:[1,5], Y:[0,2], Z:[2,3] (heavier block overhanging significantly)
@@ -122,11 +189,37 @@ Object 2: Mass 10 kg, occupies region X:[1,5], Y:[0,2], Z:[2,3] (heavier block o
   },
   {
     "name":
-    "Three object tower", "objects": [
-      {"mass": 10, "x_min": 0, "x_max": 4, "y_min": 0, "y_max": 4, "z_min": 0, "z_max": 1},
-      {"mass": 8, "x_min": 0.5, "x_max": 3.5, "y_min": 0.5, "y_max": 3.5, "z_min": 1, "z_max": 2},
-      {"mass": 3, "x_min": 1, "x_max": 3, "y_min": 1, "y_max": 3, "z_min": 2, "z_max": 4},
-    ], "description":
+    "Three object tower",
+    "objects": [
+      {
+        "mass": 10,
+        "x_min": 0,
+        "x_max": 4,
+        "y_min": 0,
+        "y_max": 4,
+        "z_min": 0,
+        "z_max": 1
+      },
+      {
+        "mass": 8,
+        "x_min": 0.5,
+        "x_max": 3.5,
+        "y_min": 0.5,
+        "y_max": 3.5,
+        "z_min": 1,
+        "z_max": 2
+      },
+      {
+        "mass": 3,
+        "x_min": 1,
+        "x_max": 3,
+        "y_min": 1,
+        "y_max": 3,
+        "z_min": 2,
+        "z_max": 4
+      },
+    ],
+    "description":
     """
 Object 1: Mass 10 kg, occupies region X:[0,4], Y:[0,4], Z:[0,1] (4x4x1 base)
 Object 2: Mass 8 kg, occupies region X:[0.5,3.5], Y:[0.5,3.5], Z:[1,2] (3x3x1 middle)
@@ -135,11 +228,37 @@ Object 3: Mass 3 kg, occupies region X:[1,3], Y:[1,3], Z:[2,4] (2x2x2 top)
   },
   {
     "name":
-    "Asymmetric unstable tower", "objects": [
-      {"mass": 10, "x_min": 0, "x_max": 3, "y_min": 0, "y_max": 3, "z_min": 0, "z_max": 1},
-      {"mass": 5, "x_min": 1.5, "x_max": 3, "y_min": 0, "y_max": 3, "z_min": 1, "z_max": 2},
-      {"mass": 20, "x_min": 2, "x_max": 4, "y_min": 0.5, "y_max": 2.5, "z_min": 2, "z_max": 4},
-    ], "description":
+    "Asymmetric unstable tower",
+    "objects": [
+      {
+        "mass": 10,
+        "x_min": 0,
+        "x_max": 3,
+        "y_min": 0,
+        "y_max": 3,
+        "z_min": 0,
+        "z_max": 1
+      },
+      {
+        "mass": 5,
+        "x_min": 1.5,
+        "x_max": 3,
+        "y_min": 0,
+        "y_max": 3,
+        "z_min": 1,
+        "z_max": 2
+      },
+      {
+        "mass": 20,
+        "x_min": 2,
+        "x_max": 4,
+        "y_min": 0.5,
+        "y_max": 2.5,
+        "z_min": 2,
+        "z_max": 4
+      },
+    ],
+    "description":
     """
 Object 1: Mass 10 kg, occupies region X:[0,3], Y:[0,3], Z:[0,1] (3x3x1 base)
 Object 2: Mass 5 kg, occupies region X:[1.5,3], Y:[0,3], Z:[1,2] (offset to right side)
@@ -162,8 +281,13 @@ def generate_tower_problem(num_objects, seed):
   # Start with a base
   base_size = random.uniform(3, 6)
   objects.append({
-    "mass": random.uniform(5, 20), "x_min": 0, "x_max": base_size, "y_min": 0, "y_max": base_size,
-    "z_min": 0, "z_max": random.uniform(0.5, 2)
+    "mass": random.uniform(5, 20),
+    "x_min": 0,
+    "x_max": base_size,
+    "y_min": 0,
+    "y_max": base_size,
+    "z_min": 0,
+    "z_max": random.uniform(0.5, 2)
   })
   current_z = objects[0]["z_max"]
 
@@ -185,8 +309,13 @@ def generate_tower_problem(num_objects, seed):
     cy = prev_cy + offset_y
 
     objects.append({
-      "mass": random.uniform(2, 15), "x_min": cx - size_x / 2, "x_max": cx + size_x / 2, "y_min":
-      cy - size_y / 2, "y_max": cy + size_y / 2, "z_min": current_z, "z_max": current_z + height
+      "mass": random.uniform(2, 15),
+      "x_min": cx - size_x / 2,
+      "x_max": cx + size_x / 2,
+      "y_min": cy - size_y / 2,
+      "y_max": cy + size_y / 2,
+      "z_min": current_z,
+      "z_max": current_z + height
     })
     current_z += height
 
@@ -214,23 +343,90 @@ hard_problems_data = [
 for num_obj, seed in hard_problems_data:
   objs = generate_tower_problem(num_obj, seed)
   problems.append({
-    "name": f"{num_obj}-object tower - HARD", "objects": objs, "description":
-    format_objects_description(objs)
+    "name": f"{num_obj}-object tower - HARD",
+    "objects": objs,
+    "description": format_objects_description(objs)
   })
 
 # Add a specific challenging cantilever problem
 problems.append({
   "name":
-  "Complex cantilever with counterweight - HARD", "objects": [
-    {"mass": 50, "x_min": 0, "x_max": 8, "y_min": 0, "y_max": 4, "z_min": 0, "z_max": 1},
-    {"mass": 30, "x_min": 6, "x_max": 8, "y_min": 0.5, "y_max": 3.5, "z_min": 1, "z_max": 3},
-    {"mass": 5, "x_min": 7, "x_max": 11, "y_min": 1, "y_max": 3, "z_min": 3, "z_max": 4},
-    {"mass": 25, "x_min": 9, "x_max": 12, "y_min": 0.5, "y_max": 3.5, "z_min": 4, "z_max": 6},
-    {"mass": 100, "x_min": -2, "x_max": 1, "y_min": 0, "y_max": 4, "z_min": 1, "z_max": 2},
-    {"mass": 15, "x_min": 10, "x_max": 14, "y_min": 1, "y_max": 3, "z_min": 6, "z_max": 8},
-    {"mass": 8, "x_min": 11, "x_max": 15, "y_min": 1.2, "y_max": 2.8, "z_min": 8, "z_max": 9},
-    {"mass": 3, "x_min": 13, "x_max": 16, "y_min": 1.5, "y_max": 2.5, "z_min": 9, "z_max": 10},
-  ], "description":
+  "Complex cantilever with counterweight - HARD",
+  "objects": [
+    {
+      "mass": 50,
+      "x_min": 0,
+      "x_max": 8,
+      "y_min": 0,
+      "y_max": 4,
+      "z_min": 0,
+      "z_max": 1
+    },
+    {
+      "mass": 30,
+      "x_min": 6,
+      "x_max": 8,
+      "y_min": 0.5,
+      "y_max": 3.5,
+      "z_min": 1,
+      "z_max": 3
+    },
+    {
+      "mass": 5,
+      "x_min": 7,
+      "x_max": 11,
+      "y_min": 1,
+      "y_max": 3,
+      "z_min": 3,
+      "z_max": 4
+    },
+    {
+      "mass": 25,
+      "x_min": 9,
+      "x_max": 12,
+      "y_min": 0.5,
+      "y_max": 3.5,
+      "z_min": 4,
+      "z_max": 6
+    },
+    {
+      "mass": 100,
+      "x_min": -2,
+      "x_max": 1,
+      "y_min": 0,
+      "y_max": 4,
+      "z_min": 1,
+      "z_max": 2
+    },
+    {
+      "mass": 15,
+      "x_min": 10,
+      "x_max": 14,
+      "y_min": 1,
+      "y_max": 3,
+      "z_min": 6,
+      "z_max": 8
+    },
+    {
+      "mass": 8,
+      "x_min": 11,
+      "x_max": 15,
+      "y_min": 1.2,
+      "y_max": 2.8,
+      "z_min": 8,
+      "z_max": 9
+    },
+    {
+      "mass": 3,
+      "x_min": 13,
+      "x_max": 16,
+      "y_min": 1.5,
+      "y_max": 2.5,
+      "z_min": 9,
+      "z_max": 10
+    },
+  ],
+  "description":
   """
 Object 1: Mass 50 kg, X:[0,8], Y:[0,4], Z:[0,1] (large base plate)
 Object 2: Mass 30 kg, X:[6,8], Y:[0.5,3.5], Z:[1,3] (support pillar on right)
@@ -248,19 +444,109 @@ This is a cantilever structure with a heavy counterweight. Is it balanced?
 # Add a precarious balance problem
 problems.append({
   "name":
-  "Precarious multi-branch balance - HARD", "objects": [
-    {"mass": 100, "x_min": 0, "x_max": 10, "y_min": 0, "y_max": 10, "z_min": 0, "z_max": 0.5},
-    {"mass": 20, "x_min": 0, "x_max": 2, "y_min": 4, "y_max": 6, "z_min": 0.5, "z_max": 4},
-    {"mass": 20, "x_min": 8, "x_max": 10, "y_min": 4, "y_max": 6, "z_min": 0.5, "z_max": 4},
-    {"mass": 15, "x_min": 4, "x_max": 6, "y_min": 0, "y_max": 2, "z_min": 0.5, "z_max": 3},
-    {"mass": 15, "x_min": 4, "x_max": 6, "y_min": 8, "y_max": 10, "z_min": 0.5, "z_max": 3},
-    {"mass": 50, "x_min": -1, "x_max": 3, "y_min": 3.5, "y_max": 6.5, "z_min": 4, "z_max": 5},
-    {"mass": 45, "x_min": 7, "x_max": 11, "y_min": 3.5, "y_max": 6.5, "z_min": 4, "z_max": 5},
-    {"mass": 30, "x_min": 3, "x_max": 7, "y_min": -1, "y_max": 3, "z_min": 3, "z_max": 4},
-    {"mass": 35, "x_min": 3, "x_max": 7, "y_min": 7, "y_max": 11, "z_min": 3, "z_max": 4},
-    {"mass": 10, "x_min": -2, "x_max": 0, "y_min": 4, "y_max": 6, "z_min": 5, "z_max": 7},
-    {"mass": 12, "x_min": 10, "x_max": 12, "y_min": 4, "y_max": 6, "z_min": 5, "z_max": 7},
-  ], "description":
+  "Precarious multi-branch balance - HARD",
+  "objects": [
+    {
+      "mass": 100,
+      "x_min": 0,
+      "x_max": 10,
+      "y_min": 0,
+      "y_max": 10,
+      "z_min": 0,
+      "z_max": 0.5
+    },
+    {
+      "mass": 20,
+      "x_min": 0,
+      "x_max": 2,
+      "y_min": 4,
+      "y_max": 6,
+      "z_min": 0.5,
+      "z_max": 4
+    },
+    {
+      "mass": 20,
+      "x_min": 8,
+      "x_max": 10,
+      "y_min": 4,
+      "y_max": 6,
+      "z_min": 0.5,
+      "z_max": 4
+    },
+    {
+      "mass": 15,
+      "x_min": 4,
+      "x_max": 6,
+      "y_min": 0,
+      "y_max": 2,
+      "z_min": 0.5,
+      "z_max": 3
+    },
+    {
+      "mass": 15,
+      "x_min": 4,
+      "x_max": 6,
+      "y_min": 8,
+      "y_max": 10,
+      "z_min": 0.5,
+      "z_max": 3
+    },
+    {
+      "mass": 50,
+      "x_min": -1,
+      "x_max": 3,
+      "y_min": 3.5,
+      "y_max": 6.5,
+      "z_min": 4,
+      "z_max": 5
+    },
+    {
+      "mass": 45,
+      "x_min": 7,
+      "x_max": 11,
+      "y_min": 3.5,
+      "y_max": 6.5,
+      "z_min": 4,
+      "z_max": 5
+    },
+    {
+      "mass": 30,
+      "x_min": 3,
+      "x_max": 7,
+      "y_min": -1,
+      "y_max": 3,
+      "z_min": 3,
+      "z_max": 4
+    },
+    {
+      "mass": 35,
+      "x_min": 3,
+      "x_max": 7,
+      "y_min": 7,
+      "y_max": 11,
+      "z_min": 3,
+      "z_max": 4
+    },
+    {
+      "mass": 10,
+      "x_min": -2,
+      "x_max": 0,
+      "y_min": 4,
+      "y_max": 6,
+      "z_min": 5,
+      "z_max": 7
+    },
+    {
+      "mass": 12,
+      "x_min": 10,
+      "x_max": 12,
+      "y_min": 4,
+      "y_max": 6,
+      "z_min": 5,
+      "z_max": 7
+    },
+  ],
+  "description":
   """
 Object 1: Mass 100 kg, X:[0,10], Y:[0,10], Z:[0,0.5] (large 10x10 base plate)
 Object 2: Mass 20 kg, X:[0,2], Y:[4,6], Z:[0.5,4] (left pillar)
@@ -414,7 +700,7 @@ def generate_stack_scad(prob):
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
-  import VolumeComparison as vc
+  import OpenScad as vc
   import os
 
   prob = problems[subPass]

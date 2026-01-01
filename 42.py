@@ -1,5 +1,5 @@
 import random, os, math
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "Can you navigate a maze from photos only?"
 

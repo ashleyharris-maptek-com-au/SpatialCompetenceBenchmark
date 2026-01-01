@@ -1,6 +1,6 @@
 import random
 import os
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "Reconstruct a 3D voxel grid from photos"
 earlyFail = True

@@ -20,14 +20,24 @@ object numbers that are rotations of each other.
 """
 
 structure = {
-  "type": "object", "properties": {
-    "reasoning": {"type": "string"}, "groups": {
-      "type": "array", "items": {
-        "type": "array", "items": {"type": "integer"}, "description":
-        "List of object numbers that are rotations of each other"
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "description": "List of object numbers that are rotations of each other"
       }
     }
-  }, "propertyOrdering": ["reasoning", "groups"], "required": ["reasoning", "groups"],
+  },
+  "propertyOrdering": ["reasoning", "groups"],
+  "required": ["reasoning", "groups"],
   "additionalProperties": False
 }
 
@@ -144,11 +154,31 @@ def generate_problem(num_objects, num_shapes, seed):
 
 
 problems = [
-  {"num_objects": 4, "num_shapes": 2, "seed": 42},
-  {"num_objects": 6, "num_shapes": 3, "seed": 123},
-  {"num_objects": 8, "num_shapes": 3, "seed": 456},
-  {"num_objects": 10, "num_shapes": 4, "seed": 789},
-  {"num_objects": 12, "num_shapes": 5, "seed": 101112},
+  {
+    "num_objects": 4,
+    "num_shapes": 2,
+    "seed": 42
+  },
+  {
+    "num_objects": 6,
+    "num_shapes": 3,
+    "seed": 123
+  },
+  {
+    "num_objects": 8,
+    "num_shapes": 3,
+    "seed": 456
+  },
+  {
+    "num_objects": 10,
+    "num_shapes": 4,
+    "seed": 789
+  },
+  {
+    "num_objects": 12,
+    "num_shapes": 5,
+    "seed": 101112
+  },
 ]
 
 # === SUPER-HARD CHALLENGES ===
@@ -214,9 +244,24 @@ def generate_hard_problem(num_objects, num_shapes, seed, use_hard_shapes=True):
 
 # Add hard problems
 problems.extend([
-  {"num_objects": 16, "num_shapes": 6, "seed": 999001, "hard": True},
-  {"num_objects": 20, "num_shapes": 7, "seed": 999002, "hard": True},
-  {"num_objects": 25, "num_shapes": 8, "seed": 999003, "hard": True},
+  {
+    "num_objects": 16,
+    "num_shapes": 6,
+    "seed": 999001,
+    "hard": True
+  },
+  {
+    "num_objects": 20,
+    "num_shapes": 7,
+    "seed": 999002,
+    "hard": True
+  },
+  {
+    "num_objects": 25,
+    "num_shapes": 8,
+    "seed": 999003,
+    "hard": True
+  },
 ])
 
 # Pre-generate all problems
@@ -305,7 +350,7 @@ def generate_polycube_scad(cubes, color_rgb):
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
-  import VolumeComparison as vc
+  import OpenScad as vc
   import os
 
   prob = generated_problems[subPass]

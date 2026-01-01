@@ -1,5 +1,5 @@
 import scad_format
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "What's the largest prime number you can 3D print without supports?"
 

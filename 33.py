@@ -416,7 +416,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
 def resultToNiceReport(answer, subPass, aiEngineName):
   import os
-  import VolumeComparison as vc
+  import OpenScad as vc
 
   # Re-run simulation but record positions for visualization
   bodies = []
