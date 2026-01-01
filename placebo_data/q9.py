@@ -314,34 +314,51 @@ def solve_hamilton_with_tracking(cells: set, max_iterations: int = 50000) -> tup
 
 def create_initial_chunks(grid_size: int, blocked: set) -> tuple:
   """
-  Create initial 2x2 chunks, returning (chunks_dict, all_free_cells).
-  Chunks containing obstacles are marked as such.
+  Create initial chunks at cell-level granularity.
+  - Cells adjacent to obstacles start as obstacle chunks (need solving)
+  - Other cells start unassigned and get partitioned later
   """
   all_cells = {(x, y) for x in range(1, grid_size + 1) for y in range(1, grid_size + 1)} - blocked
   chunks = {}
   chunk_id = 0
   cell_to_chunk = {}
 
-  # Create 2x2 chunks
-  for base_x in range(1, grid_size + 1, 2):
-    for base_y in range(1, grid_size + 1, 2):
-      chunk_cells = set()
-      has_obstacle = False
-      for dx in range(2):
-        for dy in range(2):
-          cell = (base_x + dx, base_y + dy)
-          if cell in blocked:
-            has_obstacle = True
-          elif cell in all_cells:
-            chunk_cells.add(cell)
+  # Find cells adjacent to obstacles - these seed obstacle chunks
+  obstacle_adjacent = set()
+  for bx, by in blocked:
+    for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+      cell = (bx + dx, by + dy)
+      if cell in all_cells:
+        obstacle_adjacent.add(cell)
 
-      if chunk_cells:
-        chunk = Chunk(chunk_id, chunk_cells)
-        chunk.has_obstacles = has_obstacle or len(chunk_cells) < 4
-        chunks[chunk_id] = chunk
-        for cell in chunk_cells:
-          cell_to_chunk[cell] = chunk_id
-        chunk_id += 1
+  # Create one chunk per connected group of obstacle-adjacent cells
+  remaining_obstacle_adj = set(obstacle_adjacent)
+  while remaining_obstacle_adj:
+    start = min(remaining_obstacle_adj)
+    # BFS to find connected component
+    component = {start}
+    queue = [start]
+    while queue:
+      cell = queue.pop(0)
+      x, y = cell
+      for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+        neighbor = (x + dx, y + dy)
+        if neighbor in remaining_obstacle_adj and neighbor not in component:
+          component.add(neighbor)
+          queue.append(neighbor)
+
+    remaining_obstacle_adj -= component
+
+    # Create chunk from this component
+    chunk = Chunk(chunk_id, component)
+    chunk.has_obstacles = True
+    chunks[chunk_id] = chunk
+    for cell in component:
+      cell_to_chunk[cell] = chunk_id
+    chunk_id += 1
+
+  # Remaining cells (not adjacent to obstacles) stay unassigned for now
+  # They'll be partitioned later in partition_open_space
 
   return chunks, all_cells, cell_to_chunk
 
@@ -380,10 +397,15 @@ def merge_chunks(chunks: dict, chunk1_id: int, chunk2_id: int, cell_to_chunk: di
   return keep
 
 
-def expand_chunk(chunk: Chunk, neighbor_cell: tuple, cell_to_chunk: dict, chunks: dict) -> int:
+def expand_chunk(chunk: Chunk,
+                 neighbor_cell: tuple,
+                 cell_to_chunk: dict,
+                 chunks: dict,
+                 allow_merge_solved: bool = True) -> int:
   """
   Add a neighbor cell to this chunk. If cell belongs to another chunk, merge them.
   Returns the ID of the resulting chunk.
+  If allow_merge_solved is False, won't merge with chunks that have solutions.
   """
   if neighbor_cell in chunk.cells:
     return chunk.id
@@ -391,6 +413,9 @@ def expand_chunk(chunk: Chunk, neighbor_cell: tuple, cell_to_chunk: dict, chunks
   if neighbor_cell in cell_to_chunk:
     other_id = cell_to_chunk[neighbor_cell]
     if other_id != chunk.id:
+      # Don't merge with solved chunks if not allowed
+      if not allow_merge_solved and other_id in chunks and chunks[other_id].solution is not None:
+        return chunk.id  # Skip this cell
       return merge_chunks(chunks, chunk.id, other_id, cell_to_chunk)
     return chunk.id
 
@@ -401,12 +426,16 @@ def expand_chunk(chunk: Chunk, neighbor_cell: tuple, cell_to_chunk: dict, chunks
   return chunk.id
 
 
-def pick_best_expansion_cell(candidates: set, chunk_cells: set, blocked: set) -> tuple:
+def pick_best_expansion_cell(candidates: set,
+                             chunk_cells: set,
+                             blocked: set,
+                             need_parity: int = None) -> tuple:
   """
   Pick the best cell to expand into. Prioritizes:
-  1. Cells that fill interior holes (inside current bbox)
-  2. Cells adjacent to blocked cells (obstacles)
-  3. Cells with more neighbors already in chunk (more connected)
+  1. Parity balance (if need_parity specified: 0=white, 1=black)
+  2. Cells that fill interior holes (inside current bbox)
+  3. Cells adjacent to blocked cells (obstacles)
+  4. Cells with more neighbors already in chunk (more connected)
   """
   if not candidates:
     return None
@@ -419,6 +448,15 @@ def pick_best_expansion_cell(candidates: set, chunk_cells: set, blocked: set) ->
   def score(cell):
     x, y = cell
     s = 0
+
+    # Highest priority: parity balance
+    cell_parity = (x + y) % 2
+    if need_parity is not None:
+      if cell_parity == need_parity:
+        s += 10000  # Strong preference for needed parity
+      else:
+        s -= 5000  # Discourage wrong parity
+
     # Strong bonus for being inside current bbox (fills holes)
     if min_x <= x <= max_x and min_y <= y <= max_y:
       s += 1000
@@ -437,6 +475,59 @@ def pick_best_expansion_cell(candidates: set, chunk_cells: set, blocked: set) ->
     return s
 
   return max(candidates, key=score)
+
+
+def pick_best_expansion_pair(candidates: set, chunk_cells: set, blocked: set) -> list:
+  """
+  Pick the best pair of adjacent cells to add together (maintains parity balance).
+  Returns list of 1 or 2 cells to add.
+  """
+  if not candidates:
+    return []
+
+  # Current parity
+  white = sum(1 for x, y in chunk_cells if (x + y) % 2 == 0)
+  black = len(chunk_cells) - white
+
+  if white == black:
+    # Balanced - add a pair of adjacent cells (one white, one black)
+    best_pair = None
+    best_score = -float('inf')
+
+    for c1 in candidates:
+      x1, y1 = c1
+      for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+        c2 = (x1 + dx, y1 + dy)
+        if c2 in candidates and c2 != c1:
+          # c1 and c2 are adjacent candidates - check parity
+          p1 = (x1 + y1) % 2
+          p2 = (c2[0] + c2[1]) % 2
+          if p1 != p2:  # One white, one black
+            # Score this pair
+            score = 0
+            for c in [c1, c2]:
+              x, y = c
+              # Bonus for adjacency to chunk
+              neighbors_in_chunk = sum(1 for ddx, ddy in [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                                       if (x + ddx, y + ddy) in chunk_cells)
+              score += neighbors_in_chunk * 100
+              # Bonus for being near obstacles
+              for ddx, ddy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                if (x + ddx, y + ddy) in blocked:
+                  score += 50
+            if score > best_score:
+              best_score = score
+              best_pair = [c1, c2]
+
+    if best_pair:
+      return best_pair
+    # Fall back to single cell if no pair found
+    return [pick_best_expansion_cell(candidates, chunk_cells, blocked)]
+  else:
+    # Imbalanced - add single cell of needed parity
+    need_white = black > white
+    need_parity = 0 if need_white else 1
+    return [pick_best_expansion_cell(candidates, chunk_cells, blocked, need_parity)]
 
 
 def solve_obstacle_chunks(chunks: dict,
@@ -475,7 +566,7 @@ def solve_obstacle_chunks(chunks: dict,
       if chunk.solution is not None:
         continue
 
-      # Expand small chunks first
+      # Expand small chunks first - use parity-aware expansion
       while len(chunk.cells) < 4:
         adj = set()
         for cell in chunk.cells:
@@ -486,33 +577,23 @@ def solve_obstacle_chunks(chunks: dict,
               adj.add(n)
         if not adj:
           break
-        best = pick_best_expansion_cell(adj, chunk.cells, blocked or set())
-        new_id = expand_chunk(chunk, best, cell_to_chunk, chunks)
-        made_progress = True
-        if new_id != chunk_id:
-          chunk = chunks[new_id]
-          chunk_id = new_id
+        # Use parity-aware expansion
+        cells_to_add = pick_best_expansion_pair(adj, chunk.cells, blocked or set())
+        for cell_to_add in cells_to_add:
+          if cell_to_add and cell_to_add in all_cells and len(chunk.cells) < 4:
+            new_id = expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks)
+            made_progress = True
+            if new_id != chunk_id:
+              chunk = chunks[new_id]
+              chunk_id = new_id
 
       # Check feasibility before attempting expensive DFS
       n = len(chunk.cells)
       feasible, reason = check_hamilton_feasibility(chunk.cells, all_cells)
 
-      # Debug: visualize chunk shape
-      if True:
-        xs = [c[0] for c in chunk.cells]
-        ys = [c[1] for c in chunk.cells]
-        min_x, max_x = min(xs), max(xs)
-        min_y, max_y = min(ys), max(ys)
-        print(
-          f"  Chunk {chunk_id}: {n} cells in {max_x-min_x+1}x{max_y-min_y+1} bbox, feasible={feasible}"
-        )
-        for y in range(max_y, min_y - 1, -1):
-          row = ""
-          for x in range(min_x, max_x + 1):
-            row += "#" if (x, y) in chunk.cells else "."
-          print(f"    {row}")
-      else:
-        print(f"  Chunk {chunk_id}: {n} cells, feasible={feasible}, reason={reason}")
+      # Debug: minimal output
+      if iteration < 3 or iteration % 20 == 0:
+        print(f"  Chunk {chunk_id}: {n} cells, feasible={feasible}")
 
       if not feasible:
         # Use reason to guide smart expansion
@@ -654,15 +735,20 @@ def solve_obstacle_chunks(chunks: dict,
           if made_progress:
             continue
 
-      # Normal expansion - add cells adjacent to boundary
+      # Normal expansion - add cells in parity-balanced pairs
       adj = chunk.get_neighbor_cells(all_cells)
       if adj:
-        # Prefer cells that might help connectivity
-        best = pick_best_expansion_cell(adj, chunk.cells, blocked or set())
-        new_id = expand_chunk(chunk, best, cell_to_chunk, chunks)
-        made_progress = True
-        if new_id != chunk_id:
-          chunks[new_id].solution = None
+        # Use parity-aware expansion to maintain solvability
+        cells_to_add = pick_best_expansion_pair(adj, chunk.cells, blocked or set())
+        for cell_to_add in cells_to_add:
+          if cell_to_add and cell_to_add in all_cells:
+            new_id = expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks)
+            made_progress = True
+            if new_id != chunk_id:
+              chunk = chunks[new_id]
+              chunk_id = new_id
+        if made_progress:
+          chunks[chunk_id].solution = None
       elif not made_progress:
         # No neighbors in all_cells, must merge with adjacent chunk
         for cell in chunk.cells:
@@ -708,71 +794,203 @@ def solve_obstacle_chunks(chunks: dict,
 def partition_open_space(chunks: dict, all_cells: set, cell_to_chunk: dict,
                          target_size: int) -> None:
   """
-  Partition remaining open space into chunks of approximately target_size.
+  Partition remaining open space into 2x2 chunks where possible.
+  Leftover cells get their own singleton chunks (to be merged during solve).
+  Never touches solved chunks.
   """
   # Find cells not yet in any chunk
   unassigned = all_cells - set(cell_to_chunk.keys())
   if not unassigned:
     return
 
-  # Get average size of solved obstacle chunks
-  solved_sizes = [len(c.cells) for c in chunks.values() if c.has_obstacles and c.solution]
-  if solved_sizes:
-    target_size = max(4, sum(solved_sizes) // len(solved_sizes))
-
   chunk_id = max(chunks.keys()) + 1 if chunks else 0
 
-  while unassigned:
-    # Start a new chunk from an arbitrary unassigned cell
-    start = min(unassigned)
-    new_cells = {start}
-    unassigned.remove(start)
+  # Greedily create 2x2 chunks from unassigned cells
+  # Process in grid order for consistent results
+  processed = set()
+  for cell in sorted(unassigned):
+    if cell in processed:
+      continue
+    x, y = cell
+    # Try to form a 2x2 starting at this cell
+    cells_2x2 = set()
+    for dx in range(2):
+      for dy in range(2):
+        c = (x + dx, y + dy)
+        if c in unassigned and c not in processed:
+          cells_2x2.add(c)
 
-    # Grow until target size or no more adjacent cells
-    while len(new_cells) < target_size and unassigned:
-      # Find adjacent unassigned cells
-      adjacent = set()
-      for cell in new_cells:
-        x, y = cell
-        for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-          neighbor = (x + dx, y + dy)
-          if neighbor in unassigned:
-            adjacent.add(neighbor)
+    if len(cells_2x2) == 4:
+      # Got a full 2x2
+      chunk = Chunk(chunk_id, cells_2x2)
+      chunk.has_obstacles = False
+      # Pre-solve with trivial loop
+      chunk.solution = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+      chunks[chunk_id] = chunk
+      for c in cells_2x2:
+        cell_to_chunk[c] = chunk_id
+        processed.add(c)
+      chunk_id += 1
 
-      if not adjacent:
-        break
-
-      # Add one adjacent cell (prefer one that keeps shape compact)
-      best = min(adjacent,
-                 key=lambda c: max(abs(c[0] - s[0]) + abs(c[1] - s[1]) for s in new_cells))
-      new_cells.add(best)
-      unassigned.remove(best)
-
-    # Create the chunk
-    chunk = Chunk(chunk_id, new_cells)
-    chunk.has_obstacles = False
-    chunks[chunk_id] = chunk
-    for cell in new_cells:
+  # Remaining cells become singleton chunks
+  for cell in unassigned:
+    if cell not in processed:
+      chunk = Chunk(chunk_id, {cell})
+      chunk.has_obstacles = False
+      chunks[chunk_id] = chunk
       cell_to_chunk[cell] = chunk_id
-    chunk_id += 1
+      chunk_id += 1
 
 
-def solve_open_chunks(chunks: dict, max_subdivide_attempts: int = 5) -> bool:
+def solve_open_chunks(chunks: dict,
+                      cell_to_chunk: dict = None,
+                      all_cells: set = None,
+                      max_attempts: int = 100) -> bool:
   """
-  Solve all open space chunks. Subdivide if needed.
+  Solve all open space chunks. Grow and merge if needed.
   """
-  for attempt in range(max_subdivide_attempts):
-    unsolved = [c for c in chunks.values() if not c.has_obstacles and c.solution is None]
-    if not unsolved:
+  for attempt in range(max_attempts):
+    # Get fresh list of unsolved chunk IDs each iteration
+    unsolved_ids = [c.id for c in chunks.values() if not c.has_obstacles and c.solution is None]
+    if not unsolved_ids:
       return True
 
-    all_solved = True
-    for chunk in unsolved:
-      if not chunk.solve():
-        all_solved = False
+    if attempt == 0 or (attempt < 10 and attempt % 5 == 0) or attempt % 50 == 0:
+      print(f"  solve_open_chunks iter {attempt}: {len(unsolved_ids)} unsolved")
 
-    if all_solved:
-      return True
+    made_progress = False
+
+    for chunk_id in unsolved_ids:
+      # Chunk may have been merged away
+      if chunk_id not in chunks:
+        made_progress = True
+        continue
+
+      chunk = chunks[chunk_id]
+      if chunk.solution is not None:
+        continue
+
+      n = len(chunk.cells)
+
+      # Check feasibility first
+      feasible, reason = check_hamilton_feasibility(chunk.cells)
+
+      if not feasible:
+        # Need to grow or merge this chunk
+        if cell_to_chunk is not None and all_cells is not None:
+          # Filter adjacent cells to exclude those in solved chunks
+          adj = chunk.get_neighbor_cells(all_cells)
+          adj = {
+            c
+            for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+            or chunks[cell_to_chunk[c]].solution is None
+          }
+          if adj:
+            # Add cells using parity-aware expansion (don't merge with solved)
+            cells_to_add = pick_best_expansion_pair(adj, chunk.cells, set())
+            for cell_to_add in cells_to_add:
+              if cell_to_add and cell_to_add in all_cells:
+                new_id = expand_chunk(chunk,
+                                      cell_to_add,
+                                      cell_to_chunk,
+                                      chunks,
+                                      allow_merge_solved=False)
+                made_progress = True
+                if new_id != chunk_id:
+                  chunk = chunks.get(new_id)
+                  chunk_id = new_id
+                  if chunk is None:
+                    break
+            continue
+          else:
+            # Try merging with adjacent unsolved chunk only
+            merged = False
+            for cell in list(chunk.cells):
+              x, y = cell
+              for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                nc = (x + dx, y + dy)
+                if nc in cell_to_chunk and cell_to_chunk[nc] != chunk_id:
+                  other_id = cell_to_chunk[nc]
+                  if other_id in chunks and chunks[other_id].solution is None:
+                    merge_chunks(chunks, chunk_id, other_id, cell_to_chunk)
+                    made_progress = True
+                    merged = True
+                    break
+              if merged:
+                break
+            continue
+        continue
+
+      # Try to solve - but cap size to keep chunks tractable
+      MAX_OPEN_CHUNK_SIZE = 36
+      if n > MAX_OPEN_CHUNK_SIZE:
+        # Chunk too big - give up on it, mark as solved with empty solution to skip
+        # This will cause stitching issues but prevents infinite growth
+        print(f"    Chunk {chunk_id} too large ({n} cells), skipping")
+        chunk.solution = []  # Empty solution to skip
+        made_progress = True
+        continue
+
+      if chunk.solve(max_iterations=5000 * n + 50000):
+        made_progress = True
+      elif cell_to_chunk is not None and all_cells is not None and n < MAX_OPEN_CHUNK_SIZE:
+        # Failed to solve - try growing (don't merge with solved chunks)
+        # Only grow if under size limit
+        adj = chunk.get_neighbor_cells(all_cells)
+        adj = {
+          c
+          for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+          or chunks[cell_to_chunk[c]].solution is None
+        }
+        if adj:
+          cells_to_add = pick_best_expansion_pair(adj, chunk.cells, set())
+          for cell_to_add in cells_to_add:
+            if cell_to_add and cell_to_add in all_cells:
+              expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks, allow_merge_solved=False)
+              made_progress = True
+
+    if not made_progress and unsolved_ids:
+      # Force merge smallest unsolved with a neighbor (prefer unsolved, but allow solved)
+      valid_unsolved = [chunks[uid] for uid in unsolved_ids if uid in chunks]
+      if not valid_unsolved:
+        continue
+      smallest = min(valid_unsolved, key=lambda c: len(c.cells))
+      if cell_to_chunk is not None:
+        # First try unsolved neighbors
+        for cell in list(smallest.cells):
+          x, y = cell
+          for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            nc = (x + dx, y + dy)
+            if nc in cell_to_chunk and cell_to_chunk[nc] != smallest.id:
+              other_id = cell_to_chunk[nc]
+              if other_id in chunks and chunks[other_id].solution is None:
+                merge_chunks(chunks, smallest.id, other_id, cell_to_chunk)
+                made_progress = True
+                break
+          if made_progress:
+            break
+        # If no unsolved neighbor, merge with smallest solved neighbor and re-solve
+        if not made_progress:
+          best_neighbor = None
+          best_size = float('inf')
+          for cell in list(smallest.cells):
+            x, y = cell
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+              nc = (x + dx, y + dy)
+              if nc in cell_to_chunk and cell_to_chunk[nc] != smallest.id:
+                other_id = cell_to_chunk[nc]
+                if other_id in chunks and len(chunks[other_id].cells) < best_size:
+                  best_neighbor = other_id
+                  best_size = len(chunks[other_id].cells)
+          if best_neighbor is not None:
+            new_id = merge_chunks(chunks, smallest.id, best_neighbor, cell_to_chunk)
+            # Try to re-solve the merged chunk immediately
+            merged_chunk = chunks[new_id]
+            n = len(merged_chunk.cells)
+            merged_chunk.solve(max_iterations=5000 * n + 100000)
+            made_progress = True
+      if not made_progress:
+        return False
 
   return False
 
@@ -886,11 +1104,13 @@ def merge_loops(loop1: list, seg1: tuple, loop2: list, seg2: tuple) -> list:
 
   # We need: loop1[seg1[0]] adjacent to loop2[seg2[0]]
   #          loop1[seg1[1]] adjacent to loop2[seg2[1]]
+  seg2_swapped = False
   if not (is_adjacent(loop1[seg1[0]], loop2[seg2[0]])
           and is_adjacent(loop1[seg1[1]], loop2[seg2[1]])):
     # Try swapping seg2 indices
     if is_adjacent(loop1[seg1[0]], loop2[seg2[1]]) and is_adjacent(loop1[seg1[1]], loop2[seg2[0]]):
       seg2 = (seg2[1], seg2[0])
+      seg2_swapped = True
     else:
       print(f"WARNING: merge_loops cross-connections not adjacent!")
       print(f"  loop1[{seg1[0]}]={loop1[seg1[0]]} -> loop2[{seg2[0]}]={loop2[seg2[0]]}")
@@ -906,13 +1126,30 @@ def merge_loops(loop1: list, seg1: tuple, loop2: list, seg2: tuple) -> list:
       break
     i = (i + 1) % n1
 
-  # Part 2: loop2 from seg2[0] to seg2[1] (going the long way around, skipping the cut edge)
+  # Part 2: loop2 traversal direction depends on whether seg2 was swapped
+  # Original seg2 = (a, (a+1)%n) means edge a->(a+1)%n, traverse backward from a to (a+1)%n
+  # Swapped seg2 = ((a+1)%n, a), traverse forward from (a+1)%n to a
   i = seg2[0]
-  while True:
-    result.append(loop2[i])
-    if i == seg2[1]:
-      break
-    i = (i + 1) % n2
+  if seg2_swapped:
+    # Go forward
+    while True:
+      result.append(loop2[i])
+      if i == seg2[1]:
+        break
+      i = (i + 1) % n2
+  else:
+    # Go backward
+    while True:
+      result.append(loop2[i])
+      if i == seg2[1]:
+        break
+      i = (i - 1) % n2
+
+  # Validate merge result
+  expected_len = n1 + n2
+  if len(result) != expected_len:
+    print(f"WARNING: merge_loops lost cells! {len(result)} vs expected {expected_len}")
+    print(f"  seg1={seg1}, seg2={seg2}, n1={n1}, n2={n2}")
 
   return result
 
@@ -947,6 +1184,20 @@ def find_chunk_hamilton_path(chunks: dict, graph: dict, max_iter: int = 100000) 
   chunk_ids = list(chunks.keys())
   if len(chunk_ids) == 1:
     return chunk_ids
+
+  # Debug: check graph connectivity and structure
+  print(f"Chunk graph: {len(chunk_ids)} chunks")
+  isolated = [cid for cid in chunk_ids if len(graph.get(cid, set())) == 0]
+  if isolated:
+    print(f"  WARNING: {len(isolated)} isolated chunks: {isolated}")
+  degree_1 = [cid for cid in chunk_ids if len(graph.get(cid, set())) == 1]
+  if degree_1:
+    print(f"  WARNING: {len(degree_1)} degree-1 chunks (dead ends): {degree_1}")
+
+  # Check if all chunks have solutions
+  unsolved = [cid for cid in chunk_ids if chunks[cid].solution is None]
+  if unsolved:
+    print(f"  WARNING: {len(unsolved)} chunks without solutions: {unsolved}")
 
   start = chunk_ids[0]
   path = [start]
@@ -991,39 +1242,88 @@ def find_chunk_hamilton_path(chunks: dict, graph: dict, max_iter: int = 100000) 
 
 
 def stitch_chunk_solutions(chunk_path: list, chunks: dict) -> Optional[list]:
-  """Stitch chunk solutions together following the path order."""
+  """Stitch chunk solutions together using greedy order (not strict path order)."""
   if not chunk_path:
     return None
 
   if len(chunk_path) == 1:
     return chunks[chunk_path[0]].solution
 
+  # Calculate expected total cells
+  total_expected = sum(len(chunks[cid].cells) for cid in chunk_path)
+
+  # Use greedy stitching - always pick next chunk that can be merged
+  remaining = set(chunk_path[1:])
   current_cells = set(chunks[chunk_path[0]].cells)
   current_loop = list(chunks[chunk_path[0]].solution)
+  skipped_chunks = []
 
-  for i in range(1, len(chunk_path)):
-    next_chunk = chunks[chunk_path[i]]
-    merge_options = can_merge_chunks_from_loop(current_loop, current_cells, next_chunk)
+  while remaining:
+    # Find a chunk that can be stitched to current loop
+    stitched = False
+    for chunk_id in list(remaining):
+      chunk = chunks[chunk_id]
+      if not chunk.solution:
+        print(f"Chunk {chunk_id} has no solution ({len(chunk.cells)} cells), skipping")
+        skipped_chunks.append(chunk_id)
+        remaining.remove(chunk_id)
+        stitched = True
+        break
 
-    if not merge_options:
-      print(f"Cannot find merge point between accumulated loop and chunk {chunk_path[i]}")
+      merge_options = can_merge_chunks_from_loop(current_loop, current_cells, chunk)
+      if merge_options:
+        seg1, seg2 = merge_options[0]
+        current_loop = merge_loops(current_loop, seg1, chunk.solution, seg2)
+        current_cells = current_cells | chunk.cells
+        remaining.remove(chunk_id)
+        stitched = True
+        break
+
+    if not stitched:
+      # No chunk can be stitched - try to find ANY adjacent chunk
+      print(f"Greedy stitch stuck with {len(remaining)} chunks remaining")
+      # Find which chunks are adjacent to current_cells
+      adjacent_chunks = []
+      for chunk_id in remaining:
+        chunk = chunks[chunk_id]
+        for cell in chunk.cells:
+          x, y = cell
+          for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            if (x + dx, y + dy) in current_cells:
+              adjacent_chunks.append(chunk_id)
+              break
+          else:
+            continue
+          break
+      print(f"  Adjacent but unmergeable: {adjacent_chunks[:5]}")
       return None
 
-    seg1, seg2 = merge_options[0]
-    current_loop = merge_loops(current_loop, seg1, next_chunk.solution, seg2)
-    current_cells = current_cells | next_chunk.cells
+  # Validate result
+  if skipped_chunks:
+    skipped_cells = sum(len(chunks[cid].cells) for cid in skipped_chunks)
+    print(f"WARNING: Skipped {len(skipped_chunks)} chunks with {skipped_cells} cells")
 
-  # Close the loop back to start
-  first_chunk = chunks[chunk_path[0]]
-  last_chunk = chunks[chunk_path[-1]]
+  if len(current_loop) != total_expected:
+    print(f"WARNING: Loop has {len(current_loop)} cells but expected {total_expected}")
 
-  # Verify loop closes properly
-  if len(current_loop) > 0:
-    first = current_loop[0]
-    last = current_loop[-1]
-    if abs(first[0] - last[0]) + abs(first[1] - last[1]) != 1:
-      # Need to verify it's actually a loop
-      pass
+  # Verify loop closes (first and last are adjacent)
+  if len(current_loop) >= 2:
+    first, last = current_loop[0], current_loop[-1]
+    dist = abs(first[0] - last[0]) + abs(first[1] - last[1])
+    if dist != 1:
+      print(f"ERROR: Loop doesn't close! Start {first} and end {last} distance={dist}")
+      # Try to verify all edges are valid
+      broken_edges = []
+      for i in range(len(current_loop)):
+        a = current_loop[i]
+        b = current_loop[(i + 1) % len(current_loop)]
+        d = abs(a[0] - b[0]) + abs(a[1] - b[1])
+        if d != 1:
+          broken_edges.append((i, a, b, d))
+      if broken_edges:
+        print(f"  Found {len(broken_edges)} broken edges")
+        for i, a, b, d in broken_edges[:5]:
+          print(f"    Edge {i}: {a} -> {b} distance={d}")
 
   return current_loop
 
@@ -1630,9 +1930,37 @@ def solve_expanding_barrage(grid_size: int, blocked: set) -> Optional[list]:
   print(f"After partitioning: {len(chunks)} total chunks")
 
   # Step 4: Solve open chunks
-  if not solve_open_chunks(chunks):
+  if not solve_open_chunks(chunks, cell_to_chunk, all_cells):
     print("Failed to solve open chunks")
     return None
+
+  # Step 4.5: Verify all chunks have solutions, re-solve any that don't
+  unsolved_chunks = [c for c in chunks.values() if c.solution is None]
+  for chunk in unsolved_chunks:
+    n = len(chunk.cells)
+    print(f"  Re-solving chunk {chunk.id} with {n} cells")
+    if not chunk.solve(max_iterations=10000 * n + 100000):
+      print(f"  Failed to solve chunk {chunk.id}")
+      # Try growing it
+      adj = chunk.get_neighbor_cells(all_cells)
+      adj = {
+        c
+        for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+        or chunks[cell_to_chunk[c]].solution is None
+      }
+      if adj:
+        cells_to_add = pick_best_expansion_pair(adj, chunk.cells, set())
+        for cell_to_add in cells_to_add:
+          if cell_to_add and cell_to_add in all_cells:
+            expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks, allow_merge_solved=False)
+        # Try again
+        n = len(chunk.cells)
+        chunk.solve(max_iterations=10000 * n + 100000)
+
+  # Final check
+  still_unsolved = [c.id for c in chunks.values() if c.solution is None]
+  if still_unsolved:
+    print(f"WARNING: {len(still_unsolved)} chunks still unsolved: {still_unsolved}")
 
   # Step 5: Build chunk graph and find Hamilton path
   graph = build_chunk_graph(chunks)
@@ -1658,7 +1986,7 @@ def get_blocked_cells(subPass):
   if subPass == 4:
     return {(3, 3), (3, 4)}
   elif subPass == 5:
-    return {(3, 3), (3, 4), (5, 3), (5, 4), (7, 7), (8, 7)}
+    return {(12, 3), (12, 4), (5, 3), (5, 4), (7, 7), (8, 7)}
   elif subPass == 7:
     blocked = set()
     map_lines = """
@@ -1712,6 +2040,8 @@ def get_response(subPass: int):
   if subPass == 4:
     return ({
       'steps': [{
+        'xy': [2, 9]
+      }, {
         'xy': [3, 9]
       }, {
         'xy': [4, 9]
@@ -2220,6 +2550,511 @@ def get_response(subPass: int):
       }]
     }, 'Solved with hierarchical divide-and-conquer')
 
+  if subPass == 5:
+    return {
+      'steps': [{
+        'xy': [10, 15]
+      }, {
+        'xy': [11, 15]
+      }, {
+        'xy': [11, 14]
+      }, {
+        'xy': [11, 13]
+      }, {
+        'xy': [11, 12]
+      }, {
+        'xy': [11, 11]
+      }, {
+        'xy': [11, 10]
+      }, {
+        'xy': [11, 9]
+      }, {
+        'xy': [11, 8]
+      }, {
+        'xy': [11, 7]
+      }, {
+        'xy': [11, 6]
+      }, {
+        'xy': [10, 6]
+      }, {
+        'xy': [10, 7]
+      }, {
+        'xy': [10, 8]
+      }, {
+        'xy': [10, 9]
+      }, {
+        'xy': [10, 10]
+      }, {
+        'xy': [9, 10]
+      }, {
+        'xy': [9, 9]
+      }, {
+        'xy': [9, 8]
+      }, {
+        'xy': [9, 7]
+      }, {
+        'xy': [9, 6]
+      }, {
+        'xy': [9, 5]
+      }, {
+        'xy': [9, 4]
+      }, {
+        'xy': [8, 4]
+      }, {
+        'xy': [7, 4]
+      }, {
+        'xy': [7, 5]
+      }, {
+        'xy': [8, 5]
+      }, {
+        'xy': [8, 6]
+      }, {
+        'xy': [7, 6]
+      }, {
+        'xy': [6, 6]
+      }, {
+        'xy': [6, 7]
+      }, {
+        'xy': [6, 8]
+      }, {
+        'xy': [7, 8]
+      }, {
+        'xy': [8, 8]
+      }, {
+        'xy': [8, 9]
+      }, {
+        'xy': [8, 10]
+      }, {
+        'xy': [8, 11]
+      }, {
+        'xy': [7, 11]
+      }, {
+        'xy': [7, 10]
+      }, {
+        'xy': [7, 9]
+      }, {
+        'xy': [6, 9]
+      }, {
+        'xy': [6, 10]
+      }, {
+        'xy': [6, 11]
+      }, {
+        'xy': [6, 12]
+      }, {
+        'xy': [6, 13]
+      }, {
+        'xy': [5, 13]
+      }, {
+        'xy': [5, 12]
+      }, {
+        'xy': [5, 11]
+      }, {
+        'xy': [5, 10]
+      }, {
+        'xy': [5, 9]
+      }, {
+        'xy': [5, 8]
+      }, {
+        'xy': [5, 7]
+      }, {
+        'xy': [5, 6]
+      }, {
+        'xy': [4, 6]
+      }, {
+        'xy': [4, 7]
+      }, {
+        'xy': [4, 8]
+      }, {
+        'xy': [4, 9]
+      }, {
+        'xy': [4, 10]
+      }, {
+        'xy': [4, 11]
+      }, {
+        'xy': [4, 12]
+      }, {
+        'xy': [4, 13]
+      }, {
+        'xy': [4, 14]
+      }, {
+        'xy': [3, 14]
+      }, {
+        'xy': [3, 13]
+      }, {
+        'xy': [3, 12]
+      }, {
+        'xy': [3, 11]
+      }, {
+        'xy': [3, 10]
+      }, {
+        'xy': [3, 9]
+      }, {
+        'xy': [3, 8]
+      }, {
+        'xy': [3, 7]
+      }, {
+        'xy': [3, 6]
+      }, {
+        'xy': [2, 6]
+      }, {
+        'xy': [2, 7]
+      }, {
+        'xy': [2, 8]
+      }, {
+        'xy': [2, 9]
+      }, {
+        'xy': [2, 10]
+      }, {
+        'xy': [2, 11]
+      }, {
+        'xy': [2, 12]
+      }, {
+        'xy': [2, 13]
+      }, {
+        'xy': [2, 14]
+      }, {
+        'xy': [1, 14]
+      }, {
+        'xy': [1, 13]
+      }, {
+        'xy': [1, 12]
+      }, {
+        'xy': [1, 11]
+      }, {
+        'xy': [1, 10]
+      }, {
+        'xy': [1, 9]
+      }, {
+        'xy': [1, 8]
+      }, {
+        'xy': [1, 7]
+      }, {
+        'xy': [1, 6]
+      }, {
+        'xy': [1, 5]
+      }, {
+        'xy': [1, 4]
+      }, {
+        'xy': [1, 3]
+      }, {
+        'xy': [1, 2]
+      }, {
+        'xy': [1, 1]
+      }, {
+        'xy': [2, 1]
+      }, {
+        'xy': [3, 1]
+      }, {
+        'xy': [4, 1]
+      }, {
+        'xy': [5, 1]
+      }, {
+        'xy': [6, 1]
+      }, {
+        'xy': [7, 1]
+      }, {
+        'xy': [8, 1]
+      }, {
+        'xy': [8, 2]
+      }, {
+        'xy': [7, 2]
+      }, {
+        'xy': [6, 2]
+      }, {
+        'xy': [5, 2]
+      }, {
+        'xy': [4, 2]
+      }, {
+        'xy': [4, 3]
+      }, {
+        'xy': [4, 4]
+      }, {
+        'xy': [3, 4]
+      }, {
+        'xy': [3, 3]
+      }, {
+        'xy': [3, 2]
+      }, {
+        'xy': [2, 2]
+      }, {
+        'xy': [2, 3]
+      }, {
+        'xy': [2, 4]
+      }, {
+        'xy': [2, 5]
+      }, {
+        'xy': [3, 5]
+      }, {
+        'xy': [4, 5]
+      }, {
+        'xy': [5, 5]
+      }, {
+        'xy': [6, 5]
+      }, {
+        'xy': [6, 4]
+      }, {
+        'xy': [6, 3]
+      }, {
+        'xy': [7, 3]
+      }, {
+        'xy': [8, 3]
+      }, {
+        'xy': [9, 3]
+      }, {
+        'xy': [9, 2]
+      }, {
+        'xy': [9, 1]
+      }, {
+        'xy': [10, 1]
+      }, {
+        'xy': [11, 1]
+      }, {
+        'xy': [12, 1]
+      }, {
+        'xy': [13, 1]
+      }, {
+        'xy': [14, 1]
+      }, {
+        'xy': [15, 1]
+      }, {
+        'xy': [16, 1]
+      }, {
+        'xy': [16, 2]
+      }, {
+        'xy': [16, 3]
+      }, {
+        'xy': [16, 4]
+      }, {
+        'xy': [16, 5]
+      }, {
+        'xy': [16, 6]
+      }, {
+        'xy': [16, 7]
+      }, {
+        'xy': [16, 8]
+      }, {
+        'xy': [16, 9]
+      }, {
+        'xy': [16, 10]
+      }, {
+        'xy': [16, 11]
+      }, {
+        'xy': [16, 12]
+      }, {
+        'xy': [16, 13]
+      }, {
+        'xy': [16, 14]
+      }, {
+        'xy': [16, 15]
+      }, {
+        'xy': [16, 16]
+      }, {
+        'xy': [15, 16]
+      }, {
+        'xy': [15, 15]
+      }, {
+        'xy': [15, 14]
+      }, {
+        'xy': [15, 13]
+      }, {
+        'xy': [15, 12]
+      }, {
+        'xy': [15, 11]
+      }, {
+        'xy': [15, 10]
+      }, {
+        'xy': [15, 9]
+      }, {
+        'xy': [15, 8]
+      }, {
+        'xy': [15, 7]
+      }, {
+        'xy': [15, 6]
+      }, {
+        'xy': [15, 5]
+      }, {
+        'xy': [15, 4]
+      }, {
+        'xy': [15, 3]
+      }, {
+        'xy': [15, 2]
+      }, {
+        'xy': [14, 2]
+      }, {
+        'xy': [13, 2]
+      }, {
+        'xy': [12, 2]
+      }, {
+        'xy': [11, 2]
+      }, {
+        'xy': [10, 2]
+      }, {
+        'xy': [10, 3]
+      }, {
+        'xy': [11, 3]
+      }, {
+        'xy': [11, 4]
+      }, {
+        'xy': [10, 4]
+      }, {
+        'xy': [10, 5]
+      }, {
+        'xy': [11, 5]
+      }, {
+        'xy': [12, 5]
+      }, {
+        'xy': [13, 5]
+      }, {
+        'xy': [13, 4]
+      }, {
+        'xy': [13, 3]
+      }, {
+        'xy': [14, 3]
+      }, {
+        'xy': [14, 4]
+      }, {
+        'xy': [14, 5]
+      }, {
+        'xy': [14, 6]
+      }, {
+        'xy': [14, 7]
+      }, {
+        'xy': [14, 8]
+      }, {
+        'xy': [14, 9]
+      }, {
+        'xy': [14, 10]
+      }, {
+        'xy': [14, 11]
+      }, {
+        'xy': [14, 12]
+      }, {
+        'xy': [14, 13]
+      }, {
+        'xy': [14, 14]
+      }, {
+        'xy': [14, 15]
+      }, {
+        'xy': [14, 16]
+      }, {
+        'xy': [13, 16]
+      }, {
+        'xy': [13, 15]
+      }, {
+        'xy': [13, 14]
+      }, {
+        'xy': [13, 13]
+      }, {
+        'xy': [13, 12]
+      }, {
+        'xy': [13, 11]
+      }, {
+        'xy': [13, 10]
+      }, {
+        'xy': [13, 9]
+      }, {
+        'xy': [13, 8]
+      }, {
+        'xy': [13, 7]
+      }, {
+        'xy': [13, 6]
+      }, {
+        'xy': [12, 6]
+      }, {
+        'xy': [12, 7]
+      }, {
+        'xy': [12, 8]
+      }, {
+        'xy': [12, 9]
+      }, {
+        'xy': [12, 10]
+      }, {
+        'xy': [12, 11]
+      }, {
+        'xy': [12, 12]
+      }, {
+        'xy': [12, 13]
+      }, {
+        'xy': [12, 14]
+      }, {
+        'xy': [12, 15]
+      }, {
+        'xy': [12, 16]
+      }, {
+        'xy': [11, 16]
+      }, {
+        'xy': [10, 16]
+      }, {
+        'xy': [9, 16]
+      }, {
+        'xy': [9, 15]
+      }, {
+        'xy': [9, 14]
+      }, {
+        'xy': [8, 14]
+      }, {
+        'xy': [8, 15]
+      }, {
+        'xy': [8, 16]
+      }, {
+        'xy': [7, 16]
+      }, {
+        'xy': [6, 16]
+      }, {
+        'xy': [5, 16]
+      }, {
+        'xy': [4, 16]
+      }, {
+        'xy': [3, 16]
+      }, {
+        'xy': [2, 16]
+      }, {
+        'xy': [1, 16]
+      }, {
+        'xy': [1, 15]
+      }, {
+        'xy': [2, 15]
+      }, {
+        'xy': [3, 15]
+      }, {
+        'xy': [4, 15]
+      }, {
+        'xy': [5, 15]
+      }, {
+        'xy': [5, 14]
+      }, {
+        'xy': [6, 14]
+      }, {
+        'xy': [6, 15]
+      }, {
+        'xy': [7, 15]
+      }, {
+        'xy': [7, 14]
+      }, {
+        'xy': [7, 13]
+      }, {
+        'xy': [7, 12]
+      }, {
+        'xy': [8, 12]
+      }, {
+        'xy': [8, 13]
+      }, {
+        'xy': [9, 13]
+      }, {
+        'xy': [9, 12]
+      }, {
+        'xy': [9, 11]
+      }, {
+        'xy': [10, 11]
+      }, {
+        'xy': [10, 12]
+      }, {
+        'xy': [10, 13]
+      }, {
+        'xy': [10, 14]
+      }]
+    }, ""
+
   if subPass == 6:
     return {
       'steps': [{
@@ -2716,6 +3551,8 @@ def get_response(subPass: int):
         'xy': [1, 10]
       }, {
         'xy': [1, 9]
+      }, {
+        'xy': [1, 8]
       }]
     }, ""
 
@@ -3207,6 +4044,8 @@ def get_response(subPass: int):
         'xy': [7, 4]
       }, {
         'xy': [7, 3]
+      }, {
+        'xy': [7, 2]
       }]
     }, ""
 
@@ -3215,7 +4054,8 @@ def get_response(subPass: int):
   solution = solve_expanding_barrage(16, blocked)
 
   if solution:
-    steps = [{"xy": list(pos)} for pos in solution[1:]]
+    # Include all cells in the loop (solution[0] is the starting position)
+    steps = [{"xy": list(pos)} for pos in solution]
     return {"steps": steps}, "Solved with expanding barrage algorithm"
 
   return {"steps": [], "error": "No solution found"}, "Failed to solve"

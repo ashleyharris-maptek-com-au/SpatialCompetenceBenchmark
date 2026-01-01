@@ -53,39 +53,39 @@ structure = {
 
 grid6 = """
 ................
-.X..X.....X..X..
+.X............X.
+................
+................
+.X............X.
 ................
 ................
 ................
 ................
 ................
+.X............X.
 ................
 ................
+.X............X.
 ................
-................
-................
-................
-................
-.X..X.....X..X..
 ................
     """.strip()
 
 grid7 = map_lines = """
 ................
-.X..X.....X..X..
+.X............X.
 ................
 ................
+.X............X.
+................
+.......XX.......
+.......XX.......
 ................
 ................
-................
-......XX........
-......XX........
+.X............X.
 ................
 ................
+.X............X.
 ................
-................
-................
-.X..X.....X..X..
 ................
     """.strip()
 
@@ -95,7 +95,7 @@ subpassParamSummary = [
   "12x12 grid",
   "16x16 grid",
   "16x16 grid with cells (3,3) and (3,4) removed",
-  "16x16 grid with cells (3,3), (3,4), (5,3), (5,4), (7,7), and (8,7), are removed.",
+  "16x16 grid with cells (12, 3), (12, 4), (5, 3), (5, 4), (7, 7), (8, 7) are removed.",
   "16x16 grid where various holes exist.",
   "16x16 grid where various holes exist.",
 ]
@@ -116,14 +116,15 @@ validGridForPass = np.array([[['.'] * 16] * 16] * 8, dtype=str)
 
 validSquaresForPass[4] -= 2
 validSquaresForPass[5] -= 6
-validGridForPass[4][3][3] = "X"
-validGridForPass[4][3][4] = "X"
-validGridForPass[5][3][3] = "X"
-validGridForPass[5][3][4] = "X"
-validGridForPass[5][5][3] = "X"
-validGridForPass[5][5][4] = "X"
-validGridForPass[5][7][7] = "X"
-validGridForPass[5][8][7] = "X"
+validGridForPass[4][3 - 1][3 - 1] = "X"
+validGridForPass[4][3 - 1][4 - 1] = "X"
+
+validGridForPass[5][12 - 1][3 - 1] = "X"
+validGridForPass[5][12 - 1][4 - 1] = "X"
+validGridForPass[5][5 - 1][3 - 1] = "X"
+validGridForPass[5][5 - 1][4 - 1] = "X"
+validGridForPass[5][7 - 1][7 - 1] = "X"
+validGridForPass[5][8 - 1][7 - 1] = "X"
 
 validSquaresForPass[6] -= grid6.count('X')
 validSquaresForPass[7] -= grid7.count('X')
@@ -208,7 +209,7 @@ def prepareSubpassPrompt(index):
   if index == 5:
     return prompt.replace("SIZE", "16").replace("SQUARED", str(validSquaresForPass[5])).replace(
       "TWIST",
-      f"(3,3), (3,4), (5,3), (5,4), (7,7), and (8,7) are removed from the grid and must be skipped."
+      f"(12, 3), (12, 4), (5, 3), (5, 4), (7, 7), (8, 7) are removed from the grid and must be skipped."
     )
   if index == 6:
     return prompt.replace("SIZE", "16").replace("SQUARED", str(validSquaresForPass[6])).replace(
@@ -267,15 +268,17 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 
     scadOutput += f"""
 hull() {{
-    translate([{a['xy'][0]* 0.9 + xMid*0.1}, {a['xy'][1]* 0.9 + yMid*0.1}, 0]) cube([0.01, 0.01, 0.01], center=true);
-    translate([{b['xy'][0]* 0.9 + xMid*0.1}, {b['xy'][1]* 0.9 + yMid*0.1}, 0]) cube([0.01, 0.01, 0.01], center=true);
+    translate([{a['xy'][0]* 0.9 + xMid*0.1}, {a['xy'][1]* 0.9 + yMid*0.1}, 0]) cube([0.1, 0.1, 0.1], center=true);
+    translate([{b['xy'][0]* 0.9 + xMid*0.1}, {b['xy'][1]* 0.9 + yMid*0.1}, 0]) cube([0.1, 0.1, 0.1], center=true);
 }}
 
 """
 
+  size = 4 if subPass == 0 else 8 if subPass == 1 else 12 if subPass == 2 else 16
+
   for i, a in enumerate(answer["steps"]):
     scadOutput += f"""
-translate([{a['xy'][0]}, {a['xy'][1]}, 0]) linear_extrude(0.01) text("{i}",size=0.15, halign="center", valign="center");
+translate([{a['xy'][0]}, {a['xy'][1]}, 0.5]) color([0,0,1]) linear_extrude(0.01) text("{i}",size=0.35, halign="center", valign="center");
 """
 
   if subPass in [4, 5, 6, 7]:
@@ -284,7 +287,7 @@ translate([{a['xy'][0]}, {a['xy'][1]}, 0]) linear_extrude(0.01) text("{i}",size=
         try:
           if validGridForPass[subPass][x - 1][y - 1] == "X":
             scadOutput += f"""
-translate([{x-1}, {y-1}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, halign="center", valign="center");
+translate([{x}, {y}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, halign="center", valign="center");
 """
         except:
           pass
@@ -292,7 +295,12 @@ translate([{x-1}, {y-1}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.
   import os
   os.makedirs("results", exist_ok=True)
   output_path = "results/9_Visualization_" + aiEngineName + "_" + str(subPass) + ".png"
-  vc.render_scadText_to_png(scadOutput, output_path)
+
+  extraArgs = ["--projection=p"]
+  if subPass > 3: extraArgs.append("--no-autocenter")
+
+  vc.render_scadText_to_png(scadOutput, output_path,
+                            f"--camera=8,-5,{10 + size*2},{size/2},{size/2},0", extraArgs)
   print(f"Saved visualization to {output_path}")
 
   return f'<img src="{os.path.basename(output_path)}" alt="Hamiltonian Path Visualization" style="max-width: 100%;">'
@@ -305,7 +313,13 @@ Observing the Chain-Of-Thought for the simple models even shows them trying to f
 existing solutions on the web to copy paste. It's that well known.
 <br><br>
 As we crank it up, things get harder. LLMs may truncate or lose focus on the longer
-paths, and some of the complex paths, especially with holes, require novel solutions.
+paths, and some of the complex paths, especially with holes, require novel solutions, as without
+any spatial reasoning, this becomes NP-Complete, while a child can solve it with a crayon and a 
+minutes.
+<br><br>
+Using Claude Opus 4.5, Windsurf, $40 of API credits and a day of my life explaining algorithms
+for an AI to implement, I was able to build a solver for this that can solve simple sparse grids in a few minutes
+ (placebo_data/q9.py), this is probably the peak of what I'd expect an AI could do.
 """
 
 for grid in validGridForPass:

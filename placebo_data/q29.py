@@ -132,7 +132,7 @@ def get_response(subPass: int):
         },
       ],
       "reasoning":
-      "Ash spent an hour messing about in OpenSCAD and created it."
-    }, "They looked nice."
+      "Ash spent an hour messing about in OpenSCAD and created it. Yes I 3D printed it. It used $50 worth of PLA."
+    }, "(sound of actual 3D printer printing...)"
 
   return None
