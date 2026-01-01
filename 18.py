@@ -79,7 +79,7 @@ noMinkowski = True
 
 
 def resultToScad(result, aiEngineName):
-  import CacheLayer as cl, re, scad_format
+  import LLMBenchCore.CacheLayer as cl, re, scad_format
 
   structure = {
     "type": "object",
