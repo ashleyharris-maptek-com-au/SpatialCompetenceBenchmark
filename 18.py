@@ -151,21 +151,26 @@ How many primitives are processed in this below script?
 """ + result
 
   inspectionResult = answerQuestion(prompt)
-
-  if inspectionResult["primitiveCount"] > 1000:
+  if "primitiveCount" in inspectionResult and inspectionResult["primitiveCount"] > 1000:
     print("AI estimation of primitive count: " + str(inspectionResult["primitiveCount"]))
     print("Aborting due to " + str(inspectionResult["primitiveCount"]) + " parts!")
     return "module result(){linear_extrude(0.1) text(\"Aborting due to " + str(
       inspectionResult["primitiveCount"]) + " parts!\");}"
-  elif inspectionResult["primitiveCount"] > 200:
+  elif "primitiveCount" in inspectionResult and inspectionResult["primitiveCount"] > 200:
     print("AI estimation of primitive count: " + str(inspectionResult["primitiveCount"]))
     print("This is dubious and might break your machine, but we'll try.")
-  else:
+  elif "primitiveCount" in inspectionResult:
     print("AI estimation of primitive count: " + str(inspectionResult["primitiveCount"]))
     print("Seems safe to continue.")
+  else:
+    return "module result(){linear_extrude(0.1) text(\"LLM failed to "\
+      "estimate part count.\\nCheck both OpenAI and Gemini API tokens!\");}"
 
   if result.count("```") == 2:
-    result = re.split(r"```[^\n]*\n")[1]
+    result = re.split(r"```[^\n]*\n?", result)[1]
+    # Also remove the closing ``` marker
+    if result.rstrip().endswith("```"):
+      result = result.rstrip()[:-3]
 
   # We need to extract things that can't be nested inside module result():
   # 1. Module definitions: module name(...) { ... }
@@ -254,47 +259,57 @@ if __name__ == "__main__":
   print(
     resultToScad(
       """
-// OpenSCAD plan: Tallest stable pyramid using budget of 20,000 stones (50 cm side)
-// All dimensions in millimeters (mm). Stone = 50 cm = 500 mm.
+```openscad
+// Pharaoh's Pyramid Construction Plans
+// Specifications:
+//   - 20,000 stones available (500mm cubes)
+//   - 19,019 stones used
+//   - 38 layers
+//   - Height: 19,000mm (19 meters)
+//   - Base: 19,000mm × 19,000mm square
+//   - Orientation: North face aligned with +Y axis
 
-stone = 500;            // edge length of each stone in mm
-budget_stones = 20000;   // total stones available
+stone_size = 500; // millimeters
+n_base = 38;      // base layer is 38×38 stones
 
-// Sum of squares: 1^2 + 2^2 + ... + n^2 = n(n+1)(2n+1)/6
-function sum_squares(n) = n*(n+1)*(2*n+1)/6;
-
-// Determine maximum number of layers L such that total stones <= budget
-n = 1;
-while (sum_squares(n) <= budget_stones)
-  n = n + 1;
-layers = n - 1;
-
-// Compute total stones used and volume
-stones_used = sum_squares(layers);
-volume_mm3 = stones_used * stone * stone * stone;
-
-echo("Max layers: ", layers,
-     ", Stones used: ", stones_used,
-     ", Total volume: ", volume_mm3, " mm^3 (", volume_mm3/1e9, " m^3)");
-
-// Build pyramid: base layer has 'layers' x 'layers' stones; each subsequent layer reduces by 1 in both x and y.
-// Stacking rule: each upper stone rests on four stones below (centers align at crosspoints).
-// Coordinates chosen so that the pyramid is centered and faces north (+y). All dimensions in mm.
-module build_pyramid(layers, stone) {
-  for (L = [0 : layers - 1]) {
-    side = layers - L;            // number of stones along one side in this layer
-    z = 250 + L * stone;            // z-centre of this layer (bottom sits on ground)
-    for (dx = [0 : side - 1]) {
-      for (dy = [0 : side - 1]) {
-        x = 250 * (L + 1) + dx * stone;  // x-centre of this stone
-        y = 250 * (L + 1) + dy * stone;  // y-centre of this stone
-        translate([x, y, z])
-          cube([stone, stone, stone], center = true);
-      }
-    }
-  }
+// Smooth marble facade (final external surface)
+module smooth_pyramid() {
+    base = n_base * stone_size;    // 19,000mm
+    height = n_base * stone_size;  // 19,000mm
+    
+    polyhedron(
+        points = [
+            [-base/2, -base/2, 0],  // 0: Southwest corner
+            [base/2, -base/2, 0],   // 1: Southeast corner
+            [base/2, base/2, 0],    // 2: Northeast corner
+            [-base/2, base/2, 0],   // 3: Northwest corner
+            [0, 0, height]          // 4: Apex
+        ],
+        faces = [
+            [0,1,2,3],  // Base
+            [0,1,4],    // South face
+            [1,2,4],    // East face
+            [2,3,4],    // North face (+Y)
+            [3,0,4]     // West face
+        ]
+    );
 }
 
-// Render the pyramid
-build_pyramid(layers, stone);
-  """, "gpt"))
+// Internal stepped stone structure
+module stepped_pyramid() {
+    for (L = [0:n_base-1]) {
+        layer_size = n_base - L;
+        translate([0, 0, L * stone_size + stone_size/2])
+            cube([layer_size * stone_size, layer_size * stone_size, stone_size], center=true);
+    }
+}
+
+// Render marble facade
+color("white", 1.0)  
+    smooth_pyramid();
+
+// Render internal structure
+color("sandybrown", 0.4) 
+    stepped_pyramid();
+```
+  """, "claude-opus-4-5"))

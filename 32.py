@@ -145,6 +145,17 @@ the idea was considered.
 If you are unsure, answer False, False."""
 
     result = answerQuestion(prompt)
+
+    if "mentioned" not in result or "recommended" not in result:
+      print("WARNING: Grading while offline / missing grader AI. Inaccurate grading.")
+      grading[subPass].append({
+        "idea": idea,
+        "mentioned": False,
+        "recommended": False,
+        "goodIdea": idea in questions[subPass]["good"],
+        "scoreDelta": 0
+      })
+
     grading[subPass].append({
       "idea": idea,
       "mentioned": result["mentioned"],

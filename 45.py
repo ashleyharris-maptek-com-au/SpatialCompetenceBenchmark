@@ -297,8 +297,20 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   cartesianDistance = 2 * earth_radius_km * math.sin(central_angle_rad / 2)
 
   if score == 0.4:
-    score += 0.6 * (1 - greatCircleDistance / 10000)
+    gcdlog10 = math.log10(greatCircleDistance)
 
+    if gcdlog10 < 1:
+      score = 1.0
+    elif gcdlog10 < 2:
+      score = 0.9
+    elif gcdlog10 < 3:
+      score = 0.8
+    elif gcdlog10 < 4:
+      score = 0.7
+    elif gcdlog10 < 5:
+      score = 0.6
+    elif gcdlog10 < 6:
+      score = 0.5
   if greatCircleDistance < 2:
     feedback.append(f"Error distance (along surface): ({greatCircleDistance * 1000:.1f} m)")
     # we don't add chord or degree measurements, because at these scales they're within a few cm of each other.

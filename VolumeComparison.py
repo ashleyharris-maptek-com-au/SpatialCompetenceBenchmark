@@ -48,7 +48,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
         "output_hyperlink": None,
         "reference_image": None,
         "temp_dir": None,
-        "scoreExplantion": reason,
+        "scoreExplanation": reason,
         "resultVolume": 0,
         "referenceVolume": 0,
         "intersectionVolume": 0,
@@ -65,7 +65,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
       "output_hyperlink": None,
       "reference_image": None,
       "temp_dir": None,
-      "scoreExplantion": "Exception: " + str(e) + " in resultToScad",
+      "scoreExplanation": "Exception: " + str(e) + " in resultToScad",
       "resultVolume": 0,
       "referenceVolume": 0,
       "intersectionVolume": 0,
@@ -80,7 +80,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
       "output_hyperlink": resultAsScad,
       "reference_image": None,
       "temp_dir": None,
-      "scoreExplantion": "Result was empty",
+      "scoreExplanation": "Result was empty",
       "resultVolume": 0,
       "referenceVolume": 0,
       "intersectionVolume": 0,
@@ -107,7 +107,9 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
     cached = _load_cache(cache_meta_path)
     if cached is not None:
       print(f"Cache hit for result {result_cache_key[:12]}...")
-      cached["scoreExplantion"] += "Results were <a href='" + cache_meta_path + "'>cached</a>."
+      if "scoreExplanation" not in cached:
+        cached["scoreExplanation"] = ""  # I fixed a typo which broke the old cache.
+      cached["scoreExplanation"] += "Results were <a href='" + cache_meta_path + "'>cached</a>."
       return cached
 
   # Create cache directories
@@ -358,7 +360,7 @@ color([1,0,0,0.8])
     "output_hyperlink": result_scad,
     "reference_image": reference_png,
     "temp_dir": temp_dir,
-    "scoreExplantion": scoreExplantion,
+    "scoreExplanation": scoreExplantion,
     "resultVolume": resultVolume,
     "referenceVolume": referenceVolume,
     "intersectionVolume": intersectionVolume,

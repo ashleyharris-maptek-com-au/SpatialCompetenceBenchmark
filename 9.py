@@ -244,7 +244,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       return 0, "Out of bounds!"
 
     if subPass >= 4:
-      if validGridForPass[subPass][step["xy"][0] - 1][step["xy"][1] - 1] == "X":
+      if validGridForPass[subPass][int(step["xy"][0]) - 1][int(step["xy"][1]) - 1] == "X":
         return 0, f"You visited an invalid cell {step['xy']}!"
 
     # check that the step is side-adjacent to the previous step
@@ -321,9 +321,3 @@ Using Claude Opus 4.5, Windsurf, $40 of API credits and a day of my life explain
 for an AI to implement, I was able to build a solver for this that can solve simple sparse grids in a few minutes
  (placebo_data/q9.py), this is probably the peak of what I'd expect an AI could do.
 """
-
-for grid in validGridForPass:
-  for row in grid:
-    print("".join(row))
-
-  print()

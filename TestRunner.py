@@ -12,6 +12,7 @@ import time
 import argparse
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from filelock import FileLock
 from CacheLayer import CacheLayer as cl
 
 try:
@@ -760,42 +761,47 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
 
   scores = {}
 
-  if not os.path.exists("results/results.txt"):
+  # Use file lock to prevent race conditions when running parallel
+  results_lock = FileLock("results/results.txt.lock")
+  with results_lock:
+    if not os.path.exists("results/results.txt"):
+      with open("results/results.txt", "w", encoding="utf-8") as f:
+        f.write("\n")
+
+    with open("results/results.txt", "r", encoding="utf-8") as f:
+      for line in f:
+        if ":" in line:
+          scores[line.split(":")[0].strip()] = line.split(":")[1].strip()
+
+    if test_filter is None:
+      # Don't overwrite scores if we're running a subset of tests.
+      scores[aiEngineName] = overall_total_score / overall_max_score if overall_max_score > 0 else 0
+
     with open("results/results.txt", "w", encoding="utf-8") as f:
-      f.write("\n")
-
-  with open("results/results.txt", "r", encoding="utf-8") as f:
-    for line in f:
-      if ":" in line:
-        scores[line.split(":")[0].strip()] = line.split(":")[1].strip()
-
-  if test_filter is None:
-    # Don't overwrite scores if we're running a subset of tests.
-    scores[aiEngineName] = overall_total_score / overall_max_score if overall_max_score > 0 else 0
-
-  with open("results/results.txt", "w", encoding="utf-8") as f:
-    for key, value in sorted(scores.items(), key=lambda item: float(item[1]), reverse=True):
-      f.write(f"{key}: {value}\n")
+      for key, value in sorted(scores.items(), key=lambda item: float(item[1]), reverse=True):
+        f.write(f"{key}: {value}\n")
 
   # Save per-question results to JSON
   import json
   per_question_file = "results/results_by_question.json"
-  all_per_question = {}
-  if os.path.exists(per_question_file):
-    with open(per_question_file, "r", encoding="utf-8") as f:
-      try:
-        all_per_question = json.load(f)
-      except:
-        all_per_question = {}
+  per_question_lock = FileLock("results/results_by_question.json.lock")
+  with per_question_lock:
+    all_per_question = {}
+    if os.path.exists(per_question_file):
+      with open(per_question_file, "r", encoding="utf-8") as f:
+        try:
+          all_per_question = json.load(f)
+        except:
+          all_per_question = {}
 
-  # Merge with existing data for this engine (don't overwrite other questions)
-  if aiEngineName not in all_per_question:
-    all_per_question[aiEngineName] = {}
-  for q_num, q_data in per_question_scores.items():
-    all_per_question[aiEngineName][str(q_num)] = q_data
+    # Merge with existing data for this engine (don't overwrite other questions)
+    if aiEngineName not in all_per_question:
+      all_per_question[aiEngineName] = {}
+    for q_num, q_data in per_question_scores.items():
+      all_per_question[aiEngineName][str(q_num)] = q_data
 
-  with open(per_question_file, "w", encoding="utf-8") as f:
-    json.dump(all_per_question, f, indent=2)
+    with open(per_question_file, "w", encoding="utf-8") as f:
+      json.dump(all_per_question, f, indent=2)
 
   if test_filter is not None:
     return
@@ -895,7 +901,8 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
     }
 
   # Generate index.html landing page
-  with open("results/index.html", "w", encoding="utf-8") as index_file:
+  index_lock = FileLock("results/index.html.lock")
+  with index_lock, open("results/index.html", "w", encoding="utf-8") as index_file:
     index_file.write("""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1042,7 +1049,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
 <body>
     <div class="header">
         <h1>Mesh Benchmark Results</h1>
-        <p class="subtitle">Model Evaluation of Spatial Hueristics.</p>
+        <p class="subtitle">Model Evaluation of Spatial Heuristics.</p>
         <p>Can LLMs use internal visualisation or spatial reasoning to solve problems?</p>
     </div>
     
@@ -1074,7 +1081,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
       percentage = score_float * 100
 
       # Determine score class
-      if percentage >= 70:
+      if percentage >= 100:
+        score_class = "score-low"
+      elif percentage >= 70:
         score_class = "score-high"
       elif percentage >= 40:
         score_class = "score-medium"
@@ -1088,7 +1097,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
                     <td><strong>#{rank}</strong></td>
                     <td>{html.escape(engine_name)}{badge}</td>
                     <td class="score-cell {score_class}">{score_float:.4f}</td>
-                    <td class="{score_class}">{percentage:.1f}%</td>
+                    <td class="{score_class}">{percentage if percentage < 100 else 0:.1f}%</td>
                     <td><a href="{html.escape(engine_name)}.html">View Details →</a></td>
                 </tr>
 """)

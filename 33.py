@@ -1,6 +1,32 @@
 import math
+import hashlib
+import json
+import os
+import tempfile
 
 import scad_format
+
+# Cache for gradeAnswer results
+_grade_cache_path = os.path.join(tempfile.gettempdir(), "grade_cache_33.json")
+_grade_cache = None
+
+
+def _load_grade_cache():
+  global _grade_cache
+  if _grade_cache is None:
+    try:
+      with open(_grade_cache_path, 'r') as f:
+        _grade_cache = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+      _grade_cache = {}
+  return _grade_cache
+
+
+def _save_grade_cache():
+  if _grade_cache is not None:
+    with open(_grade_cache_path, 'w') as f:
+      json.dump(_grade_cache, f)
+
 
 title = "Gravitational trickshots"
 
@@ -101,12 +127,22 @@ def _massToRocheLimit(mass: float) -> float:
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
+  # Check cache first
+  cache_key = hashlib.md5((json.dumps(answer, sort_keys=True) + str(subPass)).encode()).hexdigest()
+  cache = _load_grade_cache()
+  if cache_key in cache:
+    return tuple(cache[cache_key])
+
+  def _cache_and_return(result):
+    cache[cache_key] = list(result)
+    _save_grade_cache()
+    return result
 
   bodies = []
   namesInAnswer = set()
 
   if len(answer["planets"]) != 7:
-    return 0, "answer must contain exactly 7 planets"
+    return _cache_and_return((0, "answer must contain exactly 7 planets"))
 
   bodies.append({
     "name": "Sun",
@@ -121,11 +157,14 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
   for planet in answer["planets"]:
     if planet['name'] in namesInAnswer:
-      return 0, "answer must contain exactly 7 planets with unique names"
+      return _cache_and_return((0, "answer must contain exactly 7 planets with unique names"))
     namesInAnswer.add(planet['name'])
 
     if planet["name"] not in ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Grace"]:
-      return 0, "answer must contain exactly 7 planets with names Alice, Bob, Carol, Dave, Eve, Frank, and Grace"
+      return _cache_and_return((
+        0,
+        "answer must contain exactly 7 planets with names Alice, Bob, Carol, Dave, Eve, Frank, and Grace"
+      ))
 
     mass = 10**24 if planet["name"] in ["Alice", "Bob", "Carol"] else \
         10**25 if planet["name"] in ["Dave", "Eve"] else \
@@ -295,67 +334,84 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if subPass == 0:
     # System stable for 100 years - no impacts
     if len(impacts) > 0:
-      return 0, f"System unstable: {impacts[0]['destroyed']} was destroyed on day {impacts[0]['day']}"
-    return 1, "System stable for 100 years"
+      return _cache_and_return(
+        (0, f"System unstable: {impacts[0]['destroyed']} was destroyed on day {impacts[0]['day']}"))
+    return _cache_and_return((1, "System stable for 100 years"))
 
   elif subPass == 1:
     # All planets orbit in different planes and stable for 200 years
     if len(impacts) > 0:
-      return 0, f"System unstable: {impacts[0]['destroyed']} was destroyed on day {impacts[0]['day']}"
+      return _cache_and_return(
+        (0, f"System unstable: {impacts[0]['destroyed']} was destroyed on day {impacts[0]['day']}"))
     # Check orbital planes are different (using initial velocity cross position as normal)
     # Simplified: just check stability
-    return 1, "System stable for 200 years"
+    return _cache_and_return((1, "System stable for 200 years"))
 
   elif subPass == 2:
     # No impacts for 50 years, then at least one impact before year 60
     early_impacts = [i for i in impacts if i["day"] < 50 * 365]
     late_impacts = [i for i in impacts if 50 * 365 <= i["day"] < 60 * 365]
     if len(early_impacts) > 0:
-      return 0, f"Impact too early: {early_impacts[0]['destroyed']} on day {early_impacts[0]['day']}"
+      return _cache_and_return(
+        (0, f"Impact too early: {early_impacts[0]['destroyed']} on day {early_impacts[0]['day']}"))
     if len(late_impacts) == 0:
-      return 0, "No impact occurred between year 50 and 60"
-    return 1, f"Impact occurred as planned: {late_impacts[0]['destroyed']} on day {late_impacts[0]['day']}"
+      return _cache_and_return((0, "No impact occurred between year 50 and 60"))
+    return _cache_and_return(
+      (1,
+       f"Impact occurred as planned: {late_impacts[0]['destroyed']} on day {late_impacts[0]['day']}"
+       ))
 
   elif subPass == 3:
     # One planet completes 100 orbits within 100 years then hits sun
     sun_impacts = [i for i in impacts if i["survivor"] == "Sun"]
     if len(sun_impacts) == 0:
-      return 0, "No planet hit the sun"
+      return _cache_and_return((0, "No planet hit the sun"))
     # Check the destroyed planet had 100+ orbits
     destroyed_name = sun_impacts[0]["destroyed"]
     destroyed_body = next(b for b in bodies if b["name"] == destroyed_name)
     total_orbits = destroyed_body["orbitsClockWise"] + destroyed_body["orbitsCounterClockWise"]
     if total_orbits < 100:
-      return 0, f"{destroyed_name} only completed {total_orbits} orbits before hitting sun"
+      return _cache_and_return(
+        (0, f"{destroyed_name} only completed {total_orbits} orbits before hitting sun"))
     # Check other planets are stable (no other impacts)
     other_impacts = [i for i in impacts if i["destroyed"] != destroyed_name]
     if len(other_impacts) > 0:
-      return 0, f"Other planet {other_impacts[0]['destroyed']} was also destroyed"
-    return 1, f"{destroyed_name} completed {total_orbits} orbits then hit sun"
+      return _cache_and_return(
+        (0, f"Other planet {other_impacts[0]['destroyed']} was also destroyed"))
+    return _cache_and_return((1, f"{destroyed_name} completed {total_orbits} orbits then hit sun"))
 
   elif subPass == 4:
     # Frank and Grace binary pair within 10 million km for 100 years
     frank = next(b for b in bodies if b["name"] == "Frank")
     grace = next(b for b in bodies if b["name"] == "Grace")
     if frank["destroyed"] or grace["destroyed"]:
-      return 0, "Frank or Grace was destroyed"
+      return _cache_and_return((0, "Frank or Grace was destroyed"))
     required_days = 100 * 365
     if frank_grace_close_days < required_days:
-      return 0, f"Frank and Grace only within 10M km for {frank_grace_close_days} days (need {required_days})"
-    return 1, f"Frank and Grace within 10M km for {frank_grace_close_days} days"
+      return _cache_and_return((
+        0,
+        f"Frank and Grace only within 10M km for {frank_grace_close_days} days (need {required_days})"
+      ))
+    return _cache_and_return(
+      (1, f"Frank and Grace within 10M km for {frank_grace_close_days} days"))
 
   elif subPass == 5:
     # Alice completes 2 clockwise and 2 counter-clockwise orbits
     alice = next(b for b in bodies if b["name"] == "Alice")
     if alice["destroyed"]:
-      return 0, "Alice was destroyed"
+      return _cache_and_return((0, "Alice was destroyed"))
     if alice["orbitsClockWise"] < 2:
-      return 0, f"Alice only completed {alice['orbitsClockWise']} clockwise orbits"
+      return _cache_and_return(
+        (0, f"Alice only completed {alice['orbitsClockWise']} clockwise orbits"))
     if alice["orbitsCounterClockWise"] < 2:
-      return 0, f"Alice only completed {alice['orbitsCounterClockWise']} counter-clockwise orbits"
-    return 1, f"Alice completed {alice['orbitsClockWise']} CW and {alice['orbitsCounterClockWise']} CCW orbits"
+      return _cache_and_return(
+        (0, f"Alice only completed {alice['orbitsCounterClockWise']} counter-clockwise orbits"))
+    return _cache_and_return((
+      1,
+      f"Alice completed {alice['orbitsClockWise']} CW and {alice['orbitsCounterClockWise']} CCW orbits"
+    ))
 
-  return 0, "Unknown subPass"
+  return _cache_and_return((0, "Unknown subPass"))
 
 
 def resultToNiceReport(answer, subPass, aiEngineName):
