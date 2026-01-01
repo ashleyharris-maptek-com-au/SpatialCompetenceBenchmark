@@ -1425,7 +1425,8 @@ def ensure_gear_images_exist(subpass):
     # Return existing paths
     return [
       f"results/35_input_{subpass}_front.png",
-      f"results/35_input_{subpass}_top.png",
+      f"results/35_input_{subpass}_topClose.png",
+      f"results/35_input_{subpass}_topFar.png",
       f"results/35_input_{subpass}_side.png",
     ]
 

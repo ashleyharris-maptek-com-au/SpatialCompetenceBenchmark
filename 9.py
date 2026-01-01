@@ -51,9 +51,43 @@ structure = {
   "required": ["steps"]
 }
 
-equation5 = "x * 19 + y * 23 + x * y + 10000000028"
-equation6 = "x * 13 + y * 29 + x * y + 8000000000"
-equation7 = "x * 73 + y * 37 + x * y + 500000002"
+grid6 = """
+................
+.X..X.....X..X..
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+.X..X.....X..X..
+................
+    """.strip()
+
+grid7 = map_lines = """
+................
+.X..X.....X..X..
+................
+................
+................
+................
+................
+......XX........
+......XX........
+................
+................
+................
+................
+................
+.X..X.....X..X..
+................
+    """.strip()
 
 subpassParamSummary = [
   "4x4 grid",
@@ -61,9 +95,9 @@ subpassParamSummary = [
   "12x12 grid",
   "16x16 grid",
   "16x16 grid with cells (3,3) and (3,4) removed",
-  "16x16 grid with cells(x,y) where " + equation5 + " is prime, are removed",
-  "16x16 grid with cells(x,y) where " + equation6 + " is prime, are removed",
-  "16x16 grid with cells(x,y) where " + equation7 + " is prime, are removed",
+  "16x16 grid with cells (3,3), (3,4), (5,3), (5,4), (7,7), and (8,7), are removed.",
+  "16x16 grid where various holes exist.",
+  "16x16 grid where various holes exist.",
 ]
 promptChangeSummary = "Grid size increases across subpasses, with a missing chunk in the final subpasses"
 
@@ -80,19 +114,24 @@ def isPrime(n):
 validSquaresForPass = [16 * 16] * 8
 validGridForPass = np.array([[['.'] * 16] * 16] * 8, dtype=str)
 
-for x in range(1, 17):
-  for y in range(1, 17):
-    if isPrime(eval(equation5)):
-      validSquaresForPass[5] -= 1
-      validGridForPass[5][x - 1][y - 1] = "X"
-    if isPrime(eval(equation6)):
-      validSquaresForPass[6] -= 1
-      validGridForPass[6][x - 1][y - 1] = "X"
-    if isPrime(eval(equation7)):
-      validSquaresForPass[7] -= 1
-      validGridForPass[7][x - 1][y - 1] = "X"
+validSquaresForPass[4] -= 2
+validSquaresForPass[5] -= 6
+validGridForPass[4][3][3] = "X"
+validGridForPass[4][3][4] = "X"
+validGridForPass[5][3][3] = "X"
+validGridForPass[5][3][4] = "X"
+validGridForPass[5][5][3] = "X"
+validGridForPass[5][5][4] = "X"
+validGridForPass[5][7][7] = "X"
+validGridForPass[5][8][7] = "X"
 
-for p in range(5, 8):
+validSquaresForPass[6] -= grid6.count('X')
+validSquaresForPass[7] -= grid7.count('X')
+
+validGridForPass[6] = [list(line) for line in grid6.strip().split("\n")]
+validGridForPass[7] = [list(line) for line in grid7.strip().split("\n")]
+
+for p in range(4, 8):
   subpassParamSummary[p] += "<br>\n<pre>\n"
   for r in validGridForPass[p]:
     subpassParamSummary[p] += "".join(r) + "\n"
@@ -154,42 +193,6 @@ def isHamiltonianLoopSolvable(subPass):
   return True, f"Potentially solvable: {len(valid_cells)} cells, all connected, no dead ends"
 
 
-if __name__ == "__main__":
-  for r, e2 in zip(range(5, 8), [equation5, equation6, equation7]):
-    e = e2
-    while True:
-
-      validSquaresForPass[r] = 16 * 16
-      validGridForPass[r] = np.array([['.'] * 16] * 16, dtype=str)
-
-      for x in range(1, 17):
-        for y in range(1, 17):
-          if isPrime(eval(e)):
-            validSquaresForPass[r] -= 1
-            validGridForPass[r][x - 1][y - 1] = "X"
-
-      print(subpassParamSummary[r])
-      solvable, reason = isHamiltonianLoopSolvable(r)
-      print(f"Solvable: {solvable}")
-      print(f"Reason: {reason}")
-
-      if solvable:
-        break
-
-      if r == 5:
-        equation5 += str(random.randint(0, 10))
-        e = equation5
-        print(equation5)
-      elif r == 6:
-        equation6 += str(random.randint(0, 10))
-        e = equation6
-        print(equation6)
-      elif r == 7:
-        equation7 += str(random.randint(0, 10))
-        e = equation7
-        print(equation7)
-
-
 def prepareSubpassPrompt(index):
   if index == 0:
     return prompt.replace("SIZE", "4").replace("SQUARED", "16").replace("TWIST", "")
@@ -204,13 +207,15 @@ def prepareSubpassPrompt(index):
       "TWIST", "Cells 3,3 and 3,4 have been removed from the grid and must be skipped.")
   if index == 5:
     return prompt.replace("SIZE", "16").replace("SQUARED", str(validSquaresForPass[5])).replace(
-      "TWIST", f"Cells where {equation5} is prime must be skipped.")
+      "TWIST",
+      f"(3,3), (3,4), (5,3), (5,4), (7,7), and (8,7) are removed from the grid and must be skipped."
+    )
   if index == 6:
     return prompt.replace("SIZE", "16").replace("SQUARED", str(validSquaresForPass[6])).replace(
-      "TWIST", f"Cells where {equation6} is prime must be skipped.")
+      "TWIST", grid6 + "\n\nX represents a cell to be skipped. Top Left is 1,1")
   if index == 7:
     return prompt.replace("SIZE", "16").replace("SQUARED", str(validSquaresForPass[7])).replace(
-      "TWIST", f"Cells where {equation7} is prime must be skipped.")
+      "TWIST", grid7 + "\n\nX represents a cell to be skipped. Top Left is 1,1")
   raise StopIteration
 
 
@@ -237,15 +242,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     if step["xy"][0] <= 0 or step["xy"][0] > size or step["xy"][1] <= 0 or step["xy"][1] > size:
       return 0, "Out of bounds!"
 
-    if subPass == 4 and (step["xy"][0] == 3 and step["xy"][1] == 3
-                         or step["xy"][0] == 3 and step["xy"][1] == 4):
-      return 0, "You forgot to skip cell 3,3 or 3,4!"
-
-    if subPass == 5:
-      x = step["xy"][0]
-      y = step["xy"][1]
-      if isPrime(eval(equation5)):
-        return 0, f"You visited an prime numbered cell {step['xy']}, {equation5} = {eval(equation5)}!"
+    if subPass >= 4:
+      if validGridForPass[subPass][step["xy"][0] - 1][step["xy"][1] - 1] == "X":
+        return 0, f"You visited an invalid cell {step['xy']}!"
 
     # check that the step is side-adjacent to the previous step
     xDiff = abs(step["xy"][0] - location[0])
@@ -279,13 +278,13 @@ hull() {{
 translate([{a['xy'][0]}, {a['xy'][1]}, 0]) linear_extrude(0.01) text("{i}",size=0.15, halign="center", valign="center");
 """
 
-  if subPass in [5, 6, 7]:
+  if subPass in [4, 5, 6, 7]:
     for x in range(1, 17):
       for y in range(1, 17):
         try:
           if validGridForPass[subPass][x - 1][y - 1] == "X":
             scadOutput += f"""
-translate([{x}, {y}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, halign="center", valign="center");
+translate([{x-1}, {y-1}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, halign="center", valign="center");
 """
         except:
           pass
@@ -308,3 +307,9 @@ existing solutions on the web to copy paste. It's that well known.
 As we crank it up, things get harder. LLMs may truncate or lose focus on the longer
 paths, and some of the complex paths, especially with holes, require novel solutions.
 """
+
+for grid in validGridForPass:
+  for row in grid:
+    print("".join(row))
+
+  print()

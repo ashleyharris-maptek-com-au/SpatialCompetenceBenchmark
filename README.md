@@ -44,20 +44,23 @@ You are controlling a catapult to destroy a structure and its targets.
 A bridge with targets hiding underneath - requires indirect hits
 
 **Targets to destroy (green spheres):**
-  - target_under_center at position (3.0, 0.0, 0.3)
-  - target_under_front at position (2.5, 0.0, 0.3)
-  - target_under_back at position (3.5, 0.0, 0.3)
+
+- target_under_center at position (3.0, 0.0, 0.3)
+- target_under_front at position (2.5, 0.0, 0.3)
+- target_under_back at position (3.5, 0.0, 0.3)
 
 **Catapult Position:** (-8.0, 0.0, 0.0)
 The catapult is located to the WEST of the structure (negative X). The structure is centered around X=3.
 
 **Physics:**
+
 - Projectiles are spheres with radius 0.3m and mass 5.0kg
 - Gravity is 9.81 m/s²
 - Targets must be displaced by at least 0.5m to count as destroyed
 
 **Your Task:**
 Provide exactly 3 shots. For each shot, specify:
+
 1. **bearing** (degrees): Horizontal aim angle. 0° = straight toward +X (toward structure), positive = left (+Y direction)
 2. **elevation** (degrees): Vertical angle above horizontal. Range: 5° to 75°
 3. **speed** (m/s): Launch speed. Range: 5 to 30 m/s
@@ -88,7 +91,7 @@ Provide exactly 3 shots. For each shot, specify:
 ]}
 ```
 
-### Which, using Python, pyBullet physics engine and OpenSCAD, is converted into...
+### Which, using Python, pyBullet physics engine and OpenSCAD, is converted into
 
 ![Example test](results/48_scene_2_post_gpt-5-nano.png)
 
@@ -141,6 +144,10 @@ export AWS_ACCESS_KEY_ID="your-aws-access-key"
 export AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
 export AWS_DEFAULT_REGION="your-aws-region"
 ```
+
+OpenAI and Gemini should be considered 'required' and all others 'optional'. The reason
+being some tests use AI to interpret results, and, since I don't trust one AI to mark
+it's own homework, it will use Gemini to mark Chatgpt's output, and Chatgpt to mark all others.
 
 ## Running the Benchmark
 
@@ -200,7 +207,7 @@ if it didn't have aphantasia that would be excellent.
 ## Explain the "Human with tools" model?
 
 This is me trying to solve the problems, with every tool at my disposal. This was originally used to confirm the graders
-were working correctly, but I decided to keep it as a reference point. 
+were working correctly, but I decided to keep it as a reference point.
 
 I'm not the smartest human there is - but I think I'm a decent contender.
 

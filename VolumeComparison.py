@@ -21,8 +21,8 @@ formatConfig = scad_format.FormatConfig(
   BreakBeforeBraces=scad_format.config.BraceBreakingStyle.Allman)
 
 
-def compareVolumeAgainstOpenScad(index: int, subPass: int, result,
-                                 testGlobals: dict) -> Dict[str, Any]:
+def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: dict,
+                                 aiEngineName: str) -> Dict[str, Any]:
   """
     Compare a test result against a reference OpenSCAD model by computing volumes.
     

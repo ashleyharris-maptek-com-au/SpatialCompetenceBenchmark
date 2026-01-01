@@ -110,19 +110,17 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
   }
 
   if "gpt" in aiEngineName:
-    import AiEngineGoogleGemini
-    AiEngineGoogleGemini.Configure("gemini-2.5-flash-lite", False, False)
-    cacheLayer = cl.CacheLayer(AiEngineGoogleGemini.configAndSettingsHash,
-                               AiEngineGoogleGemini.GeminiAIHook, "gemini-2.5-flash-lite")
+    from AiEngineGoogleGemini import GeminiEngine
+    engine = GeminiEngine("gemini-2.5-flash-lite", False, False)
+    cacheLayer = cl.CacheLayer(engine.configAndSettingsHash, engine.AIHook, "gemini-2.5-flash-lite")
 
     def answerQuestion(q: str) -> dict:
-      return cacheLayer.AIHook(q, structure, -1, -1)
+      return cacheLayer.AIHook(q, structure, -1, -1)[0]
 
   else:
-    import AiEngineOpenAiChatGPT
-    AiEngineOpenAiChatGPT.Configure("gpt-5-nano", False, False)
-    cacheLayer = cl.CacheLayer(AiEngineOpenAiChatGPT.configAndSettingsHash,
-                               AiEngineOpenAiChatGPT.ChatGPTAIHook, "gpt-5-nano")
+    from AiEngineOpenAiChatGPT import OpenAIEngine
+    engine = OpenAIEngine("gpt-5-nano", False, False)
+    cacheLayer = cl.CacheLayer(engine.configAndSettingsHash, engine.AIHook, "gpt-5-nano")
 
     def answerQuestion(q: str) -> dict:
       return cacheLayer.AIHook(q, structure, -1, -1)[0]

@@ -18,6 +18,9 @@ OFFLINE_MODE = False
 # results months or years old.
 POOR_MODE = True
 
+# If the cache contains an empty result, ignore the cache and try again.
+IGNORE_CACHED_FAILURES = False
+
 
 class CacheLayer:
 
@@ -72,8 +75,16 @@ class CacheLayer:
       try:
         with open(cache_file, "r", encoding="utf-8") as f:
           cachedJson = json.load(f)
-          if len(cachedJson) > 0:
-            return cachedJson
+        if len(str(cachedJson)) <= 6 and IGNORE_CACHED_FAILURES:
+          print(f"IGNORE_CACHED_FAILURES set, cached result was too short: '{cachedJson}'")
+          cachedJson = ""
+          try:
+            os.unlink(cache_file)
+          except:
+            pass
+
+        if len(cachedJson) > 0:
+          return cachedJson
       except Exception as e:
         print("Failed to read cache file: " + cache_file + " - " + str(e))
         try:

@@ -19,67 +19,44 @@ The Bedrock documentation: https://docs.aws.amazon.com/bedrock/latest/userguide/
 """
 
 import hashlib
-
-# Constants that fine tune which model, reasoning mode, and tools
-# Example model IDs:
-#   - qwen.qwen3-30b-a3b-v1:0
-#   - qwen.qwen3-235b-a22b-v1:0
-#   - anthropic.claude-3-sonnet-20240229-v1:0
-#   - anthropic.claude-3-5-sonnet-20241022-v2:0
-#   - meta.llama3-70b-instruct-v1:0
-#   - mistral.mistral-large-2402-v1:0
-MODEL = "qwen.qwen3-30b-a3b-v1:0"
-
-# REASONING controls reasoning/thinking mode:
-# - False or 0: No special reasoning (standard mode)
-# - Integer (1-10): Reasoning effort level (model-dependent)
-# Note: Not all Bedrock models support extended thinking
-REASONING = False
-
-# TOOLS enables tool capabilities:
-# - False: No tools available
-# - True: Enable hosted tools (Nova: code_interpreter + web_grounding)
-# - List of tool definitions: Enable specific custom tools
-TOOLS = False
-
-# AWS Region for Bedrock. Note not all models are available in all regions,
-# and no region supports all models.
-REGION = "us-east-1"
-
-# FLEX_TIER enables Flex service tier for cost savings (slower processing)
-# - False: Use standard tier
-# - True: Use flex tier (discounted pricing, may have delays)
-FLEX_TIER = False
-
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                       str(TOOLS).encode()).hexdigest()
-
-forcedFailure = False
-
-
-def Configure(Model, Reasoning, Tools, Region):
-  global MODEL
-  global REASONING
-  global TOOLS
-  global REGION
-  global FLEX_TIER
-  global configAndSettingsHash
-  global forcedFailure
-  MODEL = Model
-  REASONING = Reasoning
-  TOOLS = Tools
-  if Region:
-    REGION = Region
-  forcedFailure = False
-  configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                         str(TOOLS).encode()).hexdigest()
-
-
 import os
 import json
 import PromptImageTagging as pit
 from typing import Any, List, Optional
 from pydantic import BaseModel, create_model
+
+
+class BedrockEngine:
+  """
+  Amazon Bedrock AI Engine class.
+  
+  Configuration parameters:
+  - model: Model ID (e.g., "qwen.qwen3-30b-a3b-v1:0", "meta.llama3-70b-instruct-v1:0")
+  - reasoning: Reasoning/thinking mode:
+      - False or 0: No special reasoning (standard mode)
+      - Integer (1-10): Reasoning effort level (model-dependent)
+  - tools: Tool capabilities:
+      - False: No tools available
+      - True: Enable hosted tools (Nova: code_interpreter + web_grounding)
+      - List of tool definitions: Enable specific custom tools
+  - region: AWS Region for Bedrock (default "us-east-1")
+  - flex_tier: Use Flex service tier for cost savings (default False)
+  """
+
+  def __init__(self, model: str, reasoning=False, tools=False, region="us-east-1", flex_tier=False):
+    self.model = model
+    self.reasoning = reasoning
+    self.tools = tools
+    self.region = region
+    self.flex_tier = flex_tier
+    self.forcedFailure = False
+    self.configAndSettingsHash = hashlib.sha256(model.encode() + str(reasoning).encode() +
+                                                str(tools).encode()).hexdigest()
+
+  def AIHook(self, prompt: str, structure: dict | None) -> tuple:
+    """Call the Bedrock API with instance configuration."""
+    return _bedrock_ai_hook(prompt, structure, self.model, self.reasoning, self.tools, self.region,
+                            self.flex_tier, self)
 
 
 def json_schema_to_pydantic(schema: dict, name: str = "DynamicModel") -> type[BaseModel]:
@@ -181,7 +158,8 @@ def build_bedrock_content(prompt: str) -> list[dict]:
   return content_blocks
 
 
-def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
+def _bedrock_ai_hook(prompt: str, structure: Optional[dict], model: str, reasoning, tools,
+                     region: str, flex_tier: bool, engine_instance) -> tuple:
   """
     This function is called by the test runner to get the AI's response to a prompt.
     
@@ -192,9 +170,7 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
     
     Returns tuple of (result, chainOfThought).
     """
-  global forcedFailure
-
-  if forcedFailure:
+  if engine_instance.forcedFailure:
     return {"error": "Forced failure"}, "Forced failure due to API instability"
 
   import boto3
@@ -202,7 +178,7 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
 
   try:
     # Initialize the Bedrock runtime client
-    client = boto3.client(service_name='bedrock-runtime', region_name=REGION)
+    client = boto3.client(service_name='bedrock-runtime', region_name=region)
 
     # Build content blocks
     content_blocks = build_bedrock_content(prompt)
@@ -213,22 +189,22 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
     # Build inference config
     inference_config = {"temperature": 0.7, "maxTokens": 8192}
 
-    if MODEL in ["meta.llama3-70b-instruct-v1:0", "meta.llama3-1-405b-instruct-v1:0"]:
+    if model in ["meta.llama3-70b-instruct-v1:0", "meta.llama3-1-405b-instruct-v1:0"]:
       inference_config["maxTokens"] = 2048
-    elif "nova" in MODEL.lower():
+    elif "nova" in model.lower():
       inference_config["maxTokens"] = 10000
 
     # Additional model-specific fields
     additional_fields = {}
 
     # Handle reasoning/thinking for models that support it
-    if REASONING and isinstance(REASONING, int) and REASONING > 0:
+    if reasoning and isinstance(reasoning, int) and reasoning > 0:
       # Some models support thinking/reasoning parameters
       # This is model-dependent - Qwen models may use different parameters
-      if "qwen" in MODEL.lower():
+      if "qwen" in model.lower():
         # Qwen models may support thinking mode via system prompt or parameters
         additional_fields["enable_thinking"] = True
-      elif "claude" in MODEL.lower():
+      elif "claude" in model.lower():
         # Claude on Bedrock may support extended thinking
         pass  # Handled differently
 
@@ -266,9 +242,9 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
 
     # Add other tools if enabled (but don't override structured output tool)
     if not use_tool_for_structure:
-      if TOOLS is True:
+      if tools is True:
         # Enable Nova hosted tools: code interpreter and web grounding
-        if "nova" in MODEL.lower():
+        if "nova" in model.lower():
           tool_config = {
             "tools": [{
               "systemTool": {
@@ -280,14 +256,14 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
               }
             }]
           }
-      elif TOOLS and TOOLS is not False and isinstance(TOOLS, list):
-        tool_config = {"tools": TOOLS}
+      elif tools and tools is not False and isinstance(tools, list):
+        tool_config = {"tools": tools}
 
     # Use streaming for real-time output
-    converse_params = {"modelId": MODEL, "messages": messages, "inferenceConfig": inference_config}
+    converse_params = {"modelId": model, "messages": messages, "inferenceConfig": inference_config}
 
     # Apply flex tier if enabled (discounted pricing, may have delays)
-    if FLEX_TIER:
+    if flex_tier:
       converse_params["performanceConfig"] = {"serviceTier": "flex"}
 
     if additional_fields:
@@ -450,15 +426,15 @@ def BedrockAIHook(prompt: str, structure: Optional[dict]) -> tuple:
 
 if __name__ == "__main__":
   # Test with Qwen3
-  Configure("qwen.qwen3-30b-a3b-v1:0", False, False, "us-east-1")
+  engine = BedrockEngine("qwen.qwen3-30b-a3b-v1:0", False, False, "us-east-1")
   print("Testing Qwen3 on Bedrock...")
-  result, cot = BedrockAIHook("What is 2 + 2? Answer briefly.", None)
+  result, cot = engine.AIHook("What is 2 + 2? Answer briefly.", None)
   print(f"Result: {result}")
   print(f"Chain of Thought: {cot}")
 
   # Test structured output
   print("\nTesting structured output...")
-  result, cot = BedrockAIHook(
+  result, cot = engine.AIHook(
     "What is the capital of France?", {
       "type": "object",
       "properties": {

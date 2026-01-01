@@ -15,55 +15,41 @@ The SDK documentation can be found at: https://platform.openai.com/docs
 Responses API reference: https://platform.openai.com/docs/api-reference/responses
 """
 
-# Constants that fine tune which model, reasoning mode, and tools
 import hashlib
-
-MODEL = "gpt-5-nano"
-
-# REASONING controls reasoning mode:
-# - False or 0: No special reasoning (standard mode)
-# - "o1-preview": Use o1-preview model with extended reasoning
-# - "o1-mini": Use o1-mini model (faster reasoning)
-# - Integer (1-10): Reasoning effort level (for o1 models)
-REASONING = False
-
-# TOOLS enables tool capabilities:
-# - False: No tools available
-# - True: Enable ALL built-in tools (web_search, code_interpreter, file_search)
-# - List of function definitions: Enable specific custom tools
-#
-# Examples:
-#   TOOLS = False                    # No tools
-#   TOOLS = True                     # All built-in tools
-#   TOOLS = [function_def]           # Custom function only
-#   TOOLS = [func1, func2]           # Multiple custom functions
-#
-# Note: Built-in tools require specific API access/models
-TOOLS = False
-
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                       str(TOOLS).encode()).hexdigest()
-
-forcedFailure = False
-
-
-def Configure(Model, Reasing, Tools):
-  global MODEL
-  global REASONING
-  global TOOLS
-  global configAndSettingsHash
-  global forcedFailure
-  MODEL = Model
-  REASONING = Reasing
-  TOOLS = Tools
-  forcedFailure = False
-  configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                         str(TOOLS).encode()).hexdigest()
-
-
 import os
 import json
 import PromptImageTagging as pit
+
+
+class OpenAIEngine:
+  """
+  OpenAI ChatGPT AI Engine class.
+  
+  Configuration parameters:
+  - model: Model name (e.g., "gpt-5-nano")
+  - reasoning: Reasoning mode:
+      - False or 0: No special reasoning (standard mode)
+      - "o1-preview": Use o1-preview model with extended reasoning
+      - "o1-mini": Use o1-mini model (faster reasoning)
+      - Integer (1-10): Reasoning effort level (for o1 models)
+  - tools: Tool capabilities:
+      - False: No tools available
+      - True: Enable ALL built-in tools (web_search, code_interpreter)
+      - List of function definitions: Enable specific custom tools
+  """
+
+  def __init__(self, model: str, reasoning=False, tools=False):
+    self.model = model
+    self.reasoning = reasoning
+    self.tools = tools
+    self.forcedFailure = False
+    self.configAndSettingsHash = hashlib.sha256(model.encode() + str(reasoning).encode() +
+                                                str(tools).encode()).hexdigest()
+
+  def AIHook(self, prompt: str, structure: dict | None) -> tuple:
+    """Call the OpenAI API with instance configuration."""
+    result = _openai_ai_hook(prompt, structure, self.model, self.reasoning, self.tools, self)
+    return result
 
 
 def build_openai_input(prompt: str):
@@ -87,7 +73,8 @@ def build_openai_input(prompt: str):
   return [{"role": "user", "content": content}]
 
 
-def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
+def _openai_ai_hook(prompt: str, structure: dict | None, model: str, reasoning, tools,
+                    engine_instance) -> tuple:
   """
     This function is called by the test runner to get the AI's response to a prompt.
     
@@ -98,9 +85,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     
     Uses the OpenAI Responses API.
     """
-  global forcedFailure
-
-  if forcedFailure:
+  if engine_instance.forcedFailure:
     return {"error": "Forced failure"}, "Forced failure due to API instability"
   from openai import OpenAI
 
@@ -109,11 +94,11 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     client = OpenAI(timeout=3600)
 
     # Determine model to use
-    model_to_use = MODEL
+    model_to_use = model
 
-    # Override model if REASONING specifies an o1 model
-    if isinstance(REASONING, str) and REASONING in ["o1-preview", "o1-mini"]:
-      model_to_use = REASONING
+    # Override model if reasoning specifies an o1 model
+    if isinstance(reasoning, str) and reasoning in ["o1-preview", "o1-mini"]:
+      model_to_use = reasoning
 
     # Build Responses API parameters
     input_value = build_openai_input(prompt)
@@ -121,13 +106,13 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     response_params = {"model": model_to_use, "input": input_value, "service_tier": "flex"}
 
     # Add reasoning effort
-    if isinstance(REASONING, int) and REASONING > 0:
+    if isinstance(reasoning, int) and reasoning > 0:
       # Map 1-10 scale to low/medium/high
-      if REASONING <= 3:
+      if reasoning <= 3:
         response_params["reasoning"] = {"effort": "low"}
-      elif REASONING <= 7:
+      elif reasoning <= 7:
         response_params["reasoning"] = {"effort": "medium"}
-      elif REASONING == 10 and model_to_use == "gpt-5.2":
+      elif reasoning == 10 and model_to_use == "gpt-5.2":
         response_params["reasoning"] = {"effort": "xhigh"}
       else:
         response_params["reasoning"] = {"effort": "high"}
@@ -146,7 +131,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
       }
 
     # Add tools if specified
-    if TOOLS is True:
+    if tools is True:
       # Enable built-in hosted tools
       # Note: file_search requires a vector_store, so it's excluded
       response_params["tools"] = [{
@@ -157,10 +142,10 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
           "type": "auto"
         }
       }]
-    elif TOOLS and TOOLS is not False:
+    elif tools and tools is not False:
       # Convert function list to OpenAI tool format if needed
       tools_list = []
-      for tool in (TOOLS if isinstance(TOOLS, list) else [TOOLS]):
+      for tool in (tools if isinstance(tools, list) else [tools]):
         if isinstance(tool, dict):
           # Already in correct format
           tools_list.append(tool)
@@ -257,7 +242,7 @@ def ChatGPTAIHook(prompt: str, structure: dict | None) -> dict | str:
     print(
       "Error decoding JSON response. OpenAI has schema validation that's failing. Consider the whole service down when this is encountered."
     )
-    forcedFailure = True
+    engine_instance.forcedFailure = True
     return {"unacceptableFailure": True}, ""  # to ensure we don't retry.
   except Exception as e:
     print(f"Error calling OpenAI API: {e}")

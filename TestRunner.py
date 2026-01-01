@@ -17,11 +17,12 @@ from CacheLayer import CacheLayer as cl
 try:
   import PIL, numpy, scipy
 except ImportError:
-  print("WARNIGN: pillow, numpy and scipy are required by some tests. Please install them.")
+  print("WARNING: pillow, numpy and scipy are required by some tests. Please install them.")
   exit(1)
 
 global UNSKIP
 UNSKIP = False
+IGNORE_CACHED_FAILURES = False
 
 # Global to track model configs for perfect score propagation
 ALL_MODEL_CONFIGS = []
@@ -56,6 +57,12 @@ def checkSavedPromptCache(aiEngineName: str, index: int, subPass: int, prompt: s
     if saved_prompt.strip() == str(prompt).strip():
       with open(result_file, "r", encoding="utf-8") as f:
         saved_result = f.read()
+
+      if IGNORE_CACHED_FAILURES and len(saved_result) <= 3:
+        print(
+          f"Ignoring prompt cache - IGNORE_CACHED_FAILURES is set and result was '{saved_result}'.")
+        return None
+
       print(f"Prompt cache hit for {aiEngineName} Q{index}/S{subPass}")
       # Results are saved with str(result), so use ast.literal_eval to parse
       import ast
@@ -246,7 +253,7 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       print(f"Content violation for subpass {subPass} - grading as 0")
       subpass_data["score"] = 0
       subpass_data[
-        "scoreExplantion"] = f"Content violation: {result.get('reason', 'Policy violation')}"
+        "scoreExplanation"] = f"Content violation: {result.get('reason', 'Policy violation')}"
       subpass_data[
         "output_nice"] = "<strong style='color:red'>FALSE-POSITIVE CONTENT VIOLATION</strong><br>This prompt was blocked by the AI provider's content policy. (LOL. Sad trombone failure sound. Instant 0.)"
       subpass_data["endProcessingTime"] = time.time()
@@ -272,7 +279,7 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       if "getReferenceImage" in g:
         subpass_data["reference_image"] = g["getReferenceImage"](subPass, aiEngineName)
       subpass_data["score"] = score
-      subpass_data["scoreExplantion"] = explanation
+      subpass_data["scoreExplanation"] = explanation
 
     elif "referenceScad" in g or "prepareSubpassReferenceScad" in g:
       # Some tests require an OpenSCAD comparison to check if the generated
@@ -285,7 +292,7 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       subpass_data["output_mouseover_image"] = comparison_result.get("output_mouseover_image")
       subpass_data["reference_image"] = comparison_result.get("reference_image")
       subpass_data["temp_dir"] = comparison_result.get("temp_dir")
-      subpass_data["scoreExplantion"] = comparison_result.get("scoreExplantion")
+      subpass_data["scoreExplanation"] = comparison_result.get("scoreExplanation")
       subpass_data["output_hyperlink"] = comparison_result.get("output_hyperlink")
 
     elif "gradeAnswer" in g:
@@ -300,7 +307,7 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
             "This is a framework error, not an AI error."
 
       subpass_data["score"] = score
-      subpass_data["scoreExplantion"] = explanation
+      subpass_data["scoreExplanation"] = explanation
 
       if "resultToNiceReport" in g:
         try:
@@ -336,7 +343,7 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
         subpass_results[subPass] = {
           "subpass": subPass,
           "score": 0,
-          "scoreExplantion": "Skipped due to earlyFail (first subpass scored under 50%)"
+          "scoreExplanation": "Skipped due to earlyFail (first subpass scored under 50%)"
         }
     else:
       # First subpass passed, run remaining prompts in parallel
@@ -392,7 +399,7 @@ def runTest(index: int, aiEngineHook: callable, aiEngineName: str) -> Dict[str, 
       totalScore += score
       subpass_data["score"] = score
       subpass_data["subpass"] = subPass
-      subpass_data["scoreExplantion"] = explanation
+      subpass_data["scoreExplanation"] = explanation
       subpass_data["output_nice"] = g["resultToNiceReport"](results[0], subPass, aiEngineName)
       subpass_results.append(subpass_data)
 
@@ -571,6 +578,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
       while "[[image:results/" in prompt:
         prompt = prompt.replace("[[image:results/", "[[image:")
 
+      while "[[image:images/" in prompt:
+        prompt = prompt.replace("[[image:images/", "[[image:../images/")
+
       return prompt.replace("[[image:", "<img src='").replace("]]", "' width='200px'>")
 
     if "prepareSubpassPrompt" in test_globals:
@@ -648,10 +658,10 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
       results_file.write(
         f"    <td rowspan=2class='{score_class}'><strong>{subpass['score']:.4f}</strong>")
 
-      if "scoreExplantion" in subpass:
+      if "scoreExplanation" in subpass and subpass['scoreExplanation']:
         results_file.write(
           "<br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>"
-          + subpass['scoreExplantion'].replace("\n", "<br>") + "</div>")
+          + subpass['scoreExplanation'].replace("\n", "<br>") + "</div>")
 
       results_file.write("</td>\n")
       results_file.write("  </tr>\n")
@@ -871,7 +881,9 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
     if best_engine == "Human with tools":
       best_engine, best_score = engine_scores[1] if len(engine_scores) > 1 else ("", 0)
 
-    humanScore = [e[1] for e in engine_scores if e[0] == "Human with tools"][0]
+    humanScore = 0
+    if "Human with tools" in [e[0] for e in engine_scores]:
+      humanScore = [e[1] for e in engine_scores if e[0] == "Human with tools"][0]
 
     question_graphs[q_num] = {
       "title": question_title,
@@ -1114,7 +1126,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
             humanCompare = "<p style='color:#0f0'> Human is marginally better</p>"
           elif humanRatio < 1.01:
             if question_graphs[q_num]['human_score'] == 0:
-              humanCompare = "<p style='color:#ff0'>Niether human nor AI have solved this.</p>"
+              humanCompare = "<p style='color:#ff0'>Neither human nor AI have solved this.</p>"
             elif question_graphs[q_num]['human_score'] == 1:
               humanCompare = "<p style='color:#ff0'> Human and the best AI have both mastered this.</p>"
             else:
@@ -1125,7 +1137,7 @@ h2 { color: var(--text-secondary); margin-top: 30px; }
             humanCompare = f"<p style='color:#f00'> The best AI is considerably better. Human scored {question_graphs[q_num]['human_score'] * 100:.1f}%</p>"
         else:
           if question_graphs[q_num]['best_pct'] == 0:
-            humanCompare = "<p style='color:#ff0'>Niether human nor AI have solved this.</p>"
+            humanCompare = "<p style='color:#ff0'>Neither human nor AI have solved this.</p>"
           else:
             humanCompare = "<p style='color:#f00'> The best AI is considerably better, human scored 0 or hasn't attempted.</p>"
 
@@ -1389,7 +1401,7 @@ def get_all_model_configs():
 def run_model_config(config: dict, test_filter: Optional[Set[int]] = None):
   """Run tests for a single model configuration."""
   name = config["name"]
-  engine = config["engine"]
+  engine_type = config["engine"]
 
   # Check if required API key is available
   env_key = config.get("env_key")
@@ -1397,43 +1409,40 @@ def run_model_config(config: dict, test_filter: Optional[Set[int]] = None):
     print(f"Skipping {name}: {env_key} not set")
     return
 
-  if engine == "placebo":
-    import AiEnginePlacebo
-    runAllTests(AiEnginePlacebo.PlaceboAIHook, name, test_filter)
+  if engine_type == "placebo":
+    from AiEnginePlacebo import PlaceboEngine
+    engine = PlaceboEngine()
+    runAllTests(engine.AIHook, name, test_filter)
 
-  elif engine == "openai":
-    import AiEngineOpenAiChatGPT
-    AiEngineOpenAiChatGPT.Configure(config["base_model"], config["reasoning"], config["tools"])
-    cacheLayer = cl(AiEngineOpenAiChatGPT.configAndSettingsHash,
-                    AiEngineOpenAiChatGPT.ChatGPTAIHook, name)
+  elif engine_type == "openai":
+    from AiEngineOpenAiChatGPT import OpenAIEngine
+    engine = OpenAIEngine(config["base_model"], config["reasoning"], config["tools"])
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
-  elif engine == "gemini":
-    import AiEngineGoogleGemini
-    AiEngineGoogleGemini.Configure(config["base_model"], config["reasoning"], config["tools"])
-    cacheLayer = cl(AiEngineGoogleGemini.configAndSettingsHash, AiEngineGoogleGemini.GeminiAIHook,
-                    name)
+  elif engine_type == "gemini":
+    from AiEngineGoogleGemini import GeminiEngine
+    engine = GeminiEngine(config["base_model"], config["reasoning"], config["tools"])
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
-  elif engine == "xai":
-    import AiEngineXAIGrok
-    AiEngineXAIGrok.Configure(config["base_model"], config["reasoning"], config["tools"])
-    cacheLayer = cl(AiEngineXAIGrok.configAndSettingsHash, AiEngineXAIGrok.GrokAIHook, name)
+  elif engine_type == "xai":
+    from AiEngineXAIGrok import GrokEngine
+    engine = GrokEngine(config["base_model"], config["reasoning"], config["tools"])
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
-  elif engine == "anthropic":
-    import AiEngineAnthropicClaude
-    AiEngineAnthropicClaude.Configure(config["base_model"], config["reasoning"], config["tools"])
-    cacheLayer = cl(AiEngineAnthropicClaude.configAndSettingsHash,
-                    AiEngineAnthropicClaude.ClaudeAIHook, name)
+  elif engine_type == "anthropic":
+    from AiEngineAnthropicClaude import ClaudeEngine
+    engine = ClaudeEngine(config["base_model"], config["reasoning"], config["tools"])
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
-  elif engine == "bedrock":
-    import AiEngineAmazonBedrock
-    AiEngineAmazonBedrock.Configure(config["base_model"], config["reasoning"], config["tools"],
-                                    config.get("region", "us-east-1"))
-    cacheLayer = cl(AiEngineAmazonBedrock.configAndSettingsHash,
-                    AiEngineAmazonBedrock.BedrockAIHook, name)
+  elif engine_type == "bedrock":
+    from AiEngineAmazonBedrock import BedrockEngine
+    engine = BedrockEngine(config["base_model"], config["reasoning"], config["tools"],
+                           config.get("region", "us-east-1"))
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, name)
     runAllTests(cacheLayer.AIHook, name, test_filter)
 
 
@@ -1565,6 +1574,13 @@ Examples:
   parser.add_argument("--parallel", action="store_true", help="Run all models in parallel")
 
   parser.add_argument(
+    "--ignore-cached-failures",
+    action="store_true",
+    help=
+    "If an AI returns empty, bails or errors out, that result is cached. This ignores those cached results."
+  )
+
+  parser.add_argument(
     "--setup",
     action="store_true",
     help=
@@ -1572,6 +1588,14 @@ Examples:
   )
 
   args = parser.parse_args()
+
+  if args.ignore_cached_failures:
+    import CacheLayer
+    CacheLayer.IGNORE_CACHED_FAILURES = True
+    IGNORE_CACHED_FAILURES = True
+    print(
+      "Ignore cached failures: Cached results that are empty, bailed or errored out will be ignored."
+    )
 
   # Set force refresh flag in CacheLayer
   if args.force:
@@ -1598,7 +1622,7 @@ Examples:
   ALL_MODEL_CONFIGS.extend(all_configs)
 
   if args.parallel:
-    if args.models: print("--parallel and --model aren't compatable")
+    if args.models: print("--parallel and --model aren't compatible")
     import sys
     args = sys.argv[1:]
     args.remove("--parallel")
@@ -1628,6 +1652,12 @@ Examples:
   model_filter = None
   if args.models:
     import fnmatch
+
+    if args.models == "best":
+      args.models = "gpt-5.2-Reasoning-Tools,gemini-3-pro-preview-Reasoning-Tools,grok-4-0709-HighReasoning,claude-opus-4-5-Reasoning-Tools,qwen3-VL-235B-22B,llama3-1-405b-bedrock,mistral-large-bedrock,nova-premier-Reasoning-Tools"
+    elif args.models == "worst":
+      args.models = "nova-lite,llama3-70b-bedrock,qwen3-32B,claude-sonnet-4-5,grok-2-vision-1212,gemini-2.5-flash-lite,gpt-5-nano"
+
     all_model_names = [c["name"] for c in all_configs]
     patterns = [m.strip() for m in args.models.split(",")]
     matched_models = set()

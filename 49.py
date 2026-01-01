@@ -76,11 +76,12 @@ structure = {
           },
           "parameters": {
             "type": "string",
-            "description": "Any additional prarmeters, as a JSON string"
+            "description": "Any additional parameters, url encoded. Empty if none."
           }
         },
-        "required": ["type", "position", "rotation"],
-        "additionalProperties": False
+        "required": ["type", "position", "rotation", "parameters"],
+        "additionalProperties": False,
+        "propertyOrdering": ["type", "position", "rotation", "parameters"]
       }
     }
   },

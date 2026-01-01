@@ -69,7 +69,8 @@ structure = {
           }
         },
         "additionalProperties": False,
-        "required": ["x", "y", "z", "q0", "q1", "q2", "q3"]
+        "required": ["x", "y", "z", "q0", "q1", "q2", "q3", "m"],
+        "propertyOrdering": ["x", "y", "z", "q0", "q1", "q2", "q3", "m"]
       }
     }
   },

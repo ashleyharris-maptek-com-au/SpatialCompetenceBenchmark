@@ -15,51 +15,40 @@ The SDK documentation can be found at: https://docs.x.ai/
 """
 
 import hashlib
-
-# Constants that fine tune which model, whether reasoning is used and how much, and whether tools
-# are made available.
-MODEL = "grok-3-mini"
-
-# REASONING controls reasoning effort on a 0-10 scale:
-# - 0 or False: No reasoning (fastest)
-# - 1-3: Low reasoning effort
-# - 4-7: Medium reasoning effort
-# - 8-10: High reasoning effort
-REASONING = False
-
-# TOOLS enables tool capabilities:
-# - False: No tools available
-# - True: Enable built-in tools (web_search, x_search, code_execution)
-# - List of function definitions: Enable specific custom tools
-#
-# Examples:
-#   TOOLS = False                    # No tools
-#   TOOLS = True                     # All built-in tools
-#   TOOLS = ["web_search"]           # Just web search
-#   TOOLS = [function_def]           # Custom function only
-TOOLS = False
-
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                       str(TOOLS).encode() + b"version2").hexdigest()
-
-
-def Configure(Model, Reasoning, Tools):
-  global MODEL
-  global REASONING
-  global TOOLS
-  global configAndSettingsHash
-  MODEL = Model
-  REASONING = Reasoning
-  TOOLS = Tools
-  configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                         str(TOOLS).encode() + b"version2").hexdigest()
-
-
 import os
 import json
 import PromptImageTagging as pit
 from typing import Any, List, Optional
 from pydantic import BaseModel, create_model
+
+
+class GrokEngine:
+  """
+  xAI Grok AI Engine class.
+  
+  Configuration parameters:
+  - model: Model name (e.g., "grok-3-mini")
+  - reasoning: Reasoning effort on a 0-10 scale:
+      - 0 or False: No reasoning (fastest)
+      - 1-3: Low reasoning effort
+      - 4-7: Medium reasoning effort
+      - 8-10: High reasoning effort
+  - tools: Tool capabilities:
+      - False: No tools available
+      - True: Enable built-in tools (web_search, x_search, code_execution)
+      - List of function definitions: Enable specific custom tools
+  """
+
+  def __init__(self, model: str, reasoning=False, tools=False):
+    self.model = model
+    self.reasoning = reasoning
+    self.tools = tools
+    self.configAndSettingsHash = hashlib.sha256(model.encode() + str(reasoning).encode() +
+                                                str(tools).encode() + b"version2").hexdigest()
+
+  def AIHook(self, prompt: str, structure: dict | None) -> tuple:
+    """Call the Grok API with instance configuration."""
+    return _grok_ai_hook(prompt, structure, self.model, self.reasoning, self.tools)
 
 
 def json_schema_to_pydantic(schema: dict, name: str = "DynamicModel") -> type[BaseModel]:
@@ -108,7 +97,7 @@ def json_schema_to_pydantic(schema: dict, name: str = "DynamicModel") -> type[Ba
   return create_model(name, **field_definitions)
 
 
-def build_xai_user_args(prompt: str, structure: dict | None) -> list[Any]:
+def _build_xai_user_args(prompt: str, structure: dict | None) -> list[Any]:
   from xai_sdk.chat import image
 
   prompt_parts = pit.parse_prompt_parts(prompt)
@@ -121,12 +110,13 @@ def build_xai_user_args(prompt: str, structure: dict | None) -> list[Any]:
       if pit.is_url(part_value):
         user_args.append(image(part_value))
       elif pit.is_data_uri(part_value):
-        _, b64 = pit.data_uri_to_base64(part_value)
-        user_args.append(image(b64))
+        # Keep full data URI format - xAI SDK requires it
+        user_args.append(image(part_value))
       else:
+        # Convert local file to data URI format
         local_path = pit.resolve_local_path(part_value)
-        _, b64 = pit.file_to_base64(local_path)
-        user_args.append(image(b64))
+        data_uri = pit.file_to_data_uri(local_path)
+        user_args.append(image(data_uri))
 
   if structure is not None:
     schema_json = json.dumps(structure, indent=2)
@@ -143,7 +133,7 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
   return user_args
 
 
-def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
+def _grok_ai_hook(prompt: str, structure: dict | None, model: str, reasoning, tools) -> tuple:
   """
     This function is called by the test runner to get the AI's response to a prompt.
     
@@ -162,17 +152,17 @@ def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
     client = Client(timeout=3600)
 
     # Build chat creation parameters
-    chat_params = {"model": MODEL}
+    chat_params = {"model": model}
 
     # Seems to have been removed from the API after grok-3
     # Map 0-10 scale to low/medium/high
-    #model_has_builtin_reasoning = "reasoning" in MODEL.lower(
-    #) and "non-reasoning" not in MODEL.lower()
-    #if REASONING and REASONING != 0 and not model_has_builtin_reasoning:
-    #    if isinstance(REASONING, int):
-    #        if REASONING <= 3:
+    #model_has_builtin_reasoning = "reasoning" in model.lower(
+    #) and "non-reasoning" not in model.lower()
+    #if reasoning and reasoning != 0 and not model_has_builtin_reasoning:
+    #    if isinstance(reasoning, int):
+    #        if reasoning <= 3:
     #            chat_params["reasoning_effort"] = "low"
-    #        elif REASONING <= 7:
+    #        elif reasoning <= 7:
     #            chat_params["reasoning_effort"] = "medium"
     #        else:
     #            chat_params["reasoning_effort"] = "high"
@@ -189,7 +179,7 @@ def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
         pydantic_model = None
 
     # Add tools if specified
-    if TOOLS is True:
+    if tools is True:
       chat_params["tools"] = [{
         "type": "web_search"
       }, {
@@ -197,14 +187,14 @@ def GrokAIHook(prompt: str, structure: dict | None) -> tuple:
       }, {
         "type": "code_execution"
       }]
-    elif TOOLS and TOOLS is not False:
-      if isinstance(TOOLS, list):
-        chat_params["tools"] = TOOLS
+    elif tools and tools is not False:
+      if isinstance(tools, list):
+        chat_params["tools"] = tools
 
     # Create chat and add user message
     chat = client.chat.create(**chat_params)
 
-    user_args = build_xai_user_args(prompt, structure if pydantic_model is not None else None)
+    user_args = _build_xai_user_args(prompt, structure if pydantic_model is not None else None)
     chat.append(user(*user_args))
 
     # Stream response and accumulate (works for both structured and unstructured)

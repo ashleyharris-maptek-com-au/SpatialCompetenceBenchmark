@@ -14,37 +14,41 @@ Get your API key from: https://console.anthropic.com/
 The SDK documentation can be found at: https://github.com/anthropics/anthropic-sdk-python
 """
 
-# Constants that fine tune which model, whether thinking is used, prompt caching, and tools
-MODEL = "claude-sonnet-4-20250514"  # Latest Claude Sonnet 4
-
-# REASONING controls extended thinking mode (for supported models):
-# - False: No extended thinking (default, faster)
-# - integer 1 - 10: Enable extended thinking (deeper reasoning)
-REASONING = False
-
-# PROMPT_CACHING enables caching for repeated content:
-# - False: No caching (default)
-# - True: Enable prompt caching (reduces cost for repeated prompts)
-# Cached content persists for 5 minutes, useful for iterative tasks
-PROMPT_CACHING = True
-
-# TOOLS enables tool capabilities:
-# - False: No tools available
-# - True: Enable ALL built-in tools (web_search)
-# - List of tool definitions: Enable specific custom tools
-#
-# Examples:
-#   TOOLS = False                    # No tools
-#   TOOLS = True                     # All built-in tools (web search)
-#   TOOLS = [tool_definition]        # Custom tool only
-#   TOOLS = [tool1, tool2]           # Multiple custom tools
-TOOLS = False
-
 import os, json, hashlib
 import PromptImageTagging as pit
 
 
-def build_anthropic_message_content(prompt: str) -> list[dict]:
+class ClaudeEngine:
+  """
+  Anthropic Claude AI Engine class.
+  
+  Configuration parameters:
+  - model: Model name (e.g., "claude-sonnet-4-20250514")
+  - reasoning: Extended thinking mode (for supported models):
+      - False: No extended thinking (default, faster)
+      - integer 1-10: Enable extended thinking (deeper reasoning)
+  - tools: Tool capabilities:
+      - False: No tools available
+      - True: Enable ALL built-in tools (web_search, code_execution)
+      - List of tool definitions: Enable specific custom tools
+  - prompt_caching: Enable caching for repeated content (default True)
+  """
+
+  def __init__(self, model: str, reasoning=False, tools=False, prompt_caching=True):
+    self.model = model
+    self.reasoning = reasoning
+    self.tools = tools
+    self.prompt_caching = prompt_caching
+    self.configAndSettingsHash = hashlib.sha256(model.encode() + str(reasoning).encode() +
+                                                str(tools).encode()).hexdigest()
+
+  def AIHook(self, prompt: str, structure: dict | None) -> tuple:
+    """Call the Claude API with instance configuration."""
+    return _claude_ai_hook(prompt, structure, self.model, self.reasoning, self.tools,
+                           self.prompt_caching)
+
+
+def _build_anthropic_message_content(prompt: str) -> list[dict]:
   prompt_parts = pit.parse_prompt_parts(prompt)
   content_blocks: list[dict] = []
   for part_type, part_value in prompt_parts:
@@ -82,23 +86,8 @@ def build_anthropic_message_content(prompt: str) -> list[dict]:
   return content_blocks
 
 
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                       str(TOOLS).encode()).hexdigest()
-
-
-def Configure(Model, Reasing, Tools):
-  global MODEL
-  global REASONING
-  global TOOLS
-  global configAndSettingsHash
-  MODEL = Model
-  REASONING = Reasing
-  TOOLS = Tools
-  configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                         str(TOOLS).encode()).hexdigest()
-
-
-def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
+def _claude_ai_hook(prompt: str, structure: dict | None, model: str, reasoning, tools,
+                    prompt_caching: bool) -> tuple:
   """
     This function is called by the test runner to get the AI's response to a prompt.
     
@@ -113,25 +102,25 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
   client = Anthropic()
 
   # Get the model's max tokens
-  if "claude-sonnet-4-5" in MODEL:
+  if "claude-sonnet-4-5" in model:
     max_tokens = 64000
-  elif "claude-opus-4-5" in MODEL:
+  elif "claude-opus-4-5" in model:
     max_tokens = 64000
   else:
     max_tokens = 6400000
 
   try:
     betas = []
-    if TOOLS:
+    if tools:
       betas.append("code-execution-2025-08-25")
     if structure:
       betas.append("structured-outputs-2025-11-13")
 
-    content_blocks = build_anthropic_message_content(prompt)
+    content_blocks = _build_anthropic_message_content(prompt)
 
     # Build message parameters
     message_params = {
-      "model": MODEL,
+      "model": model,
       "max_tokens": max_tokens,
       "messages": [{
         "role": "user",
@@ -144,7 +133,7 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
       message_params["betas"] = betas
 
     # Add tools if specified
-    if TOOLS is True:
+    if tools is True:
       # Enable all built-in tools
       message_params["tools"] = [{
         "type": "web_search_20250305",
@@ -153,9 +142,9 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
         "type": "code_execution_20250825",
         "name": "code_execution"
       }]
-    elif TOOLS and TOOLS is not False:
+    elif tools and tools is not False:
       # Custom tools provided
-      message_params["tools"] = TOOLS
+      message_params["tools"] = tools
 
     # Handle structured output using tools (Claude's approach)
     if structure is not None:
@@ -186,13 +175,13 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
       message_params["output_format"] = {"type": "json_schema", "schema": structure}
 
     # Add thinking configuration if enabled (for supported models)
-    if REASONING:
+    if reasoning:
       # Extended thinking is enabled via model selection or beta headers
       # This is model-dependent and may require specific model versions
-      message_params["thinking"] = {"type": "enabled", "budget_tokens": 32768 * REASONING // 10}
+      message_params["thinking"] = {"type": "enabled", "budget_tokens": 32768 * reasoning // 10}
 
     # Handle prompt caching if enabled
-    if PROMPT_CACHING:
+    if prompt_caching:
       # Mark content for caching - last content block is typically cached
       # This requires modifying the content structure
       message_params["messages"][0]["content"][-1]["cache_control"] = {"type": "ephemeral"}
@@ -243,14 +232,14 @@ def ClaudeAIHook(prompt: str, structure: dict | None) -> dict | str:
 
 
 if __name__ == "__main__":
-  Configure("claude-sonnet-4-5-20250929", False, False)
-  print(ClaudeAIHook("What's the 7th prime number after 101?", None))
+  engine = ClaudeEngine("claude-sonnet-4-5-20250929", False, False)
+  print(engine.AIHook("What's the 7th prime number after 101?", None))
 
-  Configure("claude-sonnet-4-5-20250929", True, True)
-  print(ClaudeAIHook("What is the closest Australian city to New York?", None))
+  engine = ClaudeEngine("claude-sonnet-4-5-20250929", True, True)
+  print(engine.AIHook("What is the closest Australian city to New York?", None))
 
   print(
-    ClaudeAIHook(
+    engine.AIHook(
       "What is the furtherest Australian city from New York?", {
         "type": "object",
         "properties": {

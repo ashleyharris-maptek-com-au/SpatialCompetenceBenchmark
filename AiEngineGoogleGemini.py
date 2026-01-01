@@ -15,50 +15,6 @@ The SDK documentation can be found at: https://googleapis.github.io/python-genai
 """
 
 import hashlib
-
-# Constants that fine tune which model, whether reasoning is used and how much, and whether tools
-# are made available.
-MODEL = "gemini-2.5-flash"
-
-# REASONING controls reasoning effort on a 0-10 scale:
-# - 0 or False: Thinking disabled (fastest, no reasoning)
-# - 1-3: Low reasoning (maps to ~128-1024 token budget)
-# - 4-7: Medium reasoning (maps to ~2048-8192 token budget)
-# - 8-10: High reasoning (maps to ~12288-24576 token budget)
-REASONING = False
-
-# TOOLS enables tool capabilities (both built-in and custom):
-# - False: No tools available
-# - "google_search": Enable Google Search grounding
-# - "code_execution": Enable Python code execution
-# - List of functions: Enable custom function calling
-# - List of strings/functions: Mix built-in and custom tools
-#
-# Examples:
-#   TOOLS = False                              # No tools
-#   TOOLS = "google_search"                    # Just Google Search
-#   TOOLS = "code_execution"                   # Just code execution
-#   TOOLS = ["google_search", "code_execution"] # Both built-in tools
-#   TOOLS = [my_function]                      # Custom function calling
-#   TOOLS = ["code_execution", my_function]    # Mix built-in + custom
-TOOLS = False
-
-configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                       str(TOOLS).encode()).hexdigest()
-
-
-def Configure(Model, Reasoning, Tools):
-  global MODEL
-  global REASONING
-  global TOOLS
-  global configAndSettingsHash
-  MODEL = Model
-  REASONING = Reasoning
-  TOOLS = Tools
-  configAndSettingsHash = hashlib.sha256(MODEL.encode() + str(REASONING).encode() +
-                                         str(TOOLS).encode()).hexdigest()
-
-
 import os
 import json
 import PromptImageTagging as pit
@@ -72,6 +28,37 @@ from google.genai import types
 from pydantic import BaseModel, create_model
 
 TIMEOUT_SECONDS = 3600  # 1 hour timeout
+
+
+class GeminiEngine:
+  """
+  Google Gemini AI Engine class.
+  
+  Configuration parameters:
+  - model: Model name (e.g., "gemini-2.5-flash")
+  - reasoning: Reasoning effort on a 0-10 scale:
+      - 0 or False: Thinking disabled (fastest, no reasoning)
+      - 1-3: Low reasoning (maps to ~128-1024 token budget)
+      - 4-7: Medium reasoning (maps to ~2048-8192 token budget)
+      - 8-10: High reasoning (maps to ~12288-24576 token budget)
+  - tools: Tool capabilities:
+      - False: No tools available
+      - "google_search": Enable Google Search grounding
+      - "code_execution": Enable Python code execution
+      - List of functions: Enable custom function calling
+      - List of strings/functions: Mix built-in and custom tools
+  """
+
+  def __init__(self, model: str, reasoning=False, tools=False):
+    self.model = model
+    self.reasoning = reasoning
+    self.tools = tools
+    self.configAndSettingsHash = hashlib.sha256(model.encode() + str(reasoning).encode() +
+                                                str(tools).encode()).hexdigest()
+
+  def AIHook(self, prompt: str, structure: dict | None) -> tuple:
+    """Call the Gemini API with instance configuration."""
+    return _gemini_ai_hook(prompt, structure, self.model, self.reasoning, self.tools)
 
 
 def json_schema_to_pydantic(schema: dict, name: str = "DynamicModel") -> type[BaseModel]:
@@ -120,7 +107,7 @@ def json_schema_to_pydantic(schema: dict, name: str = "DynamicModel") -> type[Ba
   return create_model(name, **field_definitions)
 
 
-def build_gemini_contents(prompt: str, structure: dict | None) -> list[Any]:
+def _build_gemini_contents(prompt: str, structure: dict | None, tools) -> list[Any]:
   prompt_parts = pit.parse_prompt_parts(prompt)
   contents: list[Any] = []
   for part_type, part_value in prompt_parts:
@@ -150,7 +137,7 @@ def build_gemini_contents(prompt: str, structure: dict | None) -> list[Any]:
         image_bytes = pit.read_file_bytes(local_path)
         contents.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
 
-  if structure is not None and TOOLS:
+  if structure is not None and tools:
     schema_json = json.dumps(structure, indent=2)
     contents.append(f"""
 
@@ -165,7 +152,8 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
   return contents
 
 
-def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
+def _gemini_ai_hook(prompt: str, structure: dict | None, model: str, reasoning,
+                    tools) -> dict | str:
   """
     This function is called by the test runner to get the AI's response to a prompt.
     
@@ -185,7 +173,7 @@ def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
     config_params = {}
 
     # Add structured output if schema provided (but not when tools are enabled - Gemini doesn't support both)
-    if structure is not None and not TOOLS:
+    if structure is not None and not tools:
 
       # For some studpid reason, OpenAI REQUIRE that you specify AdditionalProperties=False
       # in the schema, whereas Gemini seems to fail if it's even mentioned.... grr.
@@ -209,17 +197,17 @@ def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
       config_params['response_mime_type'] = 'application/json'
       config_params['response_schema'] = cleaned_structure
 
-    # Add thinking/reasoning configuration if REASONING is set
+    # Add thinking/reasoning configuration if reasoning is set
     # Map 0-10 scale to Gemini's thinking_budget (0-24576)
-    if REASONING and REASONING != 0:
+    if reasoning and reasoning != 0:
       # Map 1-10 to appropriate token budgets
-      if isinstance(REASONING, int) and REASONING > 0:
-        if REASONING <= 3:
-          thinking_budget = 128 * (2**(REASONING - 1))  # 128, 256, 512
-        elif REASONING <= 7:
-          thinking_budget = 1024 * (2**(REASONING - 4))  # 1024, 2048, 4096, 8192
+      if isinstance(reasoning, int) and reasoning > 0:
+        if reasoning <= 3:
+          thinking_budget = 128 * (2**(reasoning - 1))  # 128, 256, 512
+        elif reasoning <= 7:
+          thinking_budget = 1024 * (2**(reasoning - 4))  # 1024, 2048, 4096, 8192
         else:
-          thinking_budget = 8192 * (2**(REASONING - 7))  # 8192, 16384, 24576 (capped)
+          thinking_budget = 8192 * (2**(reasoning - 7))  # 8192, 16384, 24576 (capped)
         thinking_budget = min(thinking_budget, 24576)  # Cap at max
       else:
         thinking_budget = 1024  # Default for truthy non-int values
@@ -227,11 +215,11 @@ def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
       config_params['thinking_config'] = types.ThinkingConfig(thinking_budget=thinking_budget)
 
     # Add tools if specified (supports built-in and custom tools)
-    if TOOLS and TOOLS is not False:
+    if tools and tools is not False:
       tools_list = []
 
       # Handle single tool or list of tools
-      tools_to_process = TOOLS if isinstance(TOOLS, list) else [TOOLS]
+      tools_to_process = tools if isinstance(tools, list) else [tools]
 
       for tool in tools_to_process:
         if isinstance(tool, str):
@@ -243,7 +231,7 @@ def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
           else:
             print(f"Warning: Unknown built-in tool '{tool}', ignoring")
         elif tool is True:
-          # TOOLS=True means "enable tools" but no specific tool specified
+          # tools=True means "enable tools" but no specific tool specified
           tools_list.append(types.Tool(code_execution=types.ToolCodeExecution()))
           tools_list.append(types.Tool(google_search=types.GoogleSearch()))
         elif callable(tool):
@@ -287,7 +275,7 @@ def GeminiAIHook(prompt: str, structure: dict | None) -> dict | str:
           image_bytes = pit.read_file_bytes(local_path)
           contents.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
 
-    if structure is not None and TOOLS:
+    if structure is not None and tools:
       schema_json = json.dumps(structure, indent=2)
       contents.append(f"""
 
@@ -304,7 +292,7 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
     output_text = ""
     current_thinking_line = ""
 
-    stream = client.models.generate_content_stream(model=MODEL, contents=contents, config=config)
+    stream = client.models.generate_content_stream(model=model, contents=contents, config=config)
 
     # Use a thread + queue to enable hard timeout on frozen streams
     chunk_queue = queue.Queue()
@@ -390,7 +378,7 @@ Return ONLY the JSON object, no markdown formatting, no code blocks, no explanat
 
         try:
           # When tools are enabled, use Pydantic for full schema validation
-          if TOOLS and structure:
+          if tools and structure:
             try:
               pydantic_model = json_schema_to_pydantic(structure, "ResponseModel")
               parsed_obj = pydantic_model.model_validate_json(json_text)

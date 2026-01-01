@@ -1,46 +1,66 @@
 ```scad
-// Define the size of each stone
-stone_size = 50; // in mm
+// OpenSCAD script to generate the tallest pyramid with the given constraints
 
-// Calculate the number of stones available per layer
-stones_per_layer = 20000;
+// Constants
+STONE_SIDE_LENGTH = 50; // in mm
+STONES_AVAILABLE = 20000;
+MEN_PER_STONE = 10;
+TOTAL_MEN = 100000;
 
-// Function to calculate the number of stones in a layer given its size
-function stones_in_layer(layer_size) = (layer_size * layer_size);
+// Calculate the maximum number of stones that can be moved
+stones_to_use = STONES_AVAILABLE;
+men_used = stones_to_use * MEN_PER_STONE;
 
-// Initialize variables
-max_height = 0;
-current_stones = stones_per_layer;
+// Ensure we don't exceed the total number of men available
+if (men_used > TOTAL_MEN) {
+    stones_to_use = TOTAL_MEN / MEN_PER_STONE;
+}
 
-// Find the maximum height of the pyramid
-for (height = [1:int(sqrt(stones_per_layer))]) {
-    stones_needed = 0;
-    for (layer = [1:height]) {
-        layer_size = height - layer + 1;
-        stones_needed += stones_in_layer(layer_size);
-    }
-    if (stones_needed <= stones_per_layer) {
-        max_height = height;
-        current_stones -= stones_needed;
-    } else {
-        break;
+// Function to calculate the volume of a pyramid
+function pyramid_volume(base_size, height) = (base_size * base_size * height) / 3;
+
+// Function to check if a pyramid configuration is valid
+function is_valid_pyramid(base_size, height) =
+    (base_size % STONE_SIDE_LENGTH == 0) && 
+    (height % STONE_SIDE_LENGTH == 0) && 
+    (pyramid_volume(base_size, height) <= stones_to_use * (STONE_SIDE_LENGTH ^ 3));
+
+// Find the tallest possible pyramid
+ tallest_height = 0;
+for (base_size = [STONE_SIDE_LENGTH:STONE_SIDE_LENGTH:STONE_SIDE_LENGTH*int(sqrt(stones_to_use))]) {
+    for (height = [STONE_SIDE_LENGTH:STONE_SIDE_LENGTH:STONE_SIDE_LENGTH*int(cbrt(stones_to_use))]) {
+        if (is_valid_pyramid(base_size, height) && height > tallest_height) {
+            tallest_height = height;
+        }
     }
 }
 
-// OpenSCAD module to generate the pyramid
-module pyramid() {
-    for (layer = [1:max_height]) {
-        layer_size = max_height - layer + 1;
-        translate([layer_size * -stone_size / 2, 0, (max_height - layer) * stone_size])
-        for (x = [0:layer_size - 1]) {
-            for (z = [0:layer_size - 1]) {
-                translate([x * stone_size, 0, z * stone_size])
-                cube([stone_size, stone_size, stone_size]);
+// Calculate the corresponding base size for the tallest height
+base_size = STONE_SIDE_LENGTH * ceil(sqrt(stones_to_use * (STONE_SIDE_LENGTH^3) / (tallest_height * STONE_SIDE_LENGTH)));
+
+// Generate the pyramid
+module stone(size) {
+    cube([size, size, size]);
+}
+
+module pyramid(base_size, height) {
+    layers = height / STONE_SIDE_LENGTH;
+    for (layer = [0:layers-1]) {
+        stones_in_layer = (base_size / STONE_SIDE_LENGTH) - 2 * layer;
+        translate([layer * STONE_SIDE_LENGTH / 2, layer * STONE_SIDE_LENGTH / 2, layer * STONE_SIDE_LENGTH]) {
+            for (x = [0:stones_in_layer-1]) {
+                for (z = [0:stones_in_layer-1]) {
+                    translate([x * STONE_SIDE_LENGTH, z * STONE_SIDE_LENGTH, 0]) {
+                        stone(STONE_SIDE_LENGTH);
+                    }
+                }
             }
         }
     }
 }
 
-// Generate the pyramid
-pyramid();
+// Rotate the pyramid to face north (+y)
+rotate([90, 0, 0]) {
+    pyramid(base_size, tallest_height);
+}
 ```

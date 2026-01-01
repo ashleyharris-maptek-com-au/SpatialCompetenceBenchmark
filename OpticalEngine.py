@@ -643,10 +643,39 @@ class Screen:
         except IndexError:
           pass
 
-  def get_image(self) -> Image.Image:
+  def get_image(self, blur_sigma: float = 6.0, glow_sigma: float = 12.0) -> Image.Image:
+    """Convert accumulated photon hits to a smooth image.
+    
+    Uses multi-pass Gaussian convolution to spread light naturally:
+    1. A tighter blur preserves color detail
+    2. A wider "glow" pass fills in gaps and creates smooth gradients
+    
+    This simulates the continuous nature of real light rather than discrete photon hits.
+    """
+    from scipy.ndimage import gaussian_filter
+
     img = self.image.copy()
-    if img.max() > 0: img = img / img.max() * 255
-    return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
+
+    # Pass 1: Tighter blur to smooth immediate neighbours
+    detail = np.zeros_like(img)
+    if blur_sigma > 0:
+      for c in range(3):
+        detail[:, :, c] = gaussian_filter(img[:, :, c], sigma=blur_sigma)
+
+    # Pass 2: Wider glow to fill gaps and create smooth color gradients
+    glow = np.zeros_like(img)
+    if glow_sigma > 0:
+      for c in range(3):
+        glow[:, :, c] = gaussian_filter(img[:, :, c], sigma=glow_sigma)
+
+    # Combine: detail layer + glow layer (glow helps fill sparse areas)
+    combined = detail * 0.7 + glow * 0.5
+
+    # Normalize and convert to 8-bit
+    if combined.max() > 0:
+      combined = combined / combined.max() * 255
+
+    return Image.fromarray(np.clip(combined, 0, 255).astype(np.uint8))
 
   def is_saturated(self) -> bool:
     return self.image.max() >= 255

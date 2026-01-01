@@ -1,39 +1,37 @@
 // Crime Scene Render - Test 47
-$fn = 20;
-
-// Colors
+$fn = 20; // Colors
 stair_color = [0.6, 0.5, 0.4];
 body_color = [0.85, 0.65, 0.55];
 head_color = [0.9, 0.75, 0.65];
-floor_color = [0.35, 0.35, 0.38];
-
-// Capsule module - hull of two spheres
-module capsule(p1, p2, r) {
-  hull() {
-    translate(p1) sphere(r=r);
-    translate(p2) sphere(r=r);
+floor_color = [0.35, 0.35, 0.38]; // Capsule module - hull of two spheres
+module capsule(p1, p2, r)
+{
+  hull()
+  {
+    translate(p1) sphere(r = r);
+    translate(p2) sphere(r = r);
   }
 }
 
 // Stairs
-color(stair_color) {
-  translate([0.15, 0, 1.9]) cube([0.3, 2.0, 0.2], center=true);
-  translate([0.44999999999999996, 0, 1.7]) cube([0.3, 2.0, 0.2], center=true);
-  translate([0.75, 0, 1.5]) cube([0.3, 2.0, 0.2], center=true);
-  translate([1.0499999999999998, 0, 1.2999999999999998]) cube([0.3, 2.0, 0.2], center=true);
-  translate([1.3499999999999999, 0, 1.0999999999999999]) cube([0.3, 2.0, 0.2], center=true);
-  translate([1.65, 0, 0.9]) cube([0.3, 2.0, 0.2], center=true);
-  translate([1.9499999999999997, 0, 0.6999999999999998]) cube([0.3, 2.0, 0.2], center=true);
-  translate([2.25, 0, 0.4999999999999999]) cube([0.3, 2.0, 0.2], center=true);
-  translate([2.55, 0, 0.29999999999999993]) cube([0.3, 2.0, 0.2], center=true);
-  translate([2.8499999999999996, 0, 0.09999999999999995]) cube([0.3, 2.0, 0.2], center=true);
+color(stair_color)
+{
+  translate([0.15, 0, 1.9]) cube([0.3, 2.0, 0.2], center = true);
+  translate([0.44999999999999996, 0, 1.7]) cube([0.3, 2.0, 0.2], center = true);
+  translate([0.75, 0, 1.5]) cube([0.3, 2.0, 0.2], center = true);
+  translate([1.0499999999999998, 0, 1.2999999999999998]) cube([0.3, 2.0, 0.2], center = true);
+  translate([1.3499999999999999, 0, 1.0999999999999999]) cube([0.3, 2.0, 0.2], center = true);
+  translate([1.65, 0, 0.9]) cube([0.3, 2.0, 0.2], center = true);
+  translate([1.9499999999999997, 0, 0.6999999999999998]) cube([0.3, 2.0, 0.2], center = true);
+  translate([2.25, 0, 0.4999999999999999]) cube([0.3, 2.0, 0.2], center = true);
+  translate([2.55, 0, 0.29999999999999993]) cube([0.3, 2.0, 0.2], center = true);
+  translate([2.8499999999999996, 0, 0.09999999999999995]) cube([0.3, 2.0, 0.2], center = true);
 }
 
 // Floor
-color(floor_color) translate([2.5, 0, -0.025]) cube([5, 3, 0.05], center=true);
-
-// Ragdoll body (capsule-based)
-color(body_color) {
+color(floor_color) translate([2.5, 0, -0.025]) cube([5, 3, 0.05], center = true); // Ragdoll body (capsule-based)
+color(body_color)
+{
   capsule([5.1243, -0.0594, 0.0953], [5.0102, 0.3218, 0.1232], 0.1); // base to chest
   capsule([5.2111, 0.3599, 0.1595], [5.2922, 0.0961, 0.1007], 0.05); // right_shoulder to right_elbow
   capsule([5.2922, 0.0961, 0.1007], [5.3361, -0.0423, 0.0448], 0.045); // right_elbow to right_wrist
@@ -52,12 +50,13 @@ color(body_color) {
 
 // Head and neck
 color(body_color) capsule([5.0102, 0.3218, 0.1232], [4.9209, 0.6203, 0.1451], 0.055); // neck
-color(head_color) translate([4.9358, 0.5706, 0.1415]) sphere(r=0.15); // head
+color(head_color) translate([4.9358, 0.5706, 0.1415]) sphere(r = 0.15); // head
 
 // Hands and feet
-color(body_color) {
-  translate([5.3361, -0.0423, 0.0448]) sphere(r=0.04);
-  translate([4.7869, 0.3675, 0.0448]) sphere(r=0.04);
-  translate([5.4854, -0.9499, 0.1056]) sphere(r=0.055);
-  translate([5.0325, -0.1152, 0.2574]) sphere(r=0.055);
+color(body_color)
+{
+  translate([5.3361, -0.0423, 0.0448]) sphere(r = 0.04);
+  translate([4.7869, 0.3675, 0.0448]) sphere(r = 0.04);
+  translate([5.4854, -0.9499, 0.1056]) sphere(r = 0.055);
+  translate([5.0325, -0.1152, 0.2574]) sphere(r = 0.055);
 }

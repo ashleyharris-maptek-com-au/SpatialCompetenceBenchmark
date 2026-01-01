@@ -373,7 +373,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
         partNameB = "29_" + str(partIndexB) + "_" + aiEngineName
         stlFileB = "results/" + partNameB + "_posed.stl"
-        tests.append("difference() {import(\"" + stlFileA + "\") ; import(\"" + stlFileB + "\")}")
+        tests.append("difference() {import(\"" + stlFileA + "\") ; import(\"" + stlFileB + "\");}")
 
       results = vc.hit_tests(stlFileA, tests)
       if any(results):
@@ -460,7 +460,7 @@ Can a 50mm cube pass through the bars? Does a 100mm cube get blocked?
 """
 
   if subPass == 3:
-    out = "Check to see if the part transform matrices are correct and the cage is correctly sized."
+    out = "Check to see if the part transform matrices are correct and the cage is correctly sized.<br>"
 
     if os.path.exists("results/29_" + aiEngineName + "_fullposed.stl"):
       vc.render_scadText_to_png("include<29_" + aiEngineName + "_fullposed.scad>",
