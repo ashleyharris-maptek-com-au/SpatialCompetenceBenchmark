@@ -232,3 +232,5 @@ it always lands on a 6.
   choose, they fall over in a pattern that resembles a unit hypercube
   projected into 2D from the 4D camera location 10,10,10,10.
 - How many stanford bunnies can you fit into a 1 cubic meter box?
+- Puzzle 6 from <https://youtu.be/DstlphyqyNw?si=w0LirzJ4xk38cWrI&t=1362>. Which Presh solves for the general case for odd
+cases, or even non-regular cases, and links to a paper solving the even case.
