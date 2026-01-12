@@ -1330,7 +1330,7 @@ def render_gear_train_image(gears_def,
                             output_path=None,
                             subpass=None):
   """Render gear train to PNG image."""
-  import VolumeComparison as vc
+  import OpenScad as vc
 
   positions = calculate_gear_positions(gears_def, complications)
   scad = generate_gear_scad(gears_def, positions, complications, expected)
@@ -1368,7 +1368,7 @@ def render_gear_train_image(gears_def,
 
 def render_gear_train_views(gears_def, complications=None, subpass=None):
   """Render multiple views of a gear train for AI input."""
-  import VolumeComparison as vc
+  import OpenScad as vc
 
   positions = calculate_gear_positions(gears_def, complications)
   scad = generate_gear_scad(gears_def, positions, complications)

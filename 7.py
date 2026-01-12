@@ -1,4 +1,4 @@
-import VolumeComparison as vc
+import OpenScad as vc
 import concurrent.futures
 import threading
 import hashlib

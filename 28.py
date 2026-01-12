@@ -2,7 +2,7 @@ import math
 import random
 import hashlib
 import json
-import VolumeComparison as vc
+import OpenScad as vc
 import numpy as np
 import os
 import tempfile

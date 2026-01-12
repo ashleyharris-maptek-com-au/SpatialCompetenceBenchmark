@@ -939,7 +939,7 @@ def render_scene_image(structure_index: int,
                        force_rebuild: bool = False,
                        camera_angle: str = "overview") -> str:
   """Render a scene to PNG from a specific camera angle. Returns path to image."""
-  import VolumeComparison as vc, scad_format
+  import OpenScad as vc, scad_format
 
   os.makedirs("results", exist_ok=True)
 

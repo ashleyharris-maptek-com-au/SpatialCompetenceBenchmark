@@ -1,4 +1,4 @@
-import VolumeComparison as vc
+import OpenScad as vc
 import os
 
 title = "Hide and seek behind a building"

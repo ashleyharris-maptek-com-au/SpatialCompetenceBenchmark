@@ -1,7 +1,7 @@
 import random
 from scipy.spatial import Delaunay
 import numpy as np
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "2D Delaunay Triangulation"
 
@@ -19,104 +19,103 @@ Form a collection of triangles from these points such that:
 """
 
 structure = {
-    "type": "object",
-    "properties": {
-        "reasoning": {
-            "type": "string"
-        },
-        "triangles": {
-            "type": "array",
-            "items": {
-                "type": "array",
-                "items": {
-                    "type": "integer"
-                }
-            }
-        }
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
     },
-    "additionalProperties": False,
-    "propertyOrdering": ["reasoning", "triangles"],
-    "required": ["reasoning", "triangles"]
+    "triangles": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "additionalProperties": False,
+  "propertyOrdering": ["reasoning", "triangles"],
+  "required": ["reasoning", "triangles"]
 }
 
 points = []
 random.seed(100)
 for i in range(1024):
-    points.append((random.randint(0, 100), random.randint(0, 100)))
+  points.append((random.randint(0, 100), random.randint(0, 100)))
 
 pointsCount = [16, 32, 64, 128, 512, 1024]
 
 
 def prepareSubpassPrompt(index):
 
-    def pointString(count):
-        return "\n".join(
-            [f"{i}: ({x}, {y})" for i, (x, y) in enumerate(points[:count])])
+  def pointString(count):
+    return "\n".join([f"{i}: ({x}, {y})" for i, (x, y) in enumerate(points[:count])])
 
-    if index >= len(pointsCount):
-        raise StopIteration
+  if index >= len(pointsCount):
+    raise StopIteration
 
-    return prompt + "\n\n" + pointString(pointsCount[index])
+  return prompt + "\n\n" + pointString(pointsCount[index])
 
 
 def referenceDelaunay(pts):
-    """Compute reference Delaunay triangulation using scipy"""
-    if len(pts) < 3:
-        return []
+  """Compute reference Delaunay triangulation using scipy"""
+  if len(pts) < 3:
+    return []
 
-    pts_array = np.array(pts)
-    tri = Delaunay(pts_array)
+  pts_array = np.array(pts)
+  tri = Delaunay(pts_array)
 
-    # Convert to list of sorted triangles for comparison
-    triangles = []
-    for simplex in tri.simplices:
-        triangle = sorted(simplex.tolist())
-        triangles.append(triangle)
+  # Convert to list of sorted triangles for comparison
+  triangles = []
+  for simplex in tri.simplices:
+    triangle = sorted(simplex.tolist())
+    triangles.append(triangle)
 
-    triangles.sort()
-    return triangles
+  triangles.sort()
+  return triangles
 
 
 def gradeAnswer(result, subPass, aiEngineName):
-    triangles = result.get("triangles", [])
+  triangles = result.get("triangles", [])
 
-    if not isinstance(triangles, list):
-        return 0, "triangles must be a list"
+  if not isinstance(triangles, list):
+    return 0, "triangles must be a list"
 
-    # Get the points for this subpass
-    count = pointsCount[subPass]
-    pts = points[:count]
+  # Get the points for this subpass
+  count = pointsCount[subPass]
+  pts = points[:count]
 
-    # Sort each individual triangle (breaks winding order but enables comparison)
-    ai_triangles = []
-    for tri in triangles:
-        if isinstance(tri, list) and len(tri) == 3:
-            ai_triangles.append(sorted(tri))
-        else:
-            return 0, f"Invalid triangle format: {tri}"
+  # Sort each individual triangle (breaks winding order but enables comparison)
+  ai_triangles = []
+  for tri in triangles:
+    if isinstance(tri, list) and len(tri) == 3:
+      ai_triangles.append(sorted(tri))
+    else:
+      return 0, f"Invalid triangle format: {tri}"
 
-    # Sort the list of triangles
-    ai_triangles.sort()
+  # Sort the list of triangles
+  ai_triangles.sort()
 
-    # Compute reference Delaunay triangulation
-    ref_triangles = referenceDelaunay(pts)
+  # Compute reference Delaunay triangulation
+  ref_triangles = referenceDelaunay(pts)
 
-    # Compare
-    if ai_triangles == ref_triangles:
-        return 1, f"Perfect match! {len(ref_triangles)} triangles"
+  # Compare
+  if ai_triangles == ref_triangles:
+    return 1, f"Perfect match! {len(ref_triangles)} triangles"
 
-    # Partial scoring: count matching triangles
-    ai_set = set(tuple(t) for t in ai_triangles)
-    ref_set = set(tuple(t) for t in ref_triangles)
+  # Partial scoring: count matching triangles
+  ai_set = set(tuple(t) for t in ai_triangles)
+  ref_set = set(tuple(t) for t in ref_triangles)
 
-    correct = len(ai_set & ref_set)
-    total = len(ref_set)
-    extra = len(ai_set - ref_set)
-    missing = len(ref_set - ai_set)
+  correct = len(ai_set & ref_set)
+  total = len(ref_set)
+  extra = len(ai_set - ref_set)
+  missing = len(ref_set - ai_set)
 
-    score = correct / total if total > 0 else 0
+  score = correct / total if total > 0 else 0
 
-    return score, f"""
+  return score, f"""
     Matched {correct}/{total} triangles. <br>
     {extra} triangles given which were not in the reference. <br>
     {missing} triangles missing from the reference set. <br>
@@ -124,38 +123,34 @@ def gradeAnswer(result, subPass, aiEngineName):
 
 
 def resultToNiceReport(result, subPassIndex, aiEngineName: str):
-    triangles = result.get("triangles", [])
-    scad_content = ""
+  triangles = result.get("triangles", [])
+  scad_content = ""
 
-    for a, b, c in triangles:
-        #generate a random colour for each triangle:
-        r = random.random()
-        g = random.random()
-        bl = random.random()
+  for a, b, c in triangles:
+    #generate a random colour for each triangle:
+    r = random.random()
+    g = random.random()
+    bl = random.random()
 
-        scad_content += "color([" + str(r) + "," + str(g) + "," + str(
-            bl) + "]) hull(){\n"
-        scad_content += f"    translate([{points[a][0]},{points[a][1]}]) sphere(0.01);\n"
-        scad_content += f"    translate([{points[b][0]},{points[b][1]}]) sphere(0.01);\n"
-        scad_content += f"    translate([{points[c][0]},{points[c][1]}]) sphere(0.01);\n"
-        scad_content += "}\n"
+    scad_content += "color([" + str(r) + "," + str(g) + "," + str(bl) + "]) hull(){\n"
+    scad_content += f"    translate([{points[a][0]},{points[a][1]}]) sphere(0.01);\n"
+    scad_content += f"    translate([{points[b][0]},{points[b][1]}]) sphere(0.01);\n"
+    scad_content += f"    translate([{points[c][0]},{points[c][1]}]) sphere(0.01);\n"
+    scad_content += "}\n"
 
-    import os
-    os.makedirs("results", exist_ok=True)
-    output_path = "results/25_Visualization_" + aiEngineName + "_" + str(
-        subPassIndex) + ".png"
-    vc.render_scadText_to_png(scad_content, output_path)
-    print(f"Saved visualization to {output_path}")
+  import os
+  os.makedirs("results", exist_ok=True)
+  output_path = "results/25_Visualization_" + aiEngineName + "_" + str(subPassIndex) + ".png"
+  vc.render_scadText_to_png(scad_content, output_path)
+  print(f"Saved visualization to {output_path}")
 
-    return f'<img src="{os.path.basename(output_path)}" alt="Pipe Loop Visualization" style="max-width: 100%;">'
+  return f'<img src="{os.path.basename(output_path)}" alt="Pipe Loop Visualization" style="max-width: 100%;">'
 
 
 if __name__ == "__main__":
-    resultToNiceReport(
-        {
-            "triangles": [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11],
-                          [12, 13, 14], [15, 0, 1]]
-        }, 0, "Test")
+  resultToNiceReport(
+    {"triangles": [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], [12, 13, 14], [15, 0, 1]]}, 0,
+    "Test")
 
 highLevelSummary = """
 Ask the LLM to turn a list of points into a list of triangles, giving a whole

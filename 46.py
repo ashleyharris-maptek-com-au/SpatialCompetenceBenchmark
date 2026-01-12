@@ -658,7 +658,7 @@ difference()
    {})
 ]
 
-import VolumeComparison as vc
+import OpenScad as vc
 
 earlyFail = False
 

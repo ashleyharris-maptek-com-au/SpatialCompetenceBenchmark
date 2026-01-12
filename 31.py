@@ -1,4 +1,4 @@
-import VolumeComparison as vc
+import OpenScad as vc
 import math
 
 title = "Prove a convex solid can fit throught itself"

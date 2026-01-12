@@ -83,7 +83,7 @@ grading = [[None]]
 
 
 def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
-  import CacheLayer as cl
+  import LLMBenchCore.CacheLayer as cl
 
   print(answer)
 

@@ -1,5 +1,5 @@
 from collections import defaultdict
-import VolumeComparison as vc
+import OpenScad as vc
 import os
 import random
 

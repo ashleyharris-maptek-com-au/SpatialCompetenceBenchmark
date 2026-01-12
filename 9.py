@@ -1,6 +1,6 @@
 import itertools, random
 import numpy as np
-import VolumeComparison as vc
+import OpenScad as vc
 
 title = "Hamiltonian Loop on Grid"
 

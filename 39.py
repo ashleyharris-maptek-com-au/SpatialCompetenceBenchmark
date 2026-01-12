@@ -22,20 +22,38 @@ Time starts at t=0. Positions are in meters, velocities in meters/second.
 """
 
 structure = {
-  "type": "object", "properties": {
-    "reasoning": {"type": "string"}, "willCollide": {"type": "boolean"}, "collidingPair": {
-      "type": "array", "items": {"type": "integer"}, "description":
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
+    "willCollide": {
+      "type": "boolean"
+    },
+    "collidingPair": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description":
       "The two object numbers that collide first (1-indexed), or empty if no collision"
-    }, "collisionTime": {
-      "type": "number", "description": "Time of first collision in seconds, or null if no collision"
-    }, "collisionPoint": {
-      "type": "array", "items": {"type": "number"}, "description":
-      "[x, y, z] coordinates of collision point"
+    },
+    "collisionTime": {
+      "type": "number",
+      "description": "Time of first collision in seconds, or null if no collision"
+    },
+    "collisionPoint": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "[x, y, z] coordinates of collision point"
     }
-  }, "propertyOrdering":
-  ["reasoning", "willCollide", "collidingPair", "collisionTime", "collisionPoint"], "required":
-  ["reasoning", "willCollide", "collidingPair", "collisionTime",
-   "collisionPoint"], "additionalProperties": False
+  },
+  "propertyOrdering":
+  ["reasoning", "willCollide", "collidingPair", "collisionTime", "collisionPoint"],
+  "required": ["reasoning", "willCollide", "collidingPair", "collisionTime", "collisionPoint"],
+  "additionalProperties": False
 }
 
 
@@ -115,10 +133,20 @@ def analyze_problem(objects):
 problems = [
   {
     "name":
-    "Head-on collision", "objects": [
-      {"pos": [0, 0, 0], "vel": [10, 0, 0], "radius": 1},
-      {"pos": [100, 0, 0], "vel": [-10, 0, 0], "radius": 1},
-    ], "description":
+    "Head-on collision",
+    "objects": [
+      {
+        "pos": [0, 0, 0],
+        "vel": [10, 0, 0],
+        "radius": 1
+      },
+      {
+        "pos": [100, 0, 0],
+        "vel": [-10, 0, 0],
+        "radius": 1
+      },
+    ],
+    "description":
     """
 Object 1: Sphere with radius 1m at (0, 0, 0), moving with velocity (10, 0, 0) m/s
 Object 2: Sphere with radius 1m at (100, 0, 0), moving with velocity (-10, 0, 0) m/s
@@ -126,10 +154,20 @@ Object 2: Sphere with radius 1m at (100, 0, 0), moving with velocity (-10, 0, 0)
   },
   {
     "name":
-    "Near miss", "objects": [
-      {"pos": [0, 0, 0], "vel": [10, 0, 0], "radius": 1},
-      {"pos": [50, 3, 0], "vel": [-10, 0, 0], "radius": 1},
-    ], "description":
+    "Near miss",
+    "objects": [
+      {
+        "pos": [0, 0, 0],
+        "vel": [10, 0, 0],
+        "radius": 1
+      },
+      {
+        "pos": [50, 3, 0],
+        "vel": [-10, 0, 0],
+        "radius": 1
+      },
+    ],
+    "description":
     """
 Object 1: Sphere with radius 1m at (0, 0, 0), moving with velocity (10, 0, 0) m/s
 Object 2: Sphere with radius 1m at (50, 3, 0), moving with velocity (-10, 0, 0) m/s
@@ -137,11 +175,25 @@ Object 2: Sphere with radius 1m at (50, 3, 0), moving with velocity (-10, 0, 0) 
   },
   {
     "name":
-    "Three objects - one collision", "objects": [
-      {"pos": [0, 0, 0], "vel": [5, 5, 0], "radius": 2},
-      {"pos": [100, 0, 0], "vel": [-5, 5, 0], "radius": 2},
-      {"pos": [50, 200, 0], "vel": [0, -10, 0], "radius": 2},
-    ], "description":
+    "Three objects - one collision",
+    "objects": [
+      {
+        "pos": [0, 0, 0],
+        "vel": [5, 5, 0],
+        "radius": 2
+      },
+      {
+        "pos": [100, 0, 0],
+        "vel": [-5, 5, 0],
+        "radius": 2
+      },
+      {
+        "pos": [50, 200, 0],
+        "vel": [0, -10, 0],
+        "radius": 2
+      },
+    ],
+    "description":
     """
 Object 1: Sphere with radius 2m at (0, 0, 0), moving with velocity (5, 5, 0) m/s
 Object 2: Sphere with radius 2m at (100, 0, 0), moving with velocity (-5, 5, 0) m/s
@@ -150,10 +202,20 @@ Object 3: Sphere with radius 2m at (50, 200, 0), moving with velocity (0, -10, 0
   },
   {
     "name":
-    "Pursuit collision", "objects": [
-      {"pos": [0, 0, 0], "vel": [20, 0, 0], "radius": 1.5},
-      {"pos": [50, 0, 0], "vel": [10, 0, 0], "radius": 1.5},
-    ], "description":
+    "Pursuit collision",
+    "objects": [
+      {
+        "pos": [0, 0, 0],
+        "vel": [20, 0, 0],
+        "radius": 1.5
+      },
+      {
+        "pos": [50, 0, 0],
+        "vel": [10, 0, 0],
+        "radius": 1.5
+      },
+    ],
+    "description":
     """
 Object 1: Sphere with radius 1.5m at (0, 0, 0), moving with velocity (20, 0, 0) m/s
 Object 2: Sphere with radius 1.5m at (50, 0, 0), moving with velocity (10, 0, 0) m/s
@@ -163,12 +225,30 @@ Object 2: Sphere with radius 1.5m at (50, 0, 0), moving with velocity (10, 0, 0)
   },
   {
     "name":
-    "Complex 3D trajectories", "objects": [
-      {"pos": [0, 0, 0], "vel": [10, 5, 3], "radius": 2},
-      {"pos": [50, 25, 15], "vel": [-5, -2.5, -1.5], "radius": 2},
-      {"pos": [100, 0, 50], "vel": [-10, 5, -5], "radius": 3},
-      {"pos": [-50, 50, 0], "vel": [15, -5, 5], "radius": 1},
-    ], "description":
+    "Complex 3D trajectories",
+    "objects": [
+      {
+        "pos": [0, 0, 0],
+        "vel": [10, 5, 3],
+        "radius": 2
+      },
+      {
+        "pos": [50, 25, 15],
+        "vel": [-5, -2.5, -1.5],
+        "radius": 2
+      },
+      {
+        "pos": [100, 0, 50],
+        "vel": [-10, 5, -5],
+        "radius": 3
+      },
+      {
+        "pos": [-50, 50, 0],
+        "vel": [15, -5, 5],
+        "radius": 1
+      },
+    ],
+    "description":
     """
 Object 1: Sphere with radius 2m at (0, 0, 0), moving with velocity (10, 5, 3) m/s
 Object 2: Sphere with radius 2m at (50, 25, 15), moving with velocity (-5, -2.5, -1.5) m/s
@@ -229,23 +309,58 @@ hard_collision_data = [
 for num_obj, seed in hard_collision_data:
   objs = generate_collision_problem(num_obj, seed)
   problems.append({
-    "name": f"{num_obj} objects chaotic motion - HARD", "objects": objs, "description":
-    format_collision_description(objs)
+    "name": f"{num_obj} objects chaotic motion - HARD",
+    "objects": objs,
+    "description": format_collision_description(objs)
   })
 
 # Add a specific complex scenario with near-simultaneous collisions
 problems.append({
   "name":
-  "Near-simultaneous collisions - HARD", "objects": [
-    {"pos": [0, 0, 0], "vel": [10, 0, 0], "radius": 2},
-    {"pos": [100, 0, 0], "vel": [-10, 0, 0], "radius": 2},
-    {"pos": [0, 100, 0], "vel": [0, -10, 0], "radius": 2},
-    {"pos": [0, -100, 0], "vel": [0, 10, 0], "radius": 2},
-    {"pos": [50, 50, 0], "vel": [-5, -5, 0], "radius": 3},
-    {"pos": [-50, 50, 50], "vel": [5, -5, -5], "radius": 2.5},
-    {"pos": [50, -50, 50], "vel": [-5, 5, -5], "radius": 2.5},
-    {"pos": [-50, -50, -50], "vel": [5, 5, 5], "radius": 2},
-  ], "description":
+  "Near-simultaneous collisions - HARD",
+  "objects": [
+    {
+      "pos": [0, 0, 0],
+      "vel": [10, 0, 0],
+      "radius": 2
+    },
+    {
+      "pos": [100, 0, 0],
+      "vel": [-10, 0, 0],
+      "radius": 2
+    },
+    {
+      "pos": [0, 100, 0],
+      "vel": [0, -10, 0],
+      "radius": 2
+    },
+    {
+      "pos": [0, -100, 0],
+      "vel": [0, 10, 0],
+      "radius": 2
+    },
+    {
+      "pos": [50, 50, 0],
+      "vel": [-5, -5, 0],
+      "radius": 3
+    },
+    {
+      "pos": [-50, 50, 50],
+      "vel": [5, -5, -5],
+      "radius": 2.5
+    },
+    {
+      "pos": [50, -50, 50],
+      "vel": [-5, 5, -5],
+      "radius": 2.5
+    },
+    {
+      "pos": [-50, -50, -50],
+      "vel": [5, 5, 5],
+      "radius": 2
+    },
+  ],
+  "description":
   """
 Object 1: Sphere r=2m at (0, 0, 0), velocity (10, 0, 0) m/s
 Object 2: Sphere r=2m at (100, 0, 0), velocity (-10, 0, 0) m/s
@@ -263,18 +378,60 @@ Multiple pairs are on collision courses. Which pair collides FIRST?
 # Add orbital-like crossing paths
 problems.append({
   "name":
-  "Orbital crossing paths - HARD", "objects": [
-    {"pos": [100, 0, 0], "vel": [0, 20, 5], "radius": 3},
-    {"pos": [0, 100, 0], "vel": [20, 0, -5], "radius": 3},
-    {"pos": [-100, 0, 0], "vel": [0, -20, 5], "radius": 3},
-    {"pos": [0, -100, 0], "vel": [-20, 0, -5], "radius": 3},
-    {"pos": [70, 70, 50], "vel": [-14, -14, -10], "radius": 4},
-    {"pos": [-70, 70, -50], "vel": [14, -14, 10], "radius": 4},
-    {"pos": [70, -70, -50], "vel": [-14, 14, 10], "radius": 4},
-    {"pos": [-70, -70, 50], "vel": [14, 14, -10], "radius": 4},
-    {"pos": [0, 0, 100], "vel": [0, 0, -25], "radius": 5},
-    {"pos": [0, 0, -100], "vel": [0, 0, 25], "radius": 5},
-  ], "description":
+  "Orbital crossing paths - HARD",
+  "objects": [
+    {
+      "pos": [100, 0, 0],
+      "vel": [0, 20, 5],
+      "radius": 3
+    },
+    {
+      "pos": [0, 100, 0],
+      "vel": [20, 0, -5],
+      "radius": 3
+    },
+    {
+      "pos": [-100, 0, 0],
+      "vel": [0, -20, 5],
+      "radius": 3
+    },
+    {
+      "pos": [0, -100, 0],
+      "vel": [-20, 0, -5],
+      "radius": 3
+    },
+    {
+      "pos": [70, 70, 50],
+      "vel": [-14, -14, -10],
+      "radius": 4
+    },
+    {
+      "pos": [-70, 70, -50],
+      "vel": [14, -14, 10],
+      "radius": 4
+    },
+    {
+      "pos": [70, -70, -50],
+      "vel": [-14, 14, 10],
+      "radius": 4
+    },
+    {
+      "pos": [-70, -70, 50],
+      "vel": [14, 14, -10],
+      "radius": 4
+    },
+    {
+      "pos": [0, 0, 100],
+      "vel": [0, 0, -25],
+      "radius": 5
+    },
+    {
+      "pos": [0, 0, -100],
+      "vel": [0, 0, 25],
+      "radius": 5
+    },
+  ],
+  "description":
   """
 Object 1: Sphere r=3m at (100, 0, 0), velocity (0, 20, 5) m/s
 Object 2: Sphere r=3m at (0, 100, 0), velocity (20, 0, -5) m/s
@@ -474,7 +631,7 @@ def generate_collision_scene_scad(prob):
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
-  import VolumeComparison as vc
+  import OpenScad as vc
   import os
 
   prob = problems[subPass]
@@ -547,6 +704,8 @@ if __name__ == "__main__":
       {
         'reasoning':
         'To determine if two spheres collide, the distance between their centers must be less than or equal to the sum of their radii. Since both objects are spheres with a radius of 1m, the condition for collision is that the distance between their centers is at most 2m. Object 1 is moving in the positive x-direction at 10 m/s, while Object 2 is moving in the negative x-direction at 10 m/s. The relative velocity between them is 20 m/s (10 m/s + 10 m/s). The initial distance between their centers is 100 m. To calculate the time at which they collide, we solve for t in the equation: distance - (relative velocity * t) = 2m. Solving for t gives us t = (100 - 2) / 20 = 4.9 seconds. At this time, the position of the collision in the x-direction can be calculated for either object. For Object 1, x = 0 + 10 * 4.9 = 49 m. The y and z values remain 0 since both objects are only moving along the x-axis. Therefore, the collision occurs at (49, 0, 0)',
-        'willCollide': True, 'collidingPair': [1, 2], 'collisionTime': 4.9, 'collisionPoint':
-        [49, 0, 0]
+        'willCollide': True,
+        'collidingPair': [1, 2],
+        'collisionTime': 4.9,
+        'collisionPoint': [49, 0, 0]
       }, 0, "blah"))
