@@ -3,6 +3,9 @@ title = "Can an AI navigate via the stars?"
 import os
 import math
 import random
+import csv
+import datetime
+from contextlib import contextmanager
 from skyfield.api import Star, load, wgs84
 from skyfield.data import hipparcos
 import numpy as np
@@ -43,6 +46,139 @@ planetDescriptions = {}
 
 starRenders = []
 
+_RESULTS_CSV_PATH = os.path.join("results", "45.csv")
+_RESULTS_CSV_LOCK_PATH = _RESULTS_CSV_PATH + ".lock"
+
+_RESULTS_CSV_FIELDS = [
+  "timestamp_utc",
+  "aiEngineName",
+  "subPass",
+  "location_idx",
+  "time_idx",
+  "time_description",
+  "sky_filename",
+  "utc_time",
+  "target_lat",
+  "target_lon",
+  "guess_lat",
+  "guess_lon",
+  "abs_lat_error_deg",
+  "abs_lon_error_deg",
+  "central_angle_deg",
+  "great_circle_km",
+  "cartesian_km",
+  "score",
+  "hemisphere_correct",
+  "date_line_side_correct",
+  "within_10deg_lat",
+  "within_10deg_lon",
+  "numStarsVisible",
+  "starsVisibleMagLE0",
+  "starsVisibleMag0to1",
+  "starsVisibleMag1to2",
+  "starsVisibleMag2to3",
+  "starsVisibleMag3to4",
+  "starsVisibleMag4to5",
+  "starsVisibleMag5to6",
+  "numPlanetsVisible",
+  "moonVisible",
+  "visibleBodies",
+]
+
+@contextmanager
+def _results_file_lock():
+  os.makedirs(os.path.dirname(_RESULTS_CSV_LOCK_PATH), exist_ok=True)
+  lock_file = open(_RESULTS_CSV_LOCK_PATH, "a+b")
+  try:
+    lock_file.seek(0, os.SEEK_END)
+    if lock_file.tell() == 0:
+      lock_file.write(b"0")
+      lock_file.flush()
+    if os.name == "nt":
+      import msvcrt
+      lock_file.seek(0)
+      msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+    else:
+      import fcntl
+      fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+    yield
+  finally:
+    try:
+      if os.name == "nt":
+        import msvcrt
+        lock_file.seek(0)
+        msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+      else:
+        import fcntl
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+    finally:
+      lock_file.close()
+
+def _append_results_csv_row(row: dict):
+  os.makedirs(os.path.dirname(_RESULTS_CSV_PATH), exist_ok=True)
+  with _results_file_lock():
+    needs_header = (not os.path.exists(_RESULTS_CSV_PATH)) or os.path.getsize(_RESULTS_CSV_PATH) == 0
+    with open(_RESULTS_CSV_PATH, "a", newline="", encoding="utf-8") as f:
+      writer = csv.DictWriter(f, fieldnames=_RESULTS_CSV_FIELDS, extrasaction="ignore")
+      if needs_header:
+        writer.writeheader()
+      writer.writerow(row)
+
+_star_visibility_cache = {}
+_planet_visibility_cache = {}
+
+def _get_star_visibility_stats(location, observation_time):
+  key = (float(location[0]), float(location[1]), float(observation_time.tt))
+  cached = _star_visibility_cache.get(key)
+  if cached is not None:
+    return cached
+
+  observer = earth + wgs84.latlon(location[0], location[1])
+  astrometric = observer.at(observation_time).observe(stars)
+  apparent = astrometric.apparent()
+  alt, az, _ = apparent.altaz(temperature_C=5, pressure_mbar=1020)
+  visible = alt.degrees > 0
+  mags = magnitudes
+
+  num_visible = int(np.sum(visible))
+  s_le0 = int(np.sum(visible & (mags <= 0)))
+  s_0_1 = int(np.sum(visible & (mags > 0) & (mags <= 1)))
+  s_1_2 = int(np.sum(visible & (mags > 1) & (mags <= 2)))
+  s_2_3 = int(np.sum(visible & (mags > 2) & (mags <= 3)))
+  s_3_4 = int(np.sum(visible & (mags > 3) & (mags <= 4)))
+  s_4_5 = int(np.sum(visible & (mags > 4) & (mags <= 5)))
+  s_5_6 = int(np.sum(visible & (mags > 5) & (mags <= 6)))
+
+  stats = {
+    "numStarsVisible": num_visible,
+    "starsVisibleMagLE0": s_le0,
+    "starsVisibleMag0to1": s_0_1,
+    "starsVisibleMag1to2": s_1_2,
+    "starsVisibleMag2to3": s_2_3,
+    "starsVisibleMag3to4": s_3_4,
+    "starsVisibleMag4to5": s_4_5,
+    "starsVisibleMag5to6": s_5_6,
+  }
+  _star_visibility_cache[key] = stats
+  return stats
+
+def _get_planet_visibility_stats(location, observation_time):
+  key = (float(location[0]), float(location[1]), float(observation_time.tt))
+  cached = _planet_visibility_cache.get(key)
+  if cached is not None:
+    return cached
+
+  descs = getPlanetDescriptions(location, observation_time)
+  names = sorted(descs.keys())
+  moon_visible = "moon" in descs
+  planets_visible = [n for n in names if n != "moon"]
+  stats = {
+    "numPlanetsVisible": len(planets_visible),
+    "moonVisible": moon_visible,
+    "visibleBodies": ";".join(names),
+  }
+  _planet_visibility_cache[key] = stats
+  return stats
 
 def render_star_field(lat, lon, time, filename, subpass, img_size=2048):
   """Render the night sky as seen from a specific location and time."""
@@ -127,51 +263,96 @@ def render_star_field(lat, lon, time, filename, subpass, img_size=2048):
   img.save(filename)
   return img
 
-
 # Generate test scenarios - different locations, AI must identify where they are
 random.seed(45)
 np.random.seed(45)
 
-test_location = \
-  (35.7872, -170.7725, "North Pacific Ocean")
+test_locations = [
+  (35.7872, -170.7725),
+  (45.7750, -156.3490),
+  (-11.0874, -138.853),
+  (-56.6796,-129.3453),
+  (20.9316,147.1115),
+  (52.6565,162.2525),
+  (14.7168,170.0641),
+]
 
-base_time = ts.utc(2025, 12, 25, 12, 0, 0)
+base_times = [
+  ts.utc(2025, 12, 25, 12, 0, 0),
+  ts.utc(2025, 12, 21, 12, 31, 11),
+  ts.utc(2025, 12, 17, 14, 42, 52),
+  ts.utc(2025, 12, 28, 11, 11, 41),
+  ts.utc(2025, 11, 29, 10, 19, 10),
+  ts.utc(2025, 11, 25, 12, 12, 42),
+  ts.utc(2025, 11, 21, 13, 43, 54),
+]
 
+def format_time_exact(observation_time):
+  """Format exact time for prompt."""
+  tt = observation_time.utc
+  return f"{tt[0]}:{tt[1]:02d}:{tt[2]:02d} {tt[3]:02d}:{tt[4]:02d}:{tt[5]:02.0f} UTC"
+
+def subPassToParams(subPass):
+  """Convert subpass index to (location_idx, time_idx) and actual values."""
+  n_locations = len(test_locations)
+  n_times = len(base_times)
+  
+  location_idx = subPass % n_locations
+  time_idx = (subPass // n_locations) % n_times
+  
+  location = test_locations[location_idx]
+  observation_time = base_times[time_idx]
+  time_description = f"EXACTLY {format_time_exact(observation_time)}"
+  
+  return {
+    'location': location,
+    'location_idx': location_idx,
+    'observation_time': observation_time,
+    'time_idx': time_idx,
+    'time_description': time_description,
+  }
+
+def getTotalSubpasses():
+  return len(test_locations) * len(base_times)
+
+def getSkyMapFilename(location_idx, time_idx):
+  """Get the filename for a rendered sky map."""
+  return f"results/45_sky_loc{location_idx}_time{time_idx}.png"
 
 def renderAllSkyMaps():
-  print(f"Rendering sky from {test_location[2]}...")
-  render_star_field(test_location[0], test_location[1], base_time, "results/45_sky_0.png", 0, 4096)
+  """Render sky maps for all location/time combinations."""
+  for loc_idx, location in enumerate(test_locations):
+    for time_idx, base_time in enumerate(base_times):
+      filename = getSkyMapFilename(loc_idx, time_idx)
+      if not os.path.exists(filename):
+        print(f"Rendering sky loc={loc_idx} time={time_idx}...")
+        render_star_field(location[0], location[1], base_time, filename, loc_idx * 100 + time_idx, 4096)
 
   if not os.path.exists("images/45.png"):
     import shutil
-    shutil.copy("results/45_sky_0.png", "images/45.png")
+    shutil.copy(getSkyMapFilename(0, 0), "images/45.png")
 
-
-if not os.path.exists("results/45_sky_0.png"):
-  renderAllSkyMaps()
-
-else:
-  observer = earth + wgs84.latlon(test_location[0], test_location[1])
-
+def getPlanetDescriptions(location, time):
+  """Calculate planet descriptions for a specific location and time."""
+  descriptions = {}
+  observer = earth + wgs84.latlon(location[0], location[1])
+  
   for name, planet, color, mag in planet_targets:
-    planet_astrometric = observer.at(base_time).observe(planet)
-    planet_apparent = planet_astrometric.apparent()
-    p_alt, p_az, _ = planet_apparent.altaz()
+    try:
+      planet_astrometric = observer.at(time).observe(planet)
+      planet_apparent = planet_astrometric.apparent()
+      p_alt, p_az, _ = planet_apparent.altaz()
 
-    if p_alt.degrees > 0:  # Above horizon
-      planetDescriptions[name] = \
-        f"{name} is visible and at {p_alt.degrees:.2f} degrees above the horizon. " \
+      if p_alt.degrees > 0:  # Above horizon
+        descriptions[name] = \
+          f"{name} is visible and at {p_alt.degrees:.2f} degrees above the horizon. " \
           f"It is at {p_az.degrees:.2f} degrees azimuth."
+    except:
+      pass
+  return descriptions
 
-# The actual test: given a star field image, identify the approximate location
-# For subpasses, we'll vary the difficulty:
-# - Subpass 0: Full star field with labeled constellations hints
-# - Subpass 1: Just the star field, identify hemisphere
-# - Subpass 2: Identify approximate latitude
-# - Subpass 3: Identify city from multiple choice
-
-# Pick a random location for the actual test
-test_lat, test_lon, test_name = test_location
+# Render any missing sky maps on import
+renderAllSkyMaps()
 
 prompt = f"""
 You are a navigator on a ship in the middle of the pacific ocean. 
@@ -222,44 +403,83 @@ structure = {
 
 earlyFail = True
 
-
 def prepareSubpassPrompt(index: int) -> str:
-  if index == 5:
+  total = getTotalSubpasses()
+  if index >= total:
     raise StopIteration
 
-  nicePlanetDescriptions = ""
-  for k, v in planetDescriptions.items():
-    nicePlanetDescriptions += f"{v}\n".capitalize()
+  params = subPassToParams(index)
+  location = params['location']
+  observation_time = params['observation_time']
+  time_description = params['time_description']
+  location_idx = params['location_idx']
+  time_idx = params['time_idx']
+  
+  # Get planet descriptions for this specific location/time
+  planet_descs = getPlanetDescriptions(location, observation_time)
+  
+  planetDescriptions = ""
+  if len(planet_descs) == 0:
+    planetDescriptions = "No planets nor the moon are visible to the naked eye."
+  elif len(planet_descs) == 1:
+    planetDescriptions = "Only " + ", ".join(planet_descs.keys()) + " is visible to the naked eye and is in the image."
+  else:
+    planetDescriptions = "The planets " + ", ".join(planet_descs.keys()) + " are visible to the naked eye and are in the image."
 
-  nicePlanetDescriptions += "\nNo other celestial bodies are visible to the naked eye."
-
-  timePrompts = [
-    """
-You have a clock that is showing time in UTC, and can confirm that this observation was made on
-EXACTLY December 25th, 2025 at 12pm (midday) UTC. """
-  ] * 3
-
-  timePrompts.append("You have a rough idea of the time: 2025/12/25, between 10am and 1pm UTC.")
-  timePrompts.append("You know it is late decemeber 2025.")
-  timePrompts.append("You know the date is somewhere between 2024 and 2028")
-
-  p = prompt.replace("TIME_INFO", timePrompts[index])
-
-  if index > 2: p = p.replace("pacific ", "")
-
-  if index == 0:
-    return p.replace("EXTRA", nicePlanetDescriptions) + f"[[image:results/45_sky_0.png]]"
-  return p.replace("EXTRA", "") + f"[[image:results/45_sky_0.png]]"
-
+  # Build time info string
+  time_info = f"The time is {time_description}."
+  
+  p = prompt.replace("TIME_INFO", time_info)
+  p = p.replace("EXTRA", planetDescriptions)
+  
+  # Attach the appropriate sky map image
+  sky_filename = getSkyMapFilename(location_idx, time_idx)
+  return p + f"[[image:{sky_filename}]]"
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if not isinstance(answer, dict):
+    try:
+      params = subPassToParams(subPass)
+      observation_time = params['observation_time']
+      location_idx = params['location_idx']
+      time_idx = params['time_idx']
+      time_description = params['time_description']
+      target_lat, target_lon = params['location']
+      sky_filename = getSkyMapFilename(location_idx, time_idx)
+      now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+      row = {
+        "timestamp_utc": now_utc,
+        "aiEngineName": aiEngineName,
+        "subPass": subPass,
+        "location_idx": location_idx,
+        "time_idx": time_idx,
+        "time_description": time_description,
+        "sky_filename": sky_filename,
+        "utc_time": observation_time.utc_iso(),
+        "target_lat": target_lat,
+        "target_lon": target_lon,
+        "guess_lat": "",
+        "guess_lon": "",
+        "score": 0,
+      }
+      row.update(_get_star_visibility_stats((target_lat, target_lon), observation_time))
+      row.update(_get_planet_visibility_stats((target_lat, target_lon), observation_time))
+      _append_results_csv_row(row)
+    except Exception:
+      pass
     return 0, "Invalid answer format"
 
-  target_lat, target_lon, target_name = test_location
+  params = subPassToParams(subPass)
+  target_lat, target_lon = params['location']
 
-  answer_lat = answer.get("latitude", 0)
-  answer_lon = answer.get("longitude", 0)
+  try:
+    answer_lat = float(answer.get("latitude", 0))
+  except Exception:
+    answer_lat = 0
+  try:
+    answer_lon = float(answer.get("longitude", 0))
+  except Exception:
+    answer_lon = 0
 
   score = 0
   feedback = []
@@ -297,7 +517,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   cartesianDistance = 2 * earth_radius_km * math.sin(central_angle_rad / 2)
 
   if score == 0.4:
-    gcdlog10 = math.log10(greatCircleDistance)
+    gcdlog10 = math.log10(max(greatCircleDistance, 1e-12))
 
     if gcdlog10 < 1:
       score = 1.0
@@ -320,6 +540,43 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       f"Error distance (along surface): {central_angle_deg:.2f}° ({greatCircleDistance:.1f} km)")
     feedback.append(f"Error distance (through earth): {cartesianDistance:.1f} km")
 
+  try:
+    observation_time = params['observation_time']
+    location_idx = params['location_idx']
+    time_idx = params['time_idx']
+    time_description = params['time_description']
+    sky_filename = getSkyMapFilename(location_idx, time_idx)
+    now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+    row = {
+      "timestamp_utc": now_utc,
+      "aiEngineName": aiEngineName,
+      "subPass": subPass,
+      "location_idx": location_idx,
+      "time_idx": time_idx,
+      "time_description": time_description,
+      "sky_filename": sky_filename,
+      "utc_time": observation_time.utc_iso(),
+      "target_lat": target_lat,
+      "target_lon": target_lon,
+      "guess_lat": answer_lat,
+      "guess_lon": answer_lon,
+      "abs_lat_error_deg": abs(answer_lat - target_lat),
+      "abs_lon_error_deg": abs(answer_lon - target_lon),
+      "central_angle_deg": central_angle_deg,
+      "great_circle_km": greatCircleDistance,
+      "cartesian_km": cartesianDistance,
+      "score": score,
+      "hemisphere_correct": int((answer_lat > 0) == (target_lat > 0)),
+      "date_line_side_correct": int((answer_lon > 0) == (target_lon > 0)),
+      "within_10deg_lat": int(abs(answer_lat - target_lat) < 10),
+      "within_10deg_lon": int(abs(answer_lon - target_lon) < 10),
+    }
+    row.update(_get_star_visibility_stats((target_lat, target_lon), observation_time))
+    row.update(_get_planet_visibility_stats((target_lat, target_lon), observation_time))
+    _append_results_csv_row(row)
+  except Exception:
+    pass
+
   return score, "<br>\n".join(feedback)
 
 
@@ -327,11 +584,16 @@ def resultToNiceReport(answer, subPass, aiEngineName):
   if not isinstance(answer, dict):
     return "<p>Invalid answer</p>"
 
-  target_lat, target_lon, target_name = test_location
+  params = subPassToParams(subPass)
+  target_lat, target_lon = params['location']
+  time_description = params['time_description']
+  location_idx = params['location_idx']
+  time_idx = params['time_idx']
 
   html = f"<p><b>Target location:</b> ({target_lat:.4f}°, {target_lon:.4f}°)</p>"
   html += f"<p><b>AI guess:</b> "
   html += f"({answer.get('latitude', '?'):.4f}°, {answer.get('longitude', '?'):.4f}°)</p>"
+  html += f"<p><b>Time given:</b> {time_description}</p>"
 
   if subPass == 0:
     html += """Scoring<ul>
@@ -342,55 +604,49 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 <li> So within about 10km should get the AI 100%.</li>
 </ul>
 
-
-
 """
 
-    html += f"<a href='45_sky_0.png'><img src='45_sky_0.png' style='min-width=400px'></a><br>"
-    html += "(Click to zoom in - picture is huge and has ~100mb of star data)"
-  else:
-    html += "(Same skymap as above)"
+  sky_filename = getSkyMapFilename(location_idx, time_idx)
+  html += f"<a href='{sky_filename}'><img src='{sky_filename}' style='min-width=400px'></a><br>"
+  html += "(Click to zoom in - picture is huge and has ~100mb of star data)"
 
   return html
 
 
-highLevelSummary = """
+highLevelSummary = f"""
 Can an AI navigate using only the stars?<br><br>
 
-This pulls down ~100mb of star data, and calcualtes an exact night sky render,
+This pulls down ~100mb of star data, and calculates an exact night sky render,
 placing all planets and stars at correct brightness, even modelling atmospheric
 distortion and gravitational lensing, and then plots a high resolution image
 of the sky looking up from the location of the test.
 
-On the easy subpass, the AI is given:<ul>
+<b>Test dimensions:</b>
+<ul>
+<li>{len(test_locations)} different locations (pacific ocean coordinates)</li>
+<li>{len(base_times)} different observation times</li>
+<li>Total: {getTotalSubpasses()} subpasses</li>
+</ul>
+
+The AI is given:<ul>
 <li>a 4096x4096 image of the night sky,</li>
 <li>ocean name,</li>
 <li>that they're far from land ('middle of the ocean')</li>
-<li>exact time in london / UTC</li>
-<li>approx local sunset delta</li>
-<li>a handful of exact sextant observations to visible planetary bodies.</li>
-<li>knowledge of what planetary bodies are NOT visible.</li>
+<li>exact time in UTC</li>
+<li>knowledge of what planetary bodies are visible.</li>
 </ul>
-<br><br>
-
-As the difficulty increases, the AI loses:<ol>
-<li>The exact sextant readings and celestial body positions/absent info..</li>
-<li>About 3 hours of uncertainty with time.</li>
-<li>The Ocean Name</li>
-<li>Which day of the month</li>
-<li>About 3 years of uncertainty with time.</li>
-</ol>
+<br>
 
 I actually personally struggled with this one, being from the southern hemisphere the
-sky looked foriegn. But with some basic googling I could recognise Orion's belt and his bow, and
+sky looked foreign. But with some basic googling I could recognise Orion's belt and his bow, and
 the LLM needs to be able to either do this, or recognise the pattern as if it's a northern
-hemisphere native. Humans have been doing this for millenia, and the AI has access to full allamacs
+hemisphere native. Humans have been doing this for millennia, and the AI has access to full almanacs
 and can generate to-the-second accurate star maps via python, so I feel confident declaring this 
 solvable.<br><br>
 
 The 'human with tools' control does the following:<ul>
 <li> Binned index structure, 5 degree * 5 degree</li>
-<li> Starts with magnitute <= 1 stars only (the top 20)</li>
+<li> Starts with magnitude <= 1 stars only (the top 20)</li>
 <li> Starts with the area of uncertainty 100 degree * 100 degree centred on the ocean centre.</li>
 <li> randomly guesses, calculates where the stars would be, compares that to the given sky,</li>
 <li> moves to the best guess.</li>
@@ -402,14 +658,22 @@ Seems to be able to get it to within about 5km with only a few minutes of single
 python code, that only took an hour or so to write. So 100% solvable on an $80,000 GPU.
 
 <div style="max-width:650px">
-<a href="45_sky_0.png"><img src="45_sky_0.png" width="300px" style="float:left; padding:4px"></a>
+<a href="45_sky_loc0_time0.png"><img src="45_sky_loc0_time0.png" width="300px" style="float:left; padding:4px"></a>
 </div>
 """
 
-subpassParamSummary = [
-  "Can you identify where you are from a 4096x4096 image of the night sky and a list of sextant observations?",
-  "Can you identify where you are from only 4096x4096 image of the night sky?",
-]
-promptChangeSummary = "Less and less information"
+def getSubpassParamSummary(index):
+  """Generate a description for a specific subpass."""
+  if index >= getTotalSubpasses():
+    return None
+  params = subPassToParams(index)
+  loc_idx = params['location_idx']
+  time_idx = params['time_idx']
+  return f"Location {loc_idx}, Time {time_idx}"
 
-#print(prepareSubpassPrompt(0))
+subpassParamSummary = [getSubpassParamSummary(i) for i in range(min(20, getTotalSubpasses()))]
+promptChangeSummary = "Varies location and observation time"
+
+
+if __name__ == "__main__":
+  print(prepareSubpassPrompt(100))
