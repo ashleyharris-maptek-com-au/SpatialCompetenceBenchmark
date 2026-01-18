@@ -15,6 +15,8 @@ from typing import Dict, Any
 
 import VolumeComparison
 from LLMBenchCore import BenchmarkRunner, run_benchmark_main
+from LLMBenchCore.AiEnginePlacebo import set_placebo_data_provider
+import placebo_data
 
 
 class MeshBenchmarkRunner(BenchmarkRunner):
@@ -69,5 +71,6 @@ class MeshBenchmarkRunner(BenchmarkRunner):
 
 
 if __name__ == "__main__":
+  set_placebo_data_provider(placebo_data.get_response)
   runner = MeshBenchmarkRunner()
   run_benchmark_main(runner, __file__)

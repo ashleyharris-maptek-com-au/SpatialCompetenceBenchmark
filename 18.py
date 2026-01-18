@@ -95,17 +95,17 @@ def resultToScad(result, aiEngineName):
   }
 
   if "gpt" in aiEngineName:
-    from AiEngineGoogleGemini import GeminiEngine
+    from LLMBenchCore.AiEngineGoogleGemini import GeminiEngine
     engine = GeminiEngine("gemini-2.5-flash-lite", False, False)
-    cacheLayer = cl.CacheLayer(engine.configAndSettingsHash, engine.AIHook, "gemini-2.5-flash-lite")
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, "gemini-2.5-flash-lite")
 
     def answerQuestion(q: str) -> dict:
       return cacheLayer.AIHook(q, structure, -1, -1)[0]
 
   else:
-    from AiEngineOpenAiChatGPT import OpenAIEngine
+    from LLMBenchCore.AiEngineOpenAiChatGPT import OpenAIEngine
     engine = OpenAIEngine("gpt-5-nano", False, False)
-    cacheLayer = cl.CacheLayer(engine.configAndSettingsHash, engine.AIHook, "gpt-5-nano")
+    cacheLayer = cl(engine.configAndSettingsHash, engine.AIHook, "gpt-5-nano")
 
     def answerQuestion(q: str) -> dict:
       return cacheLayer.AIHook(q, structure, -1, -1)[0]

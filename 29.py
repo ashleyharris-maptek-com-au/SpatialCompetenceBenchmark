@@ -442,7 +442,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
       partName = "29_" + str(partIndex) + "_" + aiEngineName
       stlFile = "results/" + partName + ".stl"
       if os.path.exists(stlFile):
-        vc._render_stl_to_png(stlFile, "results/" + partName + ".png")
+        vc.render_stl_to_png(stlFile, "results/" + partName + ".png")
         out += "<img src='" + partName + ".png' width=320/>"
     return out
 

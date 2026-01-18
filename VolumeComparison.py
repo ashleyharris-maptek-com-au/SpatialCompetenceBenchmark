@@ -4,6 +4,7 @@ import StlVolume
 import os
 import hashlib
 import json
+import traceback
 from typing import Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor
 
@@ -48,6 +49,8 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
   try:
     resultAsScad = resultToScad(result, aiEngineName)
   except Exception as e:
+    print("Result to scad threw: " + str(e))
+    traceback.print_exc()
     return {
       "score": 100000,  # Not an AI failure, framework failure.
       "output_image": None,
