@@ -234,3 +234,4 @@ it always lands on a 6.
 - How many stanford bunnies can you fit into a 1 cubic meter box?
 - Puzzle 6 from <https://youtu.be/DstlphyqyNw?si=w0LirzJ4xk38cWrI&t=1362>. Which Presh solves for the general case for odd
 cases, or even non-regular cases, and links to a paper solving the even case.
+- Can you scan a barcode?
