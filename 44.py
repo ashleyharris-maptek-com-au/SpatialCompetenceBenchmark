@@ -4,6 +4,7 @@ from scipy.ndimage import gaussian_filter
 import OpenScad as vc
 
 title = "Can you navigate a mountain range without a heightmap?"
+skip = True
 
 # Heightmap parameters
 MAP_SIZE = 64

@@ -1,6 +1,7 @@
 import math
 
 title = "Hill Tetrahedron Packing in 3D"
+true = True
 
 prompt = """
 Here is the points and faces of a tetrahedron

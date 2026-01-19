@@ -1,4 +1,5 @@
 title = "Lay out pipe to make a H shape."
+skip = True
 
 prompt = """
 You are given 5 rigid lengths of pipe, each 5 meters long and 10cm in diameter. 

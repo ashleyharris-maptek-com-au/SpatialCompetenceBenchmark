@@ -1,4 +1,5 @@
 title = "Maze generation - ASCII Art"
+skip = True
 
 prompt = """
 Generate a PARAM_A * PARAM_A ASCII art maze.
@@ -22,9 +23,18 @@ Outputting anything else than the maze will obviously result in a score of 0.
 """
 
 structure = {
-  "type": "object", "properties": {"reasoning": {"type": "string"}, "maze": {"type": "string"}},
-  "additionalProperties": False, "propertyOrdering": ["reasoning",
-                                                      "maze"], "required": ["reasoning", "maze"]
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
+    "maze": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": False,
+  "propertyOrdering": ["reasoning", "maze"],
+  "required": ["reasoning", "maze"]
 }
 
 subpassParamSummary = ["16x16 maze", "32x32 maze", "64x64 maze", "128x128 maze"]

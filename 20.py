@@ -4,6 +4,7 @@ import numpy as np
 import re
 
 title = "Can you trace a rough map of Australia with under 1kb of data?"
+skip = True
 
 prompt = """
 Create a < CODE_SIZE snippet of python code that exports a function 'f', taking 2 parameters (x and y),

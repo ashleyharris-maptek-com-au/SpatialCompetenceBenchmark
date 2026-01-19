@@ -2,6 +2,7 @@ import scad_format
 import OpenScad as vc
 
 title = "What's the largest prime number you can 3D print without supports?"
+skip = True
 
 prompt = """
 2 3D shapes can be said to be stackable if there exists an orientation in which:

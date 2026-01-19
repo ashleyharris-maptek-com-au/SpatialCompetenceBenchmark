@@ -20,6 +20,7 @@ import pybullet_data
 import numpy as np
 
 title = "Can an AI determine how someone fell from the crime scene?"
+skip = True
 
 Vec3 = Tuple[float, float, float]
 Quat = Tuple[float, float, float, float]

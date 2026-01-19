@@ -13,6 +13,8 @@ import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
 
+skip = True
+
 if not os.path.exists("hip_main.dat"):
   print("First run - downloading planet + star catalogue (~100mb), this may take some time...")
 

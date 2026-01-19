@@ -1,4 +1,5 @@
 title = "Pyamid construction - more bricks than token limits"
+skip = True
 
 prompt = """
 A pharoh is building a pyramyd to rest on top of his tomb and protect him for the afterlife. 

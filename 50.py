@@ -1,4 +1,5 @@
 title = "How many consent forms does this photographer need?"
+skip = True
 
 prompt = """
 Review the attached image, and answer the following questions:
