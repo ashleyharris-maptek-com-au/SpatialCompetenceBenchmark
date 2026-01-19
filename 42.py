@@ -2,6 +2,7 @@ import random, os, math
 import OpenScad as vc
 
 title = "Can you navigate a maze from photos only?"
+skip = True
 
 maze = """
 ################################

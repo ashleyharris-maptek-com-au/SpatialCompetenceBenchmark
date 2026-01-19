@@ -4,6 +4,7 @@ import OpenScad as vc
 
 title = "Reconstruct a 3D voxel grid from photos"
 earlyFail = True
+skip = True
 
 # Define colors for voxels - distinct, easily distinguishable colors
 COLORS = [

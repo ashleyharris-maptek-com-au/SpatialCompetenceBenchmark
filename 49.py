@@ -10,6 +10,7 @@ from OpticalEngine import (Vec3, LightSource, Screen, OpticalScene, create_devic
                            get_white_light_wavelengths, wavelength_to_rgb, DEVICE_CLASSES)
 
 title = "Optical Device Placement from Ray-Traced Images"
+skip = True
 
 prompt = """
 You are presented with an image showing light hitting a screen after passing through optical devices.

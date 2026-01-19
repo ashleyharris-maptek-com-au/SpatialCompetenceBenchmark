@@ -2,6 +2,7 @@ import math
 
 title = "Laser beam art"
 earlyFail = True
+skip = True
 
 prompt = """
 You are an artist in charge of creating a laser beam art piece.

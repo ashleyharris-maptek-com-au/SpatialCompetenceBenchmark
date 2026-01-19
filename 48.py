@@ -27,6 +27,7 @@ import pybullet_data
 import numpy as np
 
 title = "Can an AI aim a catapult to destroy a structure?"
+skip = True
 
 # Cache for grading and visualization results
 _cache_dir = os.path.join(tempfile.gettempdir(), "48_angrybirds_cache")

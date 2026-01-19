@@ -39,11 +39,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
         "output_hyperlink": None,
         "reference_image": None,
         "temp_dir": None,
-        "scoreExplanation": reason,
-        "resultVolume": 0,
-        "referenceVolume": 0,
-        "intersectionVolume": 0,
-        "differenceVolume": 0
+        "scoreExplanation": "Early failure: " + reason,
       }
 
   try:
@@ -59,10 +55,6 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
       "reference_image": None,
       "temp_dir": None,
       "scoreExplanation": "Exception: " + str(e) + " in resultToScad",
-      "resultVolume": 0,
-      "referenceVolume": 0,
-      "intersectionVolume": 0,
-      "differenceVolume": 0
     }
 
   if resultAsScad == "" or resultAsScad is None:
@@ -74,10 +66,6 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
       "reference_image": None,
       "temp_dir": None,
       "scoreExplanation": "Result was empty",
-      "resultVolume": 0,
-      "referenceVolume": 0,
-      "intersectionVolume": 0,
-      "differenceVolume": 0
     }
 
   scadModules = testGlobals.get("scadModules", "")
@@ -101,7 +89,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
     if cached is not None:
       print(f"Cache hit for result {result_cache_key[:12]}...")
       if "scoreExplanation" not in cached:
-        cached["scoreExplanation"] = ""  # I fixed a typo which broke the old cache.
+        cached["scoreExplanation"] = ""
       cached["scoreExplanation"] += "Results were <a href='" + cache_meta_path + "'>cached</a>."
       return cached
 
@@ -258,14 +246,33 @@ color([1,0,0,0.8])
         "output_hyperlink": result_scad,
         "reference_image": reference_png if os.path.exists(reference_png) else None,
         "temp_dir": temp_dir,
-        "scoreExplantion": f"<div style='color:red;'>Render timeout: {e}</div>",
-        "resultVolume": 0,
-        "referenceVolume": 0,
-        "intersectionVolume": 0,
-        "differenceVolume": 0
+        "scoreExplanation": f"<div style='color:red;'>Render timeout: {e}</div>",
       }
       _save_cache(cache_meta_path, cache)
       return cache
+
+  # Generate PNG images with off-axis camera
+  print(f"Rendering PNG images...")
+  _render_stl_to_png(output_stl, output_png)
+
+  if "lateFailTest" in testGlobals:
+    failureReason = testGlobals["lateFailTest"](result, subPass)
+
+    if failureReason:
+      result_dict = {
+        "score": 0,
+        "output_image": output_png,
+        "output_mouseover_image": "",
+        "output_hyperlink": result_scad,
+        "reference_image": reference_png,
+        "temp_dir": temp_dir,
+        "scoreExplanation": failureReason,
+      }
+
+      # Save to cache
+      _save_cache(cache_meta_path, result_dict)
+
+      return result_dict
 
   # Run the intersection and difference calculations in parallel with 20 minute timeouts.
   # If we've gotten here then the result and reference scads rendered successfully,
@@ -284,9 +291,6 @@ color([1,0,0,0.8])
     if err:
       openscad_errors.append(err)
 
-  # Generate PNG images with off-axis camera
-  print(f"Rendering PNG images...")
-  _render_stl_to_png(output_stl, output_png)
   render_scadText_to_png(f"include <{os.path.basename(resultWithReference_scad)}>;", output2_png)
 
   if not os.path.exists(reference_png):
