@@ -26,14 +26,25 @@ class TimeoutError(Exception):
 
 def run_openscad(input_scad: str,
                  output_file: str,
-                 timeout: Optional[float] = None) -> Optional[str]:
+                 timeout: Optional[float] = None,
+                 previewMode=False) -> Optional[str]:
   """Run OpenSCAD to generate output file from SCAD input.
     
     Returns error message string if there was an error, None otherwise.
     Raises TimeoutError if timeout is specified and exceeded.
     """
   try:
-    result = subprocess.run([openScadPath, "-o", output_file, input_scad],
+    args = [
+      openScadPath,
+      "-o",
+      output_file,
+      input_scad,
+    ]
+
+    if previewMode:
+      args.append("--preview")
+    print(args)
+    result = subprocess.run(args,
                             capture_output=True,
                             text=True,
                             encoding="utf-8",
@@ -54,11 +65,13 @@ def run_openscad(input_scad: str,
   return None
 
 
-def render_stl_to_png(stl_path: str, png_path: str) -> None:
+def render_stl_to_png(stl_path: str, png_path: str, previewMode=False) -> None:
   """Render an STL file to PNG using OpenSCAD with an off-axis camera."""
   # Create a temporary SCAD file that imports the STL
   temp_scad = stl_path.replace(".stl", "_render.scad")
-  render_scadText_to_png(f'import("{os.path.basename(stl_path)}");', png_path)
+  render_scadText_to_png(f'import("{os.path.basename(stl_path)}");',
+                         png_path,
+                         previewMode=previewMode)
 
   # Clean up the temporary SCAD file
   try:
@@ -70,7 +83,8 @@ def render_stl_to_png(stl_path: str, png_path: str) -> None:
 def render_scadText_to_png(scad_content: str,
                            png_path: str,
                            cameraArg: str = "--camera=10,10,10,55,0,25,100",
-                           extraScadArgs: List[str] = []) -> None:
+                           extraScadArgs: List[str] = [],
+                           previewMode=False) -> None:
   """Render SCAD content to PNG using OpenSCAD with an off-axis camera."""
   # Create a temporary SCAD file with the provided content
   temp_scad = png_path.replace(".png", "temp.scad")
@@ -82,10 +96,15 @@ def render_scadText_to_png(scad_content: str,
   # We'll use auto-center and a good viewing angle
   try:
     args = [
-      openScadPath, "--autocenter", "--viewall", cameraArg, "--imgsize=800,600",
-      "--colorscheme=Starnight", "-o",
-      os.path.basename(png_path), *extraScadArgs,
-      os.path.basename(temp_scad)
+      openScadPath,
+      "--autocenter",
+      "--viewall",
+      cameraArg,
+      "--imgsize=800,600",
+      "--colorscheme=Starnight",
+      "-o",
+      os.path.basename(png_path),
+      *extraScadArgs,
     ]
 
     if extraScadArgs:
@@ -94,6 +113,11 @@ def render_scadText_to_png(scad_content: str,
 
     if "--no-autocenter" in args:
       args.remove("--no-autocenter")
+
+    if previewMode:
+      args.append("--preview")
+
+    args.append(os.path.basename(temp_scad))
 
     print(args)
     result = subprocess.run(args,

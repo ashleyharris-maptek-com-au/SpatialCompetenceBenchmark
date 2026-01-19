@@ -1,157 +1,36 @@
-import math
+import math, sys, os
 from textwrap import dedent
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import importlib
+
+problem2 = importlib.import_module("2")
 
 
 def get_response(subPass: int):
-    """Get the placebo response for this question."""
-    if subPass == 0:
-        return {
-                "bricks": [{"Centroid": [0, 48, 4.8], "RotationDegrees":
-                                        0}, {"Centroid": [0, -48, 4.8], "RotationDegrees":
-                                                  0}, {"Centroid": [0, 64, 4.8], "RotationDegrees":
-                                                            0}, {"Centroid": [0, -64, 4.8], "RotationDegrees":
-                                                                      0}, {"Centroid": [32, 32, 4.8], "RotationDegrees":
-                                                                                0}, {"Centroid": [32, 48, 4.8], "RotationDegrees":
-                                                                                          0}, {"Centroid": [32, -32, 4.8], "RotationDegrees": 0},
-                                      {"Centroid": [32, -48, 4.8], "RotationDegrees":
-                                        0}, {"Centroid": [-32, 32, 4.8], "RotationDegrees":
-                                                  0}, {"Centroid": [-32, 48, 4.8], "RotationDegrees":
-                                                            0}, {"Centroid": [-32, -32, 4.8], "RotationDegrees":
-                                                                      0}, {"Centroid": [-32, -48, 4.8], "RotationDegrees":
-                                                                                0}, {"Centroid": [64, 0, 4.8], "RotationDegrees":
-                                                                                          0}, {"Centroid": [-64, 0, 4.8], "RotationDegrees": 0},
-                                      {"Centroid": [64, 16, 4.8], "RotationDegrees":
-                                        0}, {"Centroid": [64, -16, 4.8], "RotationDegrees":
-                                                  0}, {"Centroid": [-64, 16, 4.8], "RotationDegrees":
-                                                            0}, {"Centroid": [-64, -16, 4.8], "RotationDegrees":
-                                                                      0}, {"Centroid": [48, 0, 14.4], "RotationDegrees":
-                                                                                90}, {"Centroid": [-48, 0, 14.4], "RotationDegrees": 90},
-                                      {"Centroid": [64, 0, 14.4], "RotationDegrees":
-                                        90}, {"Centroid": [-64, 0, 14.4], "RotationDegrees":
-                                                    90}, {"Centroid": [32, 32, 14.4], "RotationDegrees":
-                                                                90}, {"Centroid": [32, -32, 14.4], "RotationDegrees":
-                                                                            90}, {"Centroid": [-32, 32, 14.4], "RotationDegrees": 90},
-                                      {"Centroid": [-32, -32, 14.4], "RotationDegrees":
-                                        90}, {"Centroid": [48, 32, 14.4], "RotationDegrees":
-                                                    90}, {"Centroid": [48, -32, 14.4], "RotationDegrees":
-                                                                90}, {"Centroid": [-48, 32, 14.4], "RotationDegrees":
-                                                                            90}, {"Centroid": [-48, -32, 14.4], "RotationDegrees":
-                                                                                        90}, {"Centroid": [0, 64, 14.4], "RotationDegrees": 90},
-                                      {"Centroid": [0, -64, 14.4], "RotationDegrees":
-                                        90}, {"Centroid": [16, 64, 14.4], "RotationDegrees":
-                                                    90}, {"Centroid": [16, -64, 14.4], "RotationDegrees":
-                                                                90}, {"Centroid": [-16, 64, 14.4], "RotationDegrees":
-                                                                            90}, {"Centroid": [-16, -64, 14.4], "RotationDegrees":
-                                                                                        90}, {"Centroid": [0, 32, 24.0], "RotationDegrees": 0},
-                                      {"Centroid": [0, -32, 24.0], "RotationDegrees":
-                                        0}, {"Centroid": [0, 48, 24.0], "RotationDegrees":
-                                                  0}, {"Centroid": [0, -48, 24.0], "RotationDegrees":
-                                                            0}, {"Centroid": [0, 64, 24.0], "RotationDegrees":
-                                                                      0}, {"Centroid": [0, -64, 24.0], "RotationDegrees":
-                                                                                0}, {"Centroid": [32, 0, 24.0], "RotationDegrees":
-                                                                                          0}, {"Centroid": [-32, 0, 24.0], "RotationDegrees": 0},
-                                      {"Centroid": [32, 16, 24.0], "RotationDegrees":
-                                        0}, {"Centroid": [32, -16, 24.0], "RotationDegrees":
-                                                  0}, {"Centroid": [-32, 16, 24.0], "RotationDegrees":
-                                                            0}, {"Centroid": [-32, -16, 24.0], "RotationDegrees":
-                                                                      0}, {"Centroid": [32, 32, 24.0], "RotationDegrees":
-                                                                                0}, {"Centroid": [32, -32, 24.0], "RotationDegrees": 0},
-                                      {"Centroid": [-32, 32, 24.0], "RotationDegrees":
-                                        0}, {"Centroid": [-32, -32, 24.0], "RotationDegrees":
-                                                  0}, {"Centroid": [32, 48, 24.0], "RotationDegrees":
-                                                            0}, {"Centroid": [32, -48, 24.0], "RotationDegrees":
-                                                                      0}, {"Centroid": [-32, 48, 24.0], "RotationDegrees":
-                                                                                0}, {"Centroid": [-32, -48, 24.0], "RotationDegrees":
-                                                                                          0}, {"Centroid": [64, 0, 24.0], "RotationDegrees": 0},
-                                      {"Centroid": [-64, 0, 24.0], "RotationDegrees":
-                                        0}, {"Centroid": [32, 0, 33.6], "RotationDegrees":
-                                                  90}, {"Centroid": [-32, 0, 33.6], "RotationDegrees":
-                                                              90}, {"Centroid": [48, 0, 33.6], "RotationDegrees":
-                                                                          90}, {"Centroid": [-48, 0, 33.6], "RotationDegrees":
-                                                                                      90}, {"Centroid": [0, 32, 33.6], "RotationDegrees": 90},
-                                      {"Centroid": [0, -32, 33.6], "RotationDegrees":
-                                        90}, {"Centroid": [16, 32, 33.6], "RotationDegrees":
-                                                    90}, {"Centroid": [16, -32, 33.6], "RotationDegrees":
-                                                                90}, {"Centroid": [-16, 32, 33.6], "RotationDegrees":
-                                                                            90}, {"Centroid": [-16, -32, 33.6], "RotationDegrees": 90
-                                                                                        }, {"Centroid": [32, 32, 33.6], "RotationDegrees": 90},
-                                      {"Centroid": [32, -32, 33.6], "RotationDegrees":
-                                        90}, {"Centroid": [-32, 32, 33.6], "RotationDegrees":
-                                                    90}, {"Centroid": [-32, -32, 33.6], "RotationDegrees":
-                                                                90}, {"Centroid": [48, 32, 33.6], "RotationDegrees":
-                                                                            90}, {"Centroid": [48, -32, 33.6], "RotationDegrees": 90
-                                                                                        }, {"Centroid": [-48, 32, 33.6], "RotationDegrees": 90},
-                                      {"Centroid": [-48, -32, 33.6], "RotationDegrees":
-                                        90}, {"Centroid": [0, 0, 43.2], "RotationDegrees":
-                                                    0}, {"Centroid": [0, 16, 43.2], "RotationDegrees":
-                                                              0}, {"Centroid": [0, -16, 43.2], "RotationDegrees":
-                                                                        0}, {"Centroid": [0, 32, 43.2], "RotationDegrees":
-                                                                                  0}, {"Centroid": [0, -32, 43.2], "RotationDegrees":
-                                                                                            0}, {"Centroid": [0, 48, 43.2], "RotationDegrees": 0},
-                                      {"Centroid": [0, -48, 43.2], "RotationDegrees":
-                                        0}, {"Centroid": [32, 0, 43.2], "RotationDegrees":
-                                                  0}, {"Centroid": [-32, 0, 43.2], "RotationDegrees":
-                                                            0}, {"Centroid": [32, 16, 43.2], "RotationDegrees":
-                                                                      0}, {"Centroid": [32, -16, 43.2], "RotationDegrees":
-                                                                                0}, {"Centroid": [-32, 16, 43.2], "RotationDegrees": 0},
-                                      {"Centroid": [-32, -16, 43.2], "RotationDegrees":
-                                        0}, {"Centroid": [32, 32, 43.2], "RotationDegrees":
-                                                  0}, {"Centroid": [32, -32, 43.2], "RotationDegrees":
-                                                            0}, {"Centroid": [-32, 32, 43.2], "RotationDegrees":
-                                                                      0}, {"Centroid": [-32, -32, 43.2], "RotationDegrees":
-                                                                                0}, {"Centroid": [0, 0, 52.8], "RotationDegrees": 90},
-                                      {"Centroid": [16, 0, 52.8], "RotationDegrees":
-                                        90}, {"Centroid": [-16, 0, 52.8], "RotationDegrees":
-                                                    90}, {"Centroid": [32, 0, 52.8], "RotationDegrees":
-                                                                90}, {"Centroid": [-32, 0, 52.8], "RotationDegrees":
-                                                                            90}, {"Centroid": [0, 32, 52.8], "RotationDegrees": 90},
-                                      {"Centroid": [0, -32, 52.8], "RotationDegrees":
-                                        90}, {"Centroid": [16, 32, 52.8], "RotationDegrees":
-                                                    90}, {"Centroid": [16, -32, 52.8], "RotationDegrees":
-                                                                90}, {"Centroid": [-16, 32, 52.8], "RotationDegrees":
-                                                                            90}, {"Centroid": [-16, -32, 52.8], "RotationDegrees": 90
-                                                                                        }, {"Centroid": [32, 32, 52.8], "RotationDegrees": 90},
-                                      {"Centroid": [32, -32, 52.8], "RotationDegrees":
-                                        90}, {"Centroid": [-32, 32, 52.8], "RotationDegrees":
-                                                    90}, {"Centroid": [-32, -32, 52.8], "RotationDegrees":
-                                                                90}, {"Centroid": [0, 0, 62.4], "RotationDegrees":
-                                                                            0}, {"Centroid": [0, 16, 62.4], "RotationDegrees":
-                                                                                      0}, {"Centroid": [0, -16, 62.4], "RotationDegrees": 0}],
-                "Reasoning":
-                "I generated this from the Gemini 2.5 pro API playground while developing the test. It's a bit 'meh'"
-        }, "Placebo thinking... hmmm..."
+  """Get the placebo response for this question."""
 
-    if subPass == 1:
+  bricks = []
 
-        bricks = []
+  tp = list(problem2.testParams[subPass])
 
-        for x in range(-120, 120, 32):
-            for y in range(-120, 120, 16):
-                for zBy10 in range(48, 1300, 96):
-                    z = zBy10 / 10
-                    dist = math.sqrt(x * x + y * y + z * z)
-                    if dist > 80 and dist < 110:
-                        bricks.append({"Centroid": [x, y, z], "RotationDegrees": 0})
+  tp[0] *= 10
+  tp[1] *= 10
 
-        return {
-                "bricks": bricks,
-        }, ""
+  for x0 in range(-tp[1] * 2, tp[1] * 2, 32):
+    for y0 in range(-tp[1] * 2, tp[1] * 2, 16):
+      for zBy10 in range(48, 1800, 96):
+        if (zBy10 // 48) % 4 == 1:
+          x = x0
+          y = y0
+        else:
+          x = x0 + 16
+          y = y0 + 8
+        z = zBy10 / 10
+        dist = math.sqrt(x * x + y * y + z * z)
+        if dist > tp[0] * 0.92 - 4 and dist < tp[1] * 1.1 + 4:
+          bricks.append({"Centroid": [x, y, z], "RotationDegrees": 0})
 
-    if subPass == 2:
-
-        bricks = []
-
-        for x in range(-200, 200, 32):
-            for y in range(-200, 200, 16):
-                for zBy10 in range(48, 2000, 96):
-                    z = zBy10 / 10
-                    dist = math.sqrt(x * x + y * y + z * z)
-                    if dist > 150 and dist < 170:
-                        bricks.append({"Centroid": [x, y, z], "RotationDegrees": 0})
-
-        return {
-                "bricks": bricks,
-        }, ""
-
-
-    return None
+  return {
+    "bricks": bricks,
+  }, "10 lines of python - building one giant aligned structure."

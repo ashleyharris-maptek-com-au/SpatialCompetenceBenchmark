@@ -56,6 +56,9 @@ def get_response(questionNum: int, subPass: int):
     Returns (response, reasoning) tuple or None if no response defined."""
   module = _modules.get(questionNum)
   if module and hasattr(module, 'get_response'):
-    return module.get_response(subPass)
+    res, cot = module.get_response(subPass)
+    if isinstance(res, dict) and "reasoning" not in res:
+      res["reasoning"] = cot
+    return res, cot
   print(f"No response defined in placebo_data for question {questionNum} subpass {subPass}")
   return None, "Not yet implemented"

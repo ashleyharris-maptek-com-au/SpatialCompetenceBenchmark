@@ -1,3 +1,4 @@
+import itertools
 import math
 import sys
 
@@ -85,6 +86,7 @@ testParams = [(4, 7), (5, 8), (6, 9), (7, 10), (9, 13), (11, 15), (13, 16), (15,
 
 
 def prepareSubpassPrompt(index):
+  #if index == 1: raise StopIteration  # HACK while developing to save costs.
   if index >= len(testParams):
     raise StopIteration
   return prompt.replace("PARAM_A", str(testParams[index][0])).replace("PARAM_B",
@@ -99,18 +101,30 @@ def prepareSubpassReferenceScad(index):
                                                                   str(testParams[index][1]))
 
 
+#noMinkowski = True
+usePreviewModeForRendering = True
+
+
 def resultToScad(result, aiEngineName):
+  import scad_format, OpenScad
 
   if len(result["bricks"]) == 0:
     return ""
 
-  scad = "union() {"
-  for brick in result["bricks"]:
+  colors = [
+    "\"White\"", "\"Black\"", "\"Red\"", "\"Blue\"", "\"Yellow\"", "\"Green\"", "[0,0,0.5]",
+    "[0.5,0,0]", "\"Orange\"", "[210/255, 180/255, 140/255]", "[170/255, 140/255, 100/255]",
+    "[92/255, 64/255, 51/255]", "[62/255, 38/255, 20/255]"
+  ]
+
+  scad = " {"
+  for brick, colour in zip(result["bricks"], itertools.cycle(colors)):
+    scad += "color(" + colour + ") "
     scad += "translate([" + str(brick["Centroid"][0]) + "," + \
       str(brick["Centroid"][1]) + "," + str(brick["Centroid"][2]) + "]) rotate([0,0," + \
       str(brick["RotationDegrees"]) + "]) cube([32,16,9.6], center=true);\n"
 
-  return "module result(){ " + scad + "}}\n\n"
+  return scad_format.format_code("module result(){ " + scad + "}}\n\n", OpenScad.formatConfig)
 
 
 def validatePostVolume(result, score, resultVolume, referenceVolume, intersectionVolume,

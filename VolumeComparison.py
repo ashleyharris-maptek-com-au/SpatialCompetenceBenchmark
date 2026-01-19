@@ -87,7 +87,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
   if os.path.exists(cache_meta_path):
     cached = _load_cache(cache_meta_path)
     if cached is not None:
-      print(f"Cache hit for result {result_cache_key[:12]}...")
+      print(f"Cache hit for result {result_cache_dir}")
       if "scoreExplanation" not in cached:
         cached["scoreExplanation"] = ""
       cached["scoreExplanation"] += "Results were <a href='" + cache_meta_path + "'>cached</a>."
@@ -123,33 +123,22 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
     _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules", ""),
                      "minkowski(){cube(0.001);result();}")
   else:
-    _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules", ""),
-                     "cube(0.001);result();")
+    _write_scad_file(result_scad, resultAsScad, testGlobals.get("scadModules", ""), "result();")
 
   if "noMinkowski" not in testGlobals:
     suffix = "minkowski(){cube(0.001);result();}\n" + """
 color([1,0,0,0.8])
 minkowski(){
     cube(0.001);
-    difference() {
-        union() {
-            result();   
             reference();
-        }   
-        result();
-    }
+
 }"""
   else:
     suffix = "result();\n" + """
 color([1,0,0,0.8])
 {
-    difference() {
-        union() {
-            result();   
             reference();
-        }   
-        result();
-    }
+
 }"""
 
   _write_scad_file(resultWithReference_scad, resultAsScad + "\n" + referenceScad,
@@ -187,23 +176,26 @@ color([1,0,0,0.8])
     if "scadModules" in testGlobals:
       f.write(testGlobals["scadModules"])
 
-    if "noMinkowski" not in testGlobals:
-      f.write("  minkowski()")
-
-    f.write("{")
-    if "noMinkowski" not in testGlobals: f.write("    cube(0.001);")
     f.write("""
-    difference() {
-        union() {
-            result();   
-            reference();
-        }   
+difference() 
+{
+    union() 
+    {
+        result();   
+        reference();
+    }   
+        
+    minkowski()
+    {
+        cube(0.1,center=true);
+
         intersection() {
             result();
             reference();
         }        
     }
-}""")
+}
+""")
 
   # Generate STL files
   print(f"Generating STL files in {temp_dir}...")
@@ -253,7 +245,15 @@ color([1,0,0,0.8])
 
   # Generate PNG images with off-axis camera
   print(f"Rendering PNG images...")
-  _render_stl_to_png(output_stl, output_png)
+  if "usePreviewModeForRendering" in testGlobals:
+    tempScad = resultAsScad + "\n" + testGlobals.get("scadModules", "") + "result();"
+    render_scadText_to_png(scad_format.format_code(tempScad, OpenScad.formatConfig),
+                           output_png,
+                           previewMode=True)
+  else:
+    _render_stl_to_png(output_stl,
+                       output_png,
+                       previewMode="usePreviewModeForRendering" in testGlobals)
 
   if "lateFailTest" in testGlobals:
     failureReason = testGlobals["lateFailTest"](result, subPass)
@@ -277,6 +277,9 @@ color([1,0,0,0.8])
   # Run the intersection and difference calculations in parallel with 20 minute timeouts.
   # If we've gotten here then the result and reference scads rendered successfully,
   # so all is good we just got to be patient.
+
+  differenceWasNull = False
+
   with ThreadPoolExecutor(max_workers=2) as executor:
     future_intersection = executor.submit(_run_openscad,
                                           compare1_scad,
@@ -288,7 +291,10 @@ color([1,0,0,0.8])
     if err:
       openscad_errors.append(err)
     err = future_difference.result()
-    if err:
+    if err and "Current top level object is empty." in err:
+      differenceWasNull = True
+      print("Difference was a null object - probably a sign the answer was perfect.")
+    elif err:
       openscad_errors.append(err)
 
   render_scadText_to_png(f"include <{os.path.basename(resultWithReference_scad)}>;", output2_png)
@@ -300,7 +306,11 @@ color([1,0,0,0.8])
   resultVolume = StlVolume.calculate_stl_volume(output_stl)
   referenceVolume = StlVolume.calculate_stl_volume(reference_stl)
   intersectionVolume = StlVolume.calculate_stl_volume(intersection_stl)
-  differenceVolume = StlVolume.calculate_stl_volume(difference_stl)
+
+  if differenceWasNull:
+    differenceVolume = 0
+  else:
+    differenceVolume = StlVolume.calculate_stl_volume(difference_stl)
 
   print(f"Result Volume: {resultVolume}")
   print(f"Reference Volume: {referenceVolume}")
