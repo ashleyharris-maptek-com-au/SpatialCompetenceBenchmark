@@ -1,40 +1,37 @@
-import math
-from textwrap import dedent
+import os
+import sys
+import importlib
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+problem8 = importlib.import_module("8")
+
+
+def _build_polynomial_from_grid(grid: str) -> str:
+  dot_points = []
+  for y, row in enumerate(grid):
+    for x, cell in enumerate(row):
+      if cell == ".":
+        dot_points.append((x, y))
+
+  if not dot_points:
+    return "x**2 + y**2 + 1"
+
+  terms = [f"((x-{x})**2+(y-{y})**2)" for x, y in dot_points]
+  return f"{' * '.join(terms)} - 1"
 
 
 def get_response(subPass: int):
   """Get the placebo response for this question."""
-  if subPass == 0:
-    return {
-      'function':
-      dedent("""
-                        def f(x,y):
-                                return -162*x*x*x - 854*x*x + 945*x + 653*y*y*y - 1881*y*y - 145*y + 2829
-                """.strip())
-    }, "Placebo thinking... hmmm..."
+  try:
+    grid = problem8._get_grid_for_subpass(subPass)
+  except (IndexError, TypeError):
+    return None
 
-  if subPass == 1:
-    return {
-      'function':
-      dedent("""
-                        def f(x,y):
-                                return -5 * x - 4 * y + 30
-                """.strip())
-    }, "Placebo thinking... hmmm..."
-
-  if subPass == 2:
-    return {
-      'function':
-      'def f(x, y):\n    return -0.133654331030043*x**4 + 0.307125321650921*x**3*y + 1.7224010995326*x**3 - 0.658032182918366*x**2*y**2 + 7.85060835771918*x**2*y - 79.3549860807597*x**2 + 0.307561657702217*x*y**3 + 1.01132674603185*x*y**2 - 87.1583578337866*x*y + 857.447968438131*x - 0.0723756886398354*y**4 + 1.43123269869036*y**3 - 51.4378712837778*y**2 + 915.240298352343*y - 5458.14419486541'
-    }, ""
-
-  if subPass == 3:
-    return {
-      'function':
-      dedent("""
-                        def f(x,y):
-                                return ((x-0)**2+(y-0)**2) * ((x-0)**2+(y-1)**2) * ((x-0)**2+(y-2)**2) * ((x-0)**2+(y-3)**2) * ((x-0)**2+(y-4)**2) * ((x-0)**2+(y-5)**2) * ((x-1)**2+(y-0)**2) * ((x-1)**2+(y-1)**2) * ((x-1)**2+(y-2)**2) * ((x-1)**2+(y-3)**2) * ((x-1)**2+(y-7)**2) * ((x-2)**2+(y-0)**2) * ((x-2)**2+(y-1)**2) * ((x-2)**2+(y-2)**2) * ((x-2)**2+(y-6)**2) * ((x-2)**2+(y-7)**2) * ((x-3)**2+(y-0)**2) * ((x-3)**2+(y-1)**2) * ((x-3)**2+(y-5)**2) * ((x-3)**2+(y-6)**2) * ((x-3)**2+(y-7)**2) * ((x-4)**2+(y-0)**2) * ((x-4)**2+(y-1)**2) * ((x-4)**2+(y-5)**2) * ((x-4)**2+(y-6)**2) * ((x-4)**2+(y-7)**2) * ((x-5)**2+(y-0)**2) * ((x-5)**2+(y-1)**2) * ((x-5)**2+(y-2)**2) * ((x-5)**2+(y-6)**2) * ((x-5)**2+(y-7)**2) * ((x-6)**2+(y-0)**2) * ((x-6)**2+(y-1)**2) * ((x-6)**2+(y-2)**2) * ((x-6)**2+(y-3)**2) * ((x-6)**2+(y-7)**2) * ((x-7)**2+(y-0)**2) * ((x-7)**2+(y-1)**2) * ((x-7)**2+(y-2)**2) * ((x-7)**2+(y-3)**2) * ((x-7)**2+(y-4)**2) * ((x-7)**2+(y-5)**2) - 1
-                """.strip())
-    }, "Placebo thinking... hmmm..."
-
-  return None
+  function_body = _build_polynomial_from_grid(grid)
+  return {
+    "function": f"def f(x, y):\n    return {function_body}"
+  }, """
+There's no limit on the polynomial order, so we can abuse the Intermediate Value 
+Theorem / Rational Root Theorum from high school maths and add a factor for every 
+value we need and submit the answer in factored form rather than standard form. 
+The polynomial is large but simplification wasn't requested nor required."""

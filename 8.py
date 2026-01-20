@@ -3,6 +3,10 @@ import os
 import tempfile
 import json
 import hashlib
+import math
+import random
+import time
+from PIL import Image
 
 # Cache for grading and visualization results
 _cache_dir = os.path.join(tempfile.gettempdir(), "8_polynomial_cache")
@@ -12,6 +16,8 @@ os.makedirs(_cache_dir, exist_ok=True)
 def _get_cache_key(answer: dict, subPass: int, aiEngineName: str) -> str:
   """Generate a cache key from the answer, subPass, and engine name."""
   data = json.dumps(answer, sort_keys=True) + str(subPass) + aiEngineName
+  if "SUBPASS_CONFIG_HASHES" in globals() and subPass < len(SUBPASS_CONFIG_HASHES):
+    data += SUBPASS_CONFIG_HASHES[subPass]
   return hashlib.sha256(data.encode()).hexdigest()
 
 
@@ -50,13 +56,12 @@ GRIDDETAILS
 Using the formula:
 
 let cell = 
-
-   # if f(x,y) > 0
-   . if f(x,y) <= 0
+   '#' if f(x,y) > 0
+   '.' if f(x,y) <= 0
 
 where f(x,y) is a polynomial of whatever degree you need to solve this. You can include cross terms like x*y, x**2*y, x*y**2, etc.
 
-Return the formula as python function f(x,y) that uses ONLY:
+Return the formula as Python function f(x,y) that uses ONLY:
 - arithmetic operations (+, -, *, /)
 - powers (**) 
 - parentheses for grouping
@@ -70,117 +75,279 @@ You can use the following example as a template:
 def f(x, y):
     return x**2 + 3*y**2 - 4*x*y - 145
 
-DO NOT OUTPUT ANYTHING ELSE THAN THE FUNCTION.
 """
 
-grids = [
-  """
-###.....
-##......
-##......
-###.....
-####....
-#####...
-#######.
-########
-""".strip(), """
-########....
-######......
-####........
-###.........
-###.........
-##..........
-##..........
-#...........
-............
-............
-............
-............
-""".strip(), """
-........................
-........................
-........................
-........................
-........................
-........................
-........................
-........................
-........................
-.....###................
-....######..............
-....########............
-....##########..........
-....###########.........
-.....############.......
-......###########.......
-........#######.........
-..........###...........
-...........#............
-........................
-........................
-........................
-........................
-........................
-""".strip(), """
-........
-........
-...##...
-..####..
-.######.
-.##..##.
-##....##
-#......#
-""".strip(), """
-...............................................
-...............................................
-..................................##...........
-.................................####..........
-..................................##...........
-...............................................
-...............................................
-...............................................
-...............................................
-.......##...........##...........##............
-......####.........####.........####...........
-.......##...........##...........##............
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................##..............
-..............................####.............
-...............................##..............
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-.....................##........................
-....................####.......................
-.....................##........................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-...............................................
-"""
+GENERATOR_VERSION = "v2"
+GRID_IMAGE_THRESHOLD = 40
+GRID_IMAGE_TARGET = 320
+
+SUBPASS_CONFIG = [
+  {
+    "size": 8,
+    "seed": 11,
+    "fill_ratio": 0.45,
+    "freq_limit": 2,
+    "blob_count": 3,
+    "wave_count": 1,
+    "smooth_passes": 2,
+    "label": "Small blob cluster"
+  },
+  {
+    "size": 12,
+    "seed": 23,
+    "fill_ratio": 0.5,
+    "freq_limit": 2,
+    "blob_count": 4,
+    "wave_count": 2,
+    "smooth_passes": 2,
+    "label": "Smooth corner"
+  },
+  {
+    "size": 24,
+    "seed": 37,
+    "fill_ratio": 0.38,
+    "freq_limit": 2,
+    "blob_count": 5,
+    "wave_count": 2,
+    "smooth_passes": 3,
+    "label": "Island just off centre"
+  },
+  {
+    "size": 24,
+    "seed": 49,
+    "fill_ratio": 0.55,
+    "freq_limit": 2,
+    "blob_count": 2,
+    "wave_count": 1,
+    "smooth_passes": 2,
+    "label": "Twin islands"
+  },
+  {
+    "size": 48,
+    "seed": 61,
+    "fill_ratio": 0.42,
+    "freq_limit": 3,
+    "blob_count": 7,
+    "wave_count": 3,
+    "smooth_passes": 4,
+    "label": "Low-frequency Thumb"
+  },
+  {
+    "size": 64,
+    "seed": 73,
+    "fill_ratio": 0.45,
+    "freq_limit": 3,
+    "blob_count": 8,
+    "wave_count": 3,
+    "smooth_passes": 4,
+    "label": "Peanut shape"
+  },
+  {
+    "size": 96,
+    "seed": 85,
+    "fill_ratio": 0.45,
+    "freq_limit": 3,
+    "blob_count": 8,
+    "wave_count": 3,
+    "smooth_passes": 4,
+    "label": "Ellipse"
+  },
+  {
+    "size": 50,
+    "seed": 86,
+    "fill_ratio": 0.3,
+    "freq_limit": 8,
+    "blob_count": 12,
+    "wave_count": 2,
+    "smooth_passes": 1,
+    "label": "Asteroid"
+  },
+  {
+    "size": 128,
+    "seed": 97,
+    "fill_ratio": 0.45,
+    "freq_limit": 3,
+    "blob_count": 8,
+    "wave_count": 3,
+    "smooth_passes": 4,
+    "label": "Hallowean Decoration"
+  }
 ]
+
+
+def _safe_name(value):
+  cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", value).strip("_")
+  return cleaned or "grid"
+
+
+def _config_hash(config):
+  payload = dict(config)
+  payload["generator_version"] = GENERATOR_VERSION
+  return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:12]
+
+
+SUBPASS_CONFIG_HASHES = [_config_hash(cfg) for cfg in SUBPASS_CONFIG]
+_GRID_CACHE = {}
+
+
+def _get_subpass_config(index):
+  if index < 0 or index >= len(SUBPASS_CONFIG):
+    return None
+  return SUBPASS_CONFIG[index]
+
+
+def _get_image_scale(size):
+  return max(1, min(8, GRID_IMAGE_TARGET // size))
+
+
+def _grid_image_path(subpass, kind):
+  config_hash = SUBPASS_CONFIG_HASHES[subpass]
+  safe_kind = _safe_name(kind)
+  return f"results/8_grid_{safe_kind}_{subpass}_{config_hash}.png"
+
+
+def _grid_lines_to_image(grid_lines):
+  size = len(grid_lines)
+  img = Image.new("L", (size, size), 255)
+  pixels = img.load()
+  for y, row in enumerate(grid_lines):
+    for x, ch in enumerate(row):
+      pixels[x, y] = 0 if ch == "#" else 255
+  scale = _get_image_scale(size)
+  if scale > 1:
+    img = img.resize((size * scale, size * scale), resample=Image.NEAREST)
+  return img
+
+
+def _ensure_grid_image(subpass, grid_lines, kind):
+  os.makedirs("results", exist_ok=True)
+  path = _grid_image_path(subpass, kind)
+  if not os.path.exists(path):
+    _grid_lines_to_image(grid_lines).save(path)
+  return path
+
+
+def _generate_field(size, seed, config):
+  rng = random.Random(seed)
+  blob_count = config.get("blob_count", max(3, size // 12))
+  wave_count = config.get("wave_count", max(1, size // 16))
+  freq_limit = max(1, min(config.get("freq_limit", 2), 3))
+  negative_blob_count = config.get("negative_blob_count", max(1, blob_count // 3))
+
+  blobs = []
+  for _ in range(blob_count):
+    cx = rng.uniform(0, size - 1)
+    cy = rng.uniform(0, size - 1)
+    sigma = rng.uniform(size * 0.18, size * 0.38)
+    amp = rng.uniform(0.9, 1.6)
+    blobs.append((cx, cy, sigma, amp))
+
+  for _ in range(negative_blob_count):
+    cx = rng.uniform(0, size - 1)
+    cy = rng.uniform(0, size - 1)
+    sigma = rng.uniform(size * 0.25, size * 0.5)
+    amp = -rng.uniform(0.4, 0.9)
+    blobs.append((cx, cy, sigma, amp))
+
+  waves = []
+  for _ in range(wave_count):
+    fx = rng.randint(1, freq_limit)
+    fy = rng.randint(1, freq_limit)
+    phase = rng.uniform(0, 2 * math.pi)
+    amp = rng.uniform(0.05, 0.12) * (1 if rng.random() > 0.5 else -1)
+    waves.append((fx, fy, phase, amp))
+
+  field = []
+  for y in range(size):
+    row = []
+    for x in range(size):
+      value = 0.0
+      for cx, cy, sigma, amp in blobs:
+        dx = x - cx
+        dy = y - cy
+        value += amp * math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma))
+      for fx, fy, phase, amp in waves:
+        value += amp * math.sin((x * fx + y * fy) * 2 * math.pi / size + phase)
+      row.append(value)
+    field.append(row)
+  return field
+
+
+def _smooth_field(field, passes):
+  size = len(field)
+  if passes <= 0:
+    return field
+  for _ in range(passes):
+    new_field = []
+    for y in range(size):
+      row = []
+      for x in range(size):
+        acc = 0.0
+        for dy in (-1, 0, 1):
+          ny = min(size - 1, max(0, y + dy))
+          for dx in (-1, 0, 1):
+            nx = min(size - 1, max(0, x + dx))
+            if dx == 0 and dy == 0:
+              weight = 4
+            elif dx == 0 or dy == 0:
+              weight = 2
+            else:
+              weight = 1
+            acc += field[ny][nx] * weight
+        row.append(acc / 16.0)
+      new_field.append(row)
+    field = new_field
+  return field
+
+
+def _generate_grid(config):
+  size = config["size"]
+  seed = config.get("seed", 0)
+  fill_ratio = config.get("fill_ratio", 0.45)
+  fill_ratio = max(0.2, min(0.8, fill_ratio))
+
+  field = _generate_field(size, seed, config)
+  smooth_passes = config.get("smooth_passes", max(2, size // 12))
+  field = _smooth_field(field, smooth_passes)
+  values = sorted(v for row in field for v in row)
+  threshold_index = int((1 - fill_ratio) * (len(values) - 1))
+  threshold = values[threshold_index]
+
+  lines = []
+  for y in range(size):
+    line = "".join("#" if field[y][x] >= threshold else "." for x in range(size))
+    lines.append(line)
+  return lines
+
+
+def _get_grid_for_subpass(subpass):
+  if subpass in _GRID_CACHE:
+    return _GRID_CACHE[subpass]
+  config = _get_subpass_config(subpass)
+  if config is None:
+    return None
+  grid_lines = _generate_grid(config)
+  _GRID_CACHE[subpass] = grid_lines
+  return grid_lines
+
+
+def _get_prompt_payload(subpass, grid_lines):
+  size = len(grid_lines)
+  if size > GRID_IMAGE_THRESHOLD:
+    image_path = _ensure_grid_image(subpass, grid_lines, "reference")
+    return "(See attached image.)", f"[[image:{image_path}]]"
+  return "\n".join(grid_lines), ""
+
+
+def _build_subpass_summary(subpass, config, grid_lines):
+  size = len(grid_lines)
+  label = config.get("label")
+  header = f"{label} ({size}x{size})" if label else f"{size}x{size}"
+  if size > GRID_IMAGE_THRESHOLD:
+    image_path = _ensure_grid_image(subpass, grid_lines, "reference")
+    return f"{header}<br><img src='{os.path.basename(image_path)}' style='max-width:240px'>"
+  grid_text = "\n".join(grid_lines)
+  return f"{header}<br><pre>{grid_text}</pre>"
 
 structure = {
   "type": "object",
@@ -201,20 +368,26 @@ structure = {
 
 
 def prepareSubpassPrompt(index):
-  if index == 0:
-    return prompt.replace("GRIDSIZE", "8").replace("GRIDDETAILS", grids[0])
-  if index == 1:
-    return prompt.replace("GRIDSIZE", "12").replace("GRIDDETAILS", grids[1])
-  if index == 2:
-    return prompt.replace("GRIDSIZE", "24").replace("GRIDDETAILS", grids[2])
-  if index == 3:
-    return prompt.replace("GRIDSIZE", "8").replace("GRIDDETAILS", grids[3])
-  if index == 4:
-    return prompt.replace("GRIDSIZE", "48").replace("GRIDDETAILS", grids[4])
-  raise StopIteration
+  config = _get_subpass_config(index)
+  if config is None:
+    raise StopIteration
+  grid_lines = _get_grid_for_subpass(index)
+  grid_details, image_tag = _get_prompt_payload(index, grid_lines)
+  prompt_text = prompt.replace("GRIDSIZE", str(config["size"])).replace("GRIDDETAILS", grid_details)
+
+  if config["size"] > GRID_IMAGE_THRESHOLD:
+    prompt_text = prompt_text.replace("'.'", "white")
+    prompt_text = prompt_text.replace("'#'", "black")
+
+  if image_tag:
+    prompt_text = prompt_text.rstrip() + "\n\n" + image_tag + "\n"
+  return prompt_text
 
 
-subpassParamSummary = ["<pre>" + g + "</pre>" for g in grids]
+subpassParamSummary = [
+  _build_subpass_summary(idx, cfg, _get_grid_for_subpass(idx))
+  for idx, cfg in enumerate(SUBPASS_CONFIG)
+]
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
@@ -243,7 +416,10 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
   if re.search(r'[A-Za-z]', validPass):
     return 0.0, f"Invalid characters in answer: {answer}. It contained \"{validPass}\". Score is 0"
 
-  gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
+  config = _get_subpass_config(subPass)
+  if config is None:
+    return 0.0, "Invalid subpass"
+  gridSize = config["size"]
 
   if "deff(x,y):" not in answer.replace(" ", ""):
 
@@ -268,9 +444,15 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
 
   f = g["f"]
 
-  grid = grids[subPass].splitlines()
+  t = time.time()
+
+  grid = _get_grid_for_subpass(subPass)
   score = 0
   errors = []
+
+  getGridTime = time.time() - t
+  if (getGridTime > 1):
+    print(f"_get_grid_for_subpass took {getGridTime:.2f}s")
 
   generatedHashes = 0
 
@@ -285,9 +467,19 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
         else:
           if grid[y][x] == ".":
             score += 1
+
+      
       except Exception as e:
         errors.append(f"Error evaluating f({x}, {y}): {e}")
         continue
+    makeGridTime = time.time() - t
+    if (makeGridTime > 1):
+      print(f"Function calling {(y + 1)/(gridSize)*100:.1f}% done")
+
+  getGridTime = time.time() - t
+  if (getGridTime > 1):
+    print(f"Function calling took {getGridTime:.2f}s")
+
 
   if generatedHashes == 0 or generatedHashes == gridSize * gridSize:
     return 0.0, f"Output was uniformly valued"
@@ -321,7 +513,10 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
 def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
   answer = answer["function"]
-  gridSize = 8 if subPass == 0 else 12 if subPass == 1 else 24 if subPass == 2 else 8 if subPass == 3 else 48
+  config = _get_subpass_config(subPass)
+  if config is None:
+    return "<td>Invalid subpass</td><td>Subpass configuration missing.</td>"
+  gridSize = config["size"]
   gridRow = " " * gridSize
   grid = [gridRow] * gridSize
 
@@ -337,27 +532,50 @@ def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
   if len(answer) > 200:
     answer = answer[:200] + "... (truncated)"
 
-  gRef = grids[subPass].strip().split("\n")
+  gRef = _get_grid_for_subpass(subPass)
 
   try:
     f = g["f"]
 
+    output_lines = []
+    mismatch_count = 0
     for y in range(gridSize):
+      row_outputs = []
       for x in range(gridSize):
         output = ("#" if f(x, y) > 0 else ".")
-
+        row_outputs.append(output)
         if output == gRef[y][x]:
-          pass
+          display = output
         elif output == ".":
-          output = "?"
+          display = "?"
         else:
-          output = "X"
-        grid[y] = grid[y][:x] + output + grid[y][x + 1:]
+          display = "X"
+        if display != output:
+          mismatch_count += 1
+        grid[y] = grid[y][:x] + display + grid[y][x + 1:]
+      output_lines.append("".join(row_outputs))
+
+    if gridSize > GRID_IMAGE_THRESHOLD:
+      expected_path = _ensure_grid_image(subPass, gRef, "expected")
+      output_path = _grid_image_path(subPass, f"output_{aiEngineName}")
+      _grid_lines_to_image(output_lines).save(output_path)
+      expected_name = os.path.basename(expected_path)
+      output_name = os.path.basename(output_path)
+      return f"""
+      <td style='font-size: 14px'><div style='max-width:800px'>
+        {answer.replace(chr(10),'<br/>')}
+      </div></td><td>
+        <div style='display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;'>
+          <div><div>Expected</div><img src='{expected_name}' style='max-width:45%'></div>
+          <div><div>Output</div><img src='{output_name}' style='max-width:45%'></div>
+        </div>
+        <div>Mismatched cells: {mismatch_count}</div>
+      </td>"""
 
     extraInfo = ""
-    if "?" in output:
+    if any("?" in row for row in grid):
       extraInfo += "<br/> '?' = '#' was expected, '.' was provided."
-    if "X" in output:
+    if any("X" in row for row in grid):
       extraInfo += "<br/> 'X' = '.' was expected, '#' was provided."
 
     gridAndgRef = []
@@ -365,21 +583,22 @@ def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
       gridAndgRef.append(grid[y] + " " + gRef[y])
 
     return f"""
-    <td style='font-size: 8px'><div style='max-width:800px'>
+    <td style='font-size: 14px'><div style='max-width:800px'>
       {answer.replace(chr(10),'<br/>')}
     </div></td><td><pre>{'<br/>'.join(gridAndgRef)}</pre><br/>
       {extraInfo}
     </td>"""
   except Exception as e:
     answer_html = answer.replace('\n', '<br/>')
-    return f"<td>{answer_html}</td><td>Error evaluating AI-generated python function: {e}</td>"
+    return f"<td style='font-size: 12px'>{answer_html}</td><td>Error evaluating AI-generated python function: {e}</td>"
 
 
 highLevelSummary = """
 Can the LLM roundtrip a 2D shape through a polynomial?
 <br><br>
-Some of these are simple cubics, others require hundreds of terms including
-cross terms.
+Shapes are procedurally generated from smooth fields so each subpass features
+curves/blobs rather than hardcoded patterns. Larger grids (over 64x64) are
+visualized via attached black/white images instead of ASCII art.
 """
 
 if __name__ == "__main__":
