@@ -30,6 +30,12 @@ Return a polyhedron that is the union of all the solid objects described above.
 - The task is a failure if the output is not watertight.
 """
 
+# Run the test 3 times (on simple cube pairings) if the average score is below 0.1 on those
+# easy tests, consider all following tests a failure to save tokens.
+earlyFail = True
+earlyFailThreshold = 0.1
+earlyFailSubpassSampleCount = 3
+
 # Test cases: (description, scad_code, summary)
 # For spheres/cylinders, we use $fn=24 for consistent polygonization
 testParams = [

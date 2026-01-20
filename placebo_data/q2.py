@@ -17,20 +17,33 @@ def get_response(subPass: int):
   tp[0] *= 10
   tp[1] *= 10
 
+  # Brick half-dimensions
+  hx, hy, hz = 16, 8, 4.8
+
   for x0 in range(-tp[1] * 2, tp[1] * 2, 32):
     for y0 in range(-tp[1] * 2, tp[1] * 2, 16):
       for zBy10 in range(48, 1800, 96):
         if (zBy10 // 48) % 4 == 1:
-          x = x0
-          y = y0
+          cx = x0
+          cy = y0
         else:
-          x = x0 + 16
-          y = y0 + 8
-        z = zBy10 / 10
-        dist = math.sqrt(x * x + y * y + z * z)
-        if dist > tp[0] * 0.92 - 4 and dist < tp[1] * 1.1 + 4:
-          bricks.append({"Centroid": [x, y, z], "RotationDegrees": 0})
+          cx = x0 + 16
+          cy = y0 + 8
+        cz = zBy10 / 10
+
+        # Check all 8 corner points
+        corners_in_shell = 0
+        for dx in (-hx, hx):
+          for dy in (-hy, hy):
+            for dz in (-hz, hz):
+              px, py, pz = cx + dx, cy + dy, cz + dz
+              dist = math.sqrt(px * px + py * py + pz * pz)
+              if dist > tp[0] and dist < tp[1]:
+                corners_in_shell += 1
+
+        if corners_in_shell >= 3:
+          bricks.append({"Centroid": [cx, cy, cz], "RotationDegrees": 0})
 
   return {
     "bricks": bricks,
-  }, "10 lines of python - building one giant aligned structure."
+  }, "30 lines of python - building one giant structure, overlapping to hold together like bricks do."

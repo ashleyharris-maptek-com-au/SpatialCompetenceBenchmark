@@ -28,6 +28,12 @@ rules and must not fall over when built.
 Return a list of the bricks (location in xyz mm relative to the origin and rotation in degrees). 
 """
 
+# Run the test 3 times, if the average score is below 0.1, consider all following
+# tests a failure to save tokens, as they only get harder.
+earlyFail = True
+earlyFailThreshold = 0.1
+earlyFailSubpassSampleCount = 3
+
 structure = {
   "type": "object",
   "properties": {
