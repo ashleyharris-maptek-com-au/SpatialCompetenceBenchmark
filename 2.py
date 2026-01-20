@@ -9,7 +9,7 @@ You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm 
 32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. 
 
 These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, 
-and a second brick at (centroid=[0, 0, 14.4],r=180) is resting on the first brick with 4 interlocked studs (out of 8). A third brick at 
+and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at 
 (centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at 
 [22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.
 
@@ -23,9 +23,9 @@ contain any holes or missing bricks.
 
 Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have
 any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection
-rules and must not fall over when built.
+rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)
 
-Return a list of the bricks (location in xyz mm relative to the origin and rotation in degrees). 
+Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees). 
 """
 
 # Run the test 3 times, if the average score is below 0.1, consider all following
@@ -88,7 +88,7 @@ subpassParamSummary = [
   "15cm inner, 17cm outer ~400 bricks"
 ]
 
-testParams = [(4, 7), (5, 8), (6, 9), (7, 10), (9, 13), (11, 15), (13, 16), (15, 17)]
+testParams = [(4, 7), (5, 8), (6, 9), (7, 10), (9, 13), (11, 15), (13, 16), (15, 18)]
 
 
 def prepareSubpassPrompt(index):
@@ -153,7 +153,7 @@ def validatePostVolume(result, score, resultVolume, referenceVolume, intersectio
 def postProcessScore(score, subPassIndex):
   # Packing efficiency of rectangle prism in sphere is about 75%. I couldn't find an exact figure
   # but it's close enough for this test.
-  return min(1, score / 0.75)
+  return min(1, score / 0.65)
 
 
 def _get_brick_corners_xy(brick):

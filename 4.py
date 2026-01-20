@@ -101,7 +101,7 @@ def prepareSubpassPrompt(index: int) -> str:
 
 referenceScad = """
 module reference(){
-    translate([0,0,0.5]) cube([4,4,0.1], center=true);
+    translate([0,0,0.05]) cube([4,4,0.1], center=true);
 }
 """
 
@@ -110,21 +110,21 @@ def prepareSubpassReferenceScad(index: int) -> str:
   if index == 0:
     return """
 module reference(){
-    translate([0,0,0.5]) cube([4,4,0.1], center=true);
+    translate([0,0,0.05]) cube([4,4,0.1], center=true);
 }
 """
   if index == 1:
     return """
 module reference(){
-    translate([0,0,0.5]) cylinder(r=2, h=0.1, center=true, $fn=100);
+    translate([0,0,0.05]) cylinder(r=2, h=0.1, center=true, $fn=100);
 }
 """
   if index == 2:
     return """
 module reference(){
   difference() {
-    translate([0,0,0.5]) cube([6,6,0.1], center=true);
-    translate([0,0,0.5]) cube([2,2,2], center=true);
+    translate([0,0,0.05]) cube([6,6,0.1], center=true);
+    translate([0,0,0.05]) cube([2,2,2], center=true);
   }
 }
 """

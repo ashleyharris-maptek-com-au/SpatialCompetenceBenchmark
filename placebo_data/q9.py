@@ -16,8 +16,299 @@ Algorithm:
 from typing import Optional
 import random
 import re
+import os
+import json
+import hashlib
+import tempfile
+import sys
+from filelock import FileLock
 
-from google.genai._interactions.types.function_result_content_param import Result
+# Import problem definitions from parent module
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import importlib
+
+_q9_main = importlib.import_module("9")
+get_blocked_cells = _q9_main.get_blocked_cells
+get_grid_size = _q9_main.get_grid_size
+get_valid_cell_count = _q9_main.get_valid_cell_count
+
+# =============================================================================
+# Subproblem Cache System
+# =============================================================================
+# Format: Each cell is '.' (traversable), 'X' (obstacle), or '?' (not relevant)
+# Subproblems are normalized to origin and stored by hash of their pattern.
+
+CACHE_DIR = os.path.join(tempfile.gettempdir(), "hamilton_subproblem_cache")
+
+
+def _ensure_cache_dir():
+  """Ensure cache directory exists."""
+  os.makedirs(CACHE_DIR, exist_ok=True)
+
+
+def _subproblem_to_pattern(cells: set, blocked: set, bbox: tuple = None) -> tuple:
+  """
+  Convert a subproblem to a normalized pattern.
+  Returns (pattern_str, offset) where offset is (min_x, min_y) used for normalization.
+  Pattern format: rows separated by newlines, '.' = traversable, 'X' = blocked, '?' = not relevant
+  """
+  if not cells:
+    return "", (0, 0)
+
+  # Get bounding box
+  all_relevant = cells | blocked
+  if bbox:
+    min_x, min_y, max_x, max_y = bbox
+  else:
+    xs = [c[0] for c in all_relevant]
+    ys = [c[1] for c in all_relevant]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+
+  # Build pattern (normalized to origin)
+  rows = []
+  for y in range(max_y, min_y - 1, -1):  # Top to bottom
+    row = ""
+    for x in range(min_x, max_x + 1):
+      if (x, y) in cells:
+        row += "."
+      elif (x, y) in blocked:
+        row += "X"
+      else:
+        row += "?"
+    rows.append(row)
+
+  pattern = "\n".join(rows)
+  return pattern, (min_x, min_y)
+
+
+def _pattern_to_hash(pattern: str) -> str:
+  """Get hash of a pattern for cache lookup."""
+  return hashlib.md5(pattern.encode()).hexdigest()
+
+
+def _get_cache_path(pattern_hash: str) -> str:
+  """Get the cache file path for a pattern hash."""
+  return os.path.join(CACHE_DIR, f"{pattern_hash}.json")
+
+
+def _get_lock_path(pattern_hash: str) -> str:
+  """Get the lock file path for a pattern hash."""
+  return os.path.join(CACHE_DIR, f"{pattern_hash}.lock")
+
+
+def cache_subproblem_solution(cells: set, blocked: set, solution: list, bbox: tuple = None):
+  """
+  Cache a solved subproblem.
+  solution: list of (x, y) tuples forming the Hamilton path/loop
+  """
+  _ensure_cache_dir()
+
+  pattern, offset = _subproblem_to_pattern(cells, blocked, bbox)
+  if not pattern:
+    return
+
+  pattern_hash = _pattern_to_hash(pattern)
+  cache_path = _get_cache_path(pattern_hash)
+  lock_path = _get_lock_path(pattern_hash)
+
+  # Normalize solution coordinates
+  min_x, min_y = offset
+  normalized_solution = [(x - min_x, y - min_y) for x, y in solution]
+
+  data = {
+    "pattern": pattern,
+    "solution": normalized_solution,
+  }
+
+  with FileLock(lock_path):
+    with open(cache_path, 'w') as f:
+      json.dump(data, f)
+
+
+def lookup_subproblem_solution(cells: set, blocked: set, bbox: tuple = None) -> Optional[list]:
+  """
+  Look up a cached solution for a subproblem.
+  Returns denormalized solution list or None if not cached.
+  """
+  _ensure_cache_dir()
+
+  pattern, offset = _subproblem_to_pattern(cells, blocked, bbox)
+  if not pattern:
+    return None
+
+  pattern_hash = _pattern_to_hash(pattern)
+  cache_path = _get_cache_path(pattern_hash)
+  lock_path = _get_lock_path(pattern_hash)
+
+  if not os.path.exists(cache_path):
+    return None
+
+  try:
+    with FileLock(lock_path, timeout=5):
+      with open(cache_path, 'r') as f:
+        data = json.load(f)
+
+    # Denormalize solution coordinates
+    min_x, min_y = offset
+    solution = [(x + min_x, y + min_y) for x, y in data["solution"]]
+    return solution
+  except Exception:
+    return None
+
+
+def find_cached_subproblems_in_puzzle(all_cells: set, blocked: set, grid_size: int) -> list:
+  """
+  Search for any cached subproblems that exist within this puzzle.
+  Returns list of (cells, blocked_subset, solution) tuples that match.
+  Checks largest patterns first and avoids overlapping matches.
+  """
+  _ensure_cache_dir()
+
+  matches = []
+  claimed_cells = set()  # Track cells already matched to avoid overlaps
+
+  if not os.path.exists(CACHE_DIR):
+    return matches
+
+  # Load all cached patterns
+  cached_patterns = []
+  for filename in os.listdir(CACHE_DIR):
+    if not filename.endswith('.json'):
+      continue
+    cache_path = os.path.join(CACHE_DIR, filename)
+    lock_path = cache_path.replace('.json', '.lock')
+    try:
+      with FileLock(lock_path, timeout=1):
+        with open(cache_path, 'r') as f:
+          data = json.load(f)
+      # Calculate pattern properties
+      pattern = data["pattern"]
+      pattern_cells = pattern.count('.')
+      obstacle_count = pattern.count('X')
+      has_obstacles = obstacle_count > 0
+      cached_patterns.append((has_obstacles, obstacle_count, pattern_cells, data))
+    except Exception:
+      continue
+
+  # Sort: obstacle-containing patterns first, then by OBSTACLE COUNT descending, then by size descending
+  # Patterns that cover more obstacles should match before ones covering fewer
+  # (True sorts after False, so negate has_obstacles to get obstacles first)
+  cached_patterns.sort(key=lambda x: (-x[0], -x[1], -x[2]))
+
+  # For each cached pattern, try to find all non-overlapping matches
+  # Only match obstacle-containing patterns - open space is handled by normal algorithm
+  for has_obstacles, obstacle_count, pattern_size, data in cached_patterns:
+    if not has_obstacles:
+      continue  # Skip open-space patterns
+
+    pattern = data["pattern"]
+    solution = data["solution"]
+
+    rows = pattern.split("\n")
+    height = len(rows)
+    width = len(rows[0]) if rows else 0
+
+    # Try each possible offset
+    for ox in range(1, grid_size - width + 2):
+      for oy in range(1, grid_size - height + 2):
+        match = True
+        matched_cells = set()
+        matched_blocked = set()
+
+        for row_idx, row in enumerate(rows):
+          y = oy + (height - 1 - row_idx)  # Pattern is top-to-bottom
+          for col_idx, ch in enumerate(row):
+            x = ox + col_idx
+            pos = (x, y)
+
+            if ch == '.':
+              if pos not in all_cells or pos in claimed_cells:
+                match = False
+                break
+              matched_cells.add(pos)
+            elif ch == 'X':
+              if pos not in blocked:
+                match = False
+                break
+              matched_blocked.add(pos)
+            # '?' means don't care
+          if not match:
+            break
+
+        if match and matched_cells:
+          # Denormalize solution
+          denorm_solution = [(x + ox, y + oy) for x, y in solution]
+          # Verify solution cells match
+          if set(denorm_solution) == matched_cells:
+            matches.append((matched_cells, matched_blocked, denorm_solution))
+            # Claim these cells so they can't be used by other matches
+            claimed_cells.update(matched_cells)
+
+  return matches
+
+
+def add_primer_subproblem(pattern: str):
+  """
+  Add a new primer subproblem to the cache by solving it.
+  pattern: string with '.' for traversable, 'X' for obstacle, '?' for irrelevant
+  Returns True if solved and cached, False if unsolvable or already cached.
+  """
+  _ensure_cache_dir()
+
+  pattern_hash = _pattern_to_hash(pattern)
+  cache_path = _get_cache_path(pattern_hash)
+  lock_path = _get_lock_path(pattern_hash)
+
+  # Early exit if already cached
+  if os.path.exists(cache_path):
+    return True
+
+  # Parse pattern into cells and blocked sets
+  rows = pattern.split("\n")
+  cells = set()
+  blocked = set()
+  height = len(rows)
+
+  for row_idx, row in enumerate(rows):
+    y = height - 1 - row_idx  # Pattern is top-to-bottom, coords are bottom-to-top
+    for x, ch in enumerate(row):
+      if ch == '.':
+        cells.add((x, y))
+      elif ch == 'X':
+        blocked.add((x, y))
+      # '?' is ignored (not relevant)
+
+  if len(cells) < 4:
+    assert False, "Not enough cells in pattern: " + pattern
+    return False  # Can't form a loop
+
+  # Solve using the existing solver
+  result = solve_hamilton_with_tracking(cells, max_iterations=500000)
+  if not result[0]:
+    assert False, "Unsolvable pattern: \n" + pattern
+    return False  # Unsolvable
+
+  solution = result[0]
+
+  # Verify it forms a valid loop
+  first, last = solution[0], solution[-1]
+  if abs(first[0] - last[0]) + abs(first[1] - last[1]) != 1:
+    return False  # Not a loop
+
+  data = {
+    "pattern": pattern,
+    "solution": solution,
+  }
+
+  with FileLock(lock_path):
+    with open(cache_path, 'w') as f:
+      json.dump(data, f)
+
+  return True
+
+
+# prime_cache() is called later after solve_hamilton_with_tracking is defined
 
 
 class Chunk:
@@ -29,6 +320,7 @@ class Chunk:
     self.solution = None  # Hamilton loop through this chunk's cells
     self.has_obstacles = False  # True if this chunk was created due to obstacles
     self.longest_failed_path = []  # Track longest path from failed solve attempts
+    self.locked = False  # True if pre-solved from cache (shouldn't be merged)
 
   def is_solvable_trivially(self) -> bool:
     """Check if this is a simple 2x2 chunk with all cells present."""
@@ -61,8 +353,8 @@ class Chunk:
           neighbors.add(neighbor)
     return neighbors
 
-  def solve(self, max_iterations: int = 500000) -> bool:
-    """Attempt to solve Hamilton loop for this chunk."""
+  def solve(self, max_iterations: int = 500000, blocked: set = None) -> bool:
+    """Attempt to solve Hamilton loop for this chunk. Uses cache if available."""
     if len(self.cells) == 0:
       self.solution = []
       return True
@@ -70,9 +362,25 @@ class Chunk:
     if len(self.cells) < 4:
       return False  # Can't form a loop with < 4 cells
 
+    # Try cache lookup first
+    blocked_in_bbox = set()
+    if blocked:
+      xs = [c[0] for c in self.cells]
+      ys = [c[1] for c in self.cells]
+      min_x, max_x = min(xs), max(xs)
+      min_y, max_y = min(ys), max(ys)
+      blocked_in_bbox = {b for b in blocked if min_x <= b[0] <= max_x and min_y <= b[1] <= max_y}
+
+    cached = lookup_subproblem_solution(self.cells, blocked_in_bbox)
+    if cached:
+      self.solution = cached
+      return True
+
     result = solve_hamilton_with_tracking(self.cells, max_iterations)
     if result[0]:
       self.solution = result[0]
+      # Cache the solution
+      cache_subproblem_solution(self.cells, blocked_in_bbox, self.solution)
       return True
     else:
       self.longest_failed_path = result[1]
@@ -141,10 +449,10 @@ def check_hamilton_feasibility(cells: set, all_cells: set = None) -> tuple:
     return (False, f"disconnected: {len(visited)}/{len(cells)} reachable")
 
   # Check 4: Articulation points - cells whose removal disconnects the graph
-  # A loop can't exist if there's an articulation point with degree 2
+  # Check ALL cells, not just degree-2 (a higher-degree cell can still be a bottleneck)
   for cell in cells:
     degree = len(get_neighbors(cell))
-    if degree == 2:
+    if degree >= 2:  # Only cells with 2+ neighbors can be articulation points
       # Check if removing this cell disconnects the remaining
       remaining = cells - {cell}
       if len(remaining) < 2:
@@ -312,23 +620,117 @@ def solve_hamilton_with_tracking(cells: set, max_iterations: int = 50000) -> tup
   return (None, longest_path[0])
 
 
+def format_cells_ascii_art(cells: set, blocked: set = None, grid_size: int = None) -> str:
+  if blocked is None:
+    blocked = set()
+  if grid_size is None:
+    max_x = 0
+    max_y = 0
+    if cells:
+      max_x = max(max_x, max(x for x, _ in cells))
+      max_y = max(max_y, max(y for _, y in cells))
+    if blocked:
+      max_x = max(max_x, max(x for x, _ in blocked))
+      max_y = max(max_y, max(y for _, y in blocked))
+    grid_size = max(max_x, max_y)
+
+  lines = []
+  for y in range(grid_size, 0, -1):
+    row = []
+    for x in range(1, grid_size + 1):
+      pos = (x, y)
+      if pos in blocked:
+        row.append('X')
+      elif pos in cells:
+        row.append('.')
+      else:
+        row.append(' ')
+    lines.append(''.join(row))
+  return '\n'.join(lines)
+
+
+def dump_unsolved_chunks(chunks: dict,
+                         blocked: set = None,
+                         all_cells: set = None,
+                         grid_size: int = None,
+                         header: str = None) -> None:
+  if blocked is None:
+    blocked = set()
+  if grid_size is None:
+    max_x = 0
+    max_y = 0
+    if all_cells:
+      max_x = max(max_x, max(x for x, _ in all_cells))
+      max_y = max(max_y, max(y for _, y in all_cells))
+    if blocked:
+      max_x = max(max_x, max(x for x, _ in blocked))
+      max_y = max(max_y, max(y for _, y in blocked))
+    if max_x and max_y:
+      grid_size = max(max_x, max_y)
+
+  unsolved = [c for c in chunks.values() if c.solution is None]
+  if not unsolved:
+    return
+
+  if header:
+    print(header)
+  print(f"Unsolved chunks ({len(unsolved)}):")
+  unsolved.sort(key=lambda c: (-len(c.cells), c.id))
+
+  for c in unsolved:
+    n = len(c.cells)
+    feasible, reason = check_hamilton_feasibility(c.cells, all_cells)
+    print(
+      f"\nChunk {c.id}: {n} cells, has_obstacles={bool(c.has_obstacles)}, locked={bool(getattr(c, 'locked', False))}, feasible={feasible}, reason={reason}"
+    )
+    if grid_size is not None:
+      print(format_cells_ascii_art(c.cells, blocked=blocked, grid_size=grid_size))
+    else:
+      print(format_cells_ascii_art(c.cells, blocked=blocked))
+
+
 def create_initial_chunks(grid_size: int, blocked: set) -> tuple:
   """
   Create initial chunks at cell-level granularity.
-  - Cells adjacent to obstacles start as obstacle chunks (need solving)
-  - Other cells start unassigned and get partitioned later
+  1. First, find cached subproblem matches and create pre-solved chunks
+  2. Then, cells adjacent to remaining obstacles start as obstacle chunks (need solving)
+  3. Other cells stay unassigned and get partitioned later
   """
   all_cells = {(x, y) for x in range(1, grid_size + 1) for y in range(1, grid_size + 1)} - blocked
   chunks = {}
   chunk_id = 0
   cell_to_chunk = {}
 
-  # Find cells adjacent to obstacles - these seed obstacle chunks
+  # Step 1: Find cached subproblem matches BEFORE chunking
+  cache_matches = find_cached_subproblems_in_puzzle(all_cells, blocked, grid_size)
+  matched_cells = set()
+  matched_blocked = set()
+
+  for cells, blocked_subset, solution in cache_matches:
+    # Create a pre-solved chunk from this cache match
+    chunk = Chunk(chunk_id, cells)
+    chunk.has_obstacles = bool(blocked_subset)
+    chunk.solution = solution
+    # Only lock obstacle-containing chunks - open space can be re-merged if needed
+    chunk.locked = bool(blocked_subset)
+    chunks[chunk_id] = chunk
+    for cell in cells:
+      cell_to_chunk[cell] = chunk_id
+    matched_cells.update(cells)
+    matched_blocked.update(blocked_subset)
+    print(f"  Pre-solved chunk {chunk_id} from cache: {len(cells)} cells" +
+          (" (locked)" if chunk.locked else ""))
+    ascii_art = format_cells_ascii_art(cells, blocked=blocked_subset, grid_size=grid_size)
+    print(ascii_art)
+    chunk_id += 1
+
+  # Step 2: Find cells adjacent to REMAINING obstacles (not covered by cache matches)
+  remaining_blocked = blocked - matched_blocked
   obstacle_adjacent = set()
-  for bx, by in blocked:
+  for bx, by in remaining_blocked:
     for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
       cell = (bx + dx, by + dy)
-      if cell in all_cells:
+      if cell in all_cells and cell not in matched_cells:
         obstacle_adjacent.add(cell)
 
   # Create one chunk per connected group of obstacle-adjacent cells
@@ -368,8 +770,22 @@ def merge_chunks(chunks: dict, chunk1_id: int, chunk2_id: int, cell_to_chunk: di
   if chunk1_id == chunk2_id:
     return chunk1_id
 
+  # Handle stale chunk IDs (chunks that were already merged)
+  if chunk1_id not in chunks:
+    return chunk2_id if chunk2_id in chunks else -1
+  if chunk2_id not in chunks:
+    return chunk1_id
+
   c1 = chunks[chunk1_id]
   c2 = chunks[chunk2_id]
+
+  # Don't merge locked chunks (pre-solved from cache)
+  if c1.locked and c2.locked:
+    return chunk1_id  # Both locked, can't merge
+  if c1.locked:
+    return chunk1_id  # c1 is locked, don't merge into it
+  if c2.locked:
+    return chunk2_id  # c2 is locked, don't merge into it
 
   # Merge into the one with obstacles, or the larger one
   if c2.has_obstacles and not c1.has_obstacles:
@@ -390,7 +806,8 @@ def merge_chunks(chunks: dict, chunk1_id: int, chunk2_id: int, cell_to_chunk: di
     cell_to_chunk[cell] = keep
 
   kept.has_obstacles = kept.has_obstacles or removed.has_obstacles
-  kept.solution = None  # Need to re-solve
+  if not kept.locked:
+    kept.solution = None  # Need to re-solve
   kept.longest_failed_path = []
 
   del chunks[remove]
@@ -407,15 +824,29 @@ def expand_chunk(chunk: Chunk,
   Returns the ID of the resulting chunk.
   If allow_merge_solved is False, won't merge with chunks that have solutions.
   """
+  # Check if chunk still exists (might have been merged)
+  if chunk.id not in chunks:
+    return -1
+
   if neighbor_cell in chunk.cells:
     return chunk.id
 
   if neighbor_cell in cell_to_chunk:
     other_id = cell_to_chunk[neighbor_cell]
     if other_id != chunk.id:
-      # Don't merge with solved chunks if not allowed
-      if not allow_merge_solved and other_id in chunks and chunks[other_id].solution is not None:
-        return chunk.id  # Skip this cell
+      other_chunk = chunks.get(other_id)
+      if other_chunk:
+        # Never merge with locked chunks
+        if other_chunk.locked:
+          return chunk.id  # Skip this cell - can't merge with locked
+        if other_chunk.solution is not None:
+          # Don't merge with solved chunks unless:
+          # 1. allow_merge_solved is True, OR
+          # 2. The other chunk is small (<=4 cells)
+          if not allow_merge_solved:
+            is_small = len(other_chunk.cells) <= 4
+            if not is_small:
+              return chunk.id  # Skip this cell
       return merge_chunks(chunks, chunk.id, other_id, cell_to_chunk)
     return chunk.id
 
@@ -737,19 +1168,27 @@ def solve_obstacle_chunks(chunks: dict,
 
       # Normal expansion - add cells in parity-balanced pairs
       adj = chunk.get_neighbor_cells(all_cells)
+      adj = {
+        c
+        for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+        or not chunks[cell_to_chunk[c]].locked
+      }
       if adj:
         # Use parity-aware expansion to maintain solvability
         cells_to_add = pick_best_expansion_pair(adj, chunk.cells, blocked or set())
+        old_size = len(chunk.cells)
         for cell_to_add in cells_to_add:
           if cell_to_add and cell_to_add in all_cells:
             new_id = expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks)
-            made_progress = True
             if new_id != chunk_id:
               chunk = chunks[new_id]
               chunk_id = new_id
-        if made_progress:
-          chunks[chunk_id].solution = None
-      elif not made_progress:
+        # Only count as progress if chunk actually grew
+        if len(chunk.cells) > old_size:
+          made_progress = True
+          if not chunks[chunk_id].locked:
+            chunks[chunk_id].solution = None
+      if not adj and not made_progress:
         # No neighbors in all_cells, must merge with adjacent chunk
         for cell in chunk.cells:
           x, y = cell
@@ -757,9 +1196,10 @@ def solve_obstacle_chunks(chunks: dict,
             n = (x + dx, y + dy)
             if n in cell_to_chunk and cell_to_chunk[n] != chunk_id:
               other_id = cell_to_chunk[n]
-              if other_id in chunks:
+              if other_id in chunks and not chunks[other_id].locked:
                 new_id = merge_chunks(chunks, chunk_id, other_id, cell_to_chunk)
-                chunks[new_id].solution = None
+                if not chunks[new_id].locked:
+                  chunks[new_id].solution = None
                 made_progress = True
                 break
           if made_progress:
@@ -777,16 +1217,41 @@ def solve_obstacle_chunks(chunks: dict,
           n = (x + dx, y + dy)
           if n in cell_to_chunk and cell_to_chunk[n] != smallest.id:
             other_id = cell_to_chunk[n]
-            if other_id in chunks:
+            if other_id in chunks and not chunks[other_id].locked:
               new_id = merge_chunks(chunks, smallest.id, other_id, cell_to_chunk)
-              chunks[new_id].solution = None
+              if not chunks[new_id].locked:
+                chunks[new_id].solution = None
               made_progress = True
               break
         if made_progress:
           break
       if not made_progress:
-        print(f"Stuck at iteration {iteration}")
-        return False
+        # Check if unsolved chunks are surrounded only by locked chunks
+        # If so, unlock the smallest adjacent locked chunk
+        unsolved = [c for c in chunks.values() if c.has_obstacles and c.solution is None]
+        for uc in unsolved:
+          locked_neighbors = set()
+          for cell in uc.cells:
+            x, y = cell
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+              n = (x + dx, y + dy)
+              if n in cell_to_chunk:
+                other_id = cell_to_chunk[n]
+                if other_id in chunks and chunks[other_id].locked:
+                  locked_neighbors.add(other_id)
+          if locked_neighbors:
+            # Unlock the smallest locked neighbor
+            smallest_locked_id = min(locked_neighbors, key=lambda lid: len(chunks[lid].cells))
+            print(
+              f"  Unlocking chunk {smallest_locked_id} ({len(chunks[smallest_locked_id].cells)} cells) to allow progress"
+            )
+            chunks[smallest_locked_id].locked = False
+            chunks[smallest_locked_id].solution = None
+            made_progress = True
+            break
+        if not made_progress:
+          print(f"Stuck at iteration {iteration}")
+          return False
 
   return False
 
@@ -821,11 +1286,10 @@ def partition_open_space(chunks: dict, all_cells: set, cell_to_chunk: dict,
           cells_2x2.add(c)
 
     if len(cells_2x2) == 4:
-      # Got a full 2x2
+      # Got a full 2x2 - don't pre-solve, leave for merging flexibility
       chunk = Chunk(chunk_id, cells_2x2)
       chunk.has_obstacles = False
-      # Pre-solve with trivial loop
-      chunk.solution = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+      chunk.solution = None  # Will be solved after merging
       chunks[chunk_id] = chunk
       for c in cells_2x2:
         cell_to_chunk[c] = chunk_id
@@ -845,10 +1309,18 @@ def partition_open_space(chunks: dict, all_cells: set, cell_to_chunk: dict,
 def solve_open_chunks(chunks: dict,
                       cell_to_chunk: dict = None,
                       all_cells: set = None,
-                      max_attempts: int = 100) -> bool:
+                      blocked: set = None,
+                      max_attempts: int = 200) -> bool:
   """
   Solve all open space chunks. Grow and merge if needed.
   """
+  MAX_OPEN_CHUNK_SIZE = 56  # soft cap for normal growth
+  HARD_CHUNK_CAP = 64  # absolute cap to avoid runaway growth
+
+  def neighbors4(cell):
+    x, y = cell
+    return [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+
   for attempt in range(max_attempts):
     # Get fresh list of unsolved chunk IDs each iteration
     unsolved_ids = [c.id for c in chunks.values() if not c.has_obstacles and c.solution is None]
@@ -875,27 +1347,434 @@ def solve_open_chunks(chunks: dict,
       # Check feasibility first
       feasible, reason = check_hamilton_feasibility(chunk.cells)
 
+      # For articulation_point, try solving anyway - the check can be conservative
+      if not feasible and "articulation_point" in str(reason) and n >= 20:
+        print(f"  Chunk {chunk_id}: articulation_point detected, trying solve anyway...")
+        if chunk.solve(max_iterations=10000 * n, blocked=blocked):
+          made_progress = True
+          continue
+
       if not feasible:
+        # Don't abort on hard cap - try to fix structural issues first
+        if n > HARD_CHUNK_CAP and n > 150:
+          print(f"Chunk {chunk_id} exceeds hard cap ({n} cells), aborting open-chunk solve")
+          print(
+            f"  Cell y-range: {min(c[1] for c in chunk.cells)}-{max(c[1] for c in chunk.cells)}")
+          print(
+            f"  Cell x-range: {min(c[0] for c in chunk.cells)}-{max(c[0] for c in chunk.cells)}")
+          print("  (X = obstacle for context, . = cells in this chunk, space = other)")
+          print(format_cells_ascii_art(chunk.cells, blocked=blocked))
+          return False
+
         # Need to grow or merge this chunk
         if cell_to_chunk is not None and all_cells is not None:
-          # Filter adjacent cells to exclude those in solved chunks
-          adj = chunk.get_neighbor_cells(all_cells)
-          adj = {
-            c
-            for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
-            or chunks[cell_to_chunk[c]].solution is None
-          }
+          # For oversized chunks (from parity merge), use higher cap to allow fixing structural issues
+          effective_cap = max(MAX_OPEN_CHUNK_SIZE, n +
+                              10) if n > MAX_OPEN_CHUNK_SIZE else MAX_OPEN_CHUNK_SIZE
+          # Filter adjacent cells to exclude those in solved chunks (but allow merging with locked for dead_end fix)
+          all_adj = chunk.get_neighbor_cells(all_cells)
+          # If feasibility cites a specific choke point, bias growth to that area
+          target = None
+          m = re.search(r'at \((\d+), (\d+)\)', str(reason))
+          if m:
+            target = (int(m.group(1)), int(m.group(2)))
+
+          # For articulation_point issues, find and widen the one-way street
+          if "articulation_point" in str(reason) and target:
+            tx, ty = target
+            # Find the one-way street: cells near the articulation point that form a narrow corridor
+            # (cells with exactly 2 neighbors in chunk, forming a line)
+            one_way_cells = []
+            for cell in chunk.cells:
+              cx, cy = cell
+              if abs(cx - tx) + abs(cy - ty) <= 5:  # Near the articulation point (wider search)
+                neighbors_in_chunk = [n for n in neighbors4(cell) if n in chunk.cells]
+                if len(neighbors_in_chunk) == 2:
+                  # Check if neighbors are collinear (forming a corridor)
+                  n1, n2 = neighbors_in_chunk
+                  if n1[0] == n2[0] or n1[1] == n2[1]:  # Same row or column
+                    one_way_cells.append(cell)
+
+            print(
+              f"    One-way street near {target}: {len(one_way_cells)} cells: {one_way_cells[:5]}")
+
+            # Find cells adjacent to the one-way street that would widen it
+            widening_candidates = set()
+            all_adjacent_to_oneway = set()
+            for cell in one_way_cells:
+              for n in neighbors4(cell):
+                if n not in chunk.cells:
+                  all_adjacent_to_oneway.add(n)
+                  if n in all_cells:
+                    # Check this cell isn't in a locked chunk
+                    owner = cell_to_chunk.get(n)
+                    if owner is None or owner not in chunks or not chunks[owner].locked:
+                      widening_candidates.add(n)
+
+            print(
+              f"    Adjacent to one-way: {len(all_adjacent_to_oneway)}, unlocked candidates: {len(widening_candidates)}"
+            )
+
+            # LAST RESORT: If no unlocked candidates, try unlocking a small locked chunk to widen
+            if all_adjacent_to_oneway and not widening_candidates:
+              # Find locked chunks adjacent to one-way street
+              locked_neighbors = set()
+              in_grid_count = 0
+              in_chunk_count = 0
+              for adj in all_adjacent_to_oneway:
+                if adj in all_cells:
+                  in_grid_count += 1
+                  owner = cell_to_chunk.get(adj)
+                  if owner is not None and owner in chunks:  # Fix: owner can be 0
+                    if chunks[owner].locked:
+                      locked_neighbors.add(owner)
+                    elif owner == chunk_id:
+                      in_chunk_count += 1
+
+              print(
+                f"      In grid: {in_grid_count}, in this chunk: {in_chunk_count}, locked neighbors: {locked_neighbors}"
+              )
+              # Debug: show what chunks own the adjacent cells
+              for adj in list(all_adjacent_to_oneway)[:5]:
+                if adj in all_cells:
+                  owner = cell_to_chunk.get(adj)
+                  if owner is not None and owner in chunks:  # Fix: owner can be 0
+                    c = chunks[owner]
+                    print(
+                      f"        {adj} -> chunk {owner}: locked={c.locked}, has_obs={c.has_obstacles}, solved={c.solution is not None}"
+                    )
+                  else:
+                    print(
+                      f"        {adj} -> owner={owner}, in chunks={owner in chunks if owner is not None else 'N/A'}"
+                    )
+
+              if locked_neighbors:
+                # Instead of unlocking entire chunk, steal just the cells adjacent to one-way street
+                smallest_locked = min(locked_neighbors, key=lambda cid: len(chunks[cid].cells))
+                locked_chunk = chunks[smallest_locked]
+
+                # Find cells from locked chunk that are adjacent to one-way street
+                cells_to_steal = set()
+                for adj in all_adjacent_to_oneway:
+                  if adj in all_cells and cell_to_chunk.get(adj) == smallest_locked:
+                    cells_to_steal.add(adj)
+
+                if cells_to_steal:
+                  # Find a complete row/column to steal to avoid breaking locked chunk connectivity
+                  # Group cells by y-coordinate (same row)
+                  rows = {}
+                  for c in cells_to_steal:
+                    if c[1] not in rows:
+                      rows[c[1]] = []
+                    rows[c[1]].append(c)
+
+                  # Find a row where we can steal ALL cells in that row from the locked chunk
+                  # to maintain connectivity
+                  best_row = None
+                  best_row_cells = None
+                  for y, row_cells in rows.items():
+                    # Get ALL cells in this row from the locked chunk
+                    full_row = [c for c in locked_chunk.cells if c[1] == y]
+                    # Check if stealing this row would leave the locked chunk connected
+                    remaining = locked_chunk.cells - set(full_row)
+                    if len(remaining) >= 4:  # Need enough cells left to solve
+                      # Check parity of full row
+                      white = sum(1 for c in full_row if (c[0] + c[1]) % 2 == 0)
+                      black = len(full_row) - white
+                      if white == black:  # Balanced parity
+                        if best_row_cells is None or len(full_row) < len(best_row_cells):
+                          best_row = y
+                          best_row_cells = full_row
+
+                  if best_row_cells and len(best_row_cells) <= 12:
+                    # Check if stealing would break the locked chunk
+                    remaining = locked_chunk.cells - set(best_row_cells)
+                    remaining_feasible, _ = check_hamilton_feasibility(remaining)
+                    if remaining_feasible:
+                      print(
+                        f"    LAST RESORT: stealing row y={best_row} ({len(best_row_cells)} cells) from chunk {smallest_locked}"
+                      )
+                      steal_set = set(best_row_cells)
+                      locked_chunk.cells -= steal_set
+                      locked_chunk.solution = None
+                      chunk.cells |= steal_set
+                      for c in steal_set:
+                        cell_to_chunk[c] = chunk_id
+                      made_progress = True
+                      continue
+                    # Stealing would break locked chunk - unlock entirely
+                  # Fallback: unlock entire chunk
+                  print(
+                    f"    LAST RESORT: unlocking chunk {smallest_locked} ({len(locked_chunk.cells)} cells)"
+                  )
+                  locked_chunk.locked = False
+                  locked_chunk.solution = None
+                  made_progress = True
+                  continue
+
+            if widening_candidates:
+              # Prefer cells that would add a parallel row (adjacent to multiple one-way cells)
+              def widening_score(c):
+                adjacent_to_oneway = sum(1 for ow in one_way_cells
+                                         if abs(c[0] - ow[0]) + abs(c[1] - ow[1]) == 1)
+                return (-adjacent_to_oneway, abs(c[0] - tx) + abs(c[1] - ty))
+
+              best = min(widening_candidates, key=widening_score)
+              best_owner = cell_to_chunk.get(best)
+              if best_owner is not None and best_owner in chunks and not chunks[best_owner].locked:
+                expand_chunk(chunk, best, cell_to_chunk, chunks, allow_merge_solved=True)
+                made_progress = True
+                continue
+              elif best_owner is None:
+                expand_chunk(chunk, best, cell_to_chunk, chunks, allow_merge_solved=True)
+                made_progress = True
+                continue
+
+          # For dead_end issues, allow merging with any non-locked chunk
+          if "dead_end" in str(reason) and n > MAX_OPEN_CHUNK_SIZE:
+            if not target:
+              continue
+            adj = {
+              c
+              for c in all_adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+              or not chunks[cell_to_chunk[c]].locked
+            }
+            if not adj:
+              # Debug: see what's around the dead end
+              tx, ty = target
+              neighbors = [(tx + 1, ty), (tx - 1, ty), (tx, ty + 1), (tx, ty - 1)]
+              print(f"Dead end at {target}, neighbors: {neighbors}")
+              for nb in neighbors:
+                if nb in all_cells:
+                  owner = cell_to_chunk.get(nb)
+                  if owner is not None and owner in chunks:
+                    print(
+                      f"  {nb} -> chunk {owner}, locked={chunks[owner].locked}, size={len(chunks[owner].cells)}"
+                    )
+                  else:
+                    print(f"  {nb} -> unassigned or missing chunk")
+                else:
+                  print(f"  {nb} -> not in grid")
+          else:
+            adj = {
+              c
+              for c in all_adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+              or chunks[cell_to_chunk[c]].solution is None or (
+                len(chunks[cell_to_chunk[c]].cells) <= 4 and not chunks[cell_to_chunk[c]].locked
+                and len(chunk.cells) + len(chunks[cell_to_chunk[c]].cells) <= effective_cap)
+            }
+
+          # Special handling for parity mismatch: add a cell of the needed parity near frontier/dead-ends
+          if "parity_mismatch" in str(reason):
+            match = re.search(r'parity_mismatch:\s+(\d+)\s+white\s+vs\s+(\d+)\s+black', str(reason))
+            needed_parity = None
+            if match:
+              white_cnt, black_cnt = int(match.group(1)), int(match.group(2))
+              if white_cnt != black_cnt:
+                needed_parity = 0 if white_cnt < black_cnt else 1
+                print(
+                  f"  Chunk {chunk_id}: parity mismatch {white_cnt} white vs {black_cnt} black, need parity {needed_parity}"
+                )
+            if needed_parity is not None:
+              frontier = {
+                c
+                for c in chunk.cells if any(n not in chunk.cells for n in neighbors4(c))
+              }
+              dead_ends = {
+                c
+                for c in frontier if sum(1 for n in neighbors4(c) if n in chunk.cells) == 1
+              }
+
+              def parity_score(c):
+                neighbor_count = sum(1 for n in neighbors4(c) if n in chunk.cells)
+                dist_dead = min(abs(c[0] - d[0]) + abs(c[1] - d[1])
+                                for d in dead_ends) if dead_ends else 0
+                return (dist_dead, -neighbor_count, c[0], c[1])
+
+              # Look at ALL neighbors (not just unsolved) for parity fix
+              # Allow growth beyond soft cap to fix parity - this is critical
+              all_adj = chunk.get_neighbor_cells(all_cells)
+              parity_adj = [c for c in all_adj if (c[0] + c[1]) % 2 == needed_parity]
+              # Filter out locked chunks
+              parity_adj = [
+                c for c in parity_adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
+                or not chunks[cell_to_chunk[c]].locked
+              ]
+              print(f"    all_adj={len(all_adj)}, parity_adj={len(parity_adj)}")
+              parity_fixed = False
+              if parity_adj:
+                # Use a much higher cap for parity fixing - crucial to fix parity before chunks get stuck
+                parity_cap = max(100, n + 30)  # Allow growing to ~100+ cells to fix parity
+
+                # Key insight: when merging with another chunk, we get ALL its cells
+                # So check if merge would IMPROVE parity, not make it worse
+                def would_improve_parity(candidate):
+                  owner = cell_to_chunk.get(candidate) if cell_to_chunk else None
+                  if owner is None or owner not in chunks or owner == chunk.id:
+                    # Adding single cell - always improves if it's the right parity
+                    return True
+                  other = chunks[owner]
+                  if other.locked:
+                    return False
+                  # Check parity of other chunk
+                  other_white = sum(1 for c in other.cells if (c[0] + c[1]) % 2 == 0)
+                  other_black = len(other.cells) - other_white
+                  # Current imbalance: white_cnt - black_cnt (positive = need black)
+                  current_imbalance = white_cnt - black_cnt
+                  other_imbalance = other_white - other_black
+                  # After merge: imbalances add
+                  new_imbalance = current_imbalance + other_imbalance
+                  # Good if new imbalance is closer to 0
+                  return abs(new_imbalance) < abs(current_imbalance)
+
+                # Prefer candidates that improve parity, then by parity_score
+                improving = [c for c in parity_adj if would_improve_parity(c)]
+                sorted_candidates = sorted(improving, key=parity_score) if improving else sorted(
+                  parity_adj, key=parity_score)
+
+                for best in sorted_candidates:
+                  best_owner = cell_to_chunk.get(best) if cell_to_chunk else None
+                  best_owner_size = len(
+                    chunks[best_owner].cells) if best_owner and best_owner in chunks else 0
+                  if len(chunk.cells) < parity_cap:
+                    # Ensure merge won't exceed parity cap
+                    if cell_to_chunk is not None and cell_to_chunk.get(best) not in (None,
+                                                                                     chunk.id):
+                      other_id = cell_to_chunk[best]
+                      if other_id in chunks:
+                        if chunks[other_id].locked:
+                          continue  # Try next candidate
+                        elif len(chunk.cells) + len(chunks[other_id].cells) > parity_cap:
+                          continue  # Try next candidate
+                        else:
+                          # Allow merging with solved chunks for parity fix
+                          expand_chunk(chunk, best, cell_to_chunk, chunks, allow_merge_solved=True)
+                          made_progress = True
+                          parity_fixed = True
+                          break
+                    else:
+                      if len(chunk.cells) + 1 <= parity_cap:
+                        expand_chunk(chunk, best, cell_to_chunk, chunks, allow_merge_solved=True)
+                        made_progress = True
+                        parity_fixed = True
+                        break
+              # For parity mismatch, ONLY do parity fix - skip other growth to avoid undoing the fix
+              if parity_fixed:
+                continue
+              # If we couldn't fix parity, still skip other growth - wait for next iteration
+              continue
+
+          def score_candidate(c):
+            x, y = c
+            neighbors_in_chunk = sum(1 for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                                     if (x + dx, y + dy) in chunk.cells)
+            dist = abs(x - target[0]) + abs(y - target[1]) if target else 0
+            return (dist, -neighbors_in_chunk, x, y)
+
+          # Keep growth local: around choke point if known, otherwise around frontier band
+          if target and adj:
+            tx, ty = target
+            # Only move closer (or equal) to the choke point to avoid wandering away
+            curr_dist = min(abs(px - tx) + abs(py - ty) for px, py in chunk.cells)
+            # Identify other frontier dead-ends to connect toward
+            frontier = {c for c in chunk.cells if any(n not in chunk.cells for n in neighbors4(c))}
+            dead_ends = {
+              c
+              for c in frontier
+              if sum(1 for n in neighbors4(c) if n in chunk.cells) == 1 and c != target
+            }
+            second_target = None
+            best_pair_dist = None
+            if dead_ends:
+              second_target = min(dead_ends, key=lambda c: abs(c[0] - tx) + abs(c[1] - ty))
+              best_pair_dist = abs(second_target[0] - tx) + abs(second_target[1] - ty)
+
+            focus = {(tx + dx, ty + dy)
+                     for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)] if (tx + dx, ty + dy) in adj}
+            # interior_hole at (x,y): allow filling it directly
+            if "interior_hole" in str(reason) and target in all_cells and target not in chunk.cells:
+              focus.add(target)
+            toward = {c for c in adj if abs(c[0] - tx) + abs(c[1] - ty) < curr_dist}
+            if second_target and best_pair_dist is not None:
+              toward = {
+                c
+                for c in toward
+                if (abs(c[0] - second_target[0]) + abs(c[1] - second_target[1])) <= best_pair_dist
+              } or toward
+
+            if focus:
+              adj = focus
+            elif toward:
+              adj = toward
+            else:
+              LOCAL_RADIUS = 3
+              local = {
+                c
+                for c in adj if abs(c[0] - target[0]) + abs(c[1] - target[1]) <= LOCAL_RADIUS
+              }
+              if not local:
+                LOCAL_RADIUS = 4
+                local = {
+                  c
+                  for c in adj if abs(c[0] - target[0]) + abs(c[1] - target[1]) <= LOCAL_RADIUS
+                }
+              if local:
+                adj = local
+              else:
+                adj = set(sorted(adj, key=score_candidate)[:min(len(adj), 24)])
+            if second_target:
+
+              def pair_score(c):
+                d1 = abs(c[0] - tx) + abs(c[1] - ty)
+                d2 = abs(c[0] - second_target[0]) + abs(c[1] - second_target[1])
+                return (d1 + d2, d1, d2, -sum(1 for n in neighbors4(c) if n in chunk.cells), c[0],
+                        c[1])
+
+              adj = set(sorted(adj, key=pair_score)[:min(len(adj), 16)])
+          else:
+            # Build a frontier band (cells adjacent to exterior) and stay near it
+            frontier = {c for c in chunk.cells if any(n not in chunk.cells for n in neighbors4(c))}
+            if frontier:
+              fx = [p[0] for p in frontier]
+              fy = [p[1] for p in frontier]
+              min_x, max_x = min(fx), max(fx)
+              min_y, max_y = min(fy), max(fy)
+              band = {
+                c
+                for c in adj
+                if (min_x - 2) <= c[0] <= (max_x + 2) and (min_y - 2) <= c[1] <= (max_y + 2)
+              }
+              if band:
+                adj = band
+            # Prefer thickening (more neighbors) over tendrils
+            adj = set(sorted(adj, key=score_candidate)[:min(len(adj), 24)])
           if adj:
             # Add cells using parity-aware expansion (don't merge with solved)
-            cells_to_add = pick_best_expansion_pair(adj, chunk.cells, set())
+            cells_to_add = pick_best_expansion_pair(adj, chunk.cells, blocked or set())
+            growth_budget = 1  # tighten growth to avoid ballooning
             for cell_to_add in cells_to_add:
+              if growth_budget <= 0:
+                break
+              if len(chunk.cells) >= MAX_OPEN_CHUNK_SIZE:
+                break
               if cell_to_add and cell_to_add in all_cells:
+                # If this cell belongs to another chunk, ensure merge won't exceed max
+                if cell_to_chunk is not None and cell_to_chunk.get(cell_to_add) not in (None,
+                                                                                        chunk.id):
+                  other_id = cell_to_chunk[cell_to_add]
+                  if other_id in chunks:
+                    if len(chunk.cells) + len(chunks[other_id].cells) > MAX_OPEN_CHUNK_SIZE:
+                      continue
+                else:
+                  if len(chunk.cells) + 1 > MAX_OPEN_CHUNK_SIZE:
+                    continue
                 new_id = expand_chunk(chunk,
                                       cell_to_add,
                                       cell_to_chunk,
                                       chunks,
                                       allow_merge_solved=False)
                 made_progress = True
+                growth_budget -= 1
                 if new_id != chunk_id:
                   chunk = chunks.get(new_id)
                   chunk_id = new_id
@@ -912,6 +1791,9 @@ def solve_open_chunks(chunks: dict,
                 if nc in cell_to_chunk and cell_to_chunk[nc] != chunk_id:
                   other_id = cell_to_chunk[nc]
                   if other_id in chunks and chunks[other_id].solution is None:
+                    # Avoid creating oversized chunks
+                    if len(chunk.cells) + len(chunks[other_id].cells) > MAX_OPEN_CHUNK_SIZE:
+                      continue
                     merge_chunks(chunks, chunk_id, other_id, cell_to_chunk)
                     made_progress = True
                     merged = True
@@ -921,31 +1803,50 @@ def solve_open_chunks(chunks: dict,
             continue
         continue
 
-      # Try to solve - but cap size to keep chunks tractable
-      MAX_OPEN_CHUNK_SIZE = 36
-      if n > MAX_OPEN_CHUNK_SIZE:
-        # Chunk too big - give up on it, mark as solved with empty solution to skip
-        # This will cause stitching issues but prevents infinite growth
-        print(f"    Chunk {chunk_id} too large ({n} cells), skipping")
-        chunk.solution = []  # Empty solution to skip
-        made_progress = True
-        continue
-
-      if chunk.solve(max_iterations=5000 * n + 50000):
+      # Try to solve - scale iterations with size
+      # Large feasible chunks need many more iterations due to complex shapes
+      if n > 60:
+        max_iters = 50000 * n  # ~3-6M for large chunks
+        print(f"  Solving chunk {chunk_id} ({n} cells) with {max_iters} iterations...")
+      else:
+        max_iters = 5000 * n + 50000
+      if chunk.solve(max_iterations=max_iters, blocked=blocked):
         made_progress = True
       elif cell_to_chunk is not None and all_cells is not None and n < MAX_OPEN_CHUNK_SIZE:
-        # Failed to solve - try growing (don't merge with solved chunks)
-        # Only grow if under size limit
+        # Failed to solve - try growing
+        # Allow merging with small solved chunks (≤4 cells) since they're trivially re-solvable
+        # But never merge with locked chunks
         adj = chunk.get_neighbor_cells(all_cells)
+
+        def score_candidate(c):
+          x, y = c
+          neighbors_in_chunk = sum(1 for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                                   if (x + dx, y + dy) in chunk.cells)
+          return (-neighbors_in_chunk, x, y)
+
+        adj = set(sorted(adj, key=score_candidate)[:min(len(adj), 48)])
         adj = {
           c
           for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
-          or chunks[cell_to_chunk[c]].solution is None
+          or chunks[cell_to_chunk[c]].solution is None or (
+            len(chunks[cell_to_chunk[c]].cells) <= 4 and not chunks[cell_to_chunk[c]].locked)
         }
         if adj:
-          cells_to_add = pick_best_expansion_pair(adj, chunk.cells, set())
+          cells_to_add = pick_best_expansion_pair(adj, chunk.cells, blocked or set())
           for cell_to_add in cells_to_add:
+            if len(chunk.cells) >= MAX_OPEN_CHUNK_SIZE:
+              break
             if cell_to_add and cell_to_add in all_cells:
+              # Prevent merging if it would exceed size cap
+              if cell_to_chunk is not None and cell_to_chunk.get(cell_to_add) not in (None,
+                                                                                      chunk.id):
+                other_id = cell_to_chunk[cell_to_add]
+                if other_id in chunks:
+                  if len(chunk.cells) + len(chunks[other_id].cells) > MAX_OPEN_CHUNK_SIZE:
+                    continue
+              else:
+                if len(chunk.cells) + 1 > MAX_OPEN_CHUNK_SIZE:
+                  continue
               expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks, allow_merge_solved=False)
               made_progress = True
 
@@ -964,6 +1865,8 @@ def solve_open_chunks(chunks: dict,
             if nc in cell_to_chunk and cell_to_chunk[nc] != smallest.id:
               other_id = cell_to_chunk[nc]
               if other_id in chunks and chunks[other_id].solution is None:
+                if len(smallest.cells) + len(chunks[other_id].cells) > MAX_OPEN_CHUNK_SIZE:
+                  continue
                 merge_chunks(chunks, smallest.id, other_id, cell_to_chunk)
                 made_progress = True
                 break
@@ -983,13 +1886,72 @@ def solve_open_chunks(chunks: dict,
                   best_neighbor = other_id
                   best_size = len(chunks[other_id].cells)
           if best_neighbor is not None:
+            if len(smallest.cells) + len(chunks[best_neighbor].cells) > MAX_OPEN_CHUNK_SIZE:
+              best_neighbor = None
+          if best_neighbor is not None:
             new_id = merge_chunks(chunks, smallest.id, best_neighbor, cell_to_chunk)
             # Try to re-solve the merged chunk immediately
             merged_chunk = chunks[new_id]
             n = len(merged_chunk.cells)
-            merged_chunk.solve(max_iterations=5000 * n + 100000)
+            if n > 100:
+              max_iters = 50000 * n  # ~10M for 200 cells
+            else:
+              max_iters = 5000 * n + 50000
+            merged_chunk.solve(max_iterations=max_iters, blocked=blocked)
             made_progress = True
       if not made_progress:
+        # Last resort: find complementary parity-mismatched chunks and force merge them
+        parity_chunks = []
+        for uid in unsolved_ids:
+          if uid not in chunks:
+            continue
+          c = chunks[uid]
+          if c.solution is not None:
+            continue
+          feasible, reason = check_hamilton_feasibility(c.cells)
+          if "parity_mismatch" in str(reason):
+            match = re.search(r'parity_mismatch:\s+(\d+)\s+white\s+vs\s+(\d+)\s+black', str(reason))
+            if match:
+              white_cnt, black_cnt = int(match.group(1)), int(match.group(2))
+              parity_chunks.append(
+                (uid, white_cnt - black_cnt))  # positive = needs black, negative = needs white
+
+        # Find two adjacent chunks with opposite parity needs
+        for i, (id1, imbalance1) in enumerate(parity_chunks):
+          for id2, imbalance2 in parity_chunks[i + 1:]:
+            if imbalance1 * imbalance2 < 0:  # opposite signs = complementary
+              # Check if adjacent
+              c1, c2 = chunks[id1], chunks[id2]
+              adjacent = False
+              for cell in c1.cells:
+                cx, cy = cell
+                for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                  if (cx + dx, cy + dy) in c2.cells:
+                    adjacent = True
+                    break
+                if adjacent:
+                  break
+              if adjacent:
+                print(f"Force-merging complementary parity chunks {id1} and {id2}")
+                new_id = merge_chunks(chunks, id1, id2, cell_to_chunk)
+                merged = chunks[new_id]
+                n = len(merged.cells)
+                if n > 100:
+                  max_iters = 50000 * n  # ~10M for 200 cells
+                else:
+                  max_iters = 5000 * n + 50000
+                merged.solve(max_iterations=max_iters, blocked=blocked)
+                made_progress = True
+                break
+          if made_progress:
+            break
+
+      if not made_progress:
+        dump_unsolved_chunks(
+          chunks,
+          blocked=blocked,
+          all_cells=all_cells,
+          header="\nFailed to make progress in solve_open_chunks. Dumping unsolved chunks:")
         return False
 
   return False
@@ -1194,10 +2156,118 @@ def find_chunk_hamilton_path(chunks: dict, graph: dict, max_iter: int = 100000) 
   if degree_1:
     print(f"  WARNING: {len(degree_1)} degree-1 chunks (dead ends): {degree_1}")
 
+  # Check for articulation points in chunk graph and find components
+  articulation_chunk = None
+  components = []
+  for cid in chunk_ids:
+    neighbors = graph.get(cid, set())
+    if len(neighbors) >= 2:
+      # Check if removing this chunk would disconnect the graph
+      remaining = set(chunk_ids) - {cid}
+      if remaining:
+        # Find connected components
+        found_components = []
+        unvisited = set(remaining)
+        while unvisited:
+          start_remaining = next(iter(unvisited))
+          component = set()
+          stack = [start_remaining]
+          while stack:
+            node = stack.pop()
+            if node in component:
+              continue
+            component.add(node)
+            unvisited.discard(node)
+            for neighbor in graph.get(node, set()):
+              if neighbor in remaining and neighbor not in component:
+                stack.append(neighbor)
+          found_components.append(component)
+
+        if len(found_components) > 1:
+          print(
+            f"  ARTICULATION: Chunk {cid} ({len(chunks[cid].cells)} cells) is a bridge - splits into {len(found_components)} components"
+          )
+          articulation_chunk = cid
+          components = found_components
+          break  # Use first articulation found
+
   # Check if all chunks have solutions
   unsolved = [cid for cid in chunk_ids if chunks[cid].solution is None]
   if unsolved:
     print(f"  WARNING: {len(unsolved)} chunks without solutions: {unsolved}")
+
+  # Handle articulation chunk specially - solve each component and stitch through bridge
+  if articulation_chunk is not None and len(components) == 2:
+    print(
+      f"  Handling articulation chunk {articulation_chunk} with 2 components of sizes {[len(c) for c in components]}"
+    )
+
+    # Find which chunks in each component are adjacent to the articulation chunk
+    art_neighbors = graph.get(articulation_chunk, set())
+
+    # For each component, find a path through it that starts/ends at articulation-adjacent chunks
+    component_paths = []
+    for comp_idx, component in enumerate(components):
+      comp_neighbors_to_art = [cid for cid in component if cid in art_neighbors]
+      print(
+        f"    Component {comp_idx}: {len(component)} chunks, {len(comp_neighbors_to_art)} adjacent to articulation"
+      )
+
+      if len(comp_neighbors_to_art) < 1:
+        print(f"    ERROR: Component has no adjacency to articulation chunk")
+        return None
+
+      # Build subgraph for this component
+      comp_list = list(component)
+
+      # Try to find a path through component starting and ending at articulation-adjacent chunks
+      best_path = None
+      for start_chunk in comp_neighbors_to_art:
+        for end_chunk in comp_neighbors_to_art:
+          if start_chunk == end_chunk and len(component) > 1:
+            continue  # Need different start/end for path (unless component is size 1)
+
+          # DFS to find path from start to end visiting all chunks in component
+          path = [start_chunk]
+          visited = {start_chunk}
+
+          def find_component_path():
+            if len(path) == len(component):
+              return path[-1] == end_chunk or len(component) == 1
+
+            current = path[-1]
+            neighbors = [
+              n for n in graph.get(current, set()) if n in component and n not in visited
+            ]
+            neighbors.sort(key=lambda n: len(
+              [nn for nn in graph.get(n, set()) if nn in component and nn not in visited]))
+
+            for neighbor in neighbors:
+              path.append(neighbor)
+              visited.add(neighbor)
+              if find_component_path():
+                return True
+              path.pop()
+              visited.remove(neighbor)
+            return False
+
+          if find_component_path():
+            best_path = list(path)
+            break
+        if best_path:
+          break
+
+      if not best_path:
+        print(f"    Failed to find path through component {comp_idx}")
+        return None
+
+      component_paths.append(best_path)
+
+    # Stitch: component0 path -> articulation -> component1 path (reversed to connect back)
+    # The final path should form a loop: comp0[0] ... comp0[-1] -> art -> comp1[0] ... comp1[-1] -> back to comp0[0]
+    full_path = component_paths[0] + [articulation_chunk] + component_paths[1]
+    print(f"  Articulation path: {len(full_path)} chunks")
+    return full_path
 
   start = chunk_ids[0]
   path = [start]
@@ -1907,6 +2977,24 @@ def solve_expanding_barrage(grid_size: int, blocked: set) -> Optional[list]:
   print(f"Solving {grid_size}x{grid_size} grid with {len(blocked)} blocked cells")
 
   all_cells = {(x, y) for x in range(1, grid_size + 1) for y in range(1, grid_size + 1)} - blocked
+  n_cells = len(all_cells)
+
+  # For small puzzles (<=64 cells), solve directly without chunking machinery
+  if n_cells <= 64:
+    print(f"Small puzzle ({n_cells} cells), solving directly...")
+    # Try direct solve with Warnsdorff backtracking
+    solution = solve_serpentine(grid_size, blocked)
+    if solution:
+      print(f"Direct solve succeeded!")
+      return solution
+    # If that fails, try with more iterations using the chunk solver
+    chunk = Chunk(0, all_cells)
+    chunk.has_obstacles = len(blocked) > 0
+    max_iters = 100000 * n_cells  # Generous iteration limit for small puzzles
+    if chunk.solve(max_iterations=max_iters, blocked=blocked):
+      print(f"Direct chunk solve succeeded!")
+      return chunk.solution
+    print(f"Direct solve failed, falling back to chunking approach")
 
   # Fall back to chunking approach
   # Step 1: Create initial 2x2 chunks
@@ -1916,6 +3004,11 @@ def solve_expanding_barrage(grid_size: int, blocked: set) -> Optional[list]:
   # Step 2: Solve/grow obstacle chunks
   if not solve_obstacle_chunks(chunks, all_cells, cell_to_chunk, blocked):
     print("Failed to solve obstacle chunks")
+    dump_unsolved_chunks(chunks,
+                         blocked=blocked,
+                         all_cells=all_cells,
+                         grid_size=grid_size,
+                         header="\nDumping unsolved chunks after obstacle-chunk failure:")
     return None
 
   solved_obstacle_chunks = [c for c in chunks.values() if c.has_obstacles and c.solution]
@@ -1930,32 +3023,32 @@ def solve_expanding_barrage(grid_size: int, blocked: set) -> Optional[list]:
   print(f"After partitioning: {len(chunks)} total chunks")
 
   # Step 4: Solve open chunks
-  if not solve_open_chunks(chunks, cell_to_chunk, all_cells):
+  if not solve_open_chunks(chunks, cell_to_chunk, all_cells, blocked=blocked):
     print("Failed to solve open chunks")
+    dump_unsolved_chunks(chunks,
+                         blocked=blocked,
+                         all_cells=all_cells,
+                         grid_size=grid_size,
+                         header="\nDumping unsolved chunks after open-chunk failure:")
     return None
 
   # Step 4.5: Verify all chunks have solutions, re-solve any that don't
   unsolved_chunks = [c for c in chunks.values() if c.solution is None]
   for chunk in unsolved_chunks:
     n = len(chunk.cells)
-    print(f"  Re-solving chunk {chunk.id} with {n} cells")
-    if not chunk.solve(max_iterations=10000 * n + 100000):
+    # Check feasibility first
+    feasible, reason = check_hamilton_feasibility(chunk.cells)
+    if not feasible:
+      print(f"  Chunk {chunk.id} ({n} cells) infeasible: {reason}")
+      continue
+    # Large chunks need many more iterations
+    if n > 100:
+      max_iters = 200000 * n  # ~20-30M for large chunks
+    else:
+      max_iters = 10000 * n + 100000
+    print(f"  Re-solving chunk {chunk.id} with {n} cells, {max_iters} iters")
+    if not chunk.solve(max_iterations=max_iters, blocked=blocked):
       print(f"  Failed to solve chunk {chunk.id}")
-      # Try growing it
-      adj = chunk.get_neighbor_cells(all_cells)
-      adj = {
-        c
-        for c in adj if c not in cell_to_chunk or cell_to_chunk[c] not in chunks
-        or chunks[cell_to_chunk[c]].solution is None
-      }
-      if adj:
-        cells_to_add = pick_best_expansion_pair(adj, chunk.cells, set())
-        for cell_to_add in cells_to_add:
-          if cell_to_add and cell_to_add in all_cells:
-            expand_chunk(chunk, cell_to_add, cell_to_chunk, chunks, allow_merge_solved=False)
-        # Try again
-        n = len(chunk.cells)
-        chunk.solve(max_iterations=10000 * n + 100000)
 
   # Final check
   still_unsolved = [c.id for c in chunks.values() if c.solution is None]
@@ -1968,6 +3061,11 @@ def solve_expanding_barrage(grid_size: int, blocked: set) -> Optional[list]:
 
   if not chunk_path:
     print("Failed to find Hamilton path through chunks")
+    dump_unsolved_chunks(chunks,
+                         blocked=blocked,
+                         all_cells=all_cells,
+                         grid_size=grid_size,
+                         header="\nDumping unsolved chunks after chunk-path failure:")
     return None
 
   print(f"Found chunk path: {chunk_path}")
@@ -1981,46 +3079,12 @@ def solve_expanding_barrage(grid_size: int, blocked: set) -> Optional[list]:
   return solution
 
 
-def get_blocked_cells(subPass):
-  """Get blocked cells for each subpass."""
-  if subPass == 4:
-    return {(3, 3), (3, 4)}
-  elif subPass == 5:
-    return {(12, 3), (12, 4), (5, 3), (5, 4), (7, 7), (8, 7)}
-  elif subPass == 7:
-    blocked = set()
-    map_lines = """
-................
-.X..X.....X..X..
-................
-................
-................
-................
-................
-......XX........
-......XX........
-................
-................
-................
-................
-................
-.X..X.....X..X..
-................
-    """.strip().split("\n")
-    for row_idx, line in enumerate(map_lines):
-      y = 16 - row_idx
-      for x_idx, ch in enumerate(line):
-        if ch == 'X':
-          blocked.add((x_idx + 1, y))
-    return blocked
-  return set()
-
-
 def get_response(subPass: int):
   """Get the placebo response for this question."""
-  if subPass < 4:
-    gridSizes = [4, 8, 12, 16, 16, 16, 16, 16, 16]
-    gridSize = gridSizes[subPass]
+  gridSize = get_grid_size(subPass)
+  blocked = get_blocked_cells(subPass)
+
+  if not blocked:
 
     steps = []
     for y in range(gridSize):
@@ -2035,2023 +3099,135 @@ def get_response(subPass: int):
 
     return {"steps": steps}, "Placebo thinking... hmmm..."
 
-  # Cached answers:
+  # Solve several of the most common subpatterns in advance, helping
+  # to prime the cache. Turn this algorithm from hours to seconds.
 
-  if subPass == 4:
-    return ({
-      'steps': [{
-        'xy': [2, 9]
-      }, {
-        'xy': [3, 9]
-      }, {
-        'xy': [4, 9]
-      }, {
-        'xy': [4, 10]
-      }, {
-        'xy': [3, 10]
-      }, {
-        'xy': [2, 10]
-      }, {
-        'xy': [2, 11]
-      }, {
-        'xy': [3, 11]
-      }, {
-        'xy': [4, 11]
-      }, {
-        'xy': [4, 12]
-      }, {
-        'xy': [3, 12]
-      }, {
-        'xy': [2, 12]
-      }, {
-        'xy': [2, 13]
-      }, {
-        'xy': [3, 13]
-      }, {
-        'xy': [4, 13]
-      }, {
-        'xy': [4, 14]
-      }, {
-        'xy': [3, 14]
-      }, {
-        'xy': [2, 14]
-      }, {
-        'xy': [2, 15]
-      }, {
-        'xy': [3, 15]
-      }, {
-        'xy': [4, 15]
-      }, {
-        'xy': [5, 15]
-      }, {
-        'xy': [5, 14]
-      }, {
-        'xy': [5, 13]
-      }, {
-        'xy': [6, 13]
-      }, {
-        'xy': [7, 13]
-      }, {
-        'xy': [8, 13]
-      }, {
-        'xy': [8, 14]
-      }, {
-        'xy': [7, 14]
-      }, {
-        'xy': [6, 14]
-      }, {
-        'xy': [6, 15]
-      }, {
-        'xy': [7, 15]
-      }, {
-        'xy': [8, 15]
-      }, {
-        'xy': [9, 15]
-      }, {
-        'xy': [9, 14]
-      }, {
-        'xy': [9, 13]
-      }, {
-        'xy': [10, 13]
-      }, {
-        'xy': [11, 13]
-      }, {
-        'xy': [12, 13]
-      }, {
-        'xy': [12, 14]
-      }, {
-        'xy': [11, 14]
-      }, {
-        'xy': [10, 14]
-      }, {
-        'xy': [10, 15]
-      }, {
-        'xy': [11, 15]
-      }, {
-        'xy': [12, 15]
-      }, {
-        'xy': [13, 15]
-      }, {
-        'xy': [13, 14]
-      }, {
-        'xy': [13, 13]
-      }, {
-        'xy': [14, 13]
-      }, {
-        'xy': [15, 13]
-      }, {
-        'xy': [15, 12]
-      }, {
-        'xy': [14, 12]
-      }, {
-        'xy': [13, 12]
-      }, {
-        'xy': [13, 11]
-      }, {
-        'xy': [13, 10]
-      }, {
-        'xy': [12, 10]
-      }, {
-        'xy': [11, 10]
-      }, {
-        'xy': [10, 10]
-      }, {
-        'xy': [10, 11]
-      }, {
-        'xy': [11, 11]
-      }, {
-        'xy': [12, 11]
-      }, {
-        'xy': [12, 12]
-      }, {
-        'xy': [11, 12]
-      }, {
-        'xy': [10, 12]
-      }, {
-        'xy': [9, 12]
-      }, {
-        'xy': [9, 11]
-      }, {
-        'xy': [9, 10]
-      }, {
-        'xy': [8, 10]
-      }, {
-        'xy': [7, 10]
-      }, {
-        'xy': [6, 10]
-      }, {
-        'xy': [6, 11]
-      }, {
-        'xy': [7, 11]
-      }, {
-        'xy': [8, 11]
-      }, {
-        'xy': [8, 12]
-      }, {
-        'xy': [7, 12]
-      }, {
-        'xy': [6, 12]
-      }, {
-        'xy': [5, 12]
-      }, {
-        'xy': [5, 11]
-      }, {
-        'xy': [5, 10]
-      }, {
-        'xy': [5, 9]
-      }, {
-        'xy': [6, 9]
-      }, {
-        'xy': [7, 9]
-      }, {
-        'xy': [7, 8]
-      }, {
-        'xy': [7, 7]
-      }, {
-        'xy': [6, 7]
-      }, {
-        'xy': [6, 8]
-      }, {
-        'xy': [5, 8]
-      }, {
-        'xy': [5, 7]
-      }, {
-        'xy': [5, 6]
-      }, {
-        'xy': [6, 6]
-      }, {
-        'xy': [7, 6]
-      }, {
-        'xy': [8, 6]
-      }, {
-        'xy': [8, 7]
-      }, {
-        'xy': [9, 7]
-      }, {
-        'xy': [9, 6]
-      }, {
-        'xy': [10, 6]
-      }, {
-        'xy': [11, 6]
-      }, {
-        'xy': [12, 6]
-      }, {
-        'xy': [12, 7]
-      }, {
-        'xy': [13, 7]
-      }, {
-        'xy': [13, 6]
-      }, {
-        'xy': [14, 6]
-      }, {
-        'xy': [15, 6]
-      }, {
-        'xy': [15, 5]
-      }, {
-        'xy': [15, 4]
-      }, {
-        'xy': [14, 4]
-      }, {
-        'xy': [14, 5]
-      }, {
-        'xy': [13, 5]
-      }, {
-        'xy': [13, 4]
-      }, {
-        'xy': [13, 3]
-      }, {
-        'xy': [13, 2]
-      }, {
-        'xy': [12, 2]
-      }, {
-        'xy': [11, 2]
-      }, {
-        'xy': [10, 2]
-      }, {
-        'xy': [10, 3]
-      }, {
-        'xy': [11, 3]
-      }, {
-        'xy': [12, 3]
-      }, {
-        'xy': [12, 4]
-      }, {
-        'xy': [12, 5]
-      }, {
-        'xy': [11, 5]
-      }, {
-        'xy': [11, 4]
-      }, {
-        'xy': [10, 4]
-      }, {
-        'xy': [10, 5]
-      }, {
-        'xy': [9, 5]
-      }, {
-        'xy': [9, 4]
-      }, {
-        'xy': [9, 3]
-      }, {
-        'xy': [9, 2]
-      }, {
-        'xy': [8, 2]
-      }, {
-        'xy': [7, 2]
-      }, {
-        'xy': [6, 2]
-      }, {
-        'xy': [6, 3]
-      }, {
-        'xy': [7, 3]
-      }, {
-        'xy': [8, 3]
-      }, {
-        'xy': [8, 4]
-      }, {
-        'xy': [8, 5]
-      }, {
-        'xy': [7, 5]
-      }, {
-        'xy': [7, 4]
-      }, {
-        'xy': [6, 4]
-      }, {
-        'xy': [6, 5]
-      }, {
-        'xy': [5, 5]
-      }, {
-        'xy': [5, 4]
-      }, {
-        'xy': [5, 3]
-      }, {
-        'xy': [5, 2]
-      }, {
-        'xy': [4, 2]
-      }, {
-        'xy': [4, 3]
-      }, {
-        'xy': [4, 4]
-      }, {
-        'xy': [4, 5]
-      }, {
-        'xy': [3, 5]
-      }, {
-        'xy': [2, 5]
-      }, {
-        'xy': [1, 5]
-      }, {
-        'xy': [1, 4]
-      }, {
-        'xy': [2, 4]
-      }, {
-        'xy': [2, 3]
-      }, {
-        'xy': [1, 3]
-      }, {
-        'xy': [1, 2]
-      }, {
-        'xy': [1, 1]
-      }, {
-        'xy': [2, 1]
-      }, {
-        'xy': [2, 2]
-      }, {
-        'xy': [3, 2]
-      }, {
-        'xy': [3, 1]
-      }, {
-        'xy': [4, 1]
-      }, {
-        'xy': [5, 1]
-      }, {
-        'xy': [6, 1]
-      }, {
-        'xy': [7, 1]
-      }, {
-        'xy': [8, 1]
-      }, {
-        'xy': [9, 1]
-      }, {
-        'xy': [10, 1]
-      }, {
-        'xy': [11, 1]
-      }, {
-        'xy': [12, 1]
-      }, {
-        'xy': [13, 1]
-      }, {
-        'xy': [14, 1]
-      }, {
-        'xy': [15, 1]
-      }, {
-        'xy': [16, 1]
-      }, {
-        'xy': [16, 2]
-      }, {
-        'xy': [15, 2]
-      }, {
-        'xy': [14, 2]
-      }, {
-        'xy': [14, 3]
-      }, {
-        'xy': [15, 3]
-      }, {
-        'xy': [16, 3]
-      }, {
-        'xy': [16, 4]
-      }, {
-        'xy': [16, 5]
-      }, {
-        'xy': [16, 6]
-      }, {
-        'xy': [16, 7]
-      }, {
-        'xy': [16, 8]
-      }, {
-        'xy': [15, 8]
-      }, {
-        'xy': [15, 7]
-      }, {
-        'xy': [14, 7]
-      }, {
-        'xy': [14, 8]
-      }, {
-        'xy': [13, 8]
-      }, {
-        'xy': [12, 8]
-      }, {
-        'xy': [11, 8]
-      }, {
-        'xy': [11, 7]
-      }, {
-        'xy': [10, 7]
-      }, {
-        'xy': [10, 8]
-      }, {
-        'xy': [9, 8]
-      }, {
-        'xy': [8, 8]
-      }, {
-        'xy': [8, 9]
-      }, {
-        'xy': [9, 9]
-      }, {
-        'xy': [10, 9]
-      }, {
-        'xy': [11, 9]
-      }, {
-        'xy': [12, 9]
-      }, {
-        'xy': [13, 9]
-      }, {
-        'xy': [14, 9]
-      }, {
-        'xy': [15, 9]
-      }, {
-        'xy': [16, 9]
-      }, {
-        'xy': [16, 10]
-      }, {
-        'xy': [15, 10]
-      }, {
-        'xy': [14, 10]
-      }, {
-        'xy': [14, 11]
-      }, {
-        'xy': [15, 11]
-      }, {
-        'xy': [16, 11]
-      }, {
-        'xy': [16, 12]
-      }, {
-        'xy': [16, 13]
-      }, {
-        'xy': [16, 14]
-      }, {
-        'xy': [15, 14]
-      }, {
-        'xy': [14, 14]
-      }, {
-        'xy': [14, 15]
-      }, {
-        'xy': [15, 15]
-      }, {
-        'xy': [16, 15]
-      }, {
-        'xy': [16, 16]
-      }, {
-        'xy': [15, 16]
-      }, {
-        'xy': [14, 16]
-      }, {
-        'xy': [13, 16]
-      }, {
-        'xy': [12, 16]
-      }, {
-        'xy': [11, 16]
-      }, {
-        'xy': [10, 16]
-      }, {
-        'xy': [9, 16]
-      }, {
-        'xy': [8, 16]
-      }, {
-        'xy': [7, 16]
-      }, {
-        'xy': [6, 16]
-      }, {
-        'xy': [5, 16]
-      }, {
-        'xy': [4, 16]
-      }, {
-        'xy': [3, 16]
-      }, {
-        'xy': [2, 16]
-      }, {
-        'xy': [1, 16]
-      }, {
-        'xy': [1, 15]
-      }, {
-        'xy': [1, 14]
-      }, {
-        'xy': [1, 13]
-      }, {
-        'xy': [1, 12]
-      }, {
-        'xy': [1, 11]
-      }, {
-        'xy': [1, 10]
-      }, {
-        'xy': [1, 9]
-      }, {
-        'xy': [1, 8]
-      }, {
-        'xy': [1, 7]
-      }, {
-        'xy': [1, 6]
-      }, {
-        'xy': [2, 6]
-      }, {
-        'xy': [3, 6]
-      }, {
-        'xy': [4, 6]
-      }, {
-        'xy': [4, 7]
-      }, {
-        'xy': [4, 8]
-      }, {
-        'xy': [3, 8]
-      }, {
-        'xy': [3, 7]
-      }, {
-        'xy': [2, 7]
-      }, {
-        'xy': [2, 8]
-      }]
-    }, 'Solved with hierarchical divide-and-conquer')
+  add_primer_subproblem("""
+...
+.X.
+.X.
+...
+  """.strip())
 
-  if subPass == 5:
-    return {
-      'steps': [{
-        'xy': [10, 15]
-      }, {
-        'xy': [11, 15]
-      }, {
-        'xy': [11, 14]
-      }, {
-        'xy': [11, 13]
-      }, {
-        'xy': [11, 12]
-      }, {
-        'xy': [11, 11]
-      }, {
-        'xy': [11, 10]
-      }, {
-        'xy': [11, 9]
-      }, {
-        'xy': [11, 8]
-      }, {
-        'xy': [11, 7]
-      }, {
-        'xy': [11, 6]
-      }, {
-        'xy': [10, 6]
-      }, {
-        'xy': [10, 7]
-      }, {
-        'xy': [10, 8]
-      }, {
-        'xy': [10, 9]
-      }, {
-        'xy': [10, 10]
-      }, {
-        'xy': [9, 10]
-      }, {
-        'xy': [9, 9]
-      }, {
-        'xy': [9, 8]
-      }, {
-        'xy': [9, 7]
-      }, {
-        'xy': [9, 6]
-      }, {
-        'xy': [9, 5]
-      }, {
-        'xy': [9, 4]
-      }, {
-        'xy': [8, 4]
-      }, {
-        'xy': [7, 4]
-      }, {
-        'xy': [7, 5]
-      }, {
-        'xy': [8, 5]
-      }, {
-        'xy': [8, 6]
-      }, {
-        'xy': [7, 6]
-      }, {
-        'xy': [6, 6]
-      }, {
-        'xy': [6, 7]
-      }, {
-        'xy': [6, 8]
-      }, {
-        'xy': [7, 8]
-      }, {
-        'xy': [8, 8]
-      }, {
-        'xy': [8, 9]
-      }, {
-        'xy': [8, 10]
-      }, {
-        'xy': [8, 11]
-      }, {
-        'xy': [7, 11]
-      }, {
-        'xy': [7, 10]
-      }, {
-        'xy': [7, 9]
-      }, {
-        'xy': [6, 9]
-      }, {
-        'xy': [6, 10]
-      }, {
-        'xy': [6, 11]
-      }, {
-        'xy': [6, 12]
-      }, {
-        'xy': [6, 13]
-      }, {
-        'xy': [5, 13]
-      }, {
-        'xy': [5, 12]
-      }, {
-        'xy': [5, 11]
-      }, {
-        'xy': [5, 10]
-      }, {
-        'xy': [5, 9]
-      }, {
-        'xy': [5, 8]
-      }, {
-        'xy': [5, 7]
-      }, {
-        'xy': [5, 6]
-      }, {
-        'xy': [4, 6]
-      }, {
-        'xy': [4, 7]
-      }, {
-        'xy': [4, 8]
-      }, {
-        'xy': [4, 9]
-      }, {
-        'xy': [4, 10]
-      }, {
-        'xy': [4, 11]
-      }, {
-        'xy': [4, 12]
-      }, {
-        'xy': [4, 13]
-      }, {
-        'xy': [4, 14]
-      }, {
-        'xy': [3, 14]
-      }, {
-        'xy': [3, 13]
-      }, {
-        'xy': [3, 12]
-      }, {
-        'xy': [3, 11]
-      }, {
-        'xy': [3, 10]
-      }, {
-        'xy': [3, 9]
-      }, {
-        'xy': [3, 8]
-      }, {
-        'xy': [3, 7]
-      }, {
-        'xy': [3, 6]
-      }, {
-        'xy': [2, 6]
-      }, {
-        'xy': [2, 7]
-      }, {
-        'xy': [2, 8]
-      }, {
-        'xy': [2, 9]
-      }, {
-        'xy': [2, 10]
-      }, {
-        'xy': [2, 11]
-      }, {
-        'xy': [2, 12]
-      }, {
-        'xy': [2, 13]
-      }, {
-        'xy': [2, 14]
-      }, {
-        'xy': [1, 14]
-      }, {
-        'xy': [1, 13]
-      }, {
-        'xy': [1, 12]
-      }, {
-        'xy': [1, 11]
-      }, {
-        'xy': [1, 10]
-      }, {
-        'xy': [1, 9]
-      }, {
-        'xy': [1, 8]
-      }, {
-        'xy': [1, 7]
-      }, {
-        'xy': [1, 6]
-      }, {
-        'xy': [1, 5]
-      }, {
-        'xy': [1, 4]
-      }, {
-        'xy': [1, 3]
-      }, {
-        'xy': [1, 2]
-      }, {
-        'xy': [1, 1]
-      }, {
-        'xy': [2, 1]
-      }, {
-        'xy': [3, 1]
-      }, {
-        'xy': [4, 1]
-      }, {
-        'xy': [5, 1]
-      }, {
-        'xy': [6, 1]
-      }, {
-        'xy': [7, 1]
-      }, {
-        'xy': [8, 1]
-      }, {
-        'xy': [8, 2]
-      }, {
-        'xy': [7, 2]
-      }, {
-        'xy': [6, 2]
-      }, {
-        'xy': [5, 2]
-      }, {
-        'xy': [4, 2]
-      }, {
-        'xy': [4, 3]
-      }, {
-        'xy': [4, 4]
-      }, {
-        'xy': [3, 4]
-      }, {
-        'xy': [3, 3]
-      }, {
-        'xy': [3, 2]
-      }, {
-        'xy': [2, 2]
-      }, {
-        'xy': [2, 3]
-      }, {
-        'xy': [2, 4]
-      }, {
-        'xy': [2, 5]
-      }, {
-        'xy': [3, 5]
-      }, {
-        'xy': [4, 5]
-      }, {
-        'xy': [5, 5]
-      }, {
-        'xy': [6, 5]
-      }, {
-        'xy': [6, 4]
-      }, {
-        'xy': [6, 3]
-      }, {
-        'xy': [7, 3]
-      }, {
-        'xy': [8, 3]
-      }, {
-        'xy': [9, 3]
-      }, {
-        'xy': [9, 2]
-      }, {
-        'xy': [9, 1]
-      }, {
-        'xy': [10, 1]
-      }, {
-        'xy': [11, 1]
-      }, {
-        'xy': [12, 1]
-      }, {
-        'xy': [13, 1]
-      }, {
-        'xy': [14, 1]
-      }, {
-        'xy': [15, 1]
-      }, {
-        'xy': [16, 1]
-      }, {
-        'xy': [16, 2]
-      }, {
-        'xy': [16, 3]
-      }, {
-        'xy': [16, 4]
-      }, {
-        'xy': [16, 5]
-      }, {
-        'xy': [16, 6]
-      }, {
-        'xy': [16, 7]
-      }, {
-        'xy': [16, 8]
-      }, {
-        'xy': [16, 9]
-      }, {
-        'xy': [16, 10]
-      }, {
-        'xy': [16, 11]
-      }, {
-        'xy': [16, 12]
-      }, {
-        'xy': [16, 13]
-      }, {
-        'xy': [16, 14]
-      }, {
-        'xy': [16, 15]
-      }, {
-        'xy': [16, 16]
-      }, {
-        'xy': [15, 16]
-      }, {
-        'xy': [15, 15]
-      }, {
-        'xy': [15, 14]
-      }, {
-        'xy': [15, 13]
-      }, {
-        'xy': [15, 12]
-      }, {
-        'xy': [15, 11]
-      }, {
-        'xy': [15, 10]
-      }, {
-        'xy': [15, 9]
-      }, {
-        'xy': [15, 8]
-      }, {
-        'xy': [15, 7]
-      }, {
-        'xy': [15, 6]
-      }, {
-        'xy': [15, 5]
-      }, {
-        'xy': [15, 4]
-      }, {
-        'xy': [15, 3]
-      }, {
-        'xy': [15, 2]
-      }, {
-        'xy': [14, 2]
-      }, {
-        'xy': [13, 2]
-      }, {
-        'xy': [12, 2]
-      }, {
-        'xy': [11, 2]
-      }, {
-        'xy': [10, 2]
-      }, {
-        'xy': [10, 3]
-      }, {
-        'xy': [11, 3]
-      }, {
-        'xy': [11, 4]
-      }, {
-        'xy': [10, 4]
-      }, {
-        'xy': [10, 5]
-      }, {
-        'xy': [11, 5]
-      }, {
-        'xy': [12, 5]
-      }, {
-        'xy': [13, 5]
-      }, {
-        'xy': [13, 4]
-      }, {
-        'xy': [13, 3]
-      }, {
-        'xy': [14, 3]
-      }, {
-        'xy': [14, 4]
-      }, {
-        'xy': [14, 5]
-      }, {
-        'xy': [14, 6]
-      }, {
-        'xy': [14, 7]
-      }, {
-        'xy': [14, 8]
-      }, {
-        'xy': [14, 9]
-      }, {
-        'xy': [14, 10]
-      }, {
-        'xy': [14, 11]
-      }, {
-        'xy': [14, 12]
-      }, {
-        'xy': [14, 13]
-      }, {
-        'xy': [14, 14]
-      }, {
-        'xy': [14, 15]
-      }, {
-        'xy': [14, 16]
-      }, {
-        'xy': [13, 16]
-      }, {
-        'xy': [13, 15]
-      }, {
-        'xy': [13, 14]
-      }, {
-        'xy': [13, 13]
-      }, {
-        'xy': [13, 12]
-      }, {
-        'xy': [13, 11]
-      }, {
-        'xy': [13, 10]
-      }, {
-        'xy': [13, 9]
-      }, {
-        'xy': [13, 8]
-      }, {
-        'xy': [13, 7]
-      }, {
-        'xy': [13, 6]
-      }, {
-        'xy': [12, 6]
-      }, {
-        'xy': [12, 7]
-      }, {
-        'xy': [12, 8]
-      }, {
-        'xy': [12, 9]
-      }, {
-        'xy': [12, 10]
-      }, {
-        'xy': [12, 11]
-      }, {
-        'xy': [12, 12]
-      }, {
-        'xy': [12, 13]
-      }, {
-        'xy': [12, 14]
-      }, {
-        'xy': [12, 15]
-      }, {
-        'xy': [12, 16]
-      }, {
-        'xy': [11, 16]
-      }, {
-        'xy': [10, 16]
-      }, {
-        'xy': [9, 16]
-      }, {
-        'xy': [9, 15]
-      }, {
-        'xy': [9, 14]
-      }, {
-        'xy': [8, 14]
-      }, {
-        'xy': [8, 15]
-      }, {
-        'xy': [8, 16]
-      }, {
-        'xy': [7, 16]
-      }, {
-        'xy': [6, 16]
-      }, {
-        'xy': [5, 16]
-      }, {
-        'xy': [4, 16]
-      }, {
-        'xy': [3, 16]
-      }, {
-        'xy': [2, 16]
-      }, {
-        'xy': [1, 16]
-      }, {
-        'xy': [1, 15]
-      }, {
-        'xy': [2, 15]
-      }, {
-        'xy': [3, 15]
-      }, {
-        'xy': [4, 15]
-      }, {
-        'xy': [5, 15]
-      }, {
-        'xy': [5, 14]
-      }, {
-        'xy': [6, 14]
-      }, {
-        'xy': [6, 15]
-      }, {
-        'xy': [7, 15]
-      }, {
-        'xy': [7, 14]
-      }, {
-        'xy': [7, 13]
-      }, {
-        'xy': [7, 12]
-      }, {
-        'xy': [8, 12]
-      }, {
-        'xy': [8, 13]
-      }, {
-        'xy': [9, 13]
-      }, {
-        'xy': [9, 12]
-      }, {
-        'xy': [9, 11]
-      }, {
-        'xy': [10, 11]
-      }, {
-        'xy': [10, 12]
-      }, {
-        'xy': [10, 13]
-      }, {
-        'xy': [10, 14]
-      }]
-    }, ""
+  add_primer_subproblem("""
+...
+.X.
+.X.
+...
+...
+...
+  """.strip())
 
-  if subPass == 6:
-    return {
-      'steps': [{
-        'xy': [1, 7]
-      }, {
-        'xy': [1, 6]
-      }, {
-        'xy': [1, 5]
-      }, {
-        'xy': [1, 4]
-      }, {
-        'xy': [1, 3]
-      }, {
-        'xy': [1, 2]
-      }, {
-        'xy': [1, 1]
-      }, {
-        'xy': [2, 1]
-      }, {
-        'xy': [3, 1]
-      }, {
-        'xy': [3, 2]
-      }, {
-        'xy': [4, 2]
-      }, {
-        'xy': [4, 1]
-      }, {
-        'xy': [5, 1]
-      }, {
-        'xy': [6, 1]
-      }, {
-        'xy': [7, 1]
-      }, {
-        'xy': [8, 1]
-      }, {
-        'xy': [8, 2]
-      }, {
-        'xy': [8, 3]
-      }, {
-        'xy': [8, 4]
-      }, {
-        'xy': [8, 5]
-      }, {
-        'xy': [8, 6]
-      }, {
-        'xy': [8, 7]
-      }, {
-        'xy': [9, 7]
-      }, {
-        'xy': [9, 6]
-      }, {
-        'xy': [9, 5]
-      }, {
-        'xy': [9, 4]
-      }, {
-        'xy': [9, 3]
-      }, {
-        'xy': [10, 3]
-      }, {
-        'xy': [10, 2]
-      }, {
-        'xy': [9, 2]
-      }, {
-        'xy': [9, 1]
-      }, {
-        'xy': [10, 1]
-      }, {
-        'xy': [11, 1]
-      }, {
-        'xy': [12, 1]
-      }, {
-        'xy': [12, 2]
-      }, {
-        'xy': [13, 2]
-      }, {
-        'xy': [13, 1]
-      }, {
-        'xy': [14, 1]
-      }, {
-        'xy': [15, 1]
-      }, {
-        'xy': [16, 1]
-      }, {
-        'xy': [16, 2]
-      }, {
-        'xy': [15, 2]
-      }, {
-        'xy': [15, 3]
-      }, {
-        'xy': [16, 3]
-      }, {
-        'xy': [16, 4]
-      }, {
-        'xy': [16, 5]
-      }, {
-        'xy': [16, 6]
-      }, {
-        'xy': [16, 7]
-      }, {
-        'xy': [16, 8]
-      }, {
-        'xy': [16, 9]
-      }, {
-        'xy': [16, 10]
-      }, {
-        'xy': [16, 11]
-      }, {
-        'xy': [16, 12]
-      }, {
-        'xy': [15, 12]
-      }, {
-        'xy': [15, 11]
-      }, {
-        'xy': [15, 10]
-      }, {
-        'xy': [15, 9]
-      }, {
-        'xy': [15, 8]
-      }, {
-        'xy': [15, 7]
-      }, {
-        'xy': [15, 6]
-      }, {
-        'xy': [15, 5]
-      }, {
-        'xy': [15, 4]
-      }, {
-        'xy': [14, 4]
-      }, {
-        'xy': [14, 3]
-      }, {
-        'xy': [13, 3]
-      }, {
-        'xy': [13, 4]
-      }, {
-        'xy': [12, 4]
-      }, {
-        'xy': [12, 3]
-      }, {
-        'xy': [11, 3]
-      }, {
-        'xy': [11, 4]
-      }, {
-        'xy': [10, 4]
-      }, {
-        'xy': [10, 5]
-      }, {
-        'xy': [11, 5]
-      }, {
-        'xy': [12, 5]
-      }, {
-        'xy': [12, 6]
-      }, {
-        'xy': [12, 7]
-      }, {
-        'xy': [13, 7]
-      }, {
-        'xy': [13, 6]
-      }, {
-        'xy': [13, 5]
-      }, {
-        'xy': [14, 5]
-      }, {
-        'xy': [14, 6]
-      }, {
-        'xy': [14, 7]
-      }, {
-        'xy': [14, 8]
-      }, {
-        'xy': [14, 9]
-      }, {
-        'xy': [14, 10]
-      }, {
-        'xy': [14, 11]
-      }, {
-        'xy': [14, 12]
-      }, {
-        'xy': [13, 12]
-      }, {
-        'xy': [13, 11]
-      }, {
-        'xy': [13, 10]
-      }, {
-        'xy': [13, 9]
-      }, {
-        'xy': [13, 8]
-      }, {
-        'xy': [12, 8]
-      }, {
-        'xy': [12, 9]
-      }, {
-        'xy': [12, 10]
-      }, {
-        'xy': [12, 11]
-      }, {
-        'xy': [12, 12]
-      }, {
-        'xy': [11, 12]
-      }, {
-        'xy': [11, 11]
-      }, {
-        'xy': [11, 10]
-      }, {
-        'xy': [11, 9]
-      }, {
-        'xy': [11, 8]
-      }, {
-        'xy': [11, 7]
-      }, {
-        'xy': [11, 6]
-      }, {
-        'xy': [10, 6]
-      }, {
-        'xy': [10, 7]
-      }, {
-        'xy': [10, 8]
-      }, {
-        'xy': [10, 9]
-      }, {
-        'xy': [10, 10]
-      }, {
-        'xy': [10, 11]
-      }, {
-        'xy': [10, 12]
-      }, {
-        'xy': [10, 13]
-      }, {
-        'xy': [11, 13]
-      }, {
-        'xy': [11, 14]
-      }, {
-        'xy': [12, 14]
-      }, {
-        'xy': [12, 13]
-      }, {
-        'xy': [13, 13]
-      }, {
-        'xy': [13, 14]
-      }, {
-        'xy': [14, 14]
-      }, {
-        'xy': [14, 13]
-      }, {
-        'xy': [15, 13]
-      }, {
-        'xy': [16, 13]
-      }, {
-        'xy': [16, 14]
-      }, {
-        'xy': [15, 14]
-      }, {
-        'xy': [15, 15]
-      }, {
-        'xy': [16, 15]
-      }, {
-        'xy': [16, 16]
-      }, {
-        'xy': [15, 16]
-      }, {
-        'xy': [14, 16]
-      }, {
-        'xy': [13, 16]
-      }, {
-        'xy': [13, 15]
-      }, {
-        'xy': [12, 15]
-      }, {
-        'xy': [12, 16]
-      }, {
-        'xy': [11, 16]
-      }, {
-        'xy': [10, 16]
-      }, {
-        'xy': [9, 16]
-      }, {
-        'xy': [9, 15]
-      }, {
-        'xy': [10, 15]
-      }, {
-        'xy': [10, 14]
-      }, {
-        'xy': [9, 14]
-      }, {
-        'xy': [9, 13]
-      }, {
-        'xy': [9, 12]
-      }, {
-        'xy': [9, 11]
-      }, {
-        'xy': [9, 10]
-      }, {
-        'xy': [9, 9]
-      }, {
-        'xy': [9, 8]
-      }, {
-        'xy': [8, 8]
-      }, {
-        'xy': [8, 9]
-      }, {
-        'xy': [8, 10]
-      }, {
-        'xy': [8, 11]
-      }, {
-        'xy': [8, 12]
-      }, {
-        'xy': [8, 13]
-      }, {
-        'xy': [8, 14]
-      }, {
-        'xy': [7, 14]
-      }, {
-        'xy': [7, 13]
-      }, {
-        'xy': [7, 12]
-      }, {
-        'xy': [7, 11]
-      }, {
-        'xy': [7, 10]
-      }, {
-        'xy': [7, 9]
-      }, {
-        'xy': [7, 8]
-      }, {
-        'xy': [7, 7]
-      }, {
-        'xy': [7, 6]
-      }, {
-        'xy': [7, 5]
-      }, {
-        'xy': [7, 4]
-      }, {
-        'xy': [7, 3]
-      }, {
-        'xy': [7, 2]
-      }, {
-        'xy': [6, 2]
-      }, {
-        'xy': [6, 3]
-      }, {
-        'xy': [6, 4]
-      }, {
-        'xy': [5, 4]
-      }, {
-        'xy': [5, 3]
-      }, {
-        'xy': [4, 3]
-      }, {
-        'xy': [4, 4]
-      }, {
-        'xy': [3, 4]
-      }, {
-        'xy': [3, 3]
-      }, {
-        'xy': [2, 3]
-      }, {
-        'xy': [2, 4]
-      }, {
-        'xy': [2, 5]
-      }, {
-        'xy': [3, 5]
-      }, {
-        'xy': [4, 5]
-      }, {
-        'xy': [4, 6]
-      }, {
-        'xy': [4, 7]
-      }, {
-        'xy': [5, 7]
-      }, {
-        'xy': [5, 6]
-      }, {
-        'xy': [5, 5]
-      }, {
-        'xy': [6, 5]
-      }, {
-        'xy': [6, 6]
-      }, {
-        'xy': [6, 7]
-      }, {
-        'xy': [6, 8]
-      }, {
-        'xy': [6, 9]
-      }, {
-        'xy': [6, 10]
-      }, {
-        'xy': [6, 11]
-      }, {
-        'xy': [6, 12]
-      }, {
-        'xy': [6, 13]
-      }, {
-        'xy': [6, 14]
-      }, {
-        'xy': [6, 15]
-      }, {
-        'xy': [7, 15]
-      }, {
-        'xy': [8, 15]
-      }, {
-        'xy': [8, 16]
-      }, {
-        'xy': [7, 16]
-      }, {
-        'xy': [6, 16]
-      }, {
-        'xy': [5, 16]
-      }, {
-        'xy': [4, 16]
-      }, {
-        'xy': [4, 15]
-      }, {
-        'xy': [3, 15]
-      }, {
-        'xy': [3, 16]
-      }, {
-        'xy': [2, 16]
-      }, {
-        'xy': [1, 16]
-      }, {
-        'xy': [1, 15]
-      }, {
-        'xy': [1, 14]
-      }, {
-        'xy': [1, 13]
-      }, {
-        'xy': [1, 12]
-      }, {
-        'xy': [1, 11]
-      }, {
-        'xy': [2, 11]
-      }, {
-        'xy': [2, 12]
-      }, {
-        'xy': [2, 13]
-      }, {
-        'xy': [2, 14]
-      }, {
-        'xy': [3, 14]
-      }, {
-        'xy': [3, 13]
-      }, {
-        'xy': [4, 13]
-      }, {
-        'xy': [4, 14]
-      }, {
-        'xy': [5, 14]
-      }, {
-        'xy': [5, 13]
-      }, {
-        'xy': [5, 12]
-      }, {
-        'xy': [5, 11]
-      }, {
-        'xy': [5, 10]
-      }, {
-        'xy': [5, 9]
-      }, {
-        'xy': [5, 8]
-      }, {
-        'xy': [4, 8]
-      }, {
-        'xy': [4, 9]
-      }, {
-        'xy': [4, 10]
-      }, {
-        'xy': [4, 11]
-      }, {
-        'xy': [4, 12]
-      }, {
-        'xy': [3, 12]
-      }, {
-        'xy': [3, 11]
-      }, {
-        'xy': [3, 10]
-      }, {
-        'xy': [3, 9]
-      }, {
-        'xy': [3, 8]
-      }, {
-        'xy': [3, 7]
-      }, {
-        'xy': [3, 6]
-      }, {
-        'xy': [2, 6]
-      }, {
-        'xy': [2, 7]
-      }, {
-        'xy': [2, 8]
-      }, {
-        'xy': [2, 9]
-      }, {
-        'xy': [2, 10]
-      }, {
-        'xy': [1, 10]
-      }, {
-        'xy': [1, 9]
-      }, {
-        'xy': [1, 8]
-      }]
-    }, ""
+  add_primer_subproblem("""
+....
+.X..
+.X..
+....
+....
+....
+  """.strip())
 
-  if subPass == 7:
-    return {
-      'steps': [{
-        'xy': [6, 2]
-      }, {
-        'xy': [6, 3]
-      }, {
-        'xy': [6, 4]
-      }, {
-        'xy': [5, 4]
-      }, {
-        'xy': [5, 3]
-      }, {
-        'xy': [4, 3]
-      }, {
-        'xy': [4, 4]
-      }, {
-        'xy': [4, 5]
-      }, {
-        'xy': [4, 6]
-      }, {
-        'xy': [4, 7]
-      }, {
-        'xy': [4, 8]
-      }, {
-        'xy': [4, 9]
-      }, {
-        'xy': [4, 10]
-      }, {
-        'xy': [4, 11]
-      }, {
-        'xy': [4, 12]
-      }, {
-        'xy': [4, 13]
-      }, {
-        'xy': [4, 14]
-      }, {
-        'xy': [5, 14]
-      }, {
-        'xy': [5, 13]
-      }, {
-        'xy': [5, 12]
-      }, {
-        'xy': [5, 11]
-      }, {
-        'xy': [5, 10]
-      }, {
-        'xy': [5, 9]
-      }, {
-        'xy': [6, 9]
-      }, {
-        'xy': [6, 10]
-      }, {
-        'xy': [7, 10]
-      }, {
-        'xy': [8, 10]
-      }, {
-        'xy': [9, 10]
-      }, {
-        'xy': [9, 9]
-      }, {
-        'xy': [10, 9]
-      }, {
-        'xy': [11, 9]
-      }, {
-        'xy': [11, 8]
-      }, {
-        'xy': [11, 7]
-      }, {
-        'xy': [12, 7]
-      }, {
-        'xy': [12, 8]
-      }, {
-        'xy': [12, 9]
-      }, {
-        'xy': [12, 10]
-      }, {
-        'xy': [12, 11]
-      }, {
-        'xy': [13, 11]
-      }, {
-        'xy': [13, 10]
-      }, {
-        'xy': [13, 9]
-      }, {
-        'xy': [13, 8]
-      }, {
-        'xy': [13, 7]
-      }, {
-        'xy': [13, 6]
-      }, {
-        'xy': [12, 6]
-      }, {
-        'xy': [11, 6]
-      }, {
-        'xy': [11, 5]
-      }, {
-        'xy': [12, 5]
-      }, {
-        'xy': [13, 5]
-      }, {
-        'xy': [14, 5]
-      }, {
-        'xy': [14, 6]
-      }, {
-        'xy': [14, 7]
-      }, {
-        'xy': [14, 8]
-      }, {
-        'xy': [14, 9]
-      }, {
-        'xy': [14, 10]
-      }, {
-        'xy': [14, 11]
-      }, {
-        'xy': [14, 12]
-      }, {
-        'xy': [13, 12]
-      }, {
-        'xy': [12, 12]
-      }, {
-        'xy': [11, 12]
-      }, {
-        'xy': [11, 11]
-      }, {
-        'xy': [11, 10]
-      }, {
-        'xy': [10, 10]
-      }, {
-        'xy': [10, 11]
-      }, {
-        'xy': [10, 12]
-      }, {
-        'xy': [10, 13]
-      }, {
-        'xy': [11, 13]
-      }, {
-        'xy': [11, 14]
-      }, {
-        'xy': [12, 14]
-      }, {
-        'xy': [12, 13]
-      }, {
-        'xy': [13, 13]
-      }, {
-        'xy': [13, 14]
-      }, {
-        'xy': [14, 14]
-      }, {
-        'xy': [14, 13]
-      }, {
-        'xy': [15, 13]
-      }, {
-        'xy': [15, 12]
-      }, {
-        'xy': [15, 11]
-      }, {
-        'xy': [15, 10]
-      }, {
-        'xy': [15, 9]
-      }, {
-        'xy': [15, 8]
-      }, {
-        'xy': [15, 7]
-      }, {
-        'xy': [15, 6]
-      }, {
-        'xy': [15, 5]
-      }, {
-        'xy': [15, 4]
-      }, {
-        'xy': [14, 4]
-      }, {
-        'xy': [14, 3]
-      }, {
-        'xy': [13, 3]
-      }, {
-        'xy': [13, 4]
-      }, {
-        'xy': [12, 4]
-      }, {
-        'xy': [12, 3]
-      }, {
-        'xy': [11, 3]
-      }, {
-        'xy': [11, 4]
-      }, {
-        'xy': [10, 4]
-      }, {
-        'xy': [10, 5]
-      }, {
-        'xy': [10, 6]
-      }, {
-        'xy': [10, 7]
-      }, {
-        'xy': [10, 8]
-      }, {
-        'xy': [9, 8]
-      }, {
-        'xy': [9, 7]
-      }, {
-        'xy': [9, 6]
-      }, {
-        'xy': [8, 6]
-      }, {
-        'xy': [8, 7]
-      }, {
-        'xy': [7, 7]
-      }, {
-        'xy': [7, 6]
-      }, {
-        'xy': [6, 6]
-      }, {
-        'xy': [6, 7]
-      }, {
-        'xy': [6, 8]
-      }, {
-        'xy': [5, 8]
-      }, {
-        'xy': [5, 7]
-      }, {
-        'xy': [5, 6]
-      }, {
-        'xy': [5, 5]
-      }, {
-        'xy': [6, 5]
-      }, {
-        'xy': [7, 5]
-      }, {
-        'xy': [8, 5]
-      }, {
-        'xy': [9, 5]
-      }, {
-        'xy': [9, 4]
-      }, {
-        'xy': [9, 3]
-      }, {
-        'xy': [10, 3]
-      }, {
-        'xy': [10, 2]
-      }, {
-        'xy': [9, 2]
-      }, {
-        'xy': [9, 1]
-      }, {
-        'xy': [10, 1]
-      }, {
-        'xy': [11, 1]
-      }, {
-        'xy': [12, 1]
-      }, {
-        'xy': [12, 2]
-      }, {
-        'xy': [13, 2]
-      }, {
-        'xy': [13, 1]
-      }, {
-        'xy': [14, 1]
-      }, {
-        'xy': [15, 1]
-      }, {
-        'xy': [16, 1]
-      }, {
-        'xy': [16, 2]
-      }, {
-        'xy': [15, 2]
-      }, {
-        'xy': [15, 3]
-      }, {
-        'xy': [16, 3]
-      }, {
-        'xy': [16, 4]
-      }, {
-        'xy': [16, 5]
-      }, {
-        'xy': [16, 6]
-      }, {
-        'xy': [16, 7]
-      }, {
-        'xy': [16, 8]
-      }, {
-        'xy': [16, 9]
-      }, {
-        'xy': [16, 10]
-      }, {
-        'xy': [16, 11]
-      }, {
-        'xy': [16, 12]
-      }, {
-        'xy': [16, 13]
-      }, {
-        'xy': [16, 14]
-      }, {
-        'xy': [15, 14]
-      }, {
-        'xy': [15, 15]
-      }, {
-        'xy': [16, 15]
-      }, {
-        'xy': [16, 16]
-      }, {
-        'xy': [15, 16]
-      }, {
-        'xy': [14, 16]
-      }, {
-        'xy': [13, 16]
-      }, {
-        'xy': [13, 15]
-      }, {
-        'xy': [12, 15]
-      }, {
-        'xy': [12, 16]
-      }, {
-        'xy': [11, 16]
-      }, {
-        'xy': [10, 16]
-      }, {
-        'xy': [9, 16]
-      }, {
-        'xy': [9, 15]
-      }, {
-        'xy': [10, 15]
-      }, {
-        'xy': [10, 14]
-      }, {
-        'xy': [9, 14]
-      }, {
-        'xy': [9, 13]
-      }, {
-        'xy': [9, 12]
-      }, {
-        'xy': [9, 11]
-      }, {
-        'xy': [8, 11]
-      }, {
-        'xy': [8, 12]
-      }, {
-        'xy': [7, 12]
-      }, {
-        'xy': [7, 11]
-      }, {
-        'xy': [6, 11]
-      }, {
-        'xy': [6, 12]
-      }, {
-        'xy': [6, 13]
-      }, {
-        'xy': [6, 14]
-      }, {
-        'xy': [6, 15]
-      }, {
-        'xy': [7, 15]
-      }, {
-        'xy': [7, 14]
-      }, {
-        'xy': [7, 13]
-      }, {
-        'xy': [8, 13]
-      }, {
-        'xy': [8, 14]
-      }, {
-        'xy': [8, 15]
-      }, {
-        'xy': [8, 16]
-      }, {
-        'xy': [7, 16]
-      }, {
-        'xy': [6, 16]
-      }, {
-        'xy': [5, 16]
-      }, {
-        'xy': [4, 16]
-      }, {
-        'xy': [4, 15]
-      }, {
-        'xy': [3, 15]
-      }, {
-        'xy': [3, 16]
-      }, {
-        'xy': [2, 16]
-      }, {
-        'xy': [1, 16]
-      }, {
-        'xy': [1, 15]
-      }, {
-        'xy': [1, 14]
-      }, {
-        'xy': [1, 13]
-      }, {
-        'xy': [2, 13]
-      }, {
-        'xy': [2, 14]
-      }, {
-        'xy': [3, 14]
-      }, {
-        'xy': [3, 13]
-      }, {
-        'xy': [3, 12]
-      }, {
-        'xy': [3, 11]
-      }, {
-        'xy': [3, 10]
-      }, {
-        'xy': [3, 9]
-      }, {
-        'xy': [3, 8]
-      }, {
-        'xy': [3, 7]
-      }, {
-        'xy': [3, 6]
-      }, {
-        'xy': [3, 5]
-      }, {
-        'xy': [3, 4]
-      }, {
-        'xy': [3, 3]
-      }, {
-        'xy': [2, 3]
-      }, {
-        'xy': [2, 4]
-      }, {
-        'xy': [2, 5]
-      }, {
-        'xy': [2, 6]
-      }, {
-        'xy': [2, 7]
-      }, {
-        'xy': [2, 8]
-      }, {
-        'xy': [2, 9]
-      }, {
-        'xy': [2, 10]
-      }, {
-        'xy': [2, 11]
-      }, {
-        'xy': [2, 12]
-      }, {
-        'xy': [1, 12]
-      }, {
-        'xy': [1, 11]
-      }, {
-        'xy': [1, 10]
-      }, {
-        'xy': [1, 9]
-      }, {
-        'xy': [1, 8]
-      }, {
-        'xy': [1, 7]
-      }, {
-        'xy': [1, 6]
-      }, {
-        'xy': [1, 5]
-      }, {
-        'xy': [1, 4]
-      }, {
-        'xy': [1, 3]
-      }, {
-        'xy': [1, 2]
-      }, {
-        'xy': [1, 1]
-      }, {
-        'xy': [2, 1]
-      }, {
-        'xy': [3, 1]
-      }, {
-        'xy': [3, 2]
-      }, {
-        'xy': [4, 2]
-      }, {
-        'xy': [4, 1]
-      }, {
-        'xy': [5, 1]
-      }, {
-        'xy': [6, 1]
-      }, {
-        'xy': [7, 1]
-      }, {
-        'xy': [8, 1]
-      }, {
-        'xy': [8, 2]
-      }, {
-        'xy': [8, 3]
-      }, {
-        'xy': [8, 4]
-      }, {
-        'xy': [7, 4]
-      }, {
-        'xy': [7, 3]
-      }, {
-        'xy': [7, 2]
-      }]
-    }, ""
+  add_primer_subproblem("""
+...
+.X.
+...
+...
+.X.
+...
+  """.strip())
+
+  add_primer_subproblem("""
+...
+.X.
+.X.
+.X.
+.X.
+...
+  """.strip())
+
+  add_primer_subproblem("""
+XX..
+XX..
+XX..
+XX..
+XX..
+....
+....
+  """.strip())
+
+  add_primer_subproblem("""
+......
+......
+XXXX..
+......
+.XX...
+.XX...
+......
+  """.strip())
+
+  add_primer_subproblem("""
+....
+.XX.
+....
+  """.strip())
+
+  add_primer_subproblem("""
+....
+.XX.
+.XX.
+....
+  """.strip())
+
+  add_primer_subproblem("""
+......
+.X..X.
+......
+  """.strip())
+
+  add_primer_subproblem("""
+..........
+.X......X.
+.X......X.
+..........
+""".strip())
+
+  add_primer_subproblem("""
+..X......X..
+..X......X..
+............
+............
+""".strip())
+
+  add_primer_subproblem("""
+..??
+..??
+..??
+..??
+..??
+..??
+....
+.XX.
+.XX.
+....
+..??
+..??
+..??
+..??
+..??
+..??
+""".strip())
+
+  # 4x5 primers for narrow side strips (helps avoid funnel shapes in frame-like open space)
+  add_primer_subproblem("""
+....
+....
+....
+....
+....
+""".strip())
 
   # For any hard subpasses, use the expanding barrage solver
-  blocked = get_blocked_cells(subPass)
-  solution = solve_expanding_barrage(16, blocked)
+  solution = solve_expanding_barrage(gridSize, blocked)
 
   if solution:
     # Include all cells in the loop (solution[0] is the starting position)
@@ -4062,8 +3238,7 @@ def get_response(subPass: int):
 
 
 if __name__ == "__main__":
-  # Test with simpler cases first
-  for sp in [5]:
+  for sp in [1, 4, 5, 6, 7, 8]:
     print(f"\n{'='*50}")
     print(f"Testing subPass {sp}")
     print(f"{'='*50}")

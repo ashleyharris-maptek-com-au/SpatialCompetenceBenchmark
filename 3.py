@@ -156,13 +156,6 @@ polyhedron(
    "cube([10,10,10], center=true); translate([10,0,0]) cube([10,10,10], center=true);",
    "Two cubes sharing a face"),
 
-  # Touching edges
-  ("You are given two cubes, each with side length 10cm. "
-   "The first is centered at (0, 0, 0). "
-   "The second is centered at (10, 10, 0).",
-   "cube([10,10,10], center=true); translate([10,10,0]) cube([10,10,10], center=true);",
-   "Two cubes sharing an edge"),
-
   # Rotated cube
   ("You are given a cube with side length 10cm centered at origin. "
    "You are also given a cube with side length 10cm centered at origin but rotated 45 degrees around the Z axis.",

@@ -120,7 +120,7 @@ structure = None  # We just take a string here.
 
 
 def prepareSubpassPrompt(index):
-  if index == 1: raise StopIteration # HACK while developing to save money.
+  #if index == 1: raise StopIteration # HACK while developing to save money.
   if index < 0 or index >= len(testParams):
     raise StopIteration
   params = testParams[index]
@@ -128,14 +128,12 @@ def prepareSubpassPrompt(index):
   a_height = params["a_height"]
   b_height = params["b_height"]
   required_jumps = params["required_jumps"]
-  description = (
-    f"Create a maze of size {size}x{size} that has A at level {a_height} "
-    f"and B at level {b_height}, and at least {required_jumps} jumps."
-  )
+  description = (f"Create a maze of size {size}x{size} that has A at level {a_height} "
+                 f"and B at level {b_height}, and at least {required_jumps} jumps.")
   return prompt + description + suffix.replace("PARAM_A", str(size))
 
 
-def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = None):
+def resultToNiceReport(result, subPass, aiEngineName, path=None, alt_path=None):
   if subPass < 0 or subPass >= len(testParams):
     raise StopIteration
   params = testParams[subPass]
@@ -165,9 +163,8 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
         b_pos = (j, i)
         height_map[(j, i)] = bHeight
 
-
   if path:
-    print ("New code running")
+    print("New code running")
     path_radius = 0.12
     walk_color = "0.1, 0.9, 0.2"
     jump_color = "1.0, 0.6, 0.1"
@@ -175,7 +172,7 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
     scad_content += "    // Path visualization\n"
 
     def draw_path(path_nodes, walk_col, jump_col):
-      nonlocal scad_content 
+      nonlocal scad_content
       if not path_nodes or len(path_nodes) < 2:
         return
       for idx in range(len(path_nodes) - 1):
@@ -212,6 +209,7 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
           )
 
     if alt_path:
+
       def common_prefix_len(first, second):
         limit = min(len(first), len(second))
         idx = 0
@@ -260,14 +258,14 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
   grid_size = len(rows)
   center_x = grid_size / 2
   center_y = grid_size / 2
+
   def build_camera_arg(eye_x, eye_y, eye_z, target_x=None, target_y=None, target_z=5):
     if target_x is None:
       target_x = center_x
     if target_y is None:
       target_y = center_y
-    return (
-      f"--camera={eye_x:.3f},{eye_y:.3f},{eye_z:.3f},"
-      f"{target_x:.3f},{target_y:.3f},{target_z:.3f}")
+    return (f"--camera={eye_x:.3f},{eye_y:.3f},{eye_z:.3f},"
+            f"{target_x:.3f},{target_y:.3f},{target_z:.3f}")
 
   views = [("above", build_camera_arg(center_x, center_y, 50))]
 
@@ -280,7 +278,7 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
     views.append(("from_a", build_camera_arg(cam_x, cam_y, cam_z)))
 
   offset = grid_size * 2.0
-  offsetClose = grid_size *0.8
+  offsetClose = grid_size * 0.8
   side_height = grid_size * 1.8 + 25
   views.extend([
     ("north", build_camera_arg(center_x, center_y - offset, side_height)),
@@ -291,15 +289,18 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
     ("northwest", build_camera_arg(center_x - offset * 0.7, center_y + offset * 0.7, side_height)),
     ("southeast", build_camera_arg(center_x + offset * 0.7, center_y - offset * 0.7, side_height)),
     ("southwest", build_camera_arg(center_x - offset * 0.7, center_y - offset * 0.7, side_height)),
-
     ("northclose", build_camera_arg(center_x, center_y - offsetClose, side_height)),
     ("southclose", build_camera_arg(center_x, center_y + offsetClose, side_height)),
     ("westclose", build_camera_arg(center_x - offsetClose, center_y, side_height)),
     ("eastclose", build_camera_arg(center_x + offsetClose, center_y, side_height)),
-    ("northeastclose", build_camera_arg(center_x + offsetClose * 0.7, center_y + offsetClose * 0.7, side_height)),
-    ("northwestclose", build_camera_arg(center_x - offsetClose * 0.7, center_y + offsetClose * 0.7, side_height)),
-    ("southeastclose", build_camera_arg(center_x + offsetClose * 0.7, center_y - offsetClose * 0.7, side_height)),
-    ("southwestclose", build_camera_arg(center_x - offsetClose * 0.7, center_y - offsetClose * 0.7, side_height)),
+    ("northeastclose",
+     build_camera_arg(center_x + offsetClose * 0.7, center_y + offsetClose * 0.7, side_height)),
+    ("northwestclose",
+     build_camera_arg(center_x - offsetClose * 0.7, center_y + offsetClose * 0.7, side_height)),
+    ("southeastclose",
+     build_camera_arg(center_x + offsetClose * 0.7, center_y - offsetClose * 0.7, side_height)),
+    ("southwestclose",
+     build_camera_arg(center_x - offsetClose * 0.7, center_y - offsetClose * 0.7, side_height)),
   ])
 
   image_paths = []
@@ -312,10 +313,8 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
   viewer_id = f"maze-viewer-{hashlib.md5(base_name.encode()).hexdigest()}"
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(
-      f'<img src="{os.path.basename(path)}" class="maze-view view-{idx}" '
-      f'style="max-width: 100%;">'
-    )
+    image_tags.append(f'<img src="{os.path.basename(path)}" class="maze-view view-{idx}" '
+                      f'style="max-width: 100%;">')
 
   radio_name = f"{viewer_id}-view"
   radio_ids = [f"{viewer_id}-view-{idx}" for idx in range(len(image_paths))]
@@ -329,11 +328,9 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
     prev_idx = (idx - 1) % len(radio_ids)
     next_idx = (idx + 1) % len(radio_ids)
     labels.append(
-      f'<label class="maze-prev prev-{idx}" for="{radio_ids[prev_idx]}">&#8592;</label>'
-    )
+      f'<label class="maze-prev prev-{idx}" for="{radio_ids[prev_idx]}">&#8592;</label>')
     labels.append(
-      f'<label class="maze-next next-{idx}" for="{radio_ids[next_idx]}">&#8594;</label>'
-    )
+      f'<label class="maze-next next-{idx}" for="{radio_ids[next_idx]}">&#8594;</label>')
 
   style_lines = [
     f'#{viewer_id} {{ display:flex; align-items:center; gap:8px; }}',
@@ -344,26 +341,18 @@ def resultToNiceReport(result, subPass, aiEngineName, path = None, alt_path = No
     f'#{viewer_id} .maze-view {{ display:none; max-width:100%; }}',
   ]
   for idx, radio_id in enumerate(radio_ids):
-    style_lines.append(
-      f'#{radio_id}:checked ~ .maze-frame .view-{idx} {{ display:block; }}'
-    )
-    style_lines.append(
-      f'#{radio_id}:checked ~ .prev-{idx} {{ display:inline-flex; }}'
-    )
-    style_lines.append(
-      f'#{radio_id}:checked ~ .next-{idx} {{ display:inline-flex; }}'
-    )
+    style_lines.append(f'#{radio_id}:checked ~ .maze-frame .view-{idx} {{ display:block; }}')
+    style_lines.append(f'#{radio_id}:checked ~ .prev-{idx} {{ display:inline-flex; }}')
+    style_lines.append(f'#{radio_id}:checked ~ .next-{idx} {{ display:inline-flex; }}')
 
-  html = (
-    f'<div id="{viewer_id}" class="maze-viewer">'
-    f'<style>{" ".join(style_lines)}</style>'
-    f'{"".join(inputs)}'
-    f'{"".join(labels)}'
-    f'<div class="maze-frame">'
-    f'{"".join(image_tags)}'
-    f'</div>'
-    f'</div>'
-  )
+  html = (f'<div id="{viewer_id}" class="maze-viewer">'
+          f'<style>{" ".join(style_lines)}</style>'
+          f'{"".join(inputs)}'
+          f'{"".join(labels)}'
+          f'<div class="maze-frame">'
+          f'{"".join(image_tags)}'
+          f'</div>'
+          f'</div>')
 
   return html
 
@@ -384,7 +373,8 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
     return result
 
   if answer.count("A") != 1 or answer.count("B") != 1:
-    return _cache_and_return((0, "Maze must have exactly one A and one B", resultToNiceReport(answer, subPass, aiEngineName)))
+    return _cache_and_return((0, "Maze must have exactly one A and one B",
+                              resultToNiceReport(answer, subPass, aiEngineName)))
 
   if subPass < 0 or subPass >= len(testParams):
     return _cache_and_return((0, "Invalid subpass", ""))
@@ -397,14 +387,17 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
 
   rows = answer.split("\n")
   if len(rows) != size:
-    return _cache_and_return((0, f"Maze must have exactly {size} rows", resultToNiceReport(answer, subPass, aiEngineName)))
+    return _cache_and_return(
+      (0, f"Maze must have exactly {size} rows", resultToNiceReport(answer, subPass, aiEngineName)))
 
   if len(rows[0]) != size:
-    return _cache_and_return((0, f"Maze must have exactly {size} columns", resultToNiceReport(answer, subPass, aiEngineName)))
+    return _cache_and_return((0, f"Maze must have exactly {size} columns",
+                              resultToNiceReport(answer, subPass, aiEngineName)))
 
   for row in rows:
     if len(row) != len(rows[0]):
-      return _cache_and_return((0, "Maze must have all rows the same width", resultToNiceReport(answer, subPass, aiEngineName)))
+      return _cache_and_return((0, "Maze must have all rows the same width",
+                                resultToNiceReport(answer, subPass, aiEngineName)))
 
   # Parse the maze and find A and B positions
   grid = []
@@ -439,7 +432,8 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
   total_cells = len(grid) * len(grid[0])
   for height, count in elevation_counts.items():
     if count / total_cells > 0.3:
-      return _cache_and_return((0, f"Elevation {height} occupies more than 30% of the grid", resultToNiceReport(answer, subPass, aiEngineName)))
+      return _cache_and_return((0, f"Elevation {height} occupies more than 30% of the grid",
+                                resultToNiceReport(answer, subPass, aiEngineName)))
 
   print("Starting maze: " + cache_key)
 
@@ -573,18 +567,16 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
   if path is None:
     fallback_path = bfs_farthest_path(a_pos)
     return _cache_and_return(
-      (0,
-       "No valid path from A to B (showing longest reachable path from A)",
-       resultToNiceReport(answer, subPass, aiEngineName, fallback_path))
-    )
+      (0, "No valid path from A to B (showing longest reachable path from A)",
+       resultToNiceReport(answer, subPass, aiEngineName, fallback_path)))
 
   bridges = find_bridges(graph)
   for idx in range(len(path) - 1):
     edge = tuple(sorted((path[idx], path[idx + 1])))
     if edge not in bridges:
       alt_path, _ = bfs_path(a_pos, b_pos, {edge})
-      return _cache_and_return(
-        (0, "Multiple paths exist. Maze must have only one solution.", resultToNiceReport(answer, subPass, aiEngineName, path, alt_path)))
+      return _cache_and_return((0, "Multiple paths exist. Maze must have only one solution.",
+                                resultToNiceReport(answer, subPass, aiEngineName, path, alt_path)))
 
   print("Finished maze: " + cache_key)
 
@@ -594,13 +586,16 @@ def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
   visited_percentage = len(visited_cells) / total_cells
   if visited_percentage < 0.2:
     return _cache_and_return(
-      (0, f"Path visits only {visited_percentage:.2%} of cells (required: 20%)", resultToNiceReport(answer, subPass, aiEngineName, path)))
+      (0, f"Path visits only {visited_percentage:.2%} of cells (required: 20%)",
+       resultToNiceReport(answer, subPass, aiEngineName, path)))
 
   if jump_count < required_jumps:
     return _cache_and_return(
-      (0, f"Path has {jump_count} jumps, but at least {required_jumps} are required", resultToNiceReport(answer, subPass, aiEngineName, path)))
+      (0, f"Path has {jump_count} jumps, but at least {required_jumps} are required",
+       resultToNiceReport(answer, subPass, aiEngineName, path)))
 
-  return _cache_and_return((1, f"Valid maze with {jump_count} jumps (required: {required_jumps})", resultToNiceReport(answer, subPass, aiEngineName, path)))
+  return _cache_and_return((1, f"Valid maze with {jump_count} jumps (required: {required_jumps})",
+                            resultToNiceReport(answer, subPass, aiEngineName, path)))
 
 
 if __name__ == "__main__":
