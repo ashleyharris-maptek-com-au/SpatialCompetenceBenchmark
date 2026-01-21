@@ -1,0 +1,1859 @@
+import importlib.util
+import math
+import random
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+# Hill-climbing placebo for Q12
+# Loads the real test params + validator from ../12.py, generates candidate loops,
+# evaluates with structured errors, and mutates toward validity.
+
+# ---------------------------------------------------------------------------
+# Problem loader
+# ---------------------------------------------------------------------------
+
+basePath = Path(__file__).resolve().parent.parent
+sys.path.append(str(basePath))
+
+
+def _load_problem():
+  mod_path = basePath / "12.py"
+  spec = importlib.util.spec_from_file_location("bench12", mod_path)
+  mod = importlib.util.module_from_spec(spec)
+  assert spec.loader is not None
+  spec.loader.exec_module(mod)  # type: ignore
+  return mod.testParams, mod.gradeAnswer
+
+
+# ---------------------------------------------------------------------------
+# Geometry helpers
+# ---------------------------------------------------------------------------
+
+
+def _clamp(v: float, lo: float, hi: float) -> float:
+  return max(lo, min(hi, v))
+
+
+def _distance(p1, p2) -> float:
+  return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+
+
+def _segments_intersect(p1, p2, p3, p4) -> bool:
+  """Check if segment p1-p2 intersects segment p3-p4 (excluding endpoints)."""
+
+  def ccw(a, b, c):
+    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
+
+  if ccw(p1, p3, p4) != ccw(p2, p3, p4) and ccw(p1, p2, p3) != ccw(p1, p2, p4):
+    return True
+  return False
+
+
+def _reverse_segment(pts: List, i: int, j: int) -> List:
+  """Reverse the points between indices i and j (exclusive of endpoints)."""
+  n = len(pts)
+  if i > j:
+    i, j = j, i
+  # Reverse pts[i+1:j] in place
+  start, end = i + 1, j
+  if start < end:
+    pts[start:end] = pts[start:end][::-1]
+  return pts
+
+
+def _find_crossing_indices(pts: List) -> List[Tuple[int, int]]:
+  """Find all pairs of segment indices that cross."""
+  n = len(pts)
+  crossings = []
+  for i in range(n):
+    for j in range(i + 2, n):
+      if j == (i - 1) % n or j == (i + 1) % n:
+        continue
+      p1, p2 = pts[i], pts[(i + 1) % n]
+      p3, p4 = pts[j], pts[(j + 1) % n]
+      if _segments_intersect(p1, p2, p3, p4):
+        crossings.append((i, j))
+  return crossings
+
+
+def _parse_number_from_message(msg: str, keyword: str) -> Optional[float]:
+  """Extract a number following a keyword in an error message."""
+  import re
+  patterns = [
+    rf"{keyword}\s*[=:]?\s*([\d.]+)",
+    rf"([\d.]+)\s*{keyword}",
+    rf"than\s+([\d.]+)",
+    rf"need\s+([\d.]+)",
+  ]
+  for pat in patterns:
+    m = re.search(pat, msg, re.IGNORECASE)
+    if m:
+      try:
+        return float(m.group(1))
+      except ValueError:
+        pass
+  return None
+
+
+def _parse_range_from_message(msg: str) -> Tuple[Optional[float], Optional[float]]:
+  """Extract min-max range like '60°-120°' from message."""
+  import re
+  m = re.search(r"(\d+)°?\s*-\s*(\d+)°?", msg)
+  if m:
+    return float(m.group(1)), float(m.group(2))
+  return None, None
+
+
+def _parse_missing_quadrants(msg: str) -> List[str]:
+  """Extract missing quadrant names from error message."""
+  quadrants = []
+  for q in ["bottom_left", "top_left", "bottom_right", "top_right"]:
+    if q in msg:
+      quadrants.append(q)
+  return quadrants
+
+
+def _parse_missing_edges(msg: str) -> List[str]:
+  """Extract which edges still need to be touched.
+  Message format: "Touched N edges ['left', 'right'], need M edges"
+  """
+  import re
+  all_edges = {"left", "right", "top", "bottom"}
+  touched = set()
+  # Look for edges in square brackets (the touched list)
+  bracket_match = re.search(r"\[([^\]]*)\]", msg)
+  if bracket_match:
+    bracket_content = bracket_match.group(1).lower()
+    for edge in all_edges:
+      if edge in bracket_content:
+        touched.add(edge)
+  # Return edges that haven't been touched
+  missing = list(all_edges - touched)
+  return missing if missing else list(all_edges)
+
+
+def _normalize(dx: float, dy: float, default_angle: Optional[float],
+               rng: random.Random) -> Tuple[float, float]:
+  mag = math.hypot(dx, dy)
+  if mag == 0:
+    ang = default_angle if default_angle is not None else rng.random() * 2 * math.pi
+    return math.cos(ang), math.sin(ang)
+  return dx / mag, dy / mag
+
+
+def _circle_intersections(p1: Tuple[float, float],
+                          p2: Tuple[float, float],
+                          r: float = 1.0) -> List[Tuple[float, float]]:
+  (x1, y1), (x2, y2) = p1, p2
+  dx, dy = x2 - x1, y2 - y1
+  d = math.hypot(dx, dy)
+  if d == 0 or d > 2 * r:
+    return []
+  a = d / 2
+  h_sq = r * r - a * a
+  if h_sq < 0:
+    return []
+  h = math.sqrt(h_sq)
+  xm = x1 + dx * 0.5
+  ym = y1 + dy * 0.5
+  rx = -dy * (h / d)
+  ry = dx * (h / d)
+  return [(xm + rx, ym + ry), (xm - rx, ym - ry)]
+
+
+def _ensure_bounds(points: List[Tuple[float, float]], boundary: float,
+                   margin_ratio: float) -> List[Tuple[float, float]]:
+  margin = boundary * margin_ratio
+  lo, hi = margin, boundary - margin
+  return [(_clamp(x, lo, hi), _clamp(y, lo, hi)) for x, y in points]
+
+
+def _enforce_unit_steps(points: List[Tuple[float, float]], boundary: float,
+                        rng: random.Random) -> List[Tuple[float, float]]:
+  if not points:
+    return points
+  pts: List[Tuple[float, float]] = [points[0]]
+  for i in range(1, len(points)):
+    prev = pts[-1]
+    dx = points[i][0] - prev[0]
+    dy = points[i][1] - prev[1]
+    nx, ny = _normalize(dx, dy, None, rng)
+    candidate = (prev[0] + nx, prev[1] + ny)
+    pts.append((_clamp(candidate[0], 0, boundary), _clamp(candidate[1], 0, boundary)))
+
+  # Force closure to be length 1 if possible
+  first = pts[0]
+  prev = pts[-2] if len(pts) > 1 else first
+  intersections = _circle_intersections(prev, first, 1.0)
+  if intersections:
+    choice = random.choice(intersections)
+    pts[-1] = (_clamp(choice[0], 0, boundary), _clamp(choice[1], 0, boundary))
+  else:
+    nx, ny = _normalize(first[0] - prev[0], first[1] - prev[1], None, rng)
+    fallback = (prev[0] + nx, prev[1] + ny)
+    pts[-1] = (_clamp(fallback[0], 0, boundary), _clamp(fallback[1], 0, boundary))
+
+  return pts
+
+
+# ---------------------------------------------------------------------------
+# Generators
+# ---------------------------------------------------------------------------
+
+
+class LoopGenerators:
+
+  def __init__(self, pipes: int, boundary: float, rng: random.Random):
+    self.n = pipes
+    self.boundary = boundary
+    self.rng = rng
+
+  def _to_points(self, coords: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    coords = coords[:self.n]
+    if len(coords) < self.n:
+      coords = coords + coords[:1] * (self.n - len(coords))
+    coords = _enforce_unit_steps(coords, self.boundary, self.rng)
+    coords = _ensure_bounds(coords, self.boundary, 0.01)
+    return coords[:self.n]
+
+  def regular_polygon(self) -> List[Tuple[float, float]]:
+    """Create a regular polygon with unit-length edges - guaranteed no crossings."""
+    n = max(3, self.n)
+    # For n points around a circle, chord length = 2*r*sin(pi/n)
+    # For chord = 1, r = 1/(2*sin(pi/n))
+    ideal_r = 1.0 / (2 * math.sin(math.pi / n))
+    # Make sure it fits in the boundary
+    max_r = (self.boundary - 0.2) / 2
+    r = min(ideal_r, max_r)
+    center = self.boundary / 2
+
+    # Generate points directly - no need for _to_points since edges are already unit length
+    pts = []
+    for i in range(n):
+      ang = 2 * math.pi * i / n
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.01, self.boundary - 0.01), _clamp(y, 0.01, self.boundary - 0.01)))
+    return pts
+
+  def square_loop(self) -> List[Tuple[float, float]]:
+    side = max(2, min(int(self.boundary) - 1, max(2, int(self.n / 4))))
+    margin = (self.boundary - side) / 2
+    x0, y0 = margin, margin
+    pts: List[Tuple[float, float]] = []
+    for dx in range(side):
+      pts.append((x0 + dx, y0))
+    for dy in range(1, side):
+      pts.append((x0 + side - 1, y0 + dy))
+    for dx in range(side - 2, -1, -1):
+      pts.append((x0 + dx, y0 + side - 1))
+    for dy in range(side - 2, 0, -1):
+      pts.append((x0, y0 + dy))
+    while len(pts) < self.n:
+      last = pts[-1]
+      jitter = self.rng.choice([(1, 0), (-1, 0), (0, 1), (0, -1)])
+      pts.append((last[0] + jitter[0], last[1] + jitter[1]))
+    return self._to_points(pts)
+
+  def snake(self) -> List[Tuple[float, float]]:
+    pts: List[Tuple[float, float]] = []
+    margin = 0.5
+    max_x = self.boundary - margin
+    x, y = margin, margin
+    direction = 1
+    for _ in range(self.n):
+      pts.append((x, y))
+      nx = x + direction
+      if nx > max_x or nx < margin:
+        y += 1
+        direction *= -1
+      else:
+        x = nx
+    return self._to_points(pts)
+
+  def figure_eight(self) -> List[Tuple[float, float]]:
+    center = self.boundary / 2
+    r = max(0.3, min(self.boundary * 0.2, self.n / (4 * math.pi)))
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      sign = 1 if i < self.n / 2 else -1
+      pts.append((center + sign * r * math.cos(ang), center + r * math.sin(2 * ang)))
+    return self._to_points(pts)
+
+  def e_shape(self) -> List[Tuple[float, float]]:
+    b = self.boundary
+    margin = b * 0.05
+    height = b - 2 * margin
+    spine_x = margin
+    levels = [margin, margin + height * 0.33, margin + height * 0.66, b - margin]
+    pts: List[Tuple[float, float]] = []
+    y = margin
+    while y < b - margin and len(pts) < self.n:
+      pts.append((spine_x, y))
+      y += 1
+    dir_flag = 1
+    for lvl in levels[1:]:
+      steps = int(b * 0.6)
+      for step in range(steps):
+        if len(pts) >= self.n:
+          break
+        x = spine_x + dir_flag * step
+        pts.append((x, lvl))
+      dir_flag *= -1
+    return self._to_points(pts)
+
+  def backtrack_square(self) -> List[Tuple[float, float]]:
+    size = min(self.boundary * 0.8, max(4, math.sqrt(self.n)))
+    margin = (self.boundary - size) / 2
+    pts: List[Tuple[float, float]] = []
+    x, y = margin, margin
+    direction = 0  # 0:right,1:up,2:left,3:down
+    step_budget = self.n
+    while step_budget > 0:
+      pts.append((x, y))
+      if direction == 0:
+        x += 1
+        if x > margin + size:
+          x -= 1
+          y += 1
+          direction = 1
+      elif direction == 1:
+        y += 1
+        if y > margin + size:
+          y -= 1
+          x -= 1
+          direction = 2
+      elif direction == 2:
+        x -= 1
+        if x < margin:
+          x += 1
+          y -= 1
+          direction = 3
+      else:
+        y -= 1
+        if y < margin:
+          y += 1
+          x += 1
+          direction = 0
+      direction %= 4
+      step_budget -= 1
+    return self._to_points(pts)
+
+  def random_walk(self) -> List[Tuple[float, float]]:
+    pts = []
+    x = self.boundary / 2
+    y = self.boundary / 2
+    ang = 0.0
+    for _ in range(self.n):
+      pts.append((x, y))
+      ang += (self.rng.random() - 0.5) * math.pi * 0.6
+      dx, dy = math.cos(ang), math.sin(ang)
+      x = _clamp(x + dx, 0, self.boundary)
+      y = _clamp(y + dy, 0, self.boundary)
+    return self._to_points(pts)
+
+  def convex_blob(self) -> List[Tuple[float, float]]:
+    """Generate a convex-ish blob that won't self-intersect."""
+    center = self.boundary / 2
+    # Start with evenly spaced angles, add some random variation
+    base_angles = [2 * math.pi * i / self.n for i in range(self.n)]
+    # Jitter the angles slightly but keep them sorted (convex property)
+    jittered = []
+    for i, ang in enumerate(base_angles):
+      jitter = (self.rng.random() - 0.5) * (math.pi / self.n) * 0.8
+      jittered.append(ang + jitter)
+    jittered.sort()
+
+    # Variable radius to make it interesting but still convex
+    pts = []
+    base_r = min(self.boundary * 0.4, self.n / (2 * math.pi) * 0.8)
+    for ang in jittered:
+      r = base_r * (0.7 + 0.6 * self.rng.random())
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def zigzag_loop(self) -> List[Tuple[float, float]]:
+    """Generate a zigzag pattern with ~90° angles - good for angle_range constraints."""
+    center = self.boundary / 2
+    # Create a zigzag by alternating direction at each point
+    # This naturally creates angles around 90° (within 60-120° range)
+    pts = []
+    angle = 0.0
+    x, y = center, center
+    turn_angle = math.radians(90 + (self.rng.random() - 0.5) * 30)  # 75-105° turns
+
+    for i in range(self.n):
+      pts.append((x, y))
+      # Alternate turning left and right
+      if i % 2 == 0:
+        angle += turn_angle
+      else:
+        angle -= turn_angle
+      # Move forward by ~1 unit
+      step = 0.8 + self.rng.random() * 0.4
+      x = _clamp(x + math.cos(angle) * step, 0.1, self.boundary - 0.1)
+      y = _clamp(y + math.sin(angle) * step, 0.1, self.boundary - 0.1)
+
+    return self._to_points(pts)
+
+  def compact_star(self) -> List[Tuple[float, float]]:
+    """Generate a compact star-like pattern for tight boundaries."""
+    center = self.boundary / 2
+    # Alternate between inner and outer radius
+    outer_r = min(self.boundary * 0.45, self.n / (4 * math.pi))
+    inner_r = outer_r * 0.4
+
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      r = outer_r if i % 2 == 0 else inner_r
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    return self._to_points(pts)
+
+  def unit_rectangle(self) -> List[Tuple[float, float]]:
+    """Generate a rectangular loop with unit edges that fits the boundary.
+    For n points, distributes them around a rectangle with unit spacing.
+    Guaranteed non-crossing if it fits.
+    """
+    # Calculate rectangle dimensions to fit n unit steps
+    # Perimeter = n, so we need sides that sum to n/2
+    # Try to make it as square as possible while fitting in boundary
+    half_perimeter = self.n / 2
+    # width + height = half_perimeter
+    # Try width = min(boundary, half_perimeter/2), height = half_perimeter - width
+    max_side = self.boundary - 0.2  # Leave margin
+    width = min(max_side, half_perimeter / 2)
+    height = half_perimeter - width
+    if height > max_side:
+      height = max_side
+      width = half_perimeter - height
+
+    # Center the rectangle
+    start_x = (self.boundary - width) / 2
+    start_y = (self.boundary - height) / 2
+
+    pts = []
+    x, y = start_x, start_y
+    # Go around the rectangle with unit steps
+    # Bottom edge (left to right)
+    steps_bottom = int(width)
+    for _ in range(steps_bottom):
+      if len(pts) >= self.n:
+        break
+      pts.append((x, y))
+      x += 1
+    # Right edge (bottom to top)
+    steps_right = int(height)
+    for _ in range(steps_right):
+      if len(pts) >= self.n:
+        break
+      pts.append((x, y))
+      y += 1
+    # Top edge (right to left)
+    steps_top = int(width)
+    for _ in range(steps_top):
+      if len(pts) >= self.n:
+        break
+      pts.append((x, y))
+      x -= 1
+    # Left edge (top to bottom)
+    steps_left = int(height)
+    for _ in range(steps_left):
+      if len(pts) >= self.n:
+        break
+      pts.append((x, y))
+      y -= 1
+
+    # Clamp all points to boundary
+    pts = [(_clamp(px, 0.01, self.boundary - 0.01), _clamp(py, 0.01, self.boundary - 0.01))
+           for px, py in pts]
+
+    # If we don't have enough points, pad with the last point
+    while len(pts) < self.n:
+      pts.append(pts[-1] if pts else (self.boundary / 2, self.boundary / 2))
+
+    return pts[:self.n]
+
+  def spiral(self) -> List[Tuple[float, float]]:
+    """Generate a spiral pattern - guaranteed no crossings."""
+    center = self.boundary / 2
+    pts = []
+    start_r = 0.5
+    end_r = min(self.boundary * 0.45, self.n / (2 * math.pi))
+    for i in range(self.n):
+      t = i / max(1, self.n - 1)
+      ang = 2 * math.pi * (1 + t * 2)  # ~2-3 rotations
+      r = start_r + (end_r - start_r) * t
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def rounded_rectangle(self) -> List[Tuple[float, float]]:
+    """Generate a rounded rectangle - simple non-crossing shape."""
+    margin = self.boundary * 0.15
+    w = self.boundary - 2 * margin
+    h = self.boundary - 2 * margin
+    perimeter = 2 * (w + h)
+    pts = []
+    for i in range(self.n):
+      t = i / self.n * perimeter
+      if t < w:
+        x, y = margin + t, margin
+      elif t < w + h:
+        x, y = margin + w, margin + (t - w)
+      elif t < 2 * w + h:
+        x, y = margin + w - (t - w - h), margin + h
+      else:
+        x, y = margin, margin + h - (t - 2 * w - h)
+      pts.append((x, y))
+    return self._to_points(pts)
+
+  # === SPECIALIZED GENERATORS FOR SPECIFIC CONSTRAINTS ===
+
+  def wavy_loop(self) -> List[Tuple[float, float]]:
+    """Wavy pattern with controlled angles ~90° - good for angle_range 60-120."""
+    center = self.boundary / 2
+    pts = []
+    base_radius = min(self.boundary * 0.35, self.n / (2 * math.pi))
+    wave_amplitude = base_radius * 0.3
+
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      # Add wave pattern to radius
+      wave = wave_amplitude * math.sin(4 * ang)  # 4 waves around the loop
+      r = base_radius + wave
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def star_polygon(self) -> List[Tuple[float, float]]:
+    """Star shape - alternating inner/outer radius creates sharp angles."""
+    center = self.boundary / 2
+    outer_r = min(self.boundary * 0.4, self.n / (2 * math.pi))
+    inner_r = outer_r * 0.5
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      r = outer_r if i % 2 == 0 else inner_r
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def boundary_touching_loop(self) -> List[Tuple[float, float]]:
+    """Loop that touches all 4 boundary edges - for boundary_touch constraint."""
+    margin = 0.01
+    center = self.boundary / 2
+    pts = []
+    # Ensure we touch all edges by placing points on each
+    edge_points = [
+      (margin, center),  # left
+      (center, margin),  # bottom
+      (self.boundary - margin, center),  # right
+      (center, self.boundary - margin),  # top
+    ]
+    # Distribute remaining points between edge points
+    points_per_segment = max(1, (self.n - 4) // 4)
+    for i in range(4):
+      start = edge_points[i]
+      end = edge_points[(i + 1) % 4]
+      pts.append(start)
+      for j in range(points_per_segment):
+        t = (j + 1) / (points_per_segment + 1)
+        x = start[0] + t * (end[0] - start[0])
+        y = start[1] + t * (end[1] - start[1])
+        pts.append((x, y))
+    while len(pts) < self.n:
+      pts.append(pts[-1])
+    return self._to_points(pts[:self.n])
+
+  def four_edge_touch_loop(self) -> List[Tuple[float, float]]:
+    """Loop that guarantees touching all 4 edges, bypassing _to_points to preserve edge contact."""
+    b = self.boundary
+    # Create a diamond/cross shape that touches all 4 edges
+    # With n points distributed around
+    pts = []
+
+    # Key points on each edge
+    left_pt = (0.001, b / 2)
+    bottom_pt = (b / 2, 0.001)
+    right_pt = (b - 0.001, b / 2)
+    top_pt = (b / 2, b - 0.001)
+
+    corners = [left_pt, bottom_pt, right_pt, top_pt]
+    pts_per_side = max(1, (self.n - 4) // 4)
+
+    for i in range(4):
+      c1 = corners[i]
+      c2 = corners[(i + 1) % 4]
+      pts.append(c1)
+      for j in range(pts_per_side):
+        t = (j + 1) / (pts_per_side + 1)
+        x = c1[0] + t * (c2[0] - c1[0])
+        y = c1[1] + t * (c2[1] - c1[1])
+        pts.append((x, y))
+
+    while len(pts) < self.n:
+      # Add points along one of the segments
+      idx = len(pts) % 4
+      c1 = corners[idx]
+      c2 = corners[(idx + 1) % 4]
+      t = 0.3 + self.rng.random() * 0.4
+      pts.append((c1[0] + t * (c2[0] - c1[0]), c1[1] + t * (c2[1] - c1[1])))
+
+    pts = pts[:self.n]
+    # Return directly without _to_points to preserve edge touches
+    return [(float(x), float(y)) for x, y in pts]
+
+  def centered_loop(self) -> List[Tuple[float, float]]:
+    """Loop with centroid guaranteed to be near center - for centroid_box constraint."""
+    center = self.boundary / 2
+    # Small symmetric shape around center
+    r = min(self.boundary * 0.3, self.n / (2 * math.pi) * 0.8)
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((x, y))
+    return self._to_points(pts)
+
+  def spread_loop(self) -> List[Tuple[float, float]]:
+    """Loop that spreads across all quadrants - for coverage_quadrants constraint."""
+    center = self.boundary / 2
+    # Large shape that reaches into all quadrants
+    r = min(self.boundary * 0.45, self.n / (2 * math.pi))
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    return self._to_points(pts)
+
+  def inner_loop(self) -> List[Tuple[float, float]]:
+    """Small loop away from margins - for avoid_margin constraint."""
+    center = self.boundary / 2
+    margin = self.boundary * 0.2
+    max_r = (self.boundary - 2 * margin) / 2 * 0.9
+    r = min(max_r, self.n / (2 * math.pi) * 0.7)
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((x, y))
+    return self._to_points(pts)
+
+  def large_hull_loop(self) -> List[Tuple[float, float]]:
+    """Loop with large convex hull - for min_convex_hull_area constraint."""
+    margin = 0.1
+    # Use most of the boundary
+    pts = []
+    # Create a shape that fills the boundary
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      # Vary radius to create interesting but large shape
+      r = (self.boundary / 2 - margin) * (0.8 + 0.2 * abs(math.cos(2 * ang)))
+      x = self.boundary / 2 + r * math.cos(ang)
+      y = self.boundary / 2 + r * math.sin(ang)
+      pts.append((_clamp(x, margin,
+                         self.boundary - margin), _clamp(y, margin, self.boundary - margin)))
+    return self._to_points(pts)
+
+  def turny_loop(self) -> List[Tuple[float, float]]:
+    """Loop with many turns - for min_turns constraint."""
+    center = self.boundary / 2
+    pts = []
+    # Zigzag around a circle
+    base_r = min(self.boundary * 0.35, self.n / (2 * math.pi))
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      # Alternate radius to create turns
+      r = base_r * (0.7 if i % 2 == 0 else 1.0)
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def no_straight_loop(self) -> List[Tuple[float, float]]:
+    """Loop with no long straight runs - for max_straight_run constraint."""
+    center = self.boundary / 2
+    pts = []
+    base_r = min(self.boundary * 0.35, self.n / (2 * math.pi))
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      # Add noise to prevent straight runs
+      r = base_r * (0.8 + 0.4 * self.rng.random())
+      ang_jitter = (self.rng.random() - 0.5) * 0.2
+      x = center + r * math.cos(ang + ang_jitter)
+      y = center + r * math.sin(ang + ang_jitter)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def fixed_start_loop(self) -> List[Tuple[float, float]]:
+    """Loop starting near a specific point - adjust based on typical fixed_start requirements."""
+    # Start near center-ish (common fixed_start location)
+    start_x = self.boundary * 0.5
+    start_y = self.boundary * 0.5
+    pts = [(start_x, start_y)]
+    ang = self.rng.random() * 2 * math.pi
+    for _ in range(self.n - 1):
+      ang += (self.rng.random() - 0.5) * math.pi * 0.5
+      x = _clamp(pts[-1][0] + math.cos(ang), 0.1, self.boundary - 0.1)
+      y = _clamp(pts[-1][1] + math.sin(ang), 0.1, self.boundary - 0.1)
+      pts.append((x, y))
+    return self._to_points(pts)
+
+  def tight_angle_loop(self) -> List[Tuple[float, float]]:
+    """Loop optimized for tight angle constraints (60-120 degrees)."""
+    center = self.boundary / 2
+    pts = []
+    # Create shape where consecutive edges form ~90° angles
+    ang = 0.0
+    x, y = center, center
+    for i in range(self.n):
+      pts.append((x, y))
+      # Turn by ~90° each step (randomized within valid range)
+      turn = math.radians(75 + self.rng.random() * 30)  # 75-105° turns
+      if i % 2 == 0:
+        ang += turn
+      else:
+        ang -= turn
+      step = 0.9 + self.rng.random() * 0.2
+      x = _clamp(x + math.cos(ang) * step, 0.1, self.boundary - 0.1)
+      y = _clamp(y + math.sin(ang) * step, 0.1, self.boundary - 0.1)
+    return self._to_points(pts)
+
+  def exact_crossing_loop(self) -> List[Tuple[float, float]]:
+    """Loop designed to have crossings - for exact_crossings constraint."""
+    center = self.boundary / 2
+    r = min(self.boundary * 0.35, self.n / (2 * math.pi))
+    pts = []
+    # Create figure-8 style pattern
+    for i in range(self.n):
+      t = 2 * math.pi * i / self.n
+      # Lissajous-like pattern creates crossings
+      x = center + r * math.sin(t)
+      y = center + r * math.sin(2 * t) * 0.8
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def well_separated_loop(self) -> List[Tuple[float, float]]:
+    """Loop with well-separated points - for min_point_separation constraint."""
+    center = self.boundary / 2
+    # Larger radius = more separation between points
+    r = min(self.boundary * 0.45, self.n / (2 * math.pi) * 1.2)
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    return self._to_points(pts)
+
+  def diamond_loop(self) -> List[Tuple[float, float]]:
+    """Diamond/rhombus shape - good for tight boundaries."""
+    center = self.boundary / 2
+    half_diag = min(self.boundary * 0.45, self.n / 4)
+    corners = [
+      (center, center - half_diag),  # top
+      (center + half_diag, center),  # right
+      (center, center + half_diag),  # bottom
+      (center - half_diag, center),  # left
+    ]
+    pts = []
+    points_per_side = self.n // 4
+    for i in range(4):
+      start = corners[i]
+      end = corners[(i + 1) % 4]
+      for j in range(points_per_side):
+        t = j / points_per_side
+        x = start[0] + t * (end[0] - start[0])
+        y = start[1] + t * (end[1] - start[1])
+        pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    while len(pts) < self.n:
+      pts.append(pts[-1])
+    return self._to_points(pts[:self.n])
+
+  def hexagon_loop(self) -> List[Tuple[float, float]]:
+    """Hexagonal shape - balanced angles."""
+    center = self.boundary / 2
+    r = min(self.boundary * 0.4, self.n / 6)
+    corners = []
+    for i in range(6):
+      ang = math.pi / 6 + 2 * math.pi * i / 6
+      corners.append((center + r * math.cos(ang), center + r * math.sin(ang)))
+    pts = []
+    points_per_side = self.n // 6
+    for i in range(6):
+      start = corners[i]
+      end = corners[(i + 1) % 6]
+      for j in range(points_per_side):
+        t = j / max(1, points_per_side)
+        x = start[0] + t * (end[0] - start[0])
+        y = start[1] + t * (end[1] - start[1])
+        pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    while len(pts) < self.n:
+      pts.append(pts[-1])
+    return self._to_points(pts[:self.n])
+
+  def octagon_loop(self) -> List[Tuple[float, float]]:
+    """Octagonal shape - 135° interior angles."""
+    center = self.boundary / 2
+    r = min(self.boundary * 0.4, self.n / 8)
+    corners = []
+    for i in range(8):
+      ang = math.pi / 8 + 2 * math.pi * i / 8
+      corners.append((center + r * math.cos(ang), center + r * math.sin(ang)))
+    pts = []
+    points_per_side = max(1, self.n // 8)
+    for i in range(8):
+      start = corners[i]
+      end = corners[(i + 1) % 8]
+      for j in range(points_per_side):
+        t = j / max(1, points_per_side)
+        x = start[0] + t * (end[0] - start[0])
+        y = start[1] + t * (end[1] - start[1])
+        pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    while len(pts) < self.n:
+      pts.append(pts[-1])
+    return self._to_points(pts[:self.n])
+
+  def sawtooth_loop(self) -> List[Tuple[float, float]]:
+    """Sawtooth pattern around a circle - creates consistent sharp angles."""
+    center = self.boundary / 2
+    base_r = min(self.boundary * 0.3, self.n / (2 * math.pi))
+    tooth_height = base_r * 0.4
+    pts = []
+    teeth = max(4, self.n // 3)
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      # Sawtooth modulation
+      tooth_phase = (i % (self.n // teeth)) / (self.n // teeth)
+      r = base_r + tooth_height * (1 - 2 * abs(tooth_phase - 0.5))
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def gear_loop(self) -> List[Tuple[float, float]]:
+    """Gear-like pattern with teeth - creates variety of angles."""
+    center = self.boundary / 2
+    outer_r = min(self.boundary * 0.4, self.n / (2 * math.pi))
+    inner_r = outer_r * 0.7
+    num_teeth = max(4, self.n // 4)
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      tooth_idx = int(ang / (2 * math.pi) * num_teeth)
+      in_tooth = (ang % (2 * math.pi / num_teeth)) < (math.pi / num_teeth)
+      r = outer_r if in_tooth else inner_r
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def clover_loop(self) -> List[Tuple[float, float]]:
+    """Clover/trefoil pattern - smooth curves with varied angles."""
+    center = self.boundary / 2
+    base_r = min(self.boundary * 0.25, self.n / (3 * math.pi))
+    pts = []
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      # Rose curve r = cos(3*theta) creates 3-leaf clover
+      r = base_r * (1 + 0.5 * math.cos(3 * ang))
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  # === MORE ANGLE-FOCUSED GENERATORS ===
+
+  def angle_90_zigzag(self) -> List[Tuple[float, float]]:
+    """Zigzag with exactly 90° angles at each turn."""
+    pts = []
+    x, y = self.boundary * 0.2, self.boundary * 0.2
+    direction = 0  # 0=right, 1=up, 2=left, 3=down
+    step = 0.95  # Slightly less than 1 to allow for unit enforcement
+    for i in range(self.n):
+      pts.append((x, y))
+      # Move in current direction
+      if direction == 0:
+        x += step
+      elif direction == 1:
+        y += step
+      elif direction == 2:
+        x -= step
+      else:
+        y -= step
+      # Clamp and turn 90° alternating
+      x = _clamp(x, 0.1, self.boundary - 0.1)
+      y = _clamp(y, 0.1, self.boundary - 0.1)
+      # Turn 90° every step, alternating left/right
+      if i % 2 == 0:
+        direction = (direction + 1) % 4
+      else:
+        direction = (direction - 1) % 4
+    return self._to_points(pts)
+
+  def angle_60_120_wave(self) -> List[Tuple[float, float]]:
+    """Wave pattern designed for 60-120° angle constraints."""
+    center = self.boundary / 2
+    pts = []
+    ang = 0.0
+    x, y = center, center
+    # Alternate between 60° and 120° turns
+    for i in range(self.n):
+      pts.append((x, y))
+      # Turn angle alternates to create 60-120° interior angles
+      if i % 2 == 0:
+        ang += math.radians(60)  # Creates ~120° interior angle
+      else:
+        ang -= math.radians(60)  # Creates ~60° interior angle
+      step = 0.9 + self.rng.random() * 0.2
+      x = _clamp(x + math.cos(ang) * step, 0.15, self.boundary - 0.15)
+      y = _clamp(y + math.sin(ang) * step, 0.15, self.boundary - 0.15)
+    return self._to_points(pts)
+
+  def angle_controlled_spiral(self) -> List[Tuple[float, float]]:
+    """Spiral with controlled turn angles around 90°."""
+    center = self.boundary / 2
+    pts = []
+    ang = 0.0
+    r = 0.5
+    r_step = (self.boundary * 0.4 - 0.5) / max(1, self.n - 1)
+    turn_per_step = 2 * math.pi / (self.n / 2)  # About 2 full rotations
+    for i in range(self.n):
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+      ang += turn_per_step
+      r += r_step
+    return self._to_points(pts)
+
+  def angle_pentagon_based(self) -> List[Tuple[float, float]]:
+    """Pentagon-based shape - 108° interior angles."""
+    center = self.boundary / 2
+    r = min(self.boundary * 0.4, self.n / 5)
+    corners = []
+    for i in range(5):
+      ang = math.pi / 2 + 2 * math.pi * i / 5
+      corners.append((center + r * math.cos(ang), center + r * math.sin(ang)))
+    pts = []
+    points_per_side = max(1, self.n // 5)
+    for i in range(5):
+      start = corners[i]
+      end = corners[(i + 1) % 5]
+      for j in range(points_per_side):
+        t = j / max(1, points_per_side)
+        x = start[0] + t * (end[0] - start[0])
+        y = start[1] + t * (end[1] - start[1])
+        pts.append((_clamp(x, 0.05, self.boundary - 0.05), _clamp(y, 0.05, self.boundary - 0.05)))
+    while len(pts) < self.n:
+      pts.append(pts[-1])
+    return self._to_points(pts[:self.n])
+
+  def angle_smooth_curve(self) -> List[Tuple[float, float]]:
+    """Smooth curved shape - gradual angle changes."""
+    center = self.boundary / 2
+    pts = []
+    base_r = min(self.boundary * 0.35, self.n / (2 * math.pi))
+    # Smooth sinusoidal modulation
+    for i in range(self.n):
+      ang = 2 * math.pi * i / self.n
+      r = base_r * (1 + 0.2 * math.sin(2 * ang) + 0.1 * math.sin(3 * ang))
+      x = center + r * math.cos(ang)
+      y = center + r * math.sin(ang)
+      pts.append((_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)))
+    return self._to_points(pts)
+
+  def angle_random_valid(self) -> List[Tuple[float, float]]:
+    """Random walk with angles constrained to 60-120°."""
+    pts = []
+    x, y = self.boundary / 2, self.boundary / 2
+    ang = self.rng.random() * 2 * math.pi
+    for i in range(self.n):
+      pts.append((x, y))
+      # Turn by 60-120° (exterior angle), creating 60-120° interior
+      turn = math.radians(60 + self.rng.random() * 60)
+      if self.rng.random() < 0.5:
+        turn = -turn
+      ang += turn
+      step = 0.85 + self.rng.random() * 0.3
+      x = _clamp(x + math.cos(ang) * step, 0.15, self.boundary - 0.15)
+      y = _clamp(y + math.sin(ang) * step, 0.15, self.boundary - 0.15)
+    return self._to_points(pts)
+
+  def unit_edge_angle_loop(self) -> List[Tuple[float, float]]:
+    """Generate a loop with exact unit edges and angles in 60-120° range.
+    Bypasses _to_points to preserve the angle constraints."""
+    pts = []
+    x, y = self.boundary / 2, self.boundary / 2
+    ang = self.rng.random() * 2 * math.pi
+
+    for i in range(self.n):
+      # Clamp position to boundary
+      x = _clamp(x, 0.1, self.boundary - 0.1)
+      y = _clamp(y, 0.1, self.boundary - 0.1)
+      pts.append((x, y))
+
+      # Turn by angle that creates 60-120° interior angle
+      # Interior angle = 180° - exterior angle, so exterior = 60-120° gives interior = 60-120°
+      turn = math.radians(60 + self.rng.random() * 60)
+      if self.rng.random() < 0.5:
+        turn = -turn
+      ang += turn
+
+      # Move exactly 1 unit
+      x += math.cos(ang)
+      y += math.sin(ang)
+
+    # Return directly without _to_points to preserve angles
+    return [(_clamp(px, 0.01, self.boundary - 0.01), _clamp(py, 0.01, self.boundary - 0.01))
+            for px, py in pts]
+
+  def all_generators(self) -> List[List[Tuple[float, float]]]:
+    gens = [
+      self.regular_polygon,
+      self.unit_rectangle,
+      self.square_loop,
+      self.snake,
+      self.zigzag_loop,
+      self.rounded_rectangle,
+      self.random_walk,
+      # Specialized generators
+      self.wavy_loop,
+      self.star_polygon,
+      self.boundary_touching_loop,
+      self.four_edge_touch_loop,
+      self.centered_loop,
+      self.spread_loop,
+      self.inner_loop,
+      self.large_hull_loop,
+      self.turny_loop,
+      self.no_straight_loop,
+      self.fixed_start_loop,
+      self.tight_angle_loop,
+      self.exact_crossing_loop,
+      self.well_separated_loop,
+      self.diamond_loop,
+      self.hexagon_loop,
+      self.octagon_loop,
+      self.sawtooth_loop,
+      self.gear_loop,
+      self.clover_loop,
+      # Angle-focused generators
+      self.angle_90_zigzag,
+      self.angle_60_120_wave,
+      self.angle_controlled_spiral,
+      self.angle_pentagon_based,
+      self.angle_smooth_curve,
+      self.angle_random_valid,
+      self.unit_edge_angle_loop,
+    ]
+    out: List[List[Tuple[float, float]]] = []
+    for g in gens:
+      try:
+        base = g()
+        out.append(base)
+        # Add jittered variant
+        jittered = [(x + (self.rng.random() - 0.5) * 0.2, y + (self.rng.random() - 0.5) * 0.2)
+                    for x, y in base]
+        out.append(self._to_points(jittered))
+      except Exception:
+        pass  # Skip generators that fail for this configuration
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Mutation & scoring
+# ---------------------------------------------------------------------------
+
+
+class LoopSolver:
+
+  def __init__(self, subPass: int, seed: Optional[int] = None):
+    self.subPass = subPass
+    self.rng = random.Random(seed or int(time.time() * 1000))
+    self.testParams, self.gradeAnswer = _load_problem()
+    params = self.testParams[subPass]
+    self.pipes = params["pipes"]
+    self.boundary = params["boundary"]
+
+  def _answer_from_points(self, pts: List[Tuple[float, float]]) -> Dict[str, Any]:
+    return {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
+
+  def _evaluate(self, pts: List[Tuple[float, float]]) -> List[Dict[str, Any]]:
+    try:
+      res = self.gradeAnswer(self._answer_from_points(pts),
+                             self.subPass,
+                             "solver",
+                             returnedStructuredErrors=True)
+    except TypeError:
+      res = self.gradeAnswer(self._answer_from_points(pts), self.subPass, "solver")
+    if isinstance(res, tuple):
+      score, msg = res
+      return [] if score == 1 else [{"kind": "legacy", "message": msg}]
+    return res
+
+  def _compute_point_locks(self, pts: List[Tuple[float, float]],
+                           errors: List[Dict[str, Any]]) -> Dict[int, str]:
+    """Compute which points should be locked or have limited freedom.
+    Returns dict mapping point index to lock type:
+    - 'full': point is completely locked (don't move at all)
+    """
+    locks: Dict[int, str] = {}
+    error_kinds = {e.get("kind") for e in errors}
+
+    # Only lock fixed_start - it's a hard constraint that shouldn't be broken
+    if "fixed_start" not in error_kinds:
+      locks[0] = 'full'
+
+    return locks
+
+  def _apply_lock(self, pt: List[float], original: Tuple[float, float], lock_type: str) -> None:
+    """Adjust point position to respect its lock constraint."""
+    if lock_type == 'full':
+      pt[0], pt[1] = original[0], original[1]
+    elif lock_type == 'edge_left':
+      pt[0] = 0.0
+      pt[1] = _clamp(pt[1], 0, self.boundary)
+    elif lock_type == 'edge_right':
+      pt[0] = self.boundary
+      pt[1] = _clamp(pt[1], 0, self.boundary)
+    elif lock_type == 'edge_bottom':
+      pt[0] = _clamp(pt[0], 0, self.boundary)
+      pt[1] = 0.0
+    elif lock_type == 'edge_top':
+      pt[0] = _clamp(pt[0], 0, self.boundary)
+      pt[1] = self.boundary
+
+  def _mutate(self, pts: List[Tuple[float, float]],
+              errors: List[Dict[str, Any]]) -> List[Tuple[float, float]]:
+    new_pts = [list(p) for p in pts]
+    n = len(new_pts)
+    original_pts = [(p[0], p[1]) for p in pts]  # Keep original for lock restoration
+
+    # Compute point locks based on satisfied constraints
+    locks = self._compute_point_locks(pts, errors)
+
+    random.shuffle(errors)
+
+    for err in errors:
+      n = len(new_pts)  # refresh after possible insertions/deletions
+      kind = err.get("kind")
+      where = err.get("where", {}) if isinstance(err, dict) else {}
+      msg = err.get("message", "")
+
+      if kind == "boundary":
+        idx = where.get("point_index", 0)
+        if 0 <= idx < n:
+          margin = max(0.05, self.boundary * 0.02)
+          x, y = new_pts[idx]
+          # Push toward center with some randomness
+          cx, cy = self.boundary / 2, self.boundary / 2
+          push_x = (cx - x) * 0.3 * self.rng.random()
+          push_y = (cy - y) * 0.3 * self.rng.random()
+          new_pts[idx] = [
+            _clamp(x + push_x, margin, self.boundary - margin),
+            _clamp(y + push_y, margin, self.boundary - margin),
+          ]
+
+      elif kind == "avoid_margin":
+        idx = where.get("point_index", 0)
+        if 0 <= idx < n:
+          margin = self.boundary * 0.15  # slightly more than required
+          x, y = new_pts[idx]
+          cx, cy = self.boundary / 2, self.boundary / 2
+          # Push toward center proportionally to how far into margin we are
+          push_x = (cx - x) * 0.4 * (1 + self.rng.random())
+          push_y = (cy - y) * 0.4 * (1 + self.rng.random())
+          new_pts[idx] = [
+            _clamp(x + push_x, margin, self.boundary - margin),
+            _clamp(y + push_y, margin, self.boundary - margin)
+          ]
+
+      elif kind == "segment_length":
+        seg_idx = where.get("segment_index", 0)
+        a = new_pts[seg_idx % n]
+        b = new_pts[(seg_idx + 1) % n]
+
+        vecx, vecy = b[0] - a[0], b[1] - a[1]
+        length = math.sqrt(vecx * vecx + vecy * vecy)
+        if length < 0.6:
+          new_pts.pop(random.choice([seg_idx, seg_idx + 1]))
+          break
+
+        if length > 1.7:
+          new_pts.insert(seg_idx + 1, [a[0] + vecx / 2, a[1] + vecy / 2])
+          break
+
+        nx, ny = _normalize(vecx, vecy, None, self.rng)
+        target_len = 1.0
+        b_new = (a[0] + nx * target_len, a[1] + ny * target_len)
+        new_pts[(seg_idx + 1) %
+                n] = [_clamp(b_new[0], 0, self.boundary),
+                      _clamp(b_new[1], 0, self.boundary)]
+
+      elif kind == "closure":
+        a = new_pts[-2] if n >= 2 else new_pts[0]
+        f = new_pts[0]
+        intersections = _circle_intersections((a[0], a[1]), (f[0], f[1]), 1.0)
+        if intersections:
+          choice = self.rng.choice(intersections)
+          new_pts[-1] = [choice[0], choice[1]]
+        else:
+          nx, ny = _normalize(f[0] - a[0], f[1] - a[1], None, self.rng)
+          new_pts[-1] = [a[0] + nx, a[1] + ny]
+
+      elif kind == "crossings":
+        # Unwanted crossings - multiple strategies
+        pairs = where.get("pairs", [])
+        if not pairs:
+          continue
+
+        strategy = self.rng.random()
+        i, j = pairs[0]
+        if i > j:
+          i, j = j, i
+
+        if strategy < 0.4:
+          # Strategy 1: Reverse the segment between crossings (figure-8 -> peanut)
+          # But do it BEFORE enforce_unit_steps by swapping the target positions
+          start_idx = (i + 1) % n
+          end_idx = j
+          if start_idx < end_idx and end_idx - start_idx > 1:
+            # Swap positions to create the reversal effect
+            mid = (start_idx + end_idx) // 2
+            for k in range(start_idx, mid):
+              mirror = end_idx - 1 - (k - start_idx)
+              if mirror > k:
+                new_pts[k], new_pts[mirror] = new_pts[mirror], new_pts[k]
+
+        elif strategy < 0.7:
+          # Strategy 2: Move crossing segments perpendicular to their intersection
+          # Get the 4 points involved
+          p1, p2 = new_pts[i], new_pts[(i + 1) % n]
+          p3, p4 = new_pts[j], new_pts[(j + 1) % n]
+
+          # Find approximate intersection point
+          ix = (p1[0] + p2[0] + p3[0] + p4[0]) / 4
+          iy = (p1[1] + p2[1] + p3[1] + p4[1]) / 4
+
+          # Move segment 1 points away from intersection in one direction
+          # Move segment 2 points away in perpendicular direction
+          sep = 0.3 + self.rng.random() * 0.3
+
+          # Direction perpendicular to segment 1
+          d1x, d1y = p2[0] - p1[0], p2[1] - p1[1]
+          len1 = math.hypot(d1x, d1y)
+          if len1 > 0:
+            perp1x, perp1y = -d1y / len1, d1x / len1
+            sign1 = 1 if self.rng.random() < 0.5 else -1
+            new_pts[i][0] = _clamp(p1[0] + perp1x * sep * sign1, 0, self.boundary)
+            new_pts[i][1] = _clamp(p1[1] + perp1y * sep * sign1, 0, self.boundary)
+            new_pts[(i + 1) % n][0] = _clamp(p2[0] + perp1x * sep * sign1, 0, self.boundary)
+            new_pts[(i + 1) % n][1] = _clamp(p2[1] + perp1y * sep * sign1, 0, self.boundary)
+
+          # Direction perpendicular to segment 2
+          d2x, d2y = p4[0] - p3[0], p4[1] - p3[1]
+          len2 = math.hypot(d2x, d2y)
+          if len2 > 0:
+            perp2x, perp2y = -d2y / len2, d2x / len2
+            sign2 = -sign1  # opposite direction
+            new_pts[j][0] = _clamp(p3[0] + perp2x * sep * sign2, 0, self.boundary)
+            new_pts[j][1] = _clamp(p3[1] + perp2y * sep * sign2, 0, self.boundary)
+            new_pts[(j + 1) % n][0] = _clamp(p4[0] + perp2x * sep * sign2, 0, self.boundary)
+            new_pts[(j + 1) % n][1] = _clamp(p4[1] + perp2y * sep * sign2, 0, self.boundary)
+
+        else:
+          # Strategy 3: Aggressive jitter on the crossing points
+          for idx in [i, (i + 1) % n, j, (j + 1) % n]:
+            if 0 <= idx < n:
+              jitter = (self.rng.random() - 0.5) * 0.6
+              new_pts[idx][0] = _clamp(new_pts[idx][0] + jitter, 0, self.boundary)
+              new_pts[idx][1] = _clamp(new_pts[idx][1] + jitter, 0, self.boundary)
+
+      elif kind == "exact_crossings":
+        # Need specific number of crossings
+        pairs = where.get("pairs", [])
+        current_crossings = len(pairs)
+        # Parse expected count from message
+        expected = _parse_number_from_message(msg, "exactly")
+        if expected is None:
+          expected = _parse_number_from_message(msg, "expected")
+
+        if expected is not None and current_crossings > expected:
+          # Too many crossings - uncross one
+          if pairs:
+            i, j = self.rng.choice(pairs)
+            if i > j:
+              i, j = j, i
+            start_idx = (i + 1) % n
+            end_idx = j
+            if start_idx < end_idx:
+              new_pts[start_idx:end_idx] = new_pts[start_idx:end_idx][::-1]
+        elif expected is not None and current_crossings < expected:
+          # Need more crossings - reverse a random segment to create one
+          if n > 6:
+            # Pick two random non-adjacent points and reverse between them
+            i = self.rng.randint(0, n - 4)
+            j = self.rng.randint(i + 3, min(i + n // 2, n - 1))
+            new_pts[i + 1:j] = new_pts[i + 1:j][::-1]
+
+      elif kind == "centroid":
+        # Parse target box from message if possible
+        # Message format: "outside required box [xmin, xmax] x [ymin, ymax]"
+        import re
+        match = re.search(r"\[([\d.]+),\s*([\d.]+)\]\s*x\s*\[([\d.]+),\s*([\d.]+)\]", msg)
+        if match:
+          xmin, xmax = float(match.group(1)), float(match.group(2))
+          ymin, ymax = float(match.group(3)), float(match.group(4))
+          target_x = (xmin + xmax) / 2
+          target_y = (ymin + ymax) / 2
+        else:
+          target_x = self.boundary / 2
+          target_y = self.boundary / 2
+
+        # Calculate current centroid
+        curr_cx = sum(p[0] for p in new_pts) / n
+        curr_cy = sum(p[1] for p in new_pts) / n
+        # Shift all points toward target centroid
+        shift_x = (target_x - curr_cx) * (0.2 + 0.3 * self.rng.random())
+        shift_y = (target_y - curr_cy) * (0.2 + 0.3 * self.rng.random())
+        for k in range(n):
+          new_pts[k][0] = _clamp(new_pts[k][0] + shift_x, 0, self.boundary)
+          new_pts[k][1] = _clamp(new_pts[k][1] + shift_y, 0, self.boundary)
+
+      elif kind == "fixed_start":
+        # Parse expected position from message
+        import re
+        match = re.search(r"near\s*\(([\d.]+),\s*([\d.]+)\)", msg)
+        if match:
+          expected = (float(match.group(1)), float(match.group(2)))
+          new_pts[0] = [
+            _clamp(expected[0] + (self.rng.random() - 0.5) * 0.1, 0, self.boundary),
+            _clamp(expected[1] + (self.rng.random() - 0.5) * 0.1, 0, self.boundary)
+          ]
+
+      elif kind == "min_point_separation":
+        pair = where.get("point_indices")
+        # Parse required min distance from message
+        min_dist = _parse_number_from_message(msg, "than")
+        if min_dist is None:
+          min_dist = 0.5  # fallback
+
+        if pair:
+          i, j = pair
+          if 0 <= i < n and 0 <= j < n:
+            pi, pj = new_pts[i], new_pts[j]
+            # Calculate direction from i to j
+            dx = pj[0] - pi[0]
+            dy = pj[1] - pi[1]
+            current_dist = math.hypot(dx, dy)
+            if current_dist > 0:
+              # Push j away from i in the direction they're already separated
+              # Target: move j so distance becomes min_dist + small buffer
+              needed_move = (min_dist * 1.2 - current_dist)
+              if needed_move > 0:
+                nx, ny = dx / current_dist, dy / current_dist
+                # Add some randomness to avoid getting stuck
+                move_scale = needed_move * (0.8 + 0.4 * self.rng.random())
+                new_pts[j][0] = _clamp(pj[0] + nx * move_scale, 0, self.boundary)
+                new_pts[j][1] = _clamp(pj[1] + ny * move_scale, 0, self.boundary)
+
+      elif kind == "angle_range":
+        idx = where.get("vertex_index", 0)
+        if 0 <= idx < n:
+          # Parse the required angle range from message
+          min_deg, max_deg = _parse_range_from_message(msg)
+          if min_deg is None:
+            min_deg, max_deg = 60, 120  # fallback
+
+          prev_pt = new_pts[(idx - 1) % n]
+          next_pt = new_pts[(idx + 1) % n]
+          curr_pt = new_pts[idx]
+
+          # Calculate target angle (middle of range with some randomness)
+          target_angle = min_deg + (max_deg - min_deg) * self.rng.random()
+
+          # Move the current point to achieve closer to target angle
+          # The point should be offset perpendicular to the line prev->next
+          mid_x = (prev_pt[0] + next_pt[0]) / 2
+          mid_y = (prev_pt[1] + next_pt[1]) / 2
+          line_dx = next_pt[0] - prev_pt[0]
+          line_dy = next_pt[1] - prev_pt[1]
+          line_len = math.hypot(line_dx, line_dy)
+
+          if line_len > 0:
+            # Perpendicular direction
+            perp_x = -line_dy / line_len
+            perp_y = line_dx / line_len
+            # Offset distance based on target angle (smaller angle = further from line)
+            # For angle ~180, point is on the line; for angle ~0, point is far perpendicular
+            offset_scale = 0.5 * math.tan(math.radians((180 - target_angle) / 2))
+            offset_scale = _clamp(offset_scale, 0.1, 2.0) * line_len * 0.5
+            # Randomly choose which side
+            if self.rng.random() < 0.5:
+              offset_scale = -offset_scale
+            new_pts[idx][0] = _clamp(mid_x + perp_x * offset_scale, 0, self.boundary)
+            new_pts[idx][1] = _clamp(mid_y + perp_y * offset_scale, 0, self.boundary)
+
+      elif kind == "min_convex_hull_area":
+        # Need larger hull - push points outward from centroid
+        cx = sum(p[0] for p in new_pts) / n
+        cy = sum(p[1] for p in new_pts) / n
+        expansion = 0.15 + 0.1 * self.rng.random()
+        for k in range(n):
+          dx = new_pts[k][0] - cx
+          dy = new_pts[k][1] - cy
+          new_pts[k][0] = _clamp(new_pts[k][0] + dx * expansion, 0, self.boundary)
+          new_pts[k][1] = _clamp(new_pts[k][1] + dy * expansion, 0, self.boundary)
+
+      elif kind == "max_straight_run":
+        # Too many straight segments in a row - add turns
+        # Pick random points along the loop and jitter them perpendicular to their direction
+        num_jitters = max(2, n // 4)
+        indices = self.rng.sample(range(n), min(num_jitters, n))
+        for idx in indices:
+          prev_pt = new_pts[(idx - 1) % n]
+          next_pt = new_pts[(idx + 1) % n]
+          dx = next_pt[0] - prev_pt[0]
+          dy = next_pt[1] - prev_pt[1]
+          length = math.hypot(dx, dy)
+          if length > 0:
+            # Perpendicular jitter
+            perp_x = -dy / length
+            perp_y = dx / length
+            jitter_amount = (self.rng.random() - 0.5) * 0.8
+            new_pts[idx][0] = _clamp(new_pts[idx][0] + perp_x * jitter_amount, 0, self.boundary)
+            new_pts[idx][1] = _clamp(new_pts[idx][1] + perp_y * jitter_amount, 0, self.boundary)
+
+      elif kind == "min_turns":
+        # Need more turns - similar to max_straight_run but more aggressive
+        num_jitters = max(3, n // 3)
+        indices = self.rng.sample(range(n), min(num_jitters, n))
+        for idx in indices:
+          prev_pt = new_pts[(idx - 1) % n]
+          next_pt = new_pts[(idx + 1) % n]
+          dx = next_pt[0] - prev_pt[0]
+          dy = next_pt[1] - prev_pt[1]
+          length = math.hypot(dx, dy)
+          if length > 0:
+            perp_x = -dy / length
+            perp_y = dx / length
+            jitter_amount = (self.rng.random() - 0.5) * 1.2
+            new_pts[idx][0] = _clamp(new_pts[idx][0] + perp_x * jitter_amount, 0, self.boundary)
+            new_pts[idx][1] = _clamp(new_pts[idx][1] + perp_y * jitter_amount, 0, self.boundary)
+
+      elif kind == "duplicate_vertex":
+        # Move the duplicate point away from the original
+        dup_idx = where.get("point_index", 0)
+        orig_idx = where.get("duplicate_of", 0)
+        if 0 <= dup_idx < n:
+          # Move in a random direction
+          angle = self.rng.random() * 2 * math.pi
+          move_dist = 0.3 + self.rng.random() * 0.3
+          new_pts[dup_idx][0] = _clamp(new_pts[dup_idx][0] + math.cos(angle) * move_dist, 0,
+                                       self.boundary)
+          new_pts[dup_idx][1] = _clamp(new_pts[dup_idx][1] + math.sin(angle) * move_dist, 0,
+                                       self.boundary)
+
+      elif kind == "boundary_touch":
+        # Need to touch boundary edges - parse which edges from message
+        missing = _parse_missing_edges(msg)
+        if not missing:
+          missing = ["left", "right", "top", "bottom"]
+
+        edge = self.rng.choice(missing)
+
+        # Find point closest to the missing edge
+        best_idx = -1
+        best_dist = float('inf')
+        for i in range(n):
+          if i in locks:
+            continue
+          x, y = new_pts[i]
+          if edge == "left":
+            dist = x
+          elif edge == "right":
+            dist = self.boundary - x
+          elif edge == "bottom":
+            dist = y
+          elif edge == "top":
+            dist = self.boundary - y
+          else:
+            dist = float('inf')
+          if dist < best_dist:
+            best_dist = dist
+            best_idx = i
+
+        if best_idx >= 0:
+          idx = best_idx
+          # Move point to the edge
+          if edge == "left":
+            new_pts[idx][0] = 0.001
+          elif edge == "right":
+            new_pts[idx][0] = self.boundary - 0.001
+          elif edge == "bottom":
+            new_pts[idx][1] = 0.001
+          elif edge == "top":
+            new_pts[idx][1] = self.boundary - 0.001
+
+          # Also adjust adjacent points to help maintain connectivity
+          # Move them toward the edge point to reduce strain on the path
+          prev_idx = (idx - 1) % n
+          next_idx = (idx + 1) % n
+          edge_pt = new_pts[idx]
+          if prev_idx not in locks:
+            # Move prev point halfway toward the edge point
+            new_pts[prev_idx][0] = (new_pts[prev_idx][0] + edge_pt[0]) / 2
+            new_pts[prev_idx][1] = (new_pts[prev_idx][1] + edge_pt[1]) / 2
+          if next_idx not in locks:
+            # Move next point halfway toward the edge point
+            new_pts[next_idx][0] = (new_pts[next_idx][0] + edge_pt[0]) / 2
+            new_pts[next_idx][1] = (new_pts[next_idx][1] + edge_pt[1]) / 2
+
+      elif kind == "backtrack":
+        # Backtracking at a segment - need to change direction
+        seg_idx = where.get("segment_index", 0)
+        if 0 <= seg_idx < n:
+          # Move the middle point perpendicular to the backtrack direction
+          curr = new_pts[seg_idx]
+          prev = new_pts[(seg_idx - 1) % n]
+          next_pt = new_pts[(seg_idx + 1) % n]
+
+          # Direction we're coming from
+          dx = curr[0] - prev[0]
+          dy = curr[1] - prev[1]
+          length = math.hypot(dx, dy)
+          if length > 0:
+            # Perpendicular
+            perp_x = -dy / length
+            perp_y = dx / length
+            # Move next point perpendicular to avoid backtrack
+            jitter = (0.5 + self.rng.random() * 0.5) * (1 if self.rng.random() < 0.5 else -1)
+            new_pts[(seg_idx + 1) % n][0] = _clamp(next_pt[0] + perp_x * jitter, 0, self.boundary)
+            new_pts[(seg_idx + 1) % n][1] = _clamp(next_pt[1] + perp_y * jitter, 0, self.boundary)
+
+      elif kind == "coverage_quadrants":
+        # Need to cover all quadrants - parse which are missing
+        missing = _parse_missing_quadrants(msg)
+        if missing:
+          quadrant = self.rng.choice(missing)
+          mid = self.boundary / 2
+          # Pick a random point and move it into the missing quadrant
+          idx = self.rng.randint(0, n - 1)
+          if quadrant == "bottom_left":
+            new_pts[idx][0] = mid * 0.3 + self.rng.random() * mid * 0.4
+            new_pts[idx][1] = mid * 0.3 + self.rng.random() * mid * 0.4
+          elif quadrant == "top_left":
+            new_pts[idx][0] = mid * 0.3 + self.rng.random() * mid * 0.4
+            new_pts[idx][1] = mid + mid * 0.3 + self.rng.random() * mid * 0.4
+          elif quadrant == "bottom_right":
+            new_pts[idx][0] = mid + mid * 0.3 + self.rng.random() * mid * 0.4
+            new_pts[idx][1] = mid * 0.3 + self.rng.random() * mid * 0.4
+          elif quadrant == "top_right":
+            new_pts[idx][0] = mid + mid * 0.3 + self.rng.random() * mid * 0.4
+            new_pts[idx][1] = mid + mid * 0.3 + self.rng.random() * mid * 0.4
+
+      elif kind == "count_mismatch":
+        # Wrong number of points - adjust
+        expected = where.get("expected")
+        actual = where.get("actual")
+        if expected and actual:
+          if actual < expected:
+            # Need more points - insert at a random location
+            idx = self.rng.randint(0, n - 1)
+            p1 = new_pts[idx]
+            p2 = new_pts[(idx + 1) % n]
+            new_pts.insert(idx + 1, [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2])
+          elif actual > expected:
+            # Too many points - remove a random one
+            idx = self.rng.randint(0, n - 1)
+            new_pts.pop(idx)
+        break  # Only do one count adjustment per mutation
+
+      else:
+        # Unknown error type - apply small global jitter
+        for idx in range(n):
+          new_pts[idx][0] = _clamp(new_pts[idx][0] + (self.rng.random() - 0.5) * 0.15, 0,
+                                   self.boundary)
+          new_pts[idx][1] = _clamp(new_pts[idx][1] + (self.rng.random() - 0.5) * 0.15, 0,
+                                   self.boundary)
+
+    # Apply locks to restore constrained points before returning
+    # Note: locks may reference indices that no longer exist if points were added/removed
+    for idx, lock_type in locks.items():
+      if idx < len(new_pts) and idx < len(original_pts):
+        self._apply_lock(new_pts[idx], original_pts[idx], lock_type)
+
+    # Check if all errors are angle-related - if so, skip enforce_unit_steps more often
+    # to avoid undoing our angle fixes
+    angle_only = all(
+      e.get("kind") in ["angle_range", "max_straight_run", "min_turns"]
+      for e in errors) if errors else False
+    if angle_only and self.rng.random() < 0.9:
+      # Just clamp to bounds without reconstructing - preserves angle fixes
+      return [(_clamp(p[0], 0, self.boundary), _clamp(p[1], 0, self.boundary)) for p in new_pts]
+
+    # For non-angle errors, sometimes still skip to preserve good structure
+    if len(errors) <= 2 and self.rng.random() < 0.3:
+      return [(_clamp(p[0], 0, self.boundary), _clamp(p[1], 0, self.boundary)) for p in new_pts]
+
+    # After enforce_unit_steps, re-apply locks since it may have moved points
+    result = _enforce_unit_steps([(p[0], p[1]) for p in new_pts], self.boundary, self.rng)
+    result_list = [list(p) for p in result]
+    for idx, lock_type in locks.items():
+      if idx < len(result_list) and idx < len(original_pts):
+        self._apply_lock(result_list[idx], original_pts[idx], lock_type)
+    return [(p[0], p[1]) for p in result_list]
+
+  def _mutate_population(self,
+                         survivors: List[List[Tuple[float, float]]],
+                         error_lists: List[List[Dict[str, Any]]],
+                         pop_size: int,
+                         stuck_on_crossings: bool = False) -> List[List[Tuple[float, float]]]:
+    children: List[List[Tuple[float, float]]] = []
+
+    # If stuck on crossings, inject fresh non-crossing solutions
+    if stuck_on_crossings:
+      gen = LoopGenerators(self.pipes, self.boundary, self.rng)
+      # Add several fresh regular polygons (guaranteed non-crossing)
+      for _ in range(pop_size // 3):
+        children.append(gen.regular_polygon())
+
+    for pts, errs in zip(survivors, error_lists):
+      children.append(pts)
+      for _ in range(2):
+        children.append(self._mutate(pts, errs))
+      if len(children) >= pop_size:
+        break
+
+    gen = LoopGenerators(self.pipes, self.boundary, self.rng)
+    while len(children) < pop_size:
+      # Mix of random walks and fresh convex shapes
+      if self.rng.random() < 0.5:
+        children.append(gen.regular_polygon())
+      else:
+        children.append(gen.convex_blob())
+    return children[:pop_size]
+
+  def _score_errors(self, errors: List[Dict[str, Any]]) -> float:
+    """Score errors with priority weighting. Lower is better.
+    Structural errors (crossings, boundary, closure) are weighted higher
+    so they get fixed first before angle/cosmetic errors."""
+    if not errors:
+      return 0.0
+
+    # Priority weights - structural errors first
+    priority = {
+      "fundamental": 1000,
+      "count_mismatch": 500,
+      "boundary": 100,
+      "closure": 100,
+      "segment_length": 50,
+      "crossings": 80,
+      "backtrack": 60,
+      "duplicate_vertex": 40,
+      # Lower priority for "cosmetic" constraints
+      "angle_range": 10,
+      "max_straight_run": 10,
+      "min_turns": 10,
+      "centroid": 15,
+      "boundary_touch": 20,
+      "coverage_quadrants": 15,
+      "avoid_margin": 15,
+      "min_convex_hull_area": 15,
+      "fixed_start": 20,
+      "min_point_separation": 25,
+      "exact_crossings": 30,
+    }
+
+    score = 0.0
+    for err in errors:
+      kind = err.get("kind", "unknown")
+      score += priority.get(kind, 20)
+    return score
+
+  def solve(self,
+            max_iterations: int = 300,
+            pop_size: int = 30,
+            time_limit: float = 12.0) -> Tuple[List[Tuple[float, float]], str]:
+    """Solve using simulated annealing with error prioritization."""
+    start_time = time.time()
+    gen = LoopGenerators(self.pipes, self.boundary, self.rng)
+    population = gen.all_generators()
+
+    # Larger initial population from all generators
+    if len(population) > pop_size:
+      population = population[:pop_size]
+    while len(population) < pop_size:
+      # Add variety of generators
+      choices = [
+        gen.random_walk, gen.regular_polygon, gen.tight_angle_loop, gen.wavy_loop,
+        gen.boundary_touching_loop
+      ]
+      population.append(self.rng.choice(choices)())
+
+    best_pts = population[0]
+    best_errs: List[Dict[str, Any]] = []
+    best_score = float('inf')
+    stuck_counter = 0
+    last_best_score = float('inf')
+
+    # Simulated annealing parameters
+    initial_temp = 5.0
+    final_temp = 0.1
+    temp = initial_temp
+
+    for it in range(max_iterations):
+      if time.time() - start_time > time_limit:
+        break
+
+      # Decay temperature
+      progress = it / max_iterations
+      temp = initial_temp * (1 - progress) + final_temp * progress
+
+      scored = []
+      for pts in population:
+        errs = self._evaluate(pts)
+        score = self._score_errors(errs)
+        scored.append((score, len(errs), errs, pts))
+        if len(errs) == 0:
+          return pts, f"Solved in {it} iterations"
+
+      # Sort by weighted score (prioritizes structural errors)
+      scored.sort(key=lambda t: t[0])
+
+      current_best_score = scored[0][0]
+      current_best_count = scored[0][1]
+      current_best_errs = scored[0][2]
+      current_best_pts = scored[0][3]
+
+      # Update global best
+      if current_best_score < best_score:
+        best_score = current_best_score
+        best_errs = current_best_errs
+        best_pts = current_best_pts
+
+      # Track if we're stuck
+      if current_best_score >= last_best_score:
+        stuck_counter += 1
+      else:
+        stuck_counter = 0
+        last_best_score = current_best_score
+
+      # Detect if stuck on specific error types
+      stuck_on_crossings = (stuck_counter > 10 and len(current_best_errs) > 0
+                            and current_best_errs[0].get("kind") == "crossings")
+
+      # Detect if stuck on angle-only errors
+      stuck_on_angles = (stuck_counter > 8 and len(current_best_errs) > 0 and all(
+        e.get("kind") in ["angle_range", "max_straight_run", "min_turns"]
+        for e in current_best_errs))
+
+      # Detect if stuck on boundary_touch
+      stuck_on_boundary = (stuck_counter > 5 and len(current_best_errs) > 0
+                           and any(e.get("kind") == "boundary_touch" for e in current_best_errs))
+
+      if it in [1, 5, 10, 50, 100, 299, 500, 1000]:
+        if current_best_count == 1:
+          print(
+            f"- Round {it}: Best has 1 error ({current_best_errs[0]['kind']}), score={current_best_score:.1f}"
+          )
+        else:
+          print(
+            f"- Round {it}: Best has {current_best_count} errors, score={current_best_score:.1f}, worst error={current_best_errs[0]['kind']}"
+          )
+
+      # Simulated annealing selection - sometimes keep worse solutions
+      survivors = []
+      err_lists = []
+      num_survivors = max(3, pop_size // 3)
+
+      for i, (score, count, errs, pts) in enumerate(scored):
+        if i < num_survivors:
+          # Always keep the best ones
+          survivors.append(pts)
+          err_lists.append(errs)
+        elif i < pop_size // 2:
+          # Probabilistically keep others based on temperature
+          delta = score - current_best_score
+          accept_prob = math.exp(-delta / max(temp, 0.01))
+          if self.rng.random() < accept_prob:
+            survivors.append(pts)
+            err_lists.append(errs)
+
+      # If stuck on boundary_touch, inject fresh boundary-touching shapes
+      if stuck_on_boundary:
+        gen = LoopGenerators(self.pipes, self.boundary, self.rng)
+        # Inject multiple boundary_touching_loop shapes with variations
+        for _ in range(pop_size // 2):
+          survivors.append(gen.boundary_touching_loop())
+          err_lists.append([])
+        stuck_counter = 0
+
+      # If stuck on angles, aggressively inject fresh angle-focused shapes
+      elif stuck_on_angles:
+        gen = LoopGenerators(self.pipes, self.boundary, self.rng)
+        angle_gens = [
+          gen.tight_angle_loop, gen.angle_90_zigzag, gen.angle_60_120_wave, gen.angle_random_valid,
+          gen.angle_smooth_curve, gen.wavy_loop, gen.angle_controlled_spiral,
+          gen.angle_pentagon_based, gen.unit_edge_angle_loop
+        ]
+        # Replace half the population with fresh angle-focused shapes
+        for _ in range(pop_size // 2):
+          survivors.append(self.rng.choice(angle_gens)())
+          err_lists.append([])
+        stuck_counter = 0
+
+      # If stuck generally, inject more diversity
+      elif stuck_counter > 15:
+        gen = LoopGenerators(self.pipes, self.boundary, self.rng)
+        all_gens = [
+          gen.tight_angle_loop, gen.wavy_loop, gen.angle_90_zigzag, gen.angle_60_120_wave,
+          gen.angle_random_valid, gen.angle_smooth_curve, gen.regular_polygon,
+          gen.boundary_touching_loop, gen.no_straight_loop
+        ]
+        for _ in range(pop_size // 3):
+          survivors.append(self.rng.choice(all_gens)())
+          err_lists.append([])
+        stuck_counter = 0
+
+      population = self._mutate_population(survivors, err_lists, pop_size, stuck_on_crossings)
+
+    return best_pts, f"Best had {len(best_errs)} errors after {max_iterations} iterations"
+
+
+def get_response(subPass: int):
+  solver = LoopSolver(subPass)
+  pts, summary = solver.solve()
+  answer = {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
+  return answer, f"Solver: {summary}"
+
+
+if __name__ == "__main__":
+  # Test multiple subpasses
+  solved = 0
+  failed = []
+  for sp in range(0, 15):
+    print(f"Testing subpass {sp}...", end=" ")
+    result, msg = get_response(sp)
+    if "Solved" in msg:
+      print(f"SOLVED - {msg}")
+      solved += 1
+    else:
+      print(f"FAILED - {msg}")
+      failed.append(sp)
+  print(f"\nSummary: {solved}/15 solved, failed: {failed}")
