@@ -636,7 +636,7 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
 
   import os
   os.makedirs("results", exist_ok=True)
-  output_path = "results/12_Visualization_" + aiEngineName + "_" + str(squareSize) + ".png"
+  output_path = "results/12_Visualization_" + aiEngineName + "_" + str(subPass) + ".png"
   vc.render_scadText_to_png(scad_content, output_path)
   print(f"Saved visualization to {output_path}")
 

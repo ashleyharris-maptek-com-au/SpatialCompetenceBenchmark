@@ -14,10 +14,14 @@ Each constraint is modeled as a spring or force:
 """
 
 import importlib.util
+import json
 import math
+import os
 import random
 import sys
+import tempfile
 import time
+import filelock  # pip install filelock for concurrency-safe caching
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -130,6 +134,51 @@ def _polygon_area(poly: List[Tuple[float, float]]) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Solution caching (concurrency-safe)
+# ---------------------------------------------------------------------------
+
+CACHE_DIR = Path(tempfile.gettempdir()) / "q12_cache"
+
+
+def _get_cache_path(subPass: int) -> Path:
+  """Get the cache file path for a subpass."""
+  return CACHE_DIR / f"subpass_{subPass}.json"
+
+
+def _load_cached_solution(subPass: int) -> Optional[Dict]:
+  """Load a cached solution if it exists and is valid."""
+  cache_path = _get_cache_path(subPass)
+  lock_path = cache_path.with_suffix(".lock")
+
+  if not cache_path.exists():
+    return None
+
+  try:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with filelock.FileLock(lock_path, timeout=5):
+      if cache_path.exists():
+        with open(cache_path, "r") as f:
+          return json.load(f)
+  except (filelock.Timeout, json.JSONDecodeError, IOError):
+    pass
+  return None
+
+
+def _save_cached_solution(subPass: int, answer: Dict) -> None:
+  """Save a solution to cache (concurrency-safe)."""
+  cache_path = _get_cache_path(subPass)
+  lock_path = cache_path.with_suffix(".lock")
+
+  try:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with filelock.FileLock(lock_path, timeout=5):
+      with open(cache_path, "w") as f:
+        json.dump(answer, f)
+  except (filelock.Timeout, IOError):
+    pass  # Failed to cache, not critical
+
+
+# ---------------------------------------------------------------------------
 # Physics simulation
 # ---------------------------------------------------------------------------
 
@@ -161,8 +210,7 @@ class SpringSimulation:
     self.damping = 0.85  # velocity damping per step
     self.max_velocity = 2.0  # cap velocity magnitude
 
-    # Spring constants (tunable)
-    self.k_edge = 25.0  # edge length spring (stronger)
+    # Spring constants - structural constraints at full strength from start
     self.k_boundary = 8.0  # boundary constraint
     self.k_fixed = 25.0  # fixed start constraint
     self.k_angle = 6.0  # angle constraint
@@ -174,6 +222,10 @@ class SpringSimulation:
     self.k_margin = 8.0  # margin avoidance
     self.k_backtrack = 15.0  # backtrack prevention
     self.k_turn = 3.0  # turn encouragement
+
+    # Edge spring ramps up over time - start soft, get rigid
+    self.k_edge_min = 1.0  # initial edge spring strength (very soft)
+    self.k_edge_max = 50.0  # final edge spring strength (very rigid)
 
   def _parse_constraints(self) -> Dict[str, Any]:
     """Parse complications into a constraint dictionary."""
@@ -289,10 +341,18 @@ class SpringSimulation:
     """Initialize velocities to zero."""
     return [[0.0, 0.0] for _ in range(self.n)]
 
-  def _compute_forces(self, pos: List[List[float]]) -> List[List[float]]:
-    """Compute all forces on each point."""
+  def _compute_forces(self, pos: List[List[float]], progress: float = 0.0) -> List[List[float]]:
+    """Compute all forces on each point.
+    
+    Args:
+      pos: Current positions of all points
+      progress: 0.0 to 1.0 indicating simulation progress, used for ramping edge strength
+    """
     forces = [[0.0, 0.0] for _ in range(self.n)]
     n = self.n
+
+    # Edge spring strength ramps up with progress
+    k_edge = self.k_edge_min + (self.k_edge_max - self.k_edge_min) * progress
 
     # 1. Edge length springs - each edge wants to be length 1.0
     for i in range(n):
@@ -303,8 +363,8 @@ class SpringSimulation:
       if dist > 1e-10:
         # Spring force: F = k * (dist - rest_length) * direction
         stretch = dist - 1.0
-        fx = self.k_edge * stretch * dx / dist
-        fy = self.k_edge * stretch * dy / dist
+        fx = k_edge * stretch * dx / dist
+        fy = k_edge * stretch * dy / dist
         forces[i][0] += fx
         forces[i][1] += fy
         forces[j][0] -= fx
@@ -700,9 +760,9 @@ class SpringSimulation:
 
     return forces
 
-  def _step(self, pos: List[List[float]], vel: List[List[float]]) -> None:
+  def _step(self, pos: List[List[float]], vel: List[List[float]], progress: float = 0.0) -> None:
     """Perform one simulation step (in-place update)."""
-    forces = self._compute_forces(pos)
+    forces = self._compute_forces(pos, progress)
 
     for i in range(self.n):
       # Update velocity with force and damping
@@ -743,7 +803,7 @@ class SpringSimulation:
             max_iterations: int = 2000,
             time_limit: float = 12.0) -> Tuple[List[Tuple[float, float]], str]:
     """Run simulation until convergence or time limit."""
-    start_time = time.time()
+    firstStallTime = None
 
     pos = self._init_positions()
     vel = self._init_velocities()
@@ -759,10 +819,12 @@ class SpringSimulation:
     last_best_count = best_count
 
     for it in range(max_iterations):
-      if time.time() - start_time > time_limit:
+      if firstStallTime and time.time() - firstStallTime > time_limit:
         break
 
-      self._step(pos, vel)
+      # Progress ramps from 0 to 1 over iterations (edge springs get stronger)
+      progress = min(1.0, it / 1000.0)  # Ramp up over first 1000 iterations
+      self._step(pos, vel, progress)
 
       # Periodically evaluate
       if it % 20 == 0 or it < 50:
@@ -791,18 +853,27 @@ class SpringSimulation:
             vel[i][0] += (self.rng.random() - 0.5) * 0.5
             vel[i][1] += (self.rng.random() - 0.5) * 0.5
           stall_counter = 0
+          if firstStallTime is None:
+            firstStallTime = time.time()
 
     return self._to_tuples(
       best_pos), f"Best had {best_count} errors after {max_iterations} iterations"
 
 
 def get_response(subPass: int):
+  # Check cache first
+  cached = _load_cached_solution(subPass)
+  if cached is not None:
+    return cached, "Solver: Loaded from cache"
+
   # Try multiple restarts with different seeds for robustness
   best_pts = None
   best_errors = float('inf')
   best_summary = ""
 
-  num_restarts = 30
+  print(f"Starting {subPass}")
+
+  num_restarts = 10
   time_per_restart = 5.0 + subPass * 0.5  # They get harder
 
   for restart in range(num_restarts):
@@ -816,6 +887,8 @@ def get_response(subPass: int):
     error_count = len(errors) if isinstance(errors, list) else 1
 
     if error_count == 0:
+      print(f"SOLVED! {subPass}")
+      _save_cached_solution(subPass, answer)  # Cache the solution
       return answer, f"Solver: {summary}"
 
     if error_count < best_errors:
@@ -824,6 +897,7 @@ def get_response(subPass: int):
       best_summary = summary
 
   answer = {"points": [{"x": float(x), "y": float(y)} for x, y in best_pts]}
+  print(f"FAILED! {subPass} - {best_summary}")
   return answer, f"Solver: {best_summary}"
 
 
@@ -834,7 +908,9 @@ if __name__ == "__main__":
   for sp in range(0, 40):
     print(f"Testing subpass {sp}...", end=" ")
     result, msg = get_response(sp)
-    if "Solved" in msg:
+    if "Loaded from cache" in msg:
+      solved += 1
+    elif "Solved" in msg:
       print(f"SOLVED - {msg}")
       solved += 1
     else:
