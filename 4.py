@@ -1,4 +1,4 @@
-import math
+import math, os
 
 title = "Tetrahedron Shadow Coverage"
 
@@ -160,16 +160,24 @@ module tetrahedron(){
 """
 
 
-def resultToScad(result, aiEngineName):
+def resultToScad(result, aiEngineName, flattern=True):
   try:
     scad = "module result(){ "
-    scad += "linear_extrude(height=0.1){ projection() { minkowski(){cube(0.001); union() { "
+    if flattern:
+      scad += "linear_extrude(height=0.1){ projection() { minkowski(){cube(0.001); union() { "
+    else:
+      scad += "union() { "
     for transform in result["tetrahedrons"]:
       scad += "translate([" + str(transform["x"]) + "," + \
           str(transform["y"]) + "," + str(transform["z"]) + "]) rotate(" + \
       str(quaternionToPitchRollYawInDegrees(transform["q0"], transform["q1"], transform["q2"], transform["q3"])) + ") tetrahedron();\n"
 
-    return scad + "}}}}}\n\n"
+    if flattern:
+      scad += "}}}}}\n\n"
+    else:
+      scad += "}}\n\n"
+    return scad
+
   except Exception as e:
     print("Error converting result to SCAD:", e)
     return ""
@@ -275,8 +283,29 @@ def validatePostVolume(result, score, resultVolume, referenceVolume, intersectio
 
 def postProcessScore(score, subPassIndex):
   if subPassIndex == 1:
-    return min(1, score / 0.93)  # Circle is impossible to cover.
+    return min(1, score / 0.90)  # Circle is impossible to cover.
   return score
+
+
+def additionalRenderings(result, subPass, aiEngineName, reference_cache_dir):
+  import OpenScad
+
+  structure = resultToScad(result, aiEngineName, False)
+
+  scad = scadModules + structure + """
+result();
+color([0.2,0.2,0.2]) linear_extrude(height=0.1){ projection() { minkowski(){cube(0.001); result();}}}
+"""
+
+  fileName1 = os.path.join(reference_cache_dir, "Tetras_with_shadow1.png")
+  fileName2 = os.path.join(reference_cache_dir, "Tetras_with_shadow2.png")
+  fileName3 = os.path.join(reference_cache_dir, "Tetras_with_shadow3.png")
+
+  OpenScad.render_scadText_to_png(scad, fileName1)
+  OpenScad.render_scadText_to_png(scad, fileName2, "--camera=20,0,100,0,0,0", ["--no-autocenter"])
+  OpenScad.render_scadText_to_png(scad, fileName3, "--camera=-30,10,100,0,0,0", ["--no-autocenter"])
+
+  return [fileName1, fileName2, fileName3]
 
 
 highLevelSummary = """
@@ -291,5 +320,5 @@ as you can't tile the plane with them all at the same z level).
 <br><br>
 
 Note that multiple rings of tetrahedra stacked in z and projected to z can
-approximate a cricle very precisely, pixel perfect even.
+approximate a circle very precisely, pixel perfect even.
 """

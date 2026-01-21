@@ -50,7 +50,6 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
     return {
       "score": 100000,  # Not an AI failure, framework failure.
       "output_image": None,
-      "output_mouseover_image": None,
       "output_hyperlink": None,
       "reference_image": None,
       "temp_dir": None,
@@ -61,7 +60,6 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
     return {
       "score": 0,
       "output_image": None,
-      "output_mouseover_image": None,
       "output_hyperlink": resultAsScad,
       "reference_image": None,
       "temp_dir": None,
@@ -234,7 +232,6 @@ difference()
       cache = {
         "score": 0,
         "output_image": None,
-        "output_mouseover_image": None,
         "output_hyperlink": result_scad,
         "reference_image": reference_png if os.path.exists(reference_png) else None,
         "temp_dir": temp_dir,
@@ -297,7 +294,12 @@ difference()
     elif err:
       openscad_errors.append(err)
 
-  render_scadText_to_png(f"include <{os.path.basename(resultWithReference_scad)}>;", output2_png)
+  if "additionalRenderings" in testGlobals:
+    additionalRenderings = testGlobals["additionalRenderings"]
+    additionalFiles = additionalRenderings(result, subPass, aiEngineName, result_cache_dir)
+  else:
+    render_scadText_to_png(f"include <{os.path.basename(resultWithReference_scad)}>;", output2_png)
+    additionalFiles = [output2_png]
 
   if not os.path.exists(reference_png):
     _render_stl_to_png(reference_stl, reference_png)
@@ -363,7 +365,7 @@ difference()
   result_dict = {
     "score": score,
     "output_image": output_png,
-    "output_mouseover_image": output2_png,
+    "output_additional_images": additionalFiles,
     "output_hyperlink": result_scad,
     "reference_image": reference_png,
     "temp_dir": temp_dir,
