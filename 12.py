@@ -128,12 +128,12 @@ complication_presets = [
   {
     "name": "one_forced_cross",
     "description": "Exactly one crossing is allowed and required, with broad angle flexibility.",
-    "complications": [comp_exact_crossings(1), comp_angle_range(30, 150)]
+    "complications": [comp_exact_crossings(1), comp_angle_range(10, 170)]
   },
   {
     "name": "two_forced_crosses",
-    "description": "Two crossings are allowed and required, keep angles between 45° and 135°.",
-    "complications": [comp_exact_crossings(2), comp_angle_range(45, 135)]
+    "description": "Two crossings are allowed and required, keep angles between 15° and 165°.",
+    "complications": [comp_exact_crossings(2), comp_angle_range(15, 165)]
   },
   {
     "name": "corner_start",
@@ -165,8 +165,8 @@ complication_presets = [
 # Generate ~40 varied cases, cycling through complication presets so everything
 # pulls from a single ground-truth source.
 _base_specs: List[Tuple[int, int]] = [(3, 1), (6, 2), (8, 2), (10, 3), (12, 3), (14, 3), (16, 3),
-                                      (18, 4), (20, 4), (22, 4), (24, 4), (26, 5), (28, 5), (30, 5),
-                                      (32, 5), (36, 6), (40, 6), (44, 6), (48, 7), (52, 7), (56, 7),
+                                      (18, 4), (20, 4), (22, 7), (24, 4), (26, 5), (28, 5), (30, 5),
+                                      (32, 5), (36, 6), (40, 6), (44, 6), (48, 7), (52, 9), (56, 7),
                                       (60, 8), (64, 8), (72, 9), (80, 10), (90, 12), (100, 14),
                                       (110, 15), (120, 16), (140, 18), (160, 20), (180, 22),
                                       (200, 24), (240, 26), (280, 28), (320, 30), (360, 32),

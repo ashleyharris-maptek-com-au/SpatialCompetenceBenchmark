@@ -192,7 +192,10 @@ class SpringSimulation:
   - Constraint-specific forces based on error feedback
   """
 
-  def __init__(self, subPass: int, seed: Optional[int] = None):
+  def __init__(self,
+               subPass: int,
+               seed: Optional[int] = None,
+               lastSolver: Optional['SpringSimulation'] = None):
     self.subPass = subPass
     self.rng = random.Random(seed or int(time.time() * 1000))
     self.testParams, self.gradeAnswer = _load_problem()
@@ -213,7 +216,6 @@ class SpringSimulation:
     # Spring constants - structural constraints at full strength from start
     self.k_boundary = 8.0  # boundary constraint
     self.k_fixed = 25.0  # fixed start constraint
-    self.k_angle = 6.0  # angle constraint
     self.k_crossing = 15.0  # crossing repulsion
     self.k_centroid = 3.0  # centroid constraint
     self.k_quadrant = 4.0  # quadrant coverage
@@ -225,7 +227,17 @@ class SpringSimulation:
 
     # Edge spring ramps up over time - start soft, get rigid
     self.k_edge_min = 1.0  # initial edge spring strength (very soft)
-    self.k_edge_max = 50.0  # final edge spring strength (very rigid)
+    self.k_edge_max = 100.0  # final edge spring strength (very rigid)
+
+    # Angle spring ramps up over time - start soft, get rigid
+    self.k_angle_min = 1.0  # initial angle spring strength (very soft)
+    self.k_angle_max = 50.0  # final angle spring strength (very rigid)
+
+    if lastSolver:
+      self.k_edge_min = lastSolver.k_edge_min
+      self.k_edge_max = lastSolver.k_edge_max
+      self.k_angle_min = lastSolver.k_angle_min
+      self.k_angle_max = lastSolver.k_angle_max
 
   def _parse_constraints(self) -> Dict[str, Any]:
     """Parse complications into a constraint dictionary."""
@@ -351,8 +363,11 @@ class SpringSimulation:
     forces = [[0.0, 0.0] for _ in range(self.n)]
     n = self.n
 
-    # Edge spring strength ramps up with progress
-    k_edge = self.k_edge_min + (self.k_edge_max - self.k_edge_min) * progress
+    # Edge and angle spring strength ramps up and down (out of sync with each other) with progress
+    k_edge = self.k_edge_min + (self.k_edge_max - self.k_edge_min) * min(
+      0, math.sin(progress * .013))
+    k_angle = self.k_angle_min + (self.k_angle_max - self.k_angle_min) * min(
+      0, math.sin(progress * .037))
 
     # 1. Edge length springs - each edge wants to be length 1.0
     for i in range(n):
@@ -475,7 +490,7 @@ class SpringSimulation:
               target_offset = -target_offset
 
             # Force toward target offset
-            force_scale = self.k_angle * (target_offset - curr_offset)
+            force_scale = k_angle * (target_offset - curr_offset)
             forces[i][0] += perp_x * force_scale
             forces[i][1] += perp_y * force_scale
 
@@ -809,6 +824,7 @@ class SpringSimulation:
     vel = self._init_velocities()
 
     best_pos = [p[:] for p in pos]
+    best_vel = [v[:] for v in vel]
     best_errors = self._evaluate(pos)
     best_count = len(best_errors)
 
@@ -816,11 +832,20 @@ class SpringSimulation:
       return self._to_tuples(pos), f"Solved in 0 iterations"
 
     stall_counter = 0
-    last_best_count = best_count
+
+    revert_to_best_count = 0
 
     for it in range(max_iterations):
       if firstStallTime and time.time() - firstStallTime > time_limit:
-        break
+        if revert_to_best_count < 5 and error_count > best_count:
+          pos = [p[:] for p in best_pos]
+          vel = [v[:] for v in best_vel]
+          revert_to_best_count += 1
+          firstStallTime = None
+          print(f"- Reverted at {it} ({error_count} errors) back to {best_count}")
+
+        else:
+          break
 
       # Progress ramps from 0 to 1 over iterations (edge springs get stronger)
       progress = min(1.0, it / 1000.0)  # Ramp up over first 1000 iterations
@@ -836,28 +861,51 @@ class SpringSimulation:
 
         if error_count < best_count:
           best_pos = [p[:] for p in pos]
+          best_vel = [v[:] for v in vel]
           best_errors = errors
           best_count = error_count
           stall_counter = 0
+          firstStallTime = None
+          revert_to_best_count = 0
+          print(f"- Iter {it}: {error_count} errors")
+
         else:
           stall_counter += 1
 
         # Progress logging
-        if it in [10, 50, 100, 200, 500, 1000, 1500]:
+        if it in [10, 50, 100, 200, 500, 1000, 1500, 2000, 3000, 4000, 5000, 10000, 15000]:
           kinds = [e.get("kind", "?") for e in errors[:3]]
           print(f"- Iter {it}: {error_count} errors, types: {kinds}")
 
         # If stalled, add random perturbation
         if stall_counter > 20:
-          for i in range(self.n):
-            vel[i][0] += (self.rng.random() - 0.5) * 0.5
-            vel[i][1] += (self.rng.random() - 0.5) * 0.5
+          for i in random.choices(range(self.n), k=5):
+            vel[i][0] += (self.rng.random() - 0.5) * 5
+            vel[i][1] += (self.rng.random() - 0.5) * 5
           stall_counter = 0
           if firstStallTime is None:
             firstStallTime = time.time()
 
+    if len(vel) > 5:
+      for i in range(5):
+        print(f"  - {pos[i][0]:.1f} {pos[i][1]:.1f}. V = {vel[i][0]:.1f} {vel[i][1]:.1f}")
+
+    kinds = [e.get("kind", "?") for e in errors[:3]]
+
+    if "segment_length" in kinds:
+      self.k_edge_min += 5
+      self.k_edge_max += 50
+      print(
+        f"Next iteration - we're making the edge springs stronger! {self.k_edge_min} - {self.k_edge_max}"
+      )
+    elif "angle_range" in kinds:
+      self.k_angle_min += 5
+      self.k_angle_max += 50
+      print(
+        f"Next iteration - we're making the angle springs stronger! {self.k_angle_min} - {self.k_angle_max}"
+      )
     return self._to_tuples(
-      best_pos), f"Best had {best_count} errors after {max_iterations} iterations"
+      best_pos), f"Best had {best_count} errors ({kinds}) after {max_iterations} iterations"
 
 
 def get_response(subPass: int):
@@ -873,13 +921,15 @@ def get_response(subPass: int):
 
   print(f"Starting {subPass}")
 
-  num_restarts = 10
-  time_per_restart = 5.0 + subPass * 0.5  # They get harder
+  num_restarts = 50 + subPass * 2
+  time_per_restart = 15.0 + subPass * 0.5  # They get harder
+
+  lastSolver = None
 
   for restart in range(num_restarts):
     seed = int(time.time() * 1000) + restart * 12345
-    solver = SpringSimulation(subPass, seed=seed)
-    pts, summary = solver.solve(time_limit=time_per_restart)
+    solver = SpringSimulation(subPass, seed=seed, lastSolver=lastSolver)
+    pts, summary = solver.solve(10000 + subPass * 1000, time_limit=time_per_restart)
 
     # Check result
     answer = {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
@@ -895,6 +945,7 @@ def get_response(subPass: int):
       best_pts = pts
       best_errors = error_count
       best_summary = summary
+    lastSolver = solver
 
   answer = {"points": [{"x": float(x), "y": float(y)} for x, y in best_pts]}
   print(f"FAILED! {subPass} - {best_summary}")
@@ -903,9 +954,15 @@ def get_response(subPass: int):
 
 if __name__ == "__main__":
   # Test multiple subpasses
+
+  r = range(40)
+  if len(sys.argv) > 1:
+    r = sys.argv[1:]
+    r = [int(x) for x in r]
+
   solved = 0
   failed = []
-  for sp in range(0, 40):
+  for sp in r:
     print(f"Testing subpass {sp}...", end=" ")
     result, msg = get_response(sp)
     if "Loaded from cache" in msg:
