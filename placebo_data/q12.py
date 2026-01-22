@@ -20,6 +20,7 @@ import os
 import random
 import sys
 import tempfile
+import threading
 import time
 import filelock  # pip install filelock for concurrency-safe caching
 from pathlib import Path
@@ -842,7 +843,8 @@ class SpringSimulation:
           vel = [v[:] for v in best_vel]
           revert_to_best_count += 1
           firstStallTime = None
-          print(f"- Reverted at {it} ({error_count} errors) back to {best_count}")
+          print(f"- Reverted at {it} ({error_count} errors) back to {best_count}."
+                f" As have been stuck for {time.time() - firstStallTime:.1f} seconds.")
 
         else:
           break
@@ -867,7 +869,9 @@ class SpringSimulation:
           stall_counter = 0
           firstStallTime = None
           revert_to_best_count = 0
-          print(f"- Iter {it}: {error_count} errors")
+          kinds = list(set([e.get("kind", "?") for e in errors[:3]]))
+
+          print(f"- Iter {it}: {error_count} errors, types: {kinds}")
 
         else:
           stall_counter += 1
@@ -908,48 +912,53 @@ class SpringSimulation:
       best_pos), f"Best had {best_count} errors ({kinds}) after {max_iterations} iterations"
 
 
+mutexLock = threading.Lock()
+
+
 def get_response(subPass: int):
   # Check cache first
   cached = _load_cached_solution(subPass)
   if cached is not None:
     return cached, "Solver: Loaded from cache"
 
-  # Try multiple restarts with different seeds for robustness
-  best_pts = None
-  best_errors = float('inf')
-  best_summary = ""
+  # There is no benefit to running the solver in parallel.
+  with mutexLock:
+    # Try multiple restarts with different seeds for robustness
+    best_pts = None
+    best_errors = float('inf')
+    best_summary = ""
 
-  print(f"Starting {subPass}")
+    print(f"Starting {subPass}")
 
-  num_restarts = 50 + subPass * 2
-  time_per_restart = 15.0 + subPass * 0.5  # They get harder
+    num_restarts = 50 + subPass * 2
+    time_per_restart = 15.0 + subPass * 0.5  # They get harder
 
-  lastSolver = None
+    lastSolver = None
 
-  for restart in range(num_restarts):
-    seed = int(time.time() * 1000) + restart * 12345
-    solver = SpringSimulation(subPass, seed=seed, lastSolver=lastSolver)
-    pts, summary = solver.solve(10000 + subPass * 1000, time_limit=time_per_restart)
+    for restart in range(num_restarts):
+        seed = int(time.time() * 1000) + restart * 12345
+        solver = SpringSimulation(subPass, seed=seed, lastSolver=lastSolver)
+        pts, summary = solver.solve(10000 + subPass * 1000, time_limit=time_per_restart)
 
-    # Check result
-    answer = {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
-    errors = solver.gradeAnswer(answer, subPass, "solver", returnedStructuredErrors=True)
-    error_count = len(errors) if isinstance(errors, list) else 1
+        # Check result
+        answer = {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
+        errors = solver.gradeAnswer(answer, subPass, "solver", returnedStructuredErrors=True)
+        error_count = len(errors) if isinstance(errors, list) else 1
 
-    if error_count == 0:
-      print(f"SOLVED! {subPass}")
-      _save_cached_solution(subPass, answer)  # Cache the solution
-      return answer, f"Solver: {summary}"
+        if error_count == 0:
+        print(f"SOLVED! {subPass}")
+        _save_cached_solution(subPass, answer)  # Cache the solution
+        return answer, f"Solver: {summary}"
 
-    if error_count < best_errors:
-      best_pts = pts
-      best_errors = error_count
-      best_summary = summary
-    lastSolver = solver
+        if error_count < best_errors:
+        best_pts = pts
+        best_errors = error_count
+        best_summary = summary
+        lastSolver = solver
 
-  answer = {"points": [{"x": float(x), "y": float(y)} for x, y in best_pts]}
-  print(f"FAILED! {subPass} - {best_summary}")
-  return answer, f"Solver: {best_summary}"
+    answer = {"points": [{"x": float(x), "y": float(y)} for x, y in best_pts]}
+    print(f"FAILED! {subPass} - {best_summary}")
+    return answer, f"Solver: {best_summary}"
 
 
 if __name__ == "__main__":
