@@ -235,3 +235,6 @@ it always lands on a 6.
 - Puzzle 6 from <https://youtu.be/DstlphyqyNw?si=w0LirzJ4xk38cWrI&t=1362>. Which Presh solves for the general case for odd
 cases, or even non-regular cases, and links to a paper solving the even case.
 - Can you scan a barcode?
+- Constraints solver - like what freeCAD can do in sketch mode. Eg point1 and point2
+  must be on circle1, line 1 connects points 1 and 2. Point 3 must be 7m meters from point 1.
+  What is the radius of circle 1? That sorta thing.

@@ -842,9 +842,10 @@ class SpringSimulation:
           pos = [p[:] for p in best_pos]
           vel = [v[:] for v in best_vel]
           revert_to_best_count += 1
-          firstStallTime = None
           print(f"- Reverted at {it} ({error_count} errors) back to {best_count}."
-                f" As have been stuck for {time.time() - firstStallTime:.1f} seconds.")
+                f" As have been stuck for {time.time() - firstStallTime:.1f} seconds. "
+                f"This was reversion #{revert_to_best_count}/5")
+          firstStallTime = None
 
         else:
           break
@@ -936,29 +937,29 @@ def get_response(subPass: int):
     lastSolver = None
 
     for restart in range(num_restarts):
-        seed = int(time.time() * 1000) + restart * 12345
-        solver = SpringSimulation(subPass, seed=seed, lastSolver=lastSolver)
-        pts, summary = solver.solve(10000 + subPass * 1000, time_limit=time_per_restart)
+      seed = int(time.time() * 1000) + restart * 12345
+      solver = SpringSimulation(subPass, seed=seed, lastSolver=lastSolver)
+      pts, summary = solver.solve(10000 + subPass * 1000, time_limit=time_per_restart)
 
-        # Check result
-        answer = {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
-        errors = solver.gradeAnswer(answer, subPass, "solver", returnedStructuredErrors=True)
-        error_count = len(errors) if isinstance(errors, list) else 1
+      # Check result
+      answer = {"points": [{"x": float(x), "y": float(y)} for x, y in pts]}
+      errors = solver.gradeAnswer(answer, subPass, "solver", returnedStructuredErrors=True)
+      error_count = len(errors) if isinstance(errors, list) else 1
 
-        if error_count == 0:
+      if error_count == 0:
         print(f"SOLVED! {subPass}")
         _save_cached_solution(subPass, answer)  # Cache the solution
         return answer, f"Solver: {summary}"
 
-        if error_count < best_errors:
+      if error_count < best_errors:
         best_pts = pts
         best_errors = error_count
         best_summary = summary
         lastSolver = solver
 
-    answer = {"points": [{"x": float(x), "y": float(y)} for x, y in best_pts]}
-    print(f"FAILED! {subPass} - {best_summary}")
-    return answer, f"Solver: {best_summary}"
+  answer = {"points": [{"x": float(x), "y": float(y)} for x, y in best_pts]}
+  print(f"FAILED! {subPass} - {best_summary}")
+  return answer, f"Solver: {best_summary}"
 
 
 if __name__ == "__main__":
