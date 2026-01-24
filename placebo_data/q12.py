@@ -15,6 +15,7 @@ Each constraint is modeled as a spring or force:
 
 import importlib.util
 import json
+import html
 import math
 import os
 import random
@@ -140,6 +141,411 @@ def _polygon_area(poly: List[Tuple[float, float]]) -> float:
 
 CACHE_DIR = Path(tempfile.gettempdir()) / "q12_cache"
 
+DIAG_DIR = Path(tempfile.gettempdir()) / "q12_spring_diag"
+
+
+def _copy_2d(v: List[List[float]]) -> List[List[float]]:
+  return [row[:] for row in v]
+
+
+def _diag_path(subPass: int, tag: str) -> Path:
+  ts = time.strftime("%Y%m%d_%H%M%S")
+  pid = os.getpid()
+  DIAG_DIR.mkdir(parents=True, exist_ok=True)
+  safe_tag = "".join([c for c in tag if c.isalnum() or c in "_-."])
+  return DIAG_DIR / f"q12_subpass{subPass}_{safe_tag}_{ts}_{pid}.html"
+
+
+def _fmt_float(v: float, nd: int = 3) -> str:
+  try:
+    return f"{float(v):.{nd}f}"
+  except Exception:
+    return str(v)
+
+
+def _svg_map_y(boundary: float, y: float) -> float:
+  return boundary - y
+
+
+def _svg_point(boundary: float, p: Tuple[float, float]) -> Tuple[float, float]:
+  return (p[0], _svg_map_y(boundary, p[1]))
+
+
+def _segment_intersection_point(a1, a2, b1, b2) -> Optional[Tuple[float, float]]:
+  x1, y1 = a1
+  x2, y2 = a2
+  x3, y3 = b1
+  x4, y4 = b2
+  den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+  if abs(den) < 1e-12:
+    return None
+  px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / den
+  py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / den
+  return (px, py)
+
+
+def _collect_error_index_sets(errors: List[Dict[str, Any]]) -> Dict[str, Any]:
+  point_idxs = set()
+  vertex_idxs = set()
+  seg_idxs = set()
+  seg_pairs = []
+  min_sep_pairs = []
+  for e in errors:
+    kind = e.get("kind", "")
+    where = e.get("where") or {}
+    if kind in ("boundary", "avoid_margin"):
+      if "point_index" in where:
+        point_idxs.add(where["point_index"])
+    if kind == "angle_range":
+      if "vertex_index" in where:
+        vertex_idxs.add(where["vertex_index"])
+    if kind in ("segment_length", "closure", "backtrack"):
+      if "segment_index" in where:
+        seg_idxs.add(where["segment_index"])
+        if kind == "backtrack":
+          seg_idxs.add((where["segment_index"] + 1))
+    if kind in ("crossings", "exact_crossings"):
+      pairs = where.get("pairs")
+      if isinstance(pairs, list):
+        for p in pairs:
+          if isinstance(p, (list, tuple)) and len(p) == 2:
+            seg_pairs.append((int(p[0]), int(p[1])))
+    if kind == "min_point_separation":
+      pair = where.get("point_indices")
+      if isinstance(pair, (list, tuple)) and len(pair) == 2:
+        min_sep_pairs.append((int(pair[0]), int(pair[1])))
+  return {
+    "point_idxs": point_idxs,
+    "vertex_idxs": vertex_idxs,
+    "seg_idxs": seg_idxs,
+    "seg_pairs": seg_pairs,
+    "min_sep_pairs": min_sep_pairs,
+  }
+
+
+def _snapshot_svg(snapshot: Dict[str, Any]) -> str:
+  boundary = float(snapshot["boundary"])
+  n = int(snapshot["n"])
+  pos = snapshot["pos"]
+  vel = snapshot["vel"]
+  forces = snapshot.get("forces")
+  errors = snapshot.get("errors") or []
+  constraints = snapshot.get("constraints") or {}
+
+  idxs = _collect_error_index_sets(errors)
+  point_err = idxs["point_idxs"]
+  vertex_err = idxs["vertex_idxs"]
+  seg_err = idxs["seg_idxs"]
+  seg_pairs = idxs["seg_pairs"]
+  min_sep_pairs = idxs["min_sep_pairs"]
+
+  stroke = max(0.002 * boundary, 0.02)
+  pt_r = max(0.008 * boundary, 0.06)
+  font_sz = max(0.02 * boundary, 0.18)
+
+  vel_mag_max = max(1e-9, max(math.hypot(v[0], v[1]) for v in vel))
+  vel_scale = max(0.3, boundary * 0.03) / vel_mag_max
+
+  force_scale = 0.0
+  if forces:
+    force_mag_max = max(1e-9, max(math.hypot(f[0], f[1]) for f in forces))
+    force_scale = max(0.25, boundary * 0.025) / force_mag_max
+
+  vb = f"0 0 {boundary} {boundary}"
+  wpx = 1600
+  hpx = 1600
+
+  parts = []
+  parts.append(
+    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" width="{wpx}" height="{hpx}">')
+  parts.append("<defs>")
+  parts.append(
+    "<marker id=\"arrowVel\" markerWidth=\"6\" markerHeight=\"6\" refX=\"5\" refY=\"3\" orient=\"auto\"><path d=\"M0,0 L6,3 L0,6 z\" fill=\"#4fd1c5\"/></marker>"
+  )
+  parts.append(
+    "<marker id=\"arrowF\" markerWidth=\"6\" markerHeight=\"6\" refX=\"5\" refY=\"3\" orient=\"auto\"><path d=\"M0,0 L6,3 L0,6 z\" fill=\"#f56565\"/></marker>"
+  )
+  parts.append("</defs>")
+
+  parts.append(
+    f'<rect x="0" y="0" width="{boundary}" height="{boundary}" fill="#0b1220" stroke="#3b82f6" stroke-width="{stroke}"/>'
+  )
+
+  mid = boundary / 2.0
+  parts.append(
+    f'<line x1="{mid}" y1="0" x2="{mid}" y2="{boundary}" stroke="#1f2937" stroke-width="{stroke}"/>'
+  )
+  parts.append(
+    f'<line x1="0" y1="{mid}" x2="{boundary}" y2="{mid}" stroke="#1f2937" stroke-width="{stroke}"/>'
+  )
+
+  if constraints.get("avoid_margin"):
+    m = float(constraints["avoid_margin"])
+    parts.append(
+      f'<rect x="{m}" y="{m}" width="{boundary-2*m}" height="{boundary-2*m}" fill="none" stroke="#f59e0b" stroke-dasharray="{stroke*4} {stroke*3}" stroke-width="{stroke}"/>'
+    )
+
+  if constraints.get("centroid_box"):
+    xmin, xmax, ymin, ymax = constraints["centroid_box"]
+    y_svg = boundary - ymax
+    parts.append(
+      f'<rect x="{xmin}" y="{y_svg}" width="{xmax-xmin}" height="{ymax-ymin}" fill="none" stroke="#22c55e" stroke-dasharray="{stroke*4} {stroke*3}" stroke-width="{stroke}"/>'
+    )
+
+  if constraints.get("must_touch_boundary"):
+    tol_edge = max(1e-3, boundary * 0.001)
+    edges_hit = set()
+    for i in range(n):
+      x0, y0 = pos[i][0], pos[i][1]
+      if abs(x0) <= tol_edge:
+        edges_hit.add("left")
+      if abs(x0 - boundary) <= tol_edge:
+        edges_hit.add("right")
+      if abs(y0) <= tol_edge:
+        edges_hit.add("bottom")
+      if abs(y0 - boundary) <= tol_edge:
+        edges_hit.add("top")
+    need = int(constraints.get("must_touch_boundary") or 0)
+    ok = (len(edges_hit) >= need)
+    col_ok = "#22c55e" if ok else "#f59e0b"
+
+    def edge_color(name: str) -> str:
+      return "#22c55e" if name in edges_hit else col_ok
+
+    parts.append(
+      f'<line x1="0" y1="0" x2="{boundary}" y2="0" stroke="{edge_color("top")}" stroke-width="{stroke*3}" opacity="0.8"/>'
+    )
+    parts.append(
+      f'<line x1="0" y1="{boundary}" x2="{boundary}" y2="{boundary}" stroke="{edge_color("bottom")}" stroke-width="{stroke*3}" opacity="0.8"/>'
+    )
+    parts.append(
+      f'<line x1="0" y1="0" x2="0" y2="{boundary}" stroke="{edge_color("left")}" stroke-width="{stroke*3}" opacity="0.8"/>'
+    )
+    parts.append(
+      f'<line x1="{boundary}" y1="0" x2="{boundary}" y2="{boundary}" stroke="{edge_color("right")}" stroke-width="{stroke*3}" opacity="0.8"/>'
+    )
+
+  if constraints.get("fixed_start"):
+    fx, fy, tol = constraints["fixed_start"]
+    fxs, fys = _svg_point(boundary, (fx, fy))
+    parts.append(
+      f'<circle cx="{fxs}" cy="{fys}" r="{max(tol, pt_r*1.2)}" fill="none" stroke="#a78bfa" stroke-width="{stroke*1.4}" opacity="0.85"/>'
+    )
+    parts.append(f'<circle cx="{fxs}" cy="{fys}" r="{pt_r*0.9}" fill="#a78bfa" opacity="0.9"/>')
+
+  pts_svg = [_svg_point(boundary, (p[0], p[1])) for p in pos]
+  poly_pts = " ".join([f"{_fmt_float(x,4)},{_fmt_float(y,4)}" for x, y in pts_svg])
+  parts.append(
+    f'<polyline points="{poly_pts} {_fmt_float(pts_svg[0][0],4)},{_fmt_float(pts_svg[0][1],4)}" fill="none" stroke="#94a3b8" stroke-width="{stroke}"/>'
+  )
+
+  if snapshot.get("hull"):
+    hull = snapshot["hull"]
+    hull_svg = [_svg_point(boundary, (p[0], p[1])) for p in hull]
+    hull_pts = " ".join([f"{_fmt_float(x,4)},{_fmt_float(y,4)}" for x, y in hull_svg])
+    parts.append(
+      f'<polygon points="{hull_pts}" fill="rgba(34,197,94,0.06)" stroke="#22c55e" stroke-width="{stroke}"/>'
+    )
+
+  if min_sep_pairs:
+    for a, b in min_sep_pairs:
+      if 0 <= a < n and 0 <= b < n:
+        x1, y1 = pts_svg[a]
+        x2, y2 = pts_svg[b]
+        parts.append(
+          f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#fb7185" stroke-width="{stroke*1.5}"/>'
+        )
+
+  if seg_pairs:
+    for si, sj in seg_pairs:
+      si = si % n
+      sj = sj % n
+      a1 = (pos[si][0], pos[si][1])
+      a2 = (pos[(si + 1) % n][0], pos[(si + 1) % n][1])
+      b1 = (pos[sj][0], pos[sj][1])
+      b2 = (pos[(sj + 1) % n][0], pos[(sj + 1) % n][1])
+      ip = _segment_intersection_point(a1, a2, b1, b2)
+      if ip is not None:
+        ix, iy = _svg_point(boundary, ip)
+        parts.append(
+          f'<circle cx="{ix}" cy="{iy}" r="{pt_r*0.7}" fill="none" stroke="#ef4444" stroke-width="{stroke*1.5}"/>'
+        )
+
+  for i in range(n):
+    j = (i + 1) % n
+    x1, y1 = pts_svg[i]
+    x2, y2 = pts_svg[j]
+    if i in seg_err:
+      parts.append(
+        f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#ef4444" stroke-width="{stroke*2.2}" opacity="0.9"/>'
+      )
+    for pair in seg_pairs:
+      if i == (pair[0] % n) or i == (pair[1] % n):
+        parts.append(
+          f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#ef4444" stroke-width="{stroke*1.6}" opacity="0.6"/>'
+        )
+
+  for i in range(n):
+    x, y = pts_svg[i]
+    fill = "#e2e8f0"
+    if i in point_err or i in vertex_err:
+      fill = "#fb7185"
+    if i == 0 and constraints.get("fixed_start"):
+      parts.append(
+        f'<circle cx="{x}" cy="{y}" r="{pt_r*1.6}" fill="none" stroke="#a78bfa" stroke-width="{stroke*1.4}" opacity="0.9"/>'
+      )
+    parts.append(
+      f'<circle cx="{x}" cy="{y}" r="{pt_r}" fill="{fill}" stroke="#0f172a" stroke-width="{stroke}"/>'
+    )
+    parts.append(
+      f'<text x="{x+pt_r*1.2}" y="{y-pt_r*1.2}" font-size="{font_sz}" fill="#e5e7eb">{i}</text>')
+
+  if constraints.get("coverage_quadrants"):
+    mid = boundary / 2.0
+    quadrants = set()
+    for (x0, y0) in pos:
+      if x0 <= mid and y0 <= mid:
+        quadrants.add("bottom_left")
+      if x0 <= mid and y0 >= mid:
+        quadrants.add("top_left")
+      if x0 >= mid and y0 <= mid:
+        quadrants.add("bottom_right")
+      if x0 >= mid and y0 >= mid:
+        quadrants.add("top_right")
+    all_q = ["top_left", "top_right", "bottom_left", "bottom_right"]
+    q_pos = {
+      "top_left": (boundary * 0.15, boundary * 0.15),
+      "top_right": (boundary * 0.85, boundary * 0.15),
+      "bottom_left": (boundary * 0.15, boundary * 0.85),
+      "bottom_right": (boundary * 0.85, boundary * 0.85),
+    }
+    for q in all_q:
+      px, py = q_pos[q]
+      col = "#22c55e" if q in quadrants else "#ef4444"
+      parts.append(
+        f'<text x="{px}" y="{py}" text-anchor="middle" font-size="{font_sz*1.2}" fill="{col}" opacity="0.9">{q}</text>'
+      )
+
+  for i in range(n):
+    x, y = pts_svg[i]
+    vx, vy = vel[i]
+    ex = pos[i][0] + vx * vel_scale
+    ey = pos[i][1] + vy * vel_scale
+    exs, eys = _svg_point(boundary, (ex, ey))
+    parts.append(
+      f'<line x1="{x}" y1="{y}" x2="{exs}" y2="{eys}" stroke="#4fd1c5" stroke-width="{stroke*1.2}" marker-end="url(#arrowVel)" opacity="0.9"/>'
+    )
+
+  if forces:
+    for i in range(n):
+      x, y = pts_svg[i]
+      fx, fy = forces[i]
+      ex = pos[i][0] + fx * force_scale
+      ey = pos[i][1] + fy * force_scale
+      exs, eys = _svg_point(boundary, (ex, ey))
+      parts.append(
+        f'<line x1="{x}" y1="{y}" x2="{exs}" y2="{eys}" stroke="#f56565" stroke-width="{stroke*1.1}" marker-end="url(#arrowF)" opacity="0.75"/>'
+      )
+
+  cx, cy = snapshot.get("centroid", (None, None))
+  if cx is not None and cy is not None:
+    cxs, cys = _svg_point(boundary, (cx, cy))
+    parts.append(
+      f'<line x1="{cxs-pt_r*1.5}" y1="{cys}" x2="{cxs+pt_r*1.5}" y2="{cys}" stroke="#22c55e" stroke-width="{stroke*1.2}"/>'
+    )
+    parts.append(
+      f'<line x1="{cxs}" y1="{cys-pt_r*1.5}" x2="{cxs}" y2="{cys+pt_r*1.5}" stroke="#22c55e" stroke-width="{stroke*1.2}"/>'
+    )
+
+  parts.append("</svg>")
+  return "".join(parts)
+
+
+def _write_stuck_diagnostics_html(subPass: int, snapshots: List[Dict[str, Any]],
+                                  tag: str) -> Optional[Path]:
+  if not snapshots:
+    return None
+  path = _diag_path(subPass, tag)
+
+  title = f"q12 spring diagnostics - subpass {subPass} - {tag}"
+  head = f"""<!doctype html>
+<html><head><meta charset=\"utf-8\"/>
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>
+<title>{html.escape(title)}</title>
+<style>
+body {{ background:#0b1220; color:#e5e7eb; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; }}
+.wrap {{ padding: 18px; }}
+.meta {{ font-size: 14px; line-height: 1.35; color: #cbd5e1; }}
+.grid {{ display: grid; grid-template-columns: 1fr; gap: 18px; }}
+.card {{ background: rgba(15,23,42,0.75); border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; padding: 14px; overflow: auto; }}
+.h {{ font-size: 18px; margin: 0 0 8px 0; }}
+.kvs {{ display: grid; grid-template-columns: 240px 1fr; gap: 4px 12px; font-size: 13px; }}
+.k {{ color: #93c5fd; }}
+.v {{ color: #e5e7eb; white-space: pre-wrap; }}
+.svgwrap {{ overflow: auto; border-radius: 10px; border: 1px solid rgba(148,163,184,0.12); }}
+.legend {{ font-size: 12px; color: #cbd5e1; margin-top: 6px; }}
+code {{ color: #fde68a; }}
+</style>
+</head><body><div class=\"wrap\">"""
+
+  body = [head]
+  body.append(f"<h1 style=\"margin:0 0 10px 0; font-size:22px\">{html.escape(title)}</h1>")
+  body.append("<div class=\"meta\">")
+  body.append(f"<div>Saved to: <code>{html.escape(str(path))}</code></div>")
+  body.append(f"<div>Snapshots: {len(snapshots)}</div>")
+  body.append(
+    "<div>Legend: cyan arrows = velocity, red arrows = force (acceleration proxy), red segments/points = constraint violations per grader.</div>"
+  )
+  body.append("</div>")
+
+  body.append("<div class=\"grid\">")
+  for s in snapshots:
+    it = s.get("it")
+    t = s.get("t")
+    note = s.get("note", "")
+    error_count = s.get("error_count")
+    best_count = s.get("best_count")
+    k_edge = s.get("k_edge")
+    k_angle = s.get("k_angle")
+    kinds = s.get("kinds")
+    body.append("<div class=\"card\">")
+    body.append(
+      f"<h2 class=\"h\">Iter {it}  |  t={_fmt_float(t,2)}  |  errors={error_count} (best {best_count})  |  {html.escape(str(note))}</h2>"
+    )
+    body.append("<div class=\"kvs\">")
+    body.append(
+      f"<div class=\"k\">k_edge</div><div class=\"v\">{html.escape(str(_fmt_float(k_edge,4)))}</div>"
+    )
+    body.append(
+      f"<div class=\"k\">k_angle</div><div class=\"v\">{html.escape(str(_fmt_float(k_angle,4)))}</div>"
+    )
+    body.append(
+      f"<div class=\"k\">error kinds</div><div class=\"v\">{html.escape(str(kinds))}</div>")
+    body.append(
+      f"<div class=\"k\">constraints</div><div class=\"v\">{html.escape(str(s.get('constraints')))}</div>"
+    )
+    body.append("</div>")
+    body.append("<div class=\"svgwrap\">")
+    body.append(_snapshot_svg(s))
+    body.append("</div>")
+    errs = s.get("errors") or []
+    if errs:
+      body.append(
+        "<div class=\"legend\"><div style=\"margin-top:8px; font-weight:600\">Structured errors (first 40)</div><pre style=\"white-space:pre-wrap; margin:6px 0 0 0;\">"
+        + html.escape(json.dumps(errs[:40], indent=2)) + "</pre></div>")
+    body.append("</div>")
+  body.append("</div>")
+
+  body.append("</div></body></html>")
+
+  try:
+    with open(path, "w", encoding="utf-8") as f:
+      f.write("".join(body))
+    print(f"Spring diagnostics written: {path}")
+    return path
+  except Exception:
+    return None
+
 
 def _get_cache_path(subPass: int) -> Path:
   """Get the cache file path for a subpass."""
@@ -198,6 +604,7 @@ class SpringSimulation:
                seed: Optional[int] = None,
                lastSolver: Optional['SpringSimulation'] = None):
     self.subPass = subPass
+    self.seed = seed
     self.rng = random.Random(seed or int(time.time() * 1000))
     self.testParams, self.gradeAnswer = _load_problem()
     params = self.testParams[subPass]
@@ -821,6 +1228,10 @@ class SpringSimulation:
     """Run simulation until convergence or time limit."""
     firstStallTime = None
 
+    diag_snapshots: List[Dict[str, Any]] = []
+    last_diag_it = -10**9
+    last_diag_error_count: Optional[int] = None
+
     pos = self._init_positions()
     vel = self._init_velocities()
 
@@ -836,6 +1247,54 @@ class SpringSimulation:
 
     revert_to_best_count = 0
 
+    def record_diag(it: int, note: str, errors: List[Dict[str, Any]], error_count: int,
+                    best_count: int, progress: float) -> None:
+      nonlocal last_diag_it, last_diag_error_count
+      if it - last_diag_it < 20 and last_diag_error_count == error_count:
+        return
+      last_diag_it = it
+      last_diag_error_count = error_count
+
+      forces = self._compute_forces(pos, progress)
+      k_edge = self.k_edge_min + (self.k_edge_max - self.k_edge_min) * min(
+        0, math.sin(progress * .013))
+      k_angle = self.k_angle_min + (self.k_angle_max - self.k_angle_min) * min(
+        0, math.sin(progress * .037))
+      pts = [(p[0], p[1]) for p in pos]
+      centroid = (sum(p[0] for p in pts) / len(pts),
+                  sum(p[1] for p in pts) / len(pts)) if pts else (0.0, 0.0)
+      hull = _convex_hull(pts)
+
+      kinds = sorted(list(set([e.get("kind", "?") for e in (errors[:25] if errors else [])])))
+      diag_snapshots.append({
+        "subPass": self.subPass,
+        "seed": self.seed,
+        "it": it,
+        "t": it * self.dt,
+        "note": note,
+        "boundary": self.boundary,
+        "tolerance": self.tolerance,
+        "dt": self.dt,
+        "damping": self.damping,
+        "max_velocity": self.max_velocity,
+        "n": self.n,
+        "progress": progress,
+        "k_edge": k_edge,
+        "k_angle": k_angle,
+        "constraints": self.constraints,
+        "pos": _copy_2d(pos),
+        "vel": _copy_2d(vel),
+        "forces": forces,
+        "errors": errors,
+        "kinds": kinds,
+        "error_count": error_count,
+        "best_count": best_count,
+        "centroid": centroid,
+        "hull": hull,
+      })
+      if len(diag_snapshots) > 10:
+        diag_snapshots[:] = diag_snapshots[-10:]
+
     for it in range(max_iterations):
       if firstStallTime and time.time() - firstStallTime > time_limit:
         if revert_to_best_count < 5 and error_count > best_count:
@@ -848,6 +1307,11 @@ class SpringSimulation:
           firstStallTime = None
 
         else:
+          try:
+            if diag_snapshots:
+              _write_stuck_diagnostics_html(self.subPass, diag_snapshots, "gave_up_time_limit")
+          except Exception:
+            pass
           break
 
       # Progress ramps from 0 to 1 over iterations (edge springs get stronger)
@@ -858,6 +1322,9 @@ class SpringSimulation:
       if it % 20 == 0 or it < 50:
         errors = self._evaluate(pos)
         error_count = len(errors)
+
+        if firstStallTime is not None:
+          record_diag(it, "stuck", errors, error_count, best_count, progress)
 
         if error_count == 0:
           return self._to_tuples(pos), f"Solved in {it} iterations"
@@ -890,12 +1357,20 @@ class SpringSimulation:
           stall_counter = 0
           if firstStallTime is None:
             firstStallTime = time.time()
+            record_diag(it, "stall_started", errors, error_count, best_count, progress)
 
     if len(vel) > 5:
       for i in range(5):
         print(f"  - {pos[i][0]:.1f} {pos[i][1]:.1f}. V = {vel[i][0]:.1f} {vel[i][1]:.1f}")
 
     kinds = [e.get("kind", "?") for e in errors[:3]]
+
+    try:
+      if diag_snapshots:
+        record_diag(max_iterations, "final", errors, error_count, best_count, 1.0)
+        _write_stuck_diagnostics_html(self.subPass, diag_snapshots, "gave_up")
+    except Exception:
+      pass
 
     if "segment_length" in kinds:
       self.k_edge_min += 5
