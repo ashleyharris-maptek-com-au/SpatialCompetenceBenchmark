@@ -443,10 +443,6 @@ def get_response(subPass: int):
   return {"path": bestPath}, "Naïve BFS algorithm with some tweaks."
 
 
-if __name__ == "__main__":
-  if len(sys.argv) == 1:
-    print(get_response(6))
-    sys.exit(0)
-
-  subpass = sys.argv[1]
-  print(json.dumps(get_response_impl(int(subpass))))
+def cache_solutions():
+  for i in range(len(_q11_main.problems)):
+    get_response(i)

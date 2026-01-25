@@ -907,7 +907,7 @@ def _select_diverse_beams(candidates, n_beams, min_distance):
   return selected
 
 
-if __name__ == "__main__":
+def cache_solutions():
   import argparse
   parser = argparse.ArgumentParser(description="Celestial navigation solver")
   parser.add_argument("subpass",
@@ -948,3 +948,6 @@ if __name__ == "__main__":
     print(f"Running subpass {args.subpass} with mode={args.mode}")
     get_response(args.subpass, mode=mode)
     print(f"Finished subpass {args.subpass}")
+
+
+if __name__ == "__main__": cache_solutions()

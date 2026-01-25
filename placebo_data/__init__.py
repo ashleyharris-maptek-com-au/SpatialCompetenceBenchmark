@@ -62,3 +62,17 @@ def get_response(questionNum: int, subPass: int):
     return res, cot
   print(f"No response defined in placebo_data for question {questionNum} subpass {subPass}")
   return None, "Not yet implemented"
+
+
+def cache_solutions(questionNum: int):
+  print(f"Caching reference solution to question {questionNum}")
+  if questionNum == 9:
+    q9.cache_solutions()
+  elif questionNum == 11:
+    q11.cache_solutions()
+  elif questionNum == 12:
+    q12.cache_solutions()
+  elif questionNum == 16:
+    q16.cache_solutions()
+  elif questionNum == 45:
+    q45.cache_solutions()

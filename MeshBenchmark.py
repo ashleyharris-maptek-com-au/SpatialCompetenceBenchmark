@@ -67,6 +67,9 @@ class MeshBenchmarkRunner(BenchmarkRunner):
         except Exception as e:
           print(f"    Warning: Reference build for subpass {subpass} failed: {e}")
           break
+
+        placebo_data.cache_solutions()
+
       print(f"    Built {subpass} reference models")
 
 

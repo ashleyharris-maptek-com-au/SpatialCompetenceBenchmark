@@ -634,3 +634,8 @@ def get_response(subPass: int):
     assert len(packings) == len(prisms)
 
     return {'boxes': packings}, f"Calculated with {method} packing. " + tsp[1]
+
+
+def cache_solutions():
+  for sp in range(g["prismList"]):
+    get_response(sp)

@@ -3237,7 +3237,7 @@ XXXX..
   return {"steps": [], "error": "No solution found"}, "Failed to solve"
 
 
-if __name__ == "__main__":
+def cache_solutions():
   for sp in [1, 4, 5, 6, 7, 8]:
     print(f"\n{'='*50}")
     print(f"Testing subPass {sp}")

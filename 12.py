@@ -136,13 +136,6 @@ complication_presets = [
     "complications": [comp_exact_crossings(2), comp_angle_range(15, 165)]
   },
   {
-    "name": "corner_start",
-    "description": "Start at the lower-left corner, avoid crossings, and keep turning.",
-    "complications": [comp_fixed_start(0.0, 0.0),
-                      comp_min_turns(6),
-                      comp_max_crossings(0)]
-  },
-  {
     "name": "center_start",
     "description": "Start near the center, avoid crossings, and keep angles moderate.",
     "complications": [comp_fixed_start(0.5, 0.5),
@@ -168,8 +161,8 @@ _base_specs: List[Tuple[int, int]] = [(3, 1), (6, 2), (8, 2), (10, 3), (12, 3), 
                                       (18, 4), (20, 4), (22, 7), (24, 4), (26, 5), (28, 5), (30, 5),
                                       (32, 5), (36, 6), (40, 6), (44, 6), (48, 7), (52, 9), (56, 7),
                                       (60, 8), (64, 8), (72, 9), (80, 10), (90, 12), (100, 14),
-                                      (110, 15), (120, 16), (140, 18), (160, 20), (180, 22),
-                                      (200, 24), (240, 26), (280, 28), (320, 30), (360, 32),
+                                      (110, 15), (120, 16), (140, 18), (160, 20), (170, 24),
+                                      (180, 26), (200, 27), (280, 28), (320, 30), (360, 32),
                                       (420, 34), (500, 36), (600, 40)]
 
 
@@ -210,22 +203,27 @@ def _describe_complication(comp: Dict) -> str:
 def _build_test_params():
   params = []
   for idx, (pipes, boundary) in enumerate(_base_specs):
-    preset = complication_presets[idx % len(complication_presets)]
+    preset = None
+    description = f"{pipes} pipes in {boundary}x{boundary}"
+
+    if idx > 10 and idx < 10 + len(complication_presets):
+      preset = complication_presets[idx - 10]
+      description = f"{pipes} pipes in {boundary}x{boundary} with {preset['name']}: {preset['description']}"
+
     params.append({
       "pipes": pipes,
       "boundary": boundary,
       "tolerance": 0.05,
-      "summary":
-      f"{pipes} pipes in {boundary}x{boundary} with {preset['name']}: {preset['description']}",
-      "complications": preset["complications"],
-      "preset": preset["name"],
+      "summary": description,
+      "complications": preset["complications"] if preset else None,
+      "preset": preset["name"] if preset else None,
     })
   return params
 
 
 testParams = _build_test_params()
 subpassParamSummary = [tp["summary"] for tp in testParams]
-promptChangeSummary = "Increasing pipe length, square size, and layered complication presets."
+promptChangeSummary = "Increasing pipe length, square size, and complications."
 earlyFail = True
 
 structure = {
@@ -260,12 +258,16 @@ def prepareSubpassPrompt(index: int):
     raise StopIteration
   params = testParams[index]
   header = basePrompt.format(pipes=params["pipes"], boundary=params["boundary"])
-  comp_lines = "\n".join([f"- {_describe_complication(c)}" for c in params["complications"]])
-  if comp_lines:
-    header += "\n\nAdditional constraints:\n" + comp_lines
+  if params["complications"]:
+    comp_lines = "\n".join([f"- {_describe_complication(c)}" for c in params["complications"]])
+    if comp_lines:
+      header += "\n\nAdditional constraints:\n" + comp_lines
 
-  if "crossings are required" not in comp_lines and "crossing is required" not in comp_lines:
-    header += "\n- The loop must not cross itself or touch itself."
+    if "crossings are required" not in comp_lines and "crossing is required" not in comp_lines:
+      header += "\n- The loop must not cross itself or touch itself."
+
+  else:
+    header += "\n The loop must not cross itself or touch itself."
 
   return header
 
@@ -441,7 +443,7 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str, returnedStru
   crossings = _crossing_pairs(segments)
   max_crossing_limit = None
   exact_crossing_required = None
-  for comp in complications:
+  for comp in complications or []:
     if comp["type"] == "max_crossings":
       max_crossing_limit = comp["max"]
     elif comp["type"] == "exact_crossings":
@@ -591,7 +593,14 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str, returnedStru
                         {"point_indices": (i, j)})
               return
 
-  run_complication_checks()
+  if complications: run_complication_checks()
+  else:
+    if crossings:
+      add_error("exact_crossings", f"Crossings found {len(crossings)}; expected 0",
+                {"pairs": crossings})
+      if returnedStructuredErrors:
+        return errors
+      return 0, "Crossing detected" + "\n".join(error_lines)
 
   if errors:
     if returnedStructuredErrors:
