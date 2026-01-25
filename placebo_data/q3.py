@@ -55,7 +55,7 @@ def get_response(subPass: int):
         "vertex": f
       } for f in faces]
     }
-  }, """As a 'human with tools', for this challenge I choose OpenSCAD as my tool."""
+  }, """As a 'human-with-tools', for this challenge I choose OpenSCAD as my tool."""
 
 
 if __name__ == "__main__":
