@@ -719,7 +719,7 @@ hemisphere native. Humans have been doing this for millennia, and the AI has acc
 and can generate to-the-second accurate star maps via python, so I feel confident declaring this 
 solvable.<br><br>
 
-The 'human with tools' control does the following:<ul>
+The 'human-with-tools' control does the following:<ul>
 <li> Parses the image using scipy's image processing tools to cluster stars.</li>
 <li> Converts the image into a binned index structure, 5 degree * 5 degree</li>
 <li> Starts with magnitude <= 1 stars only (the top 20)</li>
