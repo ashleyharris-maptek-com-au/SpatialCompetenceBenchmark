@@ -62,7 +62,6 @@ def _get_placebo_response(questionNum: int, subPass: int):
     return res, cot
   print(f"No response defined in placebo_data for question {questionNum} subpass {subPass}")
   return None, "Not yet implemented"
-<<<<<<< HEAD
 
 
 def cache_solutions(questionNum: int):
@@ -77,8 +76,6 @@ def cache_solutions(questionNum: int):
     q16.cache_solutions()
   elif questionNum == 45:
     q45.cache_solutions()
-||||||| b62ace33
-=======
 
 
 def _build_from_schema(schema):
@@ -212,4 +209,3 @@ def get_response(*args):
     return _get_always_wrong_response(questionNum, subPass)
 
   return _get_placebo_response(questionNum, subPass)
->>>>>>> 463b53b5a9ef4be95016d86b0266908cfddf920f
