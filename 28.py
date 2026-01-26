@@ -288,7 +288,7 @@ def _hash_heightmap(heightmap):
 
 
 def _largest_flat_region(grid: np.ndarray, tolerance: float = FLAT_NEIGHBOUR_TOL):
-  """Find largest 8-connected region where all cells stay within tolerance of local neighbours and running min/max."""
+  """Find largest 4-connected region where all cells stay within tolerance of local neighbours and running min/max."""
   rows, cols = grid.shape
   visited = np.zeros_like(grid, dtype=bool)
   best_region = []
@@ -314,6 +314,8 @@ def _largest_flat_region(grid: np.ndarray, tolerance: float = FLAT_NEIGHBOUR_TOL
           for dc in (-1, 0, 1):
             if dr == 0 and dc == 0:
               continue
+            if abs(dr) + abs(dc) == 2: continue
+
             nr, nc = cr + dr, cc + dc
             if 0 <= nr < rows and 0 <= nc < cols and not visited[nr][nc]:
               nbr = grid[nr][nc]
@@ -402,7 +404,7 @@ def _simulate_blast_with_pybullet(grid, bx, by, depth):
 def gradeAnswer(result, subPass, aiEngineName, returnGrid=False):
   plan_hash = _hash_blasting_plan(result)
   height_hash = _hash_heightmap(heightMaps[subPass])
-  cache_key = f"{subPass}_{height_hash}_{plan_hash}"
+  cache_key = f"{subPass}_{height_hash}_{plan_hash}_v1"
   cache_path = os.path.join(tempfile.gettempdir(), "28_blast_cache")
   os.makedirs(cache_path, exist_ok=True)
   cache_file = os.path.join(cache_path, f"{cache_key}.npz")
@@ -454,10 +456,17 @@ def gradeAnswer(result, subPass, aiEngineName, returnGrid=False):
   largestArea, best_region = _largest_flat_region(grid, FLAT_NEIGHBOUR_TOL)
   subpassBestRegion[subPass] = best_region
 
-  score = (largestArea - largestAreaStart) / (rows * cols - largestAreaStart)
+  denominator = (rows * cols - largestAreaStart * 2)
+  if denominator < size:
+    denominator = size
+
+  score = (largestArea - largestAreaStart) / denominator
+
+  score = min(score, 1)
+  score = max(score, 0)
   if largestArea > largestAreaStart:
     message = f"Made progress! Largest flat area after blasting was {largestArea} cells, "\
-      "before blasting it was only {largestAreaStart} cells"
+      f"before blasting it was only {largestAreaStart} cells"
   elif largestArea == largestAreaStart:
     message = f"Made no progress! Largest flat area after blasting was {largestArea} cells, same as it was before blasting."
 

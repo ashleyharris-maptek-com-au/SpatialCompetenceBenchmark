@@ -21,7 +21,7 @@ def get_response(subPass: int):
   os.makedirs(cache_dir, exist_ok=True)
 
   # Cache based on current terrain state (input heightmap hash)
-  height_hash = hashlib.md5(b"v3" + heightMap.tobytes()).hexdigest()
+  height_hash = hashlib.md5(b"v4" + heightMap.tobytes()).hexdigest()
   cache_file = os.path.join(cache_dir, f"subpass{subPass}_{height_hash}.npz")
 
   if os.path.exists(cache_file):
@@ -34,10 +34,21 @@ def get_response(subPass: int):
 
   for p in range(10):
     print(f"Running pass {p}")
+
+    continuousSize, xyList = g["_largest_flat_region"](heightMap)
+
+    heightSum = 0
+    for y, x in xyList:
+      heightSum += heightMap[y][x]
+
+    targetHeight = heightSum / continuousSize
+
+    print(f"Got a flat area of size {continuousSize} at level {targetHeight:.1f}")
+
     for y in range(0, size):
       for x in range(0, size):
-        if heightMap[y][x] > 4 - p / 10:
-          blasts.append({"x": x, "y": y, "z": 1.2})
+        if heightMap[y][x] > targetHeight:
+          blasts.append({"x": x, "y": y, "z": heightMap[y][x] - targetHeight})
           heightMap[y][x] -= 1
 
     heightMap = g["gradeAnswer"]({"blasts": blasts}, subPass, "placebo", True)
