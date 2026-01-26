@@ -105,6 +105,7 @@ numbers, but it doesn't understand the geometry of the scene.
 
 - Python 3.10+
 - [OpenSCAD](https://openscad.org/) (required for 3D geometry tests)
+  - If OpenSCAD is not on your PATH, set `OPENSCAD_PATH` to the full path of the `openscad` binary.
 
 ### Installation
 

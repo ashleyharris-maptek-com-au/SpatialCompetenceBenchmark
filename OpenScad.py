@@ -3,14 +3,20 @@ import subprocess
 import tempfile
 import StlVolume
 import os
-from typing import List, Optional
+import shutil
+from typing import List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-openScadPath = R"C:\Program Files\OpenSCAD\openscad.exe"
+openScadPath = os.environ.get("OPENSCAD_PATH")
+if not openScadPath:
+  openScadPath = shutil.which("openscad")
+if not openScadPath:
+  openScadPath = R"C:\Program Files\OpenSCAD\openscad.exe"
 if not os.path.exists(openScadPath):
   openScadPath = R"C:\Program Files (x86)\OpenSCAD\openscad.exe"
 if not os.path.exists(openScadPath):
-  raise FileNotFoundError("OpenSCAD executable not found at expected paths")
+  raise FileNotFoundError(
+    "OpenSCAD executable not found. Set OPENSCAD_PATH or add openscad to PATH.")
 
 formatConfig = scad_format.FormatConfig(
   IndentWidth=2,
@@ -84,7 +90,8 @@ def render_scadText_to_png(scad_content: str,
                            png_path: str,
                            cameraArg: str = "--camera=10,10,10,55,0,25,100",
                            extraScadArgs: List[str] = [],
-                           previewMode=False) -> None:
+                           previewMode=False,
+                           img_size: Tuple[int, int] = (800, 600)) -> None:
   """Render SCAD content to PNG using OpenSCAD with an off-axis camera."""
   # Create a temporary SCAD file with the provided content
   temp_scad = png_path.replace(".png", "temp.scad")
@@ -100,7 +107,7 @@ def render_scadText_to_png(scad_content: str,
       "--autocenter",
       "--viewall",
       cameraArg,
-      "--imgsize=800,600",
+      f"--imgsize={img_size[0]},{img_size[1]}",
       "--colorscheme=Starnight",
       "-o",
       os.path.basename(png_path),

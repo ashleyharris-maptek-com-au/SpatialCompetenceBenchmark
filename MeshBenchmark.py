@@ -51,7 +51,7 @@ class MeshBenchmarkRunner(BenchmarkRunner):
     return VolumeComparison.compareVolumeAgainstOpenScad(index, subPass, result, test_globals,
                                                          aiEngineName)
 
-  def run_setup_for_test(self, test_globals: dict) -> None:
+  def run_setup_for_test(self, test_index: int, test_globals: dict) -> None:
     """Build OpenSCAD reference models during setup."""
     if "prepareSubpassReferenceScad" in test_globals:
       print(f"    Building OpenSCAD reference models...")
@@ -68,12 +68,11 @@ class MeshBenchmarkRunner(BenchmarkRunner):
           print(f"    Warning: Reference build for subpass {subpass} failed: {e}")
           break
 
-        placebo_data.cache_solutions()
-
       print(f"    Built {subpass} reference models")
+    placebo_data.cache_solutions(test_index)
 
 
 if __name__ == "__main__":
-  set_placebo_data_provider(placebo_data.get_response)
+  set_placebo_data_provider(["always-wrong", "human-with-tools"], placebo_data.get_response)
   runner = MeshBenchmarkRunner()
   run_benchmark_main(runner, __file__)

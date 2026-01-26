@@ -637,5 +637,5 @@ def get_response(subPass: int):
 
 
 def cache_solutions():
-  for sp in range(g["prismList"]):
+  for sp in len(g["prismList"]):
     get_response(sp)

@@ -908,34 +908,41 @@ def _select_diverse_beams(candidates, n_beams, min_distance):
 
 
 def cache_solutions():
-  import argparse
-  parser = argparse.ArgumentParser(description="Celestial navigation solver")
-  parser.add_argument("subpass",
-                      nargs="?",
-                      type=int,
-                      default=None,
-                      help="Subpass to solve (omit to run all in parallel)")
-  parser.add_argument("--mode",
-                      choices=["exact", "image", "compare"],
-                      default="exact",
-                      help="Star index mode: exact (default), image, or compare (image_and_exact)")
-  args = parser.parse_args()
 
-  # Map mode string to Enum
-  mode_map = {
-    "exact": StarIndexMode.EXACT,
-    "image": StarIndexMode.IMAGE,
-    "compare": StarIndexMode.IMAGE_AND_EXACT,
-  }
-  mode = mode_map[args.mode]
+  if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Celestial navigation solver")
+    parser.add_argument("subpass",
+                        nargs="?",
+                        type=int,
+                        default=None,
+                        help="Subpass to solve (omit to run all in parallel)")
+    parser.add_argument(
+      "--mode",
+      choices=["exact", "image", "compare"],
+      default="exact",
+      help="Star index mode: exact (default), image, or compare (image_and_exact)")
+    args = parser.parse_args()
 
-  if args.subpass is None:
+    # Map mode string to Enum
+    mode_map = {
+      "exact": StarIndexMode.EXACT,
+      "image": StarIndexMode.IMAGE,
+      "compare": StarIndexMode.IMAGE_AND_EXACT,
+    }
+    mode = mode_map[args.mode]
+    subpass = args.subpass
+  else:
+    subpass = None
+    mode = "image"
+
+  if subpass is None:
     # Run 50 sub-tasks in parallel, solving all 50 problems in advance and cache the
     # results.
     subTasks = []
     for i in range(50):
       print(f"Spawning solver for subpass {i}")
-      cmd = [sys.executable, __file__, str(i), "--mode", args.mode]
+      cmd = [sys.executable, __file__, str(i), "--mode", mode]
       subTasks.append(subprocess.Popen(cmd))
 
       if len(subTasks) > min(os.cpu_count(), 16):
@@ -945,9 +952,10 @@ def cache_solutions():
     for subTask in subTasks:
       subTask.wait()
   else:
-    print(f"Running subpass {args.subpass} with mode={args.mode}")
+    print(f"Running subpass {subpass} with mode={mode}")
     get_response(args.subpass, mode=mode)
-    print(f"Finished subpass {args.subpass}")
+    print(f"Finished subpass {subpass}")
 
 
-if __name__ == "__main__": cache_solutions()
+if __name__ == "__main__":
+  cache_solutions()

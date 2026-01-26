@@ -23,6 +23,7 @@ import sys
 import tempfile
 import threading
 import time
+import numpy as np
 import filelock  # pip install filelock for concurrency-safe caching
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -144,7 +145,9 @@ CACHE_DIR = Path(tempfile.gettempdir()) / "q12_cache"
 DIAG_DIR = Path(tempfile.gettempdir()) / "q12_spring_diag"
 
 
-def _copy_2d(v: List[List[float]]) -> List[List[float]]:
+def _copy_2d(v):
+  if hasattr(v, "tolist"):
+    return v.tolist()
   return [row[:] for row in v]
 
 
@@ -602,13 +605,16 @@ class SpringSimulation:
   def __init__(self,
                subPass: int,
                seed: Optional[int] = None,
-               lastSolver: Optional['SpringSimulation'] = None):
+               lastSolver: "SpringSimulation" = None):
     self.subPass = subPass
-    self.seed = seed
-    self.rng = random.Random(seed or int(time.time() * 1000))
+    self.seed = seed if seed is not None else int(time.time() * 1000) % (2**32 - 1)
+    self.rng = random.Random(self.seed)
     self.testParams, self.gradeAnswer = _load_problem()
     params = self.testParams[subPass]
     self.n = params["pipes"]
+    self.large_n = self.n > 300
+    self.cross_stride = 50 if self.large_n else 1
+    self.eval_stride = 3 if self.large_n else 1
     self.boundary = params["boundary"]
     self.tolerance = params.get("tolerance", 0.05)
     self.complications = params.get("complications", [])
@@ -722,6 +728,9 @@ class SpringSimulation:
         candidates.append(self._init_railway_tracks)
       if self.n >= 40:
         candidates.append(self._init_triple_helix)
+      if self.n > 300:
+        candidates.append(self._init_quad_helix)
+        candidates.append(self._init_quintuple_helix)
 
     # Always have at least circle as fallback
     if not candidates:
@@ -1079,6 +1088,94 @@ class SpringSimulation:
 
     return pts
 
+  def _init_multi_helix(self, num_rings: int) -> List[List[float]]:
+    """Generic multi-ring helix (no crossings) with evenly spaced links."""
+    center = self.boundary / 2
+
+    link_pts = 2
+    total_links = num_rings  # one link between each pair (including last->first)
+    circle_budget = max(self.n - total_links * link_pts, num_rings * 3)
+    pts_per_ring = circle_budget // num_rings
+    remainder = circle_budget % num_rings
+
+    arc_fraction = 2.0 / 3.0  # each ring covers ~240°
+    if pts_per_ring >= 3:
+      outer_r = 1.0 / (2 * math.sin(math.pi * arc_fraction / pts_per_ring))
+    else:
+      outer_r = 2.0
+
+    max_r = (self.boundary - 0.4) / 2
+    outer_r = min(outer_r, max_r)
+    outer_r = max(outer_r, self.boundary * 0.35)
+
+    inner_target = max(1.0, outer_r * 0.25)
+    if num_rings > 1:
+      ring_spacing = (outer_r - inner_target) / (num_rings - 1)
+    else:
+      ring_spacing = 0
+    radii = [outer_r - ring_spacing * i for i in range(num_rings)]
+
+    pts: List[List[float]] = []
+    arc_angle = 2 * math.pi * arc_fraction
+
+    start_angle = 0.0
+    for idx in range(num_rings):
+      ring_pts = pts_per_ring + (1 if idx < remainder else 0)
+      ring_pts = max(ring_pts, 4)  # avoid degenerately small rings
+      r = radii[idx]
+      direction = -1 if idx % 2 == 0 else 1  # alternate CW/CCW
+
+      end_angle = start_angle + direction * arc_angle
+
+      # Ring arc from start_angle to end_angle (inclusive of start, exclusive of end)
+      for i in range(ring_pts):
+        frac = i / ring_pts if ring_pts > 0 else 0
+        t = start_angle + direction * frac * arc_angle
+        x = center + r * math.cos(t)
+        y = center + r * math.sin(t)
+        pts.append([x, y])
+
+      # Link to next ring at the same end_angle to keep radial alignment
+      next_idx = (idx + 1) % num_rings
+      r_next = radii[next_idx]
+      for i in range(link_pts):
+        frac = (i + 1) / (link_pts + 1)
+        r_link = r + (r_next - r) * frac
+        x = center + r_link * math.cos(end_angle)
+        y = center + r_link * math.sin(end_angle)
+        pts.append([_clamp(x, 0.1, self.boundary - 0.1), _clamp(y, 0.1, self.boundary - 0.1)])
+
+      # Next ring starts where this one ended (maintains continuity)
+      start_angle = end_angle
+
+    return pts
+
+  def _init_quad_helix(self) -> List[List[float]]:
+    return self._init_multi_helix(4)
+
+  def _init_quintuple_helix(self) -> List[List[float]]:
+    return self._init_multi_helix(5)
+
+  def _fix_first_crossing(self, pos: np.ndarray) -> bool:
+    """Detect first crossing and untangle by reversing the segment between edges."""
+    if self.constraints["exact_crossings"]:
+      return False  # honor required crossings
+    n = len(pos)
+    for i in range(n):
+      for j in range(i + 2, n):
+        if i == 0 and j == n - 1:
+          continue  # adjacent closing edge
+        p1, p2 = pos[i], pos[(i + 1) % n]
+        p3, p4 = pos[j], pos[(j + 1) % n]
+        if _segments_intersect(p1, p2, p3, p4):
+          a = i + 1
+          b = j
+          if b <= a:
+            continue
+          pos[a:b + 1] = pos[a:b + 1][::-1]
+          return True
+    return False
+
   def _init_railway_tracks(self) -> List[List[float]]:
     """Initialize as two parallel sin waves (like railway tracks).
     
@@ -1143,16 +1240,20 @@ class SpringSimulation:
 
   def _init_velocities(self) -> List[List[float]]:
     """Initialize velocities to zero."""
-    return [[0.0, 0.0] for _ in range(self.n)]
+    return np.zeros((self.n, 2), dtype=float)
 
-  def _compute_forces(self, pos: List[List[float]], progress: float = 0.0) -> List[List[float]]:
+  def _compute_forces(self,
+                      pos: List[List[float]],
+                      progress: float = 0.0,
+                      it: int = 0) -> List[List[float]]:
     """Compute all forces on each point.
     
     Args:
       pos: Current positions of all points
       progress: 0.0 to 1.0 indicating simulation progress, used for ramping edge strength
     """
-    forces = [[0.0, 0.0] for _ in range(self.n)]
+    pos = np.asarray(pos, dtype=float)
+    forces = np.zeros((self.n, 2), dtype=float)
     n = self.n
 
     # Edge and angle spring strength ramps up and down (out of sync with each other) with progress
@@ -1162,55 +1263,52 @@ class SpringSimulation:
       0, math.sin(progress * .037))
 
     # 1. Edge length springs - each edge wants to be length 1.0
-    for i in range(n):
+    next_idx = (np.arange(n) + 1) % n
+    diffs = pos[next_idx] - pos
+    dists = np.linalg.norm(diffs, axis=1)
+
+    valid = dists > 1e-10
+    close_enough = (dists > 0.95) & (dists < 1.05)
+    apply_mask = valid & (~close_enough)
+
+    stretch = dists - 1.0
+    edge_forces = np.zeros_like(diffs)
+    if np.any(apply_mask):
+      edge_scale = (k_edge * stretch / dists)[:, None]
+      edge_forces[apply_mask] = edge_scale[apply_mask] * diffs[apply_mask]
+      forces += edge_forces
+      forces[next_idx] -= edge_forces
+
+    # Handle coincident points (dists ~ 0) with random nudge
+    coincident = np.where(~valid)[0]
+    for i in coincident:
       j = (i + 1) % n
-      dx = pos[j][0] - pos[i][0]
-      dy = pos[j][1] - pos[i][1]
-      dist = math.hypot(dx, dy)
+      print(f"    Points {i} and {j} are coincident")
+      fx = random.random() * 2
+      fy = random.random() * 2
+      forces[i][0] += fx
+      forces[i][1] += fy
+      forces[j][0] -= fx
+      forces[j][1] -= fy
 
-      if dist > 1e-10:
-        # Spring force: F = k * (dist - rest_length) * direction
-        stretch = dist - 1.0
-
-        if dist > 0.95 and dist < 1.05:
-          continue  # Close enough for the grader.
-
-        fx = k_edge * stretch * dx / dist
-        fy = k_edge * stretch * dy / dist
-
-        forces[i][0] += fx
-        forces[i][1] += fy
-        forces[j][0] -= fx
-        forces[j][1] -= fy
-
-        if n > 100:
-          dropOff = 0.5
-          count = 4
-
-          if progress > 0.2: continue
-
-          if progress < 0.025:
-            dropOff = 0.5
-            count = 10
-
-          for k in range(1, count):
-            i2 = i - k
-            j2 = j + k
-            if j2 >= n: j2 -= n
-            fx *= dropOff
-            fy *= dropOff
-            forces[i2][0] += fx
-            forces[i2][1] += fy
-            forces[j2][0] -= fx
-            forces[j2][1] -= fy
-
-      else:
-        # If they intersect - spray them randomly.
-        print(f"    Points {i} and {j} are coincident")
-        forces[i][0] += random.random() * 2
-        forces[i][1] += random.random() * 2
-        forces[j][0] -= random.random() * 2
-        forces[j][1] -= random.random() * 2
+    # Local spreading of edge forces for large n (preserve prior behavior)
+    if n > 100 and np.any(apply_mask) and progress <= 0.2:
+      dropOff = 0.5
+      count = 4
+      if progress < 0.025:
+        dropOff = 0.5
+        count = 10
+      for i in np.where(apply_mask)[0]:
+        fx, fy = edge_forces[i]
+        for k in range(1, count):
+          i2 = (i - k) % n
+          j2 = (i + k + 1) % n  # neighbor of j
+          fx *= dropOff
+          fy *= dropOff
+          forces[i2][0] += fx
+          forces[i2][1] += fy
+          forces[j2][0] -= fx
+          forces[j2][1] -= fy
 
     # 2. Boundary forces - keep points inside
     margin = 0.05
@@ -1322,82 +1420,44 @@ class SpringSimulation:
             forces[i][1] += perp_y * force_scale
 
     # 6. Crossing management - push toward target crossing count
-    max_allowed = self.constraints["max_crossings"]
-    exact_required = self.constraints["exact_crossings"]
+    do_crossings = (self.cross_stride == 1) or ((it % self.cross_stride == 0) and progress < 0.8)
+    if do_crossings:
+      max_allowed = self.constraints["max_crossings"]
+      exact_required = self.constraints["exact_crossings"]
 
-    # Determine target crossing count
-    if exact_required is not None:
-      target_crossings = exact_required
-    elif max_allowed is not None:
-      target_crossings = 0  # Push toward 0 when max is set
-    else:
-      target_crossings = 0  # Default: no crossings
+      # Determine target crossing count
+      if exact_required is not None:
+        target_crossings = exact_required
+      elif max_allowed is not None:
+        target_crossings = 0  # Push toward 0 when max is set
+      else:
+        target_crossings = 0  # Default: no crossings
 
-    # Find all crossings
-    crossings = []
-    for i in range(n):
-      for j in range(i + 2, n):
-        if i == 0 and j == n - 1:
-          continue
-        p1, p2 = (pos[i][0], pos[i][1]), (pos[(i + 1) % n][0], pos[(i + 1) % n][1])
-        p3, p4 = (pos[j][0], pos[j][1]), (pos[(j + 1) % n][0], pos[(j + 1) % n][1])
-        if _segments_intersect(p1, p2, p3, p4):
-          crossings.append((i, j))
-
-    if len(crossings) > target_crossings:
-      # Too many crossings - push segments apart
-      for seg_i, seg_j in crossings:
-        mid1 = _segment_midpoint((pos[seg_i][0], pos[seg_i][1]),
-                                 (pos[(seg_i + 1) % n][0], pos[(seg_i + 1) % n][1]))
-        mid2 = _segment_midpoint((pos[seg_j][0], pos[seg_j][1]),
-                                 (pos[(seg_j + 1) % n][0], pos[(seg_j + 1) % n][1]))
-        dx = mid1[0] - mid2[0]
-        dy = mid1[1] - mid2[1]
-        dist = math.hypot(dx, dy)
-        if dist < 1e-10:
-          dx, dy = self.rng.random() - 0.5, self.rng.random() - 0.5
-          dist = math.hypot(dx, dy)
-        force = self.k_crossing / max(dist, 0.1)
-        fx = force * dx / dist
-        fy = force * dy / dist
-        forces[seg_i][0] += fx * 0.5
-        forces[seg_i][1] += fy * 0.5
-        forces[(seg_i + 1) % n][0] += fx * 0.5
-        forces[(seg_i + 1) % n][1] += fy * 0.5
-        forces[seg_j][0] -= fx * 0.5
-        forces[seg_j][1] -= fy * 0.5
-        forces[(seg_j + 1) % n][0] -= fx * 0.5
-        forces[(seg_j + 1) % n][1] -= fy * 0.5
-
-    elif len(crossings) < target_crossings and target_crossings > 0:
-      # Need MORE crossings - push segments toward each other
-      best_pair = None
-      best_dist = 0
+      # Find all crossings
+      crossings = []
       for i in range(n):
-        for j in range(i + 3, n - 1):
-          if i == 0 and j >= n - 2:
+        for j in range(i + 2, n):
+          if i == 0 and j == n - 1:
             continue
-          mid1 = _segment_midpoint((pos[i][0], pos[i][1]),
-                                   (pos[(i + 1) % n][0], pos[(i + 1) % n][1]))
-          mid2 = _segment_midpoint((pos[j][0], pos[j][1]),
-                                   (pos[(j + 1) % n][0], pos[(j + 1) % n][1]))
-          dist = _distance(mid1, mid2)
-          score = dist if dist < self.boundary else self.boundary * 2 - dist
-          if score > best_dist and (i, j) not in crossings:
-            best_dist = score
-            best_pair = (i, j)
+          p1, p2 = (pos[i][0], pos[i][1]), (pos[(i + 1) % n][0], pos[(i + 1) % n][1])
+          p3, p4 = (pos[j][0], pos[j][1]), (pos[(j + 1) % n][0], pos[(j + 1) % n][1])
+          if _segments_intersect(p1, p2, p3, p4):
+            crossings.append((i, j))
 
-      if best_pair:
-        seg_i, seg_j = best_pair
-        mid1 = _segment_midpoint((pos[seg_i][0], pos[seg_i][1]),
-                                 (pos[(seg_i + 1) % n][0], pos[(seg_i + 1) % n][1]))
-        mid2 = _segment_midpoint((pos[seg_j][0], pos[seg_j][1]),
-                                 (pos[(seg_j + 1) % n][0], pos[(seg_j + 1) % n][1]))
-        dx = mid2[0] - mid1[0]
-        dy = mid2[1] - mid1[1]
-        dist = math.hypot(dx, dy)
-        if dist > 1e-10:
-          force = self.k_crossing * 0.5
+      if len(crossings) > target_crossings:
+        # Too many crossings - push segments apart
+        for seg_i, seg_j in crossings:
+          mid1 = _segment_midpoint((pos[seg_i][0], pos[seg_i][1]),
+                                   (pos[(seg_i + 1) % n][0], pos[(seg_i + 1) % n][1]))
+          mid2 = _segment_midpoint((pos[seg_j][0], pos[seg_j][1]),
+                                   (pos[(seg_j + 1) % n][0], pos[(seg_j + 1) % n][1]))
+          dx = mid1[0] - mid2[0]
+          dy = mid1[1] - mid2[1]
+          dist = math.hypot(dx, dy)
+          if dist < 1e-10:
+            dx, dy = self.rng.random() - 0.5, self.rng.random() - 0.5
+            dist = math.hypot(dx, dy)
+          force = self.k_crossing / max(dist, 0.1)
           fx = force * dx / dist
           fy = force * dy / dist
           forces[seg_i][0] += fx * 0.5
@@ -1408,6 +1468,46 @@ class SpringSimulation:
           forces[seg_j][1] -= fy * 0.5
           forces[(seg_j + 1) % n][0] -= fx * 0.5
           forces[(seg_j + 1) % n][1] -= fy * 0.5
+
+      elif len(crossings) < target_crossings and target_crossings > 0:
+        # Need MORE crossings - push segments toward each other
+        best_pair = None
+        best_dist = 0
+        for i in range(n):
+          for j in range(i + 3, n - 1):
+            if i == 0 and j >= n - 2:
+              continue
+            mid1 = _segment_midpoint((pos[i][0], pos[i][1]),
+                                     (pos[(i + 1) % n][0], pos[(i + 1) % n][1]))
+            mid2 = _segment_midpoint((pos[j][0], pos[j][1]),
+                                     (pos[(j + 1) % n][0], pos[(j + 1) % n][1]))
+            dist = _distance(mid1, mid2)
+            score = dist if dist < self.boundary else self.boundary * 2 - dist
+            if score > best_dist and (i, j) not in crossings:
+              best_dist = score
+              best_pair = (i, j)
+
+        if best_pair:
+          seg_i, seg_j = best_pair
+          mid1 = _segment_midpoint((pos[seg_i][0], pos[seg_i][1]),
+                                   (pos[(seg_i + 1) % n][0], pos[(seg_i + 1) % n][1]))
+          mid2 = _segment_midpoint((pos[seg_j][0], pos[seg_j][1]),
+                                   (pos[(seg_j + 1) % n][0], pos[(seg_j + 1) % n][1]))
+          dx = mid2[0] - mid1[0]
+          dy = mid2[1] - mid1[1]
+          dist = math.hypot(dx, dy)
+          if dist > 1e-10:
+            force = self.k_crossing * 0.5
+            fx = force * dx / dist
+            fy = force * dy / dist
+            forces[seg_i][0] += fx * 0.5
+            forces[seg_i][1] += fy * 0.5
+            forces[(seg_i + 1) % n][0] += fx * 0.5
+            forces[(seg_i + 1) % n][1] += fy * 0.5
+            forces[seg_j][0] -= fx * 0.5
+            forces[seg_j][1] -= fy * 0.5
+            forces[(seg_j + 1) % n][0] -= fx * 0.5
+            forces[(seg_j + 1) % n][1] -= fy * 0.5
 
     # 7. Centroid constraint
     if self.constraints["centroid_box"]:
@@ -1602,31 +1702,38 @@ class SpringSimulation:
 
     return forces
 
-  def _step(self, pos: List[List[float]], vel: List[List[float]], progress: float = 0.0) -> None:
+  def _step(self,
+            pos: List[List[float]],
+            vel: List[List[float]],
+            progress: float = 0.0,
+            it: int = 0) -> None:
     """Perform one simulation step (in-place update)."""
-    forces = self._compute_forces(pos, progress)
+    # Proactively untangle by reversing a crossed segment (cheap topological fix)
+    for _ in range(3):
+      if not self._fix_first_crossing(pos):
+        break
 
-    for i in range(self.n):
-      # Update velocity with force and damping
-      vel[i][0] = (vel[i][0] + forces[i][0] * self.dt) * self.damping
-      vel[i][1] = (vel[i][1] + forces[i][1] * self.dt) * self.damping
+    forces = self._compute_forces(pos, progress, it)
 
-      # Cap velocity
-      v_mag = math.hypot(vel[i][0], vel[i][1])
-      if v_mag > self.max_velocity:
-        vel[i][0] *= self.max_velocity / v_mag
-        vel[i][1] *= self.max_velocity / v_mag
+    # Update velocity with force and damping (vectorized)
+    vel += forces * self.dt
+    vel *= self.damping
 
-      # Update position
-      pos[i][0] += vel[i][0] * self.dt
-      pos[i][1] += vel[i][1] * self.dt
+    # Cap velocity magnitudes
+    v_mag = np.linalg.norm(vel, axis=1)
+    mask = v_mag > self.max_velocity
+    if np.any(mask):
+      vel[mask] *= (self.max_velocity / v_mag[mask])[:, None]
 
-      # Hard clamp to boundary
-      pos[i][0] = _clamp(pos[i][0], 0.001, self.boundary - 0.001)
-      pos[i][1] = _clamp(pos[i][1], 0.001, self.boundary - 0.001)
+    # Update position
+    pos += vel * self.dt
+
+    # Hard clamp to boundary
+    pos[:, 0] = np.clip(pos[:, 0], 0.001, self.boundary - 0.001)
+    pos[:, 1] = np.clip(pos[:, 1], 0.001, self.boundary - 0.001)
 
   def _to_tuples(self, pos: List[List[float]]) -> List[Tuple[float, float]]:
-    return [(p[0], p[1]) for p in pos]
+    return [(float(p[0]), float(p[1])) for p in pos]
 
   def _evaluate(self, pos: List[List[float]]) -> List[Dict[str, Any]]:
     """Evaluate current configuration using gradeAnswer."""
@@ -1651,11 +1758,11 @@ class SpringSimulation:
     last_diag_it = -10**9
     last_diag_error_count: Optional[int] = None
 
-    pos = self._init_positions()
-    vel = self._init_velocities()
+    pos = np.asarray(self._init_positions(), dtype=float)
+    vel = np.asarray(self._init_velocities(), dtype=float)
 
-    best_pos = [p[:] for p in pos]
-    best_vel = [v[:] for v in vel]
+    best_pos = pos.copy()
+    best_vel = vel.copy()
     best_errors = self._evaluate(pos)
     best_count = len(best_errors)
 
@@ -1703,7 +1810,7 @@ class SpringSimulation:
         "constraints": self.constraints,
         "pos": _copy_2d(pos),
         "vel": _copy_2d(vel),
-        "forces": forces,
+        "forces": _copy_2d(forces),
         "errors": errors,
         "kinds": kinds,
         "error_count": error_count,
@@ -1717,8 +1824,8 @@ class SpringSimulation:
     for it in range(max_iterations):
       if firstStallTime and time.time() - firstStallTime > time_limit:
         if revert_to_best_count < 5 and error_count > best_count:
-          pos = [p[:] for p in best_pos]
-          vel = [v[:] for v in best_vel]
+          pos = best_pos.copy()
+          vel = best_vel.copy()
           revert_to_best_count += 1
           print(f"- Reverted at {it} ({error_count} errors) back to {best_count}."
                 f" As have been stuck for {time.time() - firstStallTime:.1f} seconds. "
@@ -1735,11 +1842,16 @@ class SpringSimulation:
 
       # Progress ramps from 0 to 1 over iterations (edge springs get stronger)
       progress = min(1.0, it / 1000.0)  # Ramp up over first 1000 iterations
-      self._step(pos, vel, progress)
+      self._step(pos, vel, progress, it)
 
-      # Periodically evaluate
-      errors = self._evaluate(pos)
-      error_count = len(errors)
+      # Periodically evaluate (stride for large n)
+      if (not self.large_n) or (it % self.eval_stride == 0):
+        errors = self._evaluate(pos)
+        error_count = len(errors)
+        last_errors = errors
+      else:
+        errors = last_errors
+        error_count = len(errors)
 
       if firstStallTime is not None:
         record_diag(it, "stuck", errors, error_count, best_count, progress)
@@ -1819,8 +1931,8 @@ def get_response(subPass: int):
   # Check cache first
   cached = _load_cached_solution(subPass)
   if cached is not None:
-    print("Cached: " + str(CACHE_DIR))
-    return cached, "Solver: Loaded from cache"
+    print(f"Cached {subPass}: " + str(CACHE_DIR))
+    return cached, f"Solver: Loaded {subPass} from cache"
 
   # There is no benefit to running the solver in parallel.
   with mutexLock:
@@ -1865,22 +1977,26 @@ def get_response(subPass: int):
 def cache_solutions():
   # Test multiple subpasses
 
-  r = range(40)
-  if len(sys.argv) > 1:
+  r = list(range(40))
+  r.reverse()
+  if __name__ == "__main__" and len(sys.argv) > 1:
     r = sys.argv[1:]
     r = [int(x) for x in r]
 
-  solved = 0
-  failed = []
+  import subprocess
+  t = []
   for sp in r:
-    print(f"Testing subpass {sp}...", end=" ")
-    result, msg = get_response(sp)
-    if "Loaded from cache" in msg:
-      solved += 1
-    elif "Solved" in msg:
-      print(f"SOLVED - {msg}")
-      solved += 1
-    else:
-      print(f"FAILED - {msg}")
-      failed.append(sp)
-  print(f"\nSummary: {solved}/40 solved, failed: {failed}")
+    t.append(subprocess.Popen([sys.executable, __file__, str(sp)]))
+    if len(t) > 8:
+      t.pop().wait()
+      while t and t[0].poll() is not None:
+        t.pop().wait()
+
+  while t:
+    t.pop().wait()
+
+
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    subPass = sys.argv[1]
+    get_response(int(subPass))

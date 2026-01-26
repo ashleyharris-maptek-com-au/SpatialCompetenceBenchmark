@@ -1,6 +1,11 @@
 import OpenScad as vc
 import itertools
 import math
+import os
+import hashlib
+import json
+import tempfile
+import shutil
 from typing import Dict, List, Tuple
 
 title = "Fit a loop into a square that's perimeter is smaller than the total length"
@@ -163,7 +168,7 @@ _base_specs: List[Tuple[int, int]] = [(3, 1), (6, 2), (8, 2), (10, 3), (12, 3), 
                                       (60, 8), (64, 8), (72, 9), (80, 10), (90, 12), (100, 14),
                                       (110, 15), (120, 16), (140, 18), (160, 20), (170, 24),
                                       (180, 26), (200, 27), (280, 28), (320, 30), (360, 32),
-                                      (420, 34), (500, 36), (600, 40)]
+                                      (390, 35), (400, 40), (420, 50)]
 
 
 def _describe_complication(comp: Dict) -> str:
@@ -600,7 +605,7 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str, returnedStru
                 {"pairs": crossings})
       if returnedStructuredErrors:
         return errors
-      return 0, "Crossing detected" + "\n".join(error_lines)
+      return 0, "Crossing detected"
 
   if errors:
     if returnedStructuredErrors:
@@ -643,21 +648,120 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
 
   scad_content += f"translate([0,0,-0.01]) color([0.1,0.1,0.1]) cube([{squareSize},{squareSize},0.01]);"
 
-  import os
   os.makedirs("results", exist_ok=True)
-  output_path = "results/12_Visualization_" + aiEngineName + "_" + str(subPass) + ".png"
-  vc.render_scadText_to_png(scad_content, output_path)
-  print(f"Saved visualization to {output_path}")
+  base_name = f"12_Visualization_{aiEngineName}_{subPass}"
 
-  return f'<img src="{os.path.basename(output_path)}" alt="Pipe Loop Visualization" style="max-width: 100%;">'
+  center = squareSize / 2
+
+  def build_camera_arg(eye_x, eye_y, eye_z, target_x=None, target_y=None, target_z=0):
+    if target_x is None:
+      target_x = center
+    if target_y is None:
+      target_y = center
+    return (f"--camera={eye_x:.3f},{eye_y:.3f},{eye_z:.3f},"
+            f"{target_x:.3f},{target_y:.3f},{target_z:.3f}")
+
+  side_height = max(8.0, squareSize * 1.2)
+  offset = squareSize * 1.5
+  views = [
+    ("southwest",
+     build_camera_arg(center - offset * 0.7, center - offset * 0.7, side_height, center, center)),
+    ("above", build_camera_arg(center, center, side_height * 2)),
+    ("north", build_camera_arg(center, -offset, side_height, center, center)),
+    ("south", build_camera_arg(center, squareSize + offset, side_height, center, center)),
+    ("west", build_camera_arg(-offset, center, side_height, center, center)),
+    ("east", build_camera_arg(squareSize + offset, center, side_height, center, center)),
+    ("northeast",
+     build_camera_arg(center + offset * 0.7, center + offset * 0.7, side_height, center, center)),
+  ]
+
+  cache_dir = os.path.join(tempfile.gettempdir(), "q12_image_cache")
+  os.makedirs(cache_dir, exist_ok=True)
+
+  image_paths = []
+  for view_name, camera_arg in views:
+    filename = f"{base_name}_{view_name}.png"
+    output_path = os.path.join("results", filename)
+    cached_path = os.path.join(cache_dir, filename)
+
+    if not os.path.exists(cached_path):
+      vc.render_scadText_to_png(scad_content,
+                                cached_path,
+                                camera_arg, ["--no-autocenter"],
+                                img_size=(800, 600))
+
+    shutil.copy2(cached_path, output_path)
+    image_paths.append(output_path)
+
+  # High-res (clickable) render from the primary view
+  hires_view_name, hires_camera = views[0]
+  hires_filename = f"{base_name}_{hires_view_name}_hires.png"
+  hires_output_path = os.path.join("results", hires_filename)
+  hires_cached_path = os.path.join(cache_dir, hires_filename)
+  if not os.path.exists(hires_cached_path):
+    vc.render_scadText_to_png(scad_content,
+                              hires_cached_path,
+                              hires_camera, ["--no-autocenter"],
+                              img_size=(4000, 3000))
+  shutil.copy2(hires_cached_path, hires_output_path)
+
+  viewer_id = f"loop-viewer-{hashlib.md5(base_name.encode()).hexdigest()}"
+  radio_name = f"{viewer_id}-view"
+  radio_ids = [f"{viewer_id}-view-{idx}" for idx in range(len(image_paths))]
+
+  inputs = []
+  for idx, radio_id in enumerate(radio_ids):
+    checked = " checked" if idx == 0 else ""
+    inputs.append(f'<input type="radio" name="{radio_name}" id="{radio_id}"{checked}>')
+
+  labels = []
+  for idx in range(len(radio_ids)):
+    prev_idx = (idx - 1) % len(radio_ids)
+    next_idx = (idx + 1) % len(radio_ids)
+    labels.append(
+      f'<label class="loop-prev prev-{idx}" for="{radio_ids[prev_idx]}">&#8592;</label>')
+    labels.append(
+      f'<label class="loop-next next-{idx}" for="{radio_ids[next_idx]}">&#8594;</label>')
+
+  image_tags = []
+  for idx, path in enumerate(image_paths):
+    image_tags.append(f'<img src="{os.path.basename(path)}" class="loop-view view-{idx}" '
+                      f'style="max-width: 100%;">')
+
+  style_lines = [
+    f'#{viewer_id} {{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }}',
+    f'#{viewer_id} input[type="radio"] {{ display:none; }}',
+    f'#{viewer_id} .loop-frame {{ flex:1 1 100%; text-align:center; order:2; }}',
+    f'#{viewer_id} .loop-prev {{ order:0; cursor:pointer; font-size:18px; display:none; }}',
+    f'#{viewer_id} .loop-next {{ order:1; cursor:pointer; font-size:18px; display:none; }}',
+    f'#{viewer_id} .loop-view {{ display:none; max-width:100%; }}',
+  ]
+  for idx, radio_id in enumerate(radio_ids):
+    style_lines.append(f'#{radio_id}:checked ~ .loop-frame .view-{idx} {{ display:block; }}')
+    style_lines.append(f'#{radio_id}:checked ~ .prev-{idx} {{ display:inline-flex; }}')
+    style_lines.append(f'#{radio_id}:checked ~ .next-{idx} {{ display:inline-flex; }}')
+
+  html = (f'<div id="{viewer_id}" class="loop-viewer">'
+          f'<style>{" ".join(style_lines)}</style>'
+          f'{"".join(inputs)}'
+          f'{"".join(labels)}'
+          f'<div class="loop-frame">{"".join(image_tags)}</div>'
+          f'<div class="loop-hires" style="width:100%; text-align:center; margin-top:8px;">'
+          f'<a href="{os.path.basename(hires_output_path)}" target="_blank" rel="noopener" '
+          f'style="font-size:14px; color:#1d4ed8; text-decoration:underline;">'
+          f'Open high-res ({hires_filename})</a>'
+          f'</div>'
+          f'</div>')
+
+  return html
 
 
 highLevelSummary = """
-This tests laying out paths in a closed loop within a constrained square, with 40 parameterised subpasses.
+This tests laying out paths in a closed loop within a constrained square.
 
-<br><br>
-
-Each subpass draws from a single source of truth (testParams) that drives prompts, summaries,
-validators, and visualisations. Complication presets cover angles, crossings, centroid targets,
-edge touches, hull size, start positions, and more to provide richer feedback.
+There are 40 subpasses, each increasing in difficulty.<ul>
+<li>The first ~10 are solvable by basically tracing a permitter or drawing a simple shape.</li>
+<li>10-20 include unusual constraints - requiring edge touching, fixed points, 1 or 2 crossings, convex hull rules. etc</li>
+<li>21-30 require some unusual shapes, as the solution typically requires concentric circles or railway-track-like geometries</li>
+<li>31-40 require either clever algorithms, or special solvers run using code execution. The human-with-tools solver uses a spring simulation written in python.</li>
 """
