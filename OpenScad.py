@@ -80,10 +80,11 @@ def render_stl_to_png(stl_path: str, png_path: str, previewMode=False) -> None:
                          previewMode=previewMode)
 
   # Clean up the temporary SCAD file
-  try:
-    os.remove(temp_scad)
-  except OSError:
-    pass
+  if os.path.exists(temp_scad):
+    try:
+      os.remove(temp_scad)
+    except OSError:
+      pass
 
 
 def render_scadText_to_png(scad_content: str,
@@ -168,8 +169,8 @@ def hit_tests(stlFile: str, interceptStlStrings: List[str], operation="intersect
   stlFile = os.path.abspath(stlFile)
 
   def check_intersection(idx: int, interceptor: str) -> tuple:
-    scad_path = os.path.join(temp_dir, f"intersect_{random.randint(0,10000)}.scad")
-    stl_path = os.path.join(temp_dir, f"intersect_{random.randint(0,10000)}.stl")
+    scad_path = os.path.join(temp_dir, f"intersect_{random.randint(0,1000000000000)}.scad")
+    stl_path = os.path.join(temp_dir, f"intersect_{random.randint(0,1000000000000)}.stl")
 
     with open(scad_path, "w", encoding="utf-8") as f:
       f.write(f'{operation}() {{\n')

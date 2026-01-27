@@ -1,5 +1,7 @@
 #skip = True
 import subprocess, sys, os, OpenScad as vc
+import trimesh
+import numpy as np
 import random
 
 title = "Cage match. Can LLMs design interlocking parts for 3D printing?"
@@ -84,7 +86,7 @@ structure = {
   "additionalProperties": False
 }
 
-extraGradeAnswerRuns = [1, 2, 3, 4, 5, 6]
+extraGradeAnswerRuns = [1, 2, 3, 4, 5, 6, 7, 8]
 earlyFail = False
 
 
@@ -118,7 +120,10 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return 0, "Answer did not contain a 'parts' key."
 
   if len(answer["parts"]) > 10:
-    return 0, "Answer contained too many parts. 10 max"
+    return 0, "Answer contained too many parts. 10 is the minimum and optimum."
+
+  if len(answer["parts"]) < 10:
+    return 0, "Answer contained too few parts. 10 is the minimum possible."
 
   if subPass == 0:
     any_posed_changed = False
@@ -246,6 +251,37 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       if volume == 0:
         bugs += "Part " + str(partIndex) + ".stl had a volume of 0<br>"
 
+      # Mesh integrity checks (watertight, manifold)
+      try:
+        mesh = trimesh.load(stlFile, force='mesh')
+      except Exception as e:
+        bugs += f"Part {partIndex}.stl could not be parsed by trimesh: {e}<br>"
+        continue
+
+      if mesh.is_empty:
+        bugs += f"Part {partIndex}.stl is empty geometry<br>"
+
+      if not mesh.is_watertight:
+        bugs += f"Part {partIndex}.stl is not watertight (must be a closed solid)<br>"
+
+      if not mesh.is_winding_consistent:
+        bugs += f"Part {partIndex}.stl has inconsistent face winding<br>"
+
+      # Non-manifold detection (multiple bodies or problematic edges)
+      if hasattr(mesh, "edges_nonmanifold"):
+        non_manifold_edges = len(mesh.edges_nonmanifold)
+      else:
+        non_manifold_edges = 0
+
+      if non_manifold_edges > 0:
+        bugs += f"Part {partIndex}.stl has {non_manifold_edges} non-manifold edges<br>"
+
+      if mesh.body_count and mesh.body_count > 1:
+        bugs += f"Part {partIndex}.stl contains multiple disjoint solids ({mesh.body_count})<br>"
+
+      if hasattr(mesh, "is_volume") and mesh.is_volume is False:
+        bugs += f"Part {partIndex}.stl is not a valid closed volume<br>"
+
     earlyFail = bugs != ""
     return 0 if earlyFail else 1, bugs
 
@@ -269,6 +305,62 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       else:
         score += 0.1
 
+      # Printability: ensure model rests on bed with meaningful contact patch
+      try:
+        mesh = trimesh.load(stlFile, force='mesh')
+      except Exception as e:
+        bugs += f"Part {partIndex}.stl could not be parsed by trimesh for printability checks: {e}<br>"
+        continue
+
+      min_z = mesh.bounds[0, 2]
+      if min_z < -0.1:
+        bugs += f"Part {partIndex}.stl sits below the build plate (min z={min_z:.3f})<br>"
+
+      # Faces intersecting z in [-0.1, 0.1]
+      verts = mesh.vertices
+      face_verts = verts[mesh.faces]
+      face_min_z = face_verts[:, :, 2].min(axis=1)
+      face_max_z = face_verts[:, :, 2].max(axis=1)
+      contact_mask = (face_min_z <= 0.1) & (face_max_z >= -0.1)
+      contact_area = float(np.sum(
+        mesh.area_faces[contact_mask])) if mesh.area_faces is not None else 0.0
+
+      # Require a reasonable contact patch (mm^2). Adjust threshold conservatively to avoid false positives.
+      if contact_area < 500.0:
+        bugs += f"Part {partIndex}.stl has insufficient bed contact area (~{contact_area:.1f} mm^2); may topple or not adhere<br>"
+
+      # Overhang / floating geometry check: flag large downward-facing patches without support.
+      normals = mesh.face_normals
+
+      overhang_mask = normals[:, 2] < -0.9
+      if np.any(overhang_mask):
+        face_indices = np.nonzero(overhang_mask)[0]
+        try:
+          overhang_submeshes = mesh.submesh([face_indices], append=False, repair=False)
+        except Exception:
+          overhang_submeshes = []
+
+        for sub in overhang_submeshes:
+          # Bounding box extents in XY to approximate bridge span
+          span = sub.bounds[1] - sub.bounds[0]
+          span_xy = span[0:2]
+          span_max = float(np.max(span_xy)) if len(span_xy) else 0.0
+          area = float(sub.area)
+
+          if sub.bounds[0][2] < 0.1:
+            # Ignore overhangs which are actually just ground contact.
+            continue
+
+          # Allow small bridges/holes (e.g., 6mm) by tolerating small spans and areas
+          if span_max <= 8.0 and area <= 80.0:
+            continue
+
+          # Otherwise, flag as problematic overhang
+          bugs += (
+            f"Part {partIndex}.stl has a large unsupported overhang/bridge (span ~{span_max:.1f} mm, area ~{area:.1f} mm^2); "
+            "likely needs support.<br>")
+          break
+
     return score, bugs
 
   if subPass == 2:
@@ -279,7 +371,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     def randomFloat(min, max):
       return random.uniform(min, max)
 
-    for i in range(32):
+    intersectionTestCount = 100
+
+    for i in range(intersectionTestCount):
       tests4.append(
         f"translate([{randomFloat(-120,120)},{randomFloat(-120,120)},0]) cube([40,40,40], center=true);"
       )
@@ -303,7 +397,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
         ) + ".stl allowed a 101mm cube to pass through. Gap between bars should be 100mm or lower.<br>"
 
       if bugs == "":
-        for i in range(32):
+        for i in range(intersectionTestCount):
           if results4[i] == False:
             scad = "color(\"grey\") import(\"" + partName + ".stl\");\n" + tests4[i]
             scad = scad_format.format(scad, vc.formatConfig)
@@ -312,7 +406,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             break
 
       if not all(results10):
-        for i in range(32):
+        for i in range(intersectionTestCount):
           if results10[i] == False:
             scad = "color(\"grey\") import(\"" + partName + ".stl\");\n" + tests10[i]
             scad = scad_format.format(scad, vc.formatConfig)
@@ -340,10 +434,10 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
   if subPass == 4:
     tests = [
-      "translate([-180, -180, 0]) cylinder(r=5, h=360, center=true);",
-      "translate([180, -180, 0]) cylinder(r=5, h=360, center=true);",
-      "translate([-180, 180, 0]) cylinder(r=5, h=360, center=true);",
-      "translate([180, 180, 0]) cylinder(r=5, h=360, center=true);",
+      "translate([-180, -180, 0]) cylinder(d=5, h=360, center=true);",
+      "translate([180, -180, 0]) cylinder(d=5, h=360, center=true);",
+      "translate([-180, 180, 0]) cylinder(d=5, h=360, center=true);",
+      "translate([180, 180, 0]) cylinder(d=5, h=360, center=true);",
       "translate([-180, -180, 0]) cylinder(r=8, h=360, center=true);",
       "translate([180, -180, 0]) cylinder(r=8, h=360, center=true);",
       "translate([-180, 180, 0]) cylinder(r=8, h=360, center=true);",
@@ -352,13 +446,13 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
     results = vc.hit_tests("results/29_" + str(aiEngineName) + "_fullposed.stl", tests)
 
-    for i in enumerate(results[0:3]):
-      if i == True:
+    for i, result in enumerate(results[0:4]):
+      if result == True:
         return 0, f"Error during simulated assembly: Unable to thread a 6mm rod through the cage segments (at {tests[i]}), it intersects the cage or bars."
 
-    for i in enumerate(results[3:]):
-      if i == False:
-        return 0, f"Error during simulated assembly: Unable to use a 6mm rod through the cage segments (at {tests[i]}), it has so much clearence that a nut would just slide right through."
+    for i, result in enumerate(results[4:]):
+      if result == False:
+        return 0, f"Error during simulated assembly: Unable to use a 6mm rod through the cage segments (at {tests[i+4]}), it has so much clearence that a nut would just slide right through."
 
     return 1, ""
 
@@ -376,9 +470,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
         tests.append("difference() {import(\"" + stlFileA + "\") ; import(\"" + stlFileB + "\");}")
 
       results = vc.hit_tests(stlFileA, tests)
-      if any(results):
-        return 0, "When assembled, part " + str(partIndexA) + " intersects with part " + str(
-          partIndexB)
+      for i, result in enumerate(results):
+        if result == True:
+          # Find which part B corresponds to this test result
+          partIndexB = i + partIndexA + 1  # Since we skip parts <= partIndexA
+          return 0, "When assembled, part " + str(partIndexA) + " intersects with part " + str(
+            partIndexB)
 
     return 1, ""
 
@@ -428,16 +525,274 @@ hull() {{
 
     return 1 if bugs == "" else 0, bugs
 
+  if subPass == 7:
+    # Verify bar thickness is ~10mm by measuring local thickness from large coplanar side facets.
+    # End-caps of long bars (typically ~10mm x ~10mm) are ignored.
+    bugs = ""
+    tol_min = 9.5
+    tol_max = 10.5
+    min_span_ignore = 5.0
+    endcap_span_max = 12.0
+    min_facet_area = 30.0
+    eps = 0.05
+    samples_per_facet = 5
+    min_thickness_samples = 25
+    max_reasonable_thickness = 300.0
+    hist_bin_width = 0.5
+    min_mode_ratio = 0.15
+
+    for partIndex, part in enumerate(answer["parts"]):
+      partName = "29_" + str(partIndex) + "_" + aiEngineName
+      stlFile = "results/" + partName + ".stl"
+      if not os.path.exists(stlFile):
+        bugs += f"Part {partIndex}.stl missing for thickness test<br>"
+        continue
+
+      try:
+        mesh = trimesh.load(stlFile, force='mesh')
+      except Exception as e:
+        bugs += f"Part {partIndex}.stl could not be parsed for thickness test: {e}<br>"
+        continue
+
+      if mesh.is_empty:
+        bugs += f"Part {partIndex}.stl empty geometry in thickness test<br>"
+        continue
+
+      # Ensure ray engine is available
+      _ = mesh.ray
+
+      facet_faces = getattr(mesh, "facets", None)
+      facet_normals = getattr(mesh, "facets_normal", None)
+      facet_areas = getattr(mesh, "facets_area", None)
+      if facet_faces is None or facet_normals is None or facet_areas is None:
+        bugs += f"Part {partIndex}.stl missing facet data for thickness test<br>"
+        continue
+
+      thickness_samples = []
+
+      for facet_idx, faces in enumerate(facet_faces):
+        area = float(facet_areas[facet_idx])
+        if area < min_facet_area:
+          continue
+
+        n = facet_normals[facet_idx]
+        # Only consider near-axis-aligned planar facets
+        axis = int(np.argmax(np.abs(n)))
+        if abs(n[axis]) < 0.9:
+          continue
+
+        # Compute facet bounds to decide if it's an end-cap or a side face
+        tri = mesh.triangles[faces].reshape(-1, 3)
+        bmin = tri.min(axis=0)
+        bmax = tri.max(axis=0)
+        span = bmax - bmin
+
+        # Tangential spans (the two axes perpendicular to the facet normal axis)
+        tangential_axes = [i for i in (0, 1, 2) if i != axis]
+        t0 = float(span[tangential_axes[0]])
+        t1 = float(span[tangential_axes[1]])
+
+        # Ignore tiny patches (e.g., around holes or tiny chamfers)
+        if min(t0, t1) < min_span_ignore:
+          continue
+
+        # Ignore end-caps of long bars: both tangential spans are ~10mm
+        if t0 <= endcap_span_max and t1 <= endcap_span_max:
+          continue
+
+        # Sample a few points from the facet and measure thickness along inward normal
+        centers = mesh.triangles_center[faces]
+        if centers.shape[0] == 0:
+          continue
+
+        step = max(1, int(centers.shape[0] / samples_per_facet))
+        sample_centers = centers[::step][:samples_per_facet]
+        dists = []
+        for c in sample_centers:
+          origin = c - n * eps
+          direction = -n
+          loc, _, _ = mesh.ray.intersects_location([origin], [direction], multiple_hits=False)
+          if len(loc) == 0:
+            continue
+          dist = float(np.dot(loc[0] - origin, direction))
+          if dist > 0:
+            dists.append(dist)
+
+        if len(dists) == 0:
+          continue
+
+        thickness = float(np.median(dists))
+
+        # Collect samples; final decision is based on robust statistics
+        if thickness > eps and thickness < max_reasonable_thickness:
+          thickness_samples.append(thickness)
+
+      if len(thickness_samples) < min_thickness_samples:
+        bugs += f"Part {partIndex}.stl did not produce enough thickness samples ({len(thickness_samples)}) for bar thickness test<br>"
+        continue
+
+      vals = np.asarray(thickness_samples, dtype=float)
+      # Determine dominant thickness cluster (mode) using a histogram.
+      # This avoids failing on rare large measurements caused by join divots / recess faces.
+      bin_edges = np.arange(0.0, max_reasonable_thickness + hist_bin_width, hist_bin_width)
+      hist, edges = np.histogram(vals, bins=bin_edges)
+      mode_bin = int(np.argmax(hist))
+      lo = float(edges[mode_bin])
+      hi = float(edges[mode_bin + 1])
+      mode_vals = vals[(vals >= lo) & (vals < hi)]
+      mode_ratio = float(mode_vals.size) / float(vals.size) if vals.size else 0.0
+      mode_est = float(np.median(mode_vals)) if mode_vals.size else float(np.median(vals))
+
+      if mode_est < tol_min or mode_est > tol_max:
+        bugs += (
+          f"Part {partIndex}.stl bar thickness appears out of spec (dominant thickness ~{mode_est:.2f}mm, expected 10mm)<br>"
+        )
+        continue
+
+      if mode_ratio < min_mode_ratio:
+        bugs += (
+          f"Part {partIndex}.stl bar thickness test inconclusive: dominant 10mm cluster too weak (mode ratio {mode_ratio:.2f})<br>"
+        )
+        continue
+
+    if len(bugs) > 0:
+      return 0, bugs
+
+    return 1, f"{mode_ratio*100:.2f}% of solid bars span approx {mode_est:.2f}mm"
+
+  if subPass == 8:
+    # Verify bar gap spacing (50-100mm) by measuring air gaps between opposing bar side faces
+    # in the assembled cage (fullposed).
+    stlFile = "results/29_" + str(aiEngineName) + "_fullposed.stl"
+    if not os.path.exists(stlFile):
+      return 0, "Missing fullposed STL for gap spacing test<br>"
+
+    try:
+      mesh = trimesh.load(stlFile, force='mesh')
+    except Exception as e:
+      return 0, f"Could not parse fullposed STL for gap spacing test: {e}<br>"
+
+    if mesh.is_empty:
+      return 0, "Fullposed STL is empty in gap spacing test<br>"
+
+    _ = mesh.ray
+
+    # Sampling / filtering
+    min_span_ignore = 5.0
+    endcap_span_max = 12.0
+    min_facet_area = 30.0
+    eps = 0.2
+    samples_per_facet = 5
+    min_gap_samples = 50
+    max_reasonable_gap = 250.0
+    hist_bin_width = 1.0
+    gap_tol_min = 50.0
+    gap_tol_max = 100.0
+    inlier_band = 5.0
+    min_inlier_ratio = 0.20
+
+    facet_faces = getattr(mesh, "facets", None)
+    facet_normals = getattr(mesh, "facets_normal", None)
+    facet_areas = getattr(mesh, "facets_area", None)
+    if facet_faces is None or facet_normals is None or facet_areas is None:
+      return 0, "Fullposed STL missing facet data for gap spacing test<br>"
+
+    gap_samples = []
+    for facet_idx, faces in enumerate(facet_faces):
+      area = float(facet_areas[facet_idx])
+      if area < min_facet_area:
+        continue
+
+      n = facet_normals[facet_idx]
+
+      # Only consider near-axis-aligned facets in X or Y directions
+      axis = int(np.argmax(np.abs(n)))
+      if axis not in (0, 1):
+        continue
+      if abs(n[axis]) < 0.9:
+        continue
+
+      tri = mesh.triangles[faces].reshape(-1, 3)
+      bmin = tri.min(axis=0)
+      bmax = tri.max(axis=0)
+      span = bmax - bmin
+
+      tangential_axes = [i for i in (0, 1, 2) if i != axis]
+      t0 = float(span[tangential_axes[0]])
+      t1 = float(span[tangential_axes[1]])
+
+      # Ignore tiny patches and end-caps (typically ~10mm x ~10mm)
+      if min(t0, t1) < min_span_ignore:
+        continue
+      if t0 <= endcap_span_max and t1 <= endcap_span_max:
+        continue
+
+      centers = mesh.triangles_center[faces]
+      if centers.shape[0] == 0:
+        continue
+
+      step = max(1, int(centers.shape[0] / samples_per_facet))
+      sample_centers = centers[::step][:samples_per_facet]
+      dists = []
+      for c in sample_centers:
+        origin = c + n * eps
+        direction = n
+        loc, _, _ = mesh.ray.intersects_location([origin], [direction], multiple_hits=False)
+        if len(loc) == 0:
+          continue
+        dist = float(np.dot(loc[0] - origin, direction))
+        if dist > 1.0 and dist < max_reasonable_gap:
+          dists.append(dist)
+
+      if len(dists) == 0:
+        continue
+
+      gap = float(np.median(dists))
+      if gap > 1.0 and gap < max_reasonable_gap:
+        gap_samples.append(gap)
+
+    if len(gap_samples) < min_gap_samples:
+      return 0, f"Gap spacing test did not produce enough samples ({len(gap_samples)})<br>"
+
+    vals = np.asarray(gap_samples, dtype=float)
+    bin_edges = np.arange(0.0, max_reasonable_gap + hist_bin_width, hist_bin_width)
+    hist, edges = np.histogram(vals, bins=bin_edges)
+    mode_bin = int(np.argmax(hist))
+    lo = float(edges[mode_bin])
+    hi = float(edges[mode_bin + 1])
+    mode_vals = vals[(vals >= lo) & (vals < hi)]
+    mode_est = float(np.median(mode_vals)) if mode_vals.size else float(np.median(vals))
+
+    inlier_mask = np.abs(vals - mode_est) <= inlier_band
+    inlier_ratio = float(np.sum(inlier_mask)) / float(vals.size) if vals.size else 0.0
+
+    if mode_est < gap_tol_min or mode_est > gap_tol_max:
+      return 0, f"Bar gap appears out of spec (dominant gap ~{mode_est:.2f}mm, expected 50-100mm)<br>"
+
+    if inlier_ratio < min_inlier_ratio:
+      return 0, f"Bar gap spacing not uniform enough (dominant gap ~{mode_est:.2f}mm, inlier ratio {inlier_ratio:.2f})<br>"
+
+    return 1, f"Dominant bar gap ~{mode_est:.2f}mm (inlier ratio {inlier_ratio:.2f})"
+
   return 10000, "Nobody has gotten this far before... Need to write more parts of the test."
 
 
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
   if subPass == 0:
-    return "Checks to see if the correct number of parts are rendered (10), and whether the STL files exist and are non-zero sized. " + \
-           "Some particully clueless AIs might generate 14 files (as 700mm/50mm == 14), which gets an instant 0 for wasting 4 prints"
+    return """
+Checks to see if<ul>
+<li> The correct number of parts are returned (10).</li>
+<li> Whether the STL files exist and are non-zero sized.</li>
+<li> Whether they are watertight.</li>
+<li> Non self intersecting.</li>
+<li> Fully connected</li><ul>
+Some particully clueless AIs might generate 14 files (as 700mm/50mm == 14), 
+which gets an instant 0 for wasting 4 prints
+"""
 
   if subPass == 1:
-    out = "Check to see if the parts are printable - resting on the z=0 plane, watertight, and within print bounds:<br>"
+    out = "Check to see if the parts are printable - resting on the z=0 plane, well supported, "\
+      "not overhanging, and within print bounds:<br>"
     for partIndex in range(10):
       partName = "29_" + str(partIndex) + "_" + aiEngineName
       stlFile = "results/" + partName + ".stl"
@@ -448,7 +803,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
   if subPass == 2:
     out = ""
-    for partIndex in range(10):
+    for partIndex in range(12):
       if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png"):
         out += "<img src='29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png' width=320/>"
       if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_101mm.png"):
@@ -456,7 +811,8 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
           aiEngineName) + "_101mm.png' width=320/>"
     return out + """
 <br>Check to see if the bars in cage segments are correctly sized and spaced. 
-Can a 50mm cube pass through the bars? Does a 100mm cube get blocked?
+Can a 50mm cube pass through the bars? Does a 100mm cube get blocked? 100 random block positions
+are checked, first pass is shown.
 """
 
   if subPass == 3:
@@ -471,17 +827,27 @@ Can a 50mm cube pass through the bars? Does a 100mm cube get blocked?
     return out
 
   if subPass == 4:
-    return "Check to see if a 6mm threaded rod can fit through the cage segments."
+    return "Check to see if a 6mm threaded rod can fit through the cage segments holes.<br><br>" + \
+      "(By testing whether a 5mm rod doesn't intersect, and an 8mm rod does intersect)<br><br>" + \
+      "Since the dimensions are 350mm + 10mm sides + rod goes 'through the middle of the corner bar', " \
+        "The rods position in 3D space must be exactly x =+/180, y=+-180,"
 
   if subPass == 5:
-    return "Check to see if projected parts intersect each other."
+    return "Check to see if projected parts intersect each other - testing to see if all 90 combinations have 0 intersection volume."
 
   if subPass == 6:
     out = ""
     for partIndex in range(10):
       if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_6mm.png"):
         out += "<img src='29_" + str(partIndex) + "_" + str(aiEngineName) + "_6mm.png' width=320/>"
-    return out + "<br>Check to see if every part is connected via the rod."
+    return out + "<br>Check to see if every part is connected via the rod, and that there's no "\
+      "swinging or loose parts once the bolts are tightened."
+
+  if subPass == 7:
+    return "Check to see if every bar is 10mm thick (within tolerance). Opposing faces along X/Y/Z must be ~10mm apart."
+
+  if subPass == 8:
+    return "Check to see if the gap between cage bars is uniform and between 50mm and 100mm (measured on the assembled full cage)."
 
 
 highLevelSummary = """

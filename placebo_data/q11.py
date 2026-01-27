@@ -446,3 +446,10 @@ def get_response(subPass: int):
 def cache_solutions():
   for i in range(len(_q11_main.problems)):
     get_response(i)
+
+
+if __name__ == "__main__":
+  if len(sys.argv) == 1:
+    cache_solutions()
+  else:
+    print(json.dumps(get_response_impl(int(sys.argv[1]))))

@@ -1,8 +1,8 @@
+import random
 import scad_format
 import OpenScad as vc
 
 title = "What's the largest prime number you can 3D print without supports?"
-skip = True
 
 prompt = """
 2 3D shapes can be said to be stackable if there exists an orientation in which:
@@ -24,6 +24,7 @@ of the legs (either one per leg, or stacked on top of each other on a single leg
 
 Side view of a stack:
 
+``` ascii art
       o
       o
       o   Dice
@@ -51,6 +52,7 @@ Side view of a stack:
      =====================
      =====================
 ------------------------------- Build plate / ground / Z = 0
+```
 
 So now you understand the concept. Lets try something more advanced!
 
@@ -63,9 +65,8 @@ what is the largest prime number that can be 3D printed in a stack?
 
 2, 3, 5 and 7 can all be printed obviously.
 
-37 can be printed. The 3 can be printed flat first, and then the 7 can be printed rotated
-around the y axis so that the short top bar of the 7 is resting on any of the 3 horizontal
-segments of the 3.
+17 can be printed. The 1 can be printed flat first, and then the 7 can be printed rotated
+around the y axis so that the long bar of the 7 is resting on the 1.
 
 331 can be printed. One 3 flat. One 3 rotated around y so it has 3 spikes sticking up, and
 then a 1 (rotated in y) balenced on the tip of the spikes. 
@@ -75,11 +76,20 @@ Can we go any higher?
 Clarifications:
 - A ban on repeating any sequence of 3 more than once. 
   - So 888 and 6969 substrings are allowed, but 8888 or 69696 are not allowed.
+  - The helps keep the problem solvable with under 1000 digits!
 - Only a single diget can be printed at any one z level. So you can't print "138" by printing
   the 1 and 3 concurrently and then use that to support the 8.
 - You can rotate in all 3 direction, so you can print a 3 on a 7 by rotating it "spikes up", but
   you can't then print another rotated 3 on top of it, becasuse between the points of the 3
   it would overhang.
+- The digit segments are 10x10x1mm, with their centres on [-5,0,5],[-10,0,10]. An 8 has a span
+  of -5.5 < x < 5.5 and -10.5 < y < 10.5, and 2 interior squares each of 9x9.
+- A 0.5mm gap in Z exists between digits in the print as sent to the the printer, the dynamics
+  of molten plastic causes this gap to appear as a fracture point, to allow digits to be easily 
+  seperated after printing.
+
+One of my coworkers is bragging they've solved it, and they have a stack that's 7cm high. As a 
+secondary objective, can we beat that height?
 
 """
 
@@ -150,9 +160,21 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
 
   # Check if each individual diget can be printed on it's own.
   flatOrientations = ["flat", "flippedX", "flippedY", "rotate180Z"]
+  height = 0
+
   for n in numberSequence:
     digit = n["digit"]
     orientation = n["orientation"]
+    if orientation in flatOrientations:
+      height += 1.5
+    elif orientation == "rotate90X":
+      height += 21.5
+    elif orientation == "rotate90Y":
+      if digit == 1:
+        height += 1.5
+      else:
+        height += 11.5
+
     if orientation in flatOrientations:
       # Everything can be printed flat.
       continue
@@ -175,6 +197,7 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
     next_digit = numberSequence[i + 1]["digit"]
     next_orientation = numberSequence[i + 1]["orientation"]
 
+
     if current_orientation in flatOrientations and \
         next_orientation in flatOrientations:
       # we're staying flat!
@@ -194,8 +217,8 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
       continue
 
     if current_orientation == "rotate90Y":
-      # After anything sticking up, we can only print 1s in rotate90y
-      if next_digit != 1 or next_orientation != "rotate90Y":
+      # After anything sticking up, we can only print 1s in rotate90X
+      if next_digit != 1 or next_orientation != "rotate90X":
         return 0, f"Digit {next_digit} (orientation: {next_orientation}) cannot be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Stack is not printable."
       i += 1
       continue
@@ -227,9 +250,17 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
   if number > solution:
     return 100, "Test needs updating. Well done!"
 
-  return len(
-    number_str
-  ) / solution_len, f"Answer given was of length {len(number_str)} while the largest printable prime (I know of) is of length {solution_len}"
+  numberScore = len(number_str) / solution_len
+
+  if height > 70:
+    return numberScore, f"Answer given was of length {len(number_str)} while the "\
+      f"largest printable prime (I know of) is of length {solution_len}. "\
+      f"Height was {height}mm which was over the target height of 70mm."
+  else:
+    return numberScore*0.9, f"Answer given was of length {len(number_str)} while the "\
+      f"largest printable prime (I know of) is of length {solution_len}. "\
+      f"Height was {height}mm which was under the target height of 70mm, so "\
+      "penalized by 10%."
 
 
 def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
@@ -240,40 +271,57 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 
   height = 0
 
-  for item in answer["numberSequence"]:
+  colors = [
+    "\"White\"", "\"Red\"", "\"Blue\"", "\"Yellow\"", "\"Green\"", "[0,0,0.5]", "[0.5,0,0]",
+    "\"Orange\"", "[210/255, 180/255, 140/255]", "[170/255, 140/255, 100/255]",
+    "[92/255, 64/255, 51/255]", "[62/255, 38/255, 20/255]"
+  ]
+
+  random.shuffle(colors)
+
+  for index, item in enumerate(answer["numberSequence"]):
     d = ""
     number += str(item["digit"])
-    if item["digit"] in [0, 2, 3, 5, 6, 7, 8, 9]:
+    if item["digit"] in [0, 2, 3, 5, 6, 8, 9]:
       d += "translate([0,-10,0]) cube([10,1,1], center=true);"
     if item["digit"] in [2, 3, 4, 5, 6, 8, 9]:
       d += "translate([0,0,0]) cube([10,1,1], center=true);"
-    if item["digit"] in [0, 2, 3, 5, 6, 8, 9]:
+    if item["digit"] in [0, 2, 3, 5, 6, 7, 8, 9]:
       d += "translate([0,10,0]) cube([10,1,1], center=true);"
 
-    if item["digit"] in [4, 5, 6, 8, 9, 0]:
+    if item["digit"] in [0, 2, 6, 8]:
       d += "translate([-5,-5,0]) cube([1,10,1], center=true);"
 
-    if item["digit"] in [0, 1, 2, 3, 4, 7, 8, 9]:
+    if item["digit"] in [0, 1, 3, 4, 5, 6, 7, 8, 9]:
       d += "translate([5,-5,0]) cube([1,10,1], center=true);"
 
-    if item["digit"] in [2, 6, 8, 0]:
+    if item["digit"] in [0, 4, 5, 6, 8, 9]:
       d += "translate([-5,5,0]) cube([1,10,1], center=true);"
 
-    if item["digit"] in [1, 3, 4, 5, 6, 7, 8, 9, 0]:
+    if item["digit"] in [0, 1, 2, 3, 4, 7, 8, 9]:
       d += "translate([5,5,0]) cube([1,10,1], center=true);"
 
-    d = " union(){\n" + d + "}\n"
+    d = "// " + str(item) + "\nunion(){\n" + d + "}\n"
 
-    scad += f"translate([0,0,{height}])"
+    scad += f"color({colors[index % len(colors)]}) translate([0,0,{height}])"
 
     height += 1.5
 
     if item["orientation"] == "rotate90X":
-      d = "translate([5,0,10]) rotate([90,0,90])" + d
-      height += 20
+      if item["digit"] == 1:
+        # Put the one over a corner, such that it will stand on anything.
+        d = "translate([-10,10,14]) rotate([90,0,0])" + d
+      else:
+        # This is probably an error anyway.
+        d = "rotate([90,0,0])" + d
+
+      height += 18
     if item["orientation"] == "rotate90Y":
-      d = "translate([5,4,0]) rotate([0,90,0])" + d
-      height += 4
+      if item["digit"] == 1:
+        pass  # No-op
+      else:
+        d = "translate([-5,0,5]) rotate([0,90,0])" + d
+        height += 5
     if item["orientation"] == "rotate180Z":
       d = "rotate([0,0,180])" + d
     if item["orientation"] == "flippedX":
@@ -304,7 +352,7 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 
   return f"""
 <a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
-<img src="{os.path.basename(output_path)}" alt="Stacked digets Visualization" style="max-width: 100%; float:left">
+<img src="{os.path.basename(output_path)}" alt="Stacked digits Visualization" style="max-width: 100%; float:left">
 </a>
 <p><div style="float:right">Ai suggested {number} ({len(answer["numberSequence"])} digits).<br>The correct answer is 24 digits long.</div></p>
 """
@@ -566,12 +614,14 @@ So... our answer set diverges into 4 immediately:<ul>
 </ul>
 The largest of which is the last, so the answer must start with 888, printed all flat.<br><br>
 
-Then if we put anything other than a 6 or a 9, we'll never be able to put a 6 or 9, therefore the next digit must be... etc etc.<br><br>
-
-(And we can interleave rotated 6 and 9s if we're careful not to make a 4-run of the same digit.) etc.
+Then if we put anything other than a 6 or a 9, we'll never be able to put a 6 or 9, therefore 
+the next digit must be... etc etc.<br><br>
 
 The visual part of the problem gives the prefix of the answer and greatly limits
 the search space for the suffix. If the AI is 'offering to build a program to find the
 prime number' or whatever, it probably deserves its 0, as an exhaustive search for this
-required only ~50 calls to "isPrime" to discover the 24 digit answer.
+required only ~50 calls to "isPrime" to discover the 24 digit answer.<br><br>
+
+As a secondary objective, we want the AI to lay it out in the tallest possible stack. The largest
+possible is 86mm, but we tell it to aim for 70mm or higher. This is only 10% of the grade.
 """

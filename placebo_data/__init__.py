@@ -74,6 +74,8 @@ def cache_solutions(questionNum: int):
     q12.cache_solutions()
   elif questionNum == 16:
     q16.cache_solutions()
+  elif questionNum == 28:
+    q28.cache_solutions()
   elif questionNum == 45:
     q45.cache_solutions()
 
