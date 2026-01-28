@@ -31,6 +31,21 @@ def get_response(subPass: int):
   return ground_truth, "Placebo: returning ground truth from dataset"
 
 
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  data = _get_data()
+  if subPass >= len(data):
+    return [[0, 0, 0, 0]], "Random guess"
+  rects = []
+  for _ in range(3):
+    x1 = rng.randint(0, 4)
+    y1 = rng.randint(0, 4)
+    x2 = x1 + rng.randint(0, 4)
+    y2 = y1 + rng.randint(0, 4)
+    rects.append([x1, y1, x2, y2])
+  return rects, "Random guess"
+
+
 def get_always_wrong(subPass: int):
   """Get an always-wrong response for this question."""
   data = _get_data()

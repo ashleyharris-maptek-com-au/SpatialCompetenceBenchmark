@@ -16,6 +16,37 @@ def get_response(subPass: int):
       }]
     }, ""
 
+  if subPass == 7:
+    return {
+      'shots': [{
+        'bearing': 0,
+        'elevation': 35,
+        'speed': 13
+      }, {
+        'bearing': -2.5,
+        'elevation': 30,
+        'speed': 12.5
+      }, {
+        'bearing': 2.5,
+        'elevation': 32,
+        'speed': 13
+      }]
+    }, ""
+
+  return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  shots = []
+  for _ in range(3):
+    shots.append({
+      "bearing": rng.uniform(-10.0, 10.0),
+      "elevation": rng.uniform(5.0, 50.0),
+      "speed": rng.uniform(10.0, 30.0),
+    })
+  return {"shots": shots}, "Random guess"
+
   if subPass == 1:
     return {
       'shots': [{

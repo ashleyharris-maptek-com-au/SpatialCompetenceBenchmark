@@ -36,7 +36,6 @@ def _load_cached_result(subPass):
         return json.load(f)
     except (json.JSONDecodeError, IOError):
       return None
-  return None
 
 
 def _save_cached_result(subPass, result):
@@ -851,6 +850,13 @@ def get_response(subPass: int, mode: StarIndexMode = StarIndexMode.IMAGE):
   result = {"latitude": lat, "longitude": lon}, reasoning
   _save_cached_result(subPass, result)
   return result
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  latitude = rng.uniform(-80.0, 80.0)
+  longitude = rng.uniform(-180.0, 180.0)
+  return {"latitude": latitude, "longitude": longitude}, "Random guess"
 
 
 def _merge_close_beams(beams, merge_distance):

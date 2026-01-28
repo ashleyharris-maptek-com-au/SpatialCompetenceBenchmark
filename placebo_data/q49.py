@@ -142,3 +142,20 @@ def get_response(subPass: int):
     }, ""
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  device_types = [
+    "prism", "lens_convex", "lens_concave", "mirror_flat", "mirror_concave", "slit",
+    "filter_bandpass", "beam_splitter"
+  ]
+  devices = []
+  for _ in range(2):
+    devices.append({
+      "type": rng.choice(device_types),
+      "position": [rng.uniform(-100.0, 100.0) for _ in range(3)],
+      "rotation": [rng.uniform(-90.0, 90.0) for _ in range(3)],
+      "parameters": "",
+    })
+  return {"reasoning": "Random guess", "devices": devices}, "Random guess"

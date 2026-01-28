@@ -653,7 +653,7 @@ def get_guess(subPass: int, rng):
       max_corner = [cursor[0] + dx, cursor[1] + dy, cursor[2] + dz]
       boxes.append({"XyzMin": min_corner, "XyzMax": max_corner})
       cursor[0] += dx
-  return boxes, "Random guess"
+  return {"boxes": boxes}, "Random guess"
 
 
 def cache_solutions():

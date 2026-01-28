@@ -33,6 +33,14 @@ def get_response(subPass: int):
   return [((0.0, 0.0), (1.0, 1.0)), ((0.0, 1.0), (1.0, 0.0))], "Placebo: X-shape segments"
 
 
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  segs = []
+  for _ in range(2):
+    segs.append(((rng.random(), rng.random()), (rng.random(), rng.random())))
+  return segs, "Random guess"
+
+
 def get_always_wrong(subPass: int):
   """Get an always-wrong response for this question."""
   # Return segments that don't partition correctly
