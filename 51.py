@@ -1,3 +1,4 @@
+import ast
 import json
 import sys
 from pathlib import Path
@@ -27,5 +28,19 @@ def prepareSubpassPrompt(index):
 def gradeAnswer(result, subPass, aiEngineName):
     raw = result if isinstance(result, str) else repr(result)
     extracted = PARSER.parse_answer(raw) or raw
-    diff = verify_topology_enumeration(extracted, DATA[subPass], return_diff=True)
+    try:
+        parsed = ast.literal_eval(extracted.strip())
+        if (
+            isinstance(parsed, list)
+            and all(isinstance(item, list) and len(item) == 4 for item in parsed)
+        ):
+            extracted = repr([tuple(item) for item in parsed])
+    except (ValueError, SyntaxError):
+        pass
+    record = DATA[subPass]
+    gt = record.get("ground_truth")
+    if isinstance(gt, list):
+        record = dict(record)
+        record["ground_truth"] = [tuple(cfg) for cfg in gt]
+    diff = verify_topology_enumeration(extracted, record, return_diff=True)
     return (1 if diff.get("passed") else 0), str(diff)
