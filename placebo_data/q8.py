@@ -35,3 +35,15 @@ There's no limit on the polynomial order, so we can abuse the Intermediate Value
 Theorem / Rational Root Theorum from high school maths and add a factor for every 
 value we need and submit the answer in factored form rather than standard form. 
 The polynomial is large but simplification wasn't requested nor required."""
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  a = rng.uniform(-3.0, 3.0)
+  b = rng.uniform(-3.0, 3.0)
+  c = rng.uniform(-10.0, 10.0)
+  function_body = f"({a:.3f})*x + ({b:.3f})*y + ({c:.3f})"
+  return {
+    "reasoning": "Random guess",
+    "function": f"def f(x, y):\n    return {function_body}",
+  }, "Random guess"

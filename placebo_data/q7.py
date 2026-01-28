@@ -9,6 +9,42 @@ problem7 = importlib.import_module("7")
 testParams = problem7.testParams
 
 
+def _block_maze_path(maze_text: str, question_module):
+  rows = [list(row) for row in maze_text.split("\n") if row]
+  if not rows:
+    return maze_text
+
+  a_pos = None
+  for y, row in enumerate(rows):
+    for x, char in enumerate(row):
+      if char == "A":
+        a_pos = (x, y)
+        break
+    if a_pos:
+      break
+
+  if not a_pos:
+    return maze_text
+
+  params = question_module.testParams[0]
+  a_height = params["a_height"]
+  block_height = a_height + 2 if a_height <= 7 else max(0, a_height - 2)
+
+  width = len(rows[0])
+  height = len(rows)
+  directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+  for dx, dy in directions:
+    nx, ny = a_pos[0] + dx, a_pos[1] + dy
+    if 0 <= nx < width and 0 <= ny < height and rows[ny][nx] not in ("A", "B"):
+      rows[ny][nx] = str(block_height)
+    nx2, ny2 = a_pos[0] + 2 * dx, a_pos[1] + 2 * dy
+    if 0 <= nx2 < width and 0 <= ny2 < height and rows[ny2][nx2] not in ("A", "B"):
+      rows[ny2][nx2] = str(block_height)
+
+  return "\n".join("".join(row) for row in rows)
+
+
 def get_response_impl(subPass: int):
   """Get the placebo response for this question."""
   params = testParams[subPass]
@@ -347,6 +383,28 @@ def get_response(subPass: int):
       if best[1] == 1:
         break
   return best[0]
+
+
+def get_always_wrong(subPass: int):
+  base_response = get_response(subPass)
+  if isinstance(base_response, str):
+    return _block_maze_path(base_response, problem7), "Always-wrong placeholder"
+  return "", "Always-wrong placeholder"
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  params = testParams[subPass]
+  size = params["size"]
+  grid = [[str(rng.randint(0, 9)) for _ in range(size)] for _ in range(size)]
+  ax, ay = rng.randrange(size), rng.randrange(size)
+  bx, by = rng.randrange(size), rng.randrange(size)
+  while (bx, by) == (ax, ay):
+    bx, by = rng.randrange(size), rng.randrange(size)
+  grid[ay][ax] = "A"
+  grid[by][bx] = "B"
+  maze = "\n".join("".join(row) for row in grid)
+  return maze, "Random guess"
 
 
 if __name__ == "__main__":

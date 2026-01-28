@@ -402,3 +402,20 @@ def get_response(subPass: int):
     return {"voxels": voxels}, "Placebo thinking... hmmm..."
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  sizes = [6, 8, 12, 16, 24, 20]
+  counts = [50, 100, 200, 400, 1000, 500]
+  size = sizes[subPass]
+  count = counts[subPass]
+  voxels = set()
+  while len(voxels) < count:
+    x = rng.randint(0, size - 1)
+    y = rng.randint(0, size - 1)
+    z = rng.randint(0, size - 1)
+    if subPass == 5 and "7" in str(x + y + z):
+      continue
+    voxels.add((x, y, z))
+  return {"voxels": [{"xyz": list(v)} for v in voxels]}, "Random guess"

@@ -260,7 +260,7 @@ def get_response(subPass: int):
   # For subPass 0 (unit cube), generate just the 1 cube cell
   if subPass == 0:
     tetrahedra = generate_space_filling_tetrahedra((0, 1), (0, 1), (0, 1))
-    return {"tetrahedra": tetrahedra}, "6 tetrahedra tiling unit cube"
+    return {"tetrahedra": tetrahedra}, "Placebo thinking... hmmm..."
 
   # For subPass 7 (scaled tetrahedron), use simple approach - the shape is already aligned
   if subPass == 7:
@@ -279,3 +279,23 @@ def get_response(subPass: int):
       shape.append(tetra)
 
   return {"tetrahedra": shape}, "Space-filling tetrahedra tiling, filtered by shape boundary."
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  count = rng.randint(5, 15)
+  tetrahedra = []
+  for _ in range(count):
+    q = [rng.uniform(-1.0, 1.0) for _ in range(4)]
+    norm = math.sqrt(sum(v * v for v in q)) or 1.0
+    tetrahedra.append({
+      "x": rng.uniform(-5.0, 5.0),
+      "y": rng.uniform(-5.0, 5.0),
+      "z": rng.uniform(-5.0, 5.0),
+      "q0": q[0] / norm,
+      "q1": q[1] / norm,
+      "q2": q[2] / norm,
+      "q3": q[3] / norm,
+      "m": rng.choice([0, 1]),
+    })
+  return {"tetrahedra": tetrahedra}, "Random guess"

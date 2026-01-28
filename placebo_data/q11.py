@@ -9,6 +9,8 @@ import importlib
 
 _q11_main = importlib.import_module("11")
 
+problems = _q11_main.problems
+
 
 def longest_nd_path(dim, size, start, walls, targets, depth_limit=50):
   """
@@ -427,7 +429,9 @@ def get_response(subPass: int):
           bestPathLen = len(data['path'])
           _save_cached_path(subPass, bestPath)
 
-          if bestPathLen >= max_cells:
+          for _ in range(10):
+            if bestPathLen >= max_cells:
+              break
             for proc in processes:
               if proc.poll() is None:
                 proc.terminate()
@@ -446,6 +450,37 @@ def get_response(subPass: int):
 def cache_solutions():
   for i in range(len(_q11_main.problems)):
     get_response(i)
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  if subPass < 0 or subPass >= len(problems):
+    return None
+  problem = problems[subPass]
+  dim = problem["dim"]
+  size = list(problem["size"])
+  start = tuple(problem["start"])
+  walls = set(tuple(w) for w in problem.get("walls", []))
+
+  path = [start]
+  visited = {start}
+  current = start
+  max_steps = max(6, dim * 4)
+  for _ in range(max_steps):
+    axis = rng.randrange(dim)
+    delta = rng.choice([-1, 1])
+    candidate = list(current)
+    candidate[axis] += delta
+    candidate = tuple(candidate)
+    if any(candidate[i] < 0 or candidate[i] >= size[i] for i in range(dim)):
+      continue
+    if candidate in walls or candidate in visited:
+      continue
+    visited.add(candidate)
+    path.append(candidate)
+    current = candidate
+
+  return {"path": [{"pos": list(p)} for p in path]}, "Random guess"
 
 
 if __name__ == "__main__":

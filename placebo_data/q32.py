@@ -767,3 +767,19 @@ If you want, I can turn this into a more formal mini-spec (field-by-field binary
 [9]: https://www.astm.org/e2807-11r19.html?utm_source=chatgpt.com "Standard Specification for 3D Imaging Data Exchange, Version 1.0"
 [10]: https://google.github.io/draco/?utm_source=chatgpt.com "Draco 3D Graphics Compression - GitHub"
 """, "This was made by pasting my own list of ideas, classified into good and bad, and asking chatGPT5.2pro to turn it into a report."
+
+
+def get_always_wrong(subPass: int):
+  """Get an always-wrong response for this question."""
+  filler = "This report intentionally avoids specific optimization ideas and offers no actionable guidance. "
+  return (filler * 30).strip(), "Always-wrong placeholder"
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  paragraphs = []
+  for idx in range(6):
+    paragraphs.append(
+      f"Paragraph {idx + 1}: This is a speculative compression idea about chunking,\n"
+      f"entropy coding, and sensor-domain encoding. Seed={rng.random():.5f}.")
+  return "\n\n".join(paragraphs), "Random guess"

@@ -147,6 +147,23 @@ def get_response(subPass: int):
   return {"trackPoints": points}, ""
 
 
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  worldSizes = [10, 30, 40, 50, 100, 300]
+  startAltitudes = [5, 9, 19, 48, 95, 250]
+  worldSize = worldSizes[subPass]
+  startAltitude = startAltitudes[subPass]
+  points = [[worldSize / 2, worldSize / 2, float(startAltitude)]]
+  for _ in range(20):
+    points.append([
+      rng.uniform(0.0, worldSize),
+      rng.uniform(0.0, worldSize),
+      rng.uniform(0.0, worldSize),
+    ])
+  points.append([worldSize / 2, worldSize / 2, 0.0])
+  return {"trackPoints": points}, "Random guess"
+
+
 if __name__ == "__main__":
   pts = get_response(1)[0]["trackPoints"]
   for p in pts:

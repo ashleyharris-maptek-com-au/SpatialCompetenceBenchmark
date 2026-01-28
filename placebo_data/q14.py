@@ -162,3 +162,19 @@ def get_response(subPass: int):
     }, ""
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  line_counts = [2, 3, 6, 10]
+  count = line_counts[subPass] if subPass < len(line_counts) else 3
+  lines = []
+  for _ in range(count):
+    if rng.random() < 0.15:
+      a = float("inf") if rng.random() < 0.5 else float("-inf")
+      b = rng.uniform(0.0, 100.0)
+    else:
+      a = rng.uniform(-2.0, 2.0)
+      b = rng.uniform(-50.0, 50.0)
+    lines.append({"a": a, "b": b})
+  return {"lines": lines}, "Random guess"

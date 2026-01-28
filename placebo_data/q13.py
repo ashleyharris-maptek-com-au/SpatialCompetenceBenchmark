@@ -39,3 +39,15 @@ def get_response(subPass: int):
     return {"people": people}, "Placebo thinking... hmmm..."
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  peopleCounts = [4, 20, 40, 80, 150, 200]
+  peopleCount = peopleCounts[subPass]
+  people = []
+  for _ in range(peopleCount):
+    x = rng.uniform(-15.0, 15.0)
+    y = rng.uniform(-15.0, 15.0)
+    people.append({"xy": [x, y]})
+  return {"people": people}, "Random guess"

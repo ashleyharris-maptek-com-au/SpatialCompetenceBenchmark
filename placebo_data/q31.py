@@ -25,3 +25,26 @@ def get_response(subPass: int):
     }, ""
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+
+  def random_quat():
+    q = [rng.uniform(-1.0, 1.0) for _ in range(4)]
+    norm = math.sqrt(sum(v * v for v in q)) or 1.0
+    return [v / norm for v in q]
+
+  def maybe_offset(q):
+    if rng.random() < 0.4:
+      return q + [rng.uniform(-0.2, 0.2) for _ in range(3)]
+    return q
+
+  return {
+    "hole": {
+      "transform": maybe_offset(random_quat())
+    },
+    "solid": {
+      "transform": maybe_offset(random_quat())
+    },
+  }, "Random guess"

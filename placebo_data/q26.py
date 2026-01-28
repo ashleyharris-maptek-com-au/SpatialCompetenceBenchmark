@@ -125,3 +125,14 @@ def get_response(subPass: int):
     }, ""
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  treeDepth = 8 + 2 * subPass
+  nodes = []
+  count = max(3, min(10, 2**min(treeDepth, 6)))
+  for _ in range(count):
+    node = "".join(rng.choice(["0", "1"]) for _ in range(treeDepth))
+    nodes.append(node)
+  return {"reasoning": "Random guess", "nodes": nodes}, "Random guess"

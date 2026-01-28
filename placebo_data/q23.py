@@ -1,5 +1,6 @@
 import math
 from textwrap import dedent
+import random
 
 
 def get_response(subPass: int):
@@ -311,3 +312,22 @@ def get_response(subPass: int):
         },
       ]
     }, "Four underground chambers with rock columns above"
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  sizes = [16, 24, 32, 40, 48, 56, 64, 48, 56, 48, 64]
+  size = sizes[subPass]
+  earthworks = []
+  for _ in range(3):
+    x1 = rng.randint(0, size - 4)
+    y1 = rng.randint(0, size - 4)
+    z = rng.randint(1, 6)
+    x2 = min(size - 1, x1 + rng.randint(1, 6))
+    y2 = min(size - 1, y1 + rng.randint(1, 6))
+    earthworks.append({
+      "xyzMin": [x1, y1, z],
+      "xyzMax": [x2, y2, z],
+      "material": rng.choice(["Rock", "Air"]),
+    })
+  return {"reasoning": "Random guess", "earthworks": earthworks}, "Random guess"

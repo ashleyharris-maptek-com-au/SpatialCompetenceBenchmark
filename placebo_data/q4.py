@@ -953,3 +953,49 @@ def get_response(subPass: int):
     }, "It's possible to rotate the tetrahedron to make it's projection a 1x1 square, but you need to make sure they don't intersect."
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  count = rng.randint(3, 8)
+  tetrahedrons = []
+  for _ in range(count):
+    x = rng.uniform(-3.0, 3.0)
+    y = rng.uniform(-3.0, 3.0)
+    z = rng.uniform(0.0, 6.0)
+    q = [rng.uniform(-1.0, 1.0) for _ in range(4)]
+    norm = math.sqrt(sum(v * v for v in q)) or 1.0
+    q0, q1, q2, q3 = (q[0] / norm, q[1] / norm, q[2] / norm, q[3] / norm)
+    tetrahedrons.append({
+      "x": x,
+      "y": y,
+      "z": z,
+      "q0": q0,
+      "q1": q1,
+      "q2": q2,
+      "q3": q3,
+    })
+  return {"tetrahedrons": tetrahedrons}, "Random guess"
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  count = rng.randint(3, 8)
+  tetrahedrons = []
+  for _ in range(count):
+    x = rng.uniform(-3.0, 3.0)
+    y = rng.uniform(-3.0, 3.0)
+    z = rng.uniform(0.0, 6.0)
+    q = [rng.uniform(-1.0, 1.0) for _ in range(4)]
+    norm = math.sqrt(sum(v * v for v in q)) or 1.0
+    q0, q1, q2, q3 = (q[0] / norm, q[1] / norm, q[2] / norm, q[3] / norm)
+    tetrahedrons.append({
+      "x": x,
+      "y": y,
+      "z": z,
+      "q0": q0,
+      "q1": q1,
+      "q2": q2,
+      "q3": q3,
+    })
+  return {"tetrahedrons": tetrahedrons}, "Random guess"

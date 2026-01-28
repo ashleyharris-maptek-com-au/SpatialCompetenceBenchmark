@@ -110,6 +110,21 @@ def get_response(subPass: int):
   " down in steps, repeating the top blasts as needed."
 
 
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  g = {}
+  exec(open("28.py").read(), g)
+  size = g["sizes"][subPass]
+  blasts = []
+  for _ in range(10):
+    blasts.append({
+      "x": rng.randint(0, size - 1),
+      "y": rng.randint(0, size - 1),
+      "z": rng.uniform(0.1, 2.0),
+    })
+  return {"blasts": blasts}, "Random guess"
+
+
 def cache_solutions():
   r = list(range(8))
   r.reverse()

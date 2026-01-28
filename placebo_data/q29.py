@@ -136,3 +136,13 @@ def get_response(subPass: int):
     }, "(sound of actual 3D printer printing...)"
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  part = {
+    "fileContents": "cube([10,10,10]);",
+    "fileType": "OpenScad",
+    "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+  }
+  return {"reasoning": "Random guess", "parts": [part]}, "Random guess"

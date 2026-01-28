@@ -57,9 +57,10 @@ def get_response(subPass: int):
       dy = target_vertex[1] - splitter_pos[1]
       target_angle = math.atan2(dy, dx)
       normal_angle = (incoming_angle + target_angle) / 2 + math.pi / 2
-      beam_splitters.append(
-        {"position": splitter_pos, "normal": [math.cos(normal_angle),
-                                              math.sin(normal_angle)]})
+      beam_splitters.append({
+        "position": splitter_pos,
+        "normal": [math.cos(normal_angle), math.sin(normal_angle)]
+      })
 
     # Mirrors at each vertex to reflect incoming beams toward next vertex
     # Each vertex receives a beam from a specific splitter position
@@ -94,3 +95,24 @@ def get_response(subPass: int):
     return {"reasoning": "", "beamSplitters": beam_splitters, "mirrors": mirrors}, ""
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  beam_splitters = []
+  mirrors = []
+  for _ in range(4):
+    beam_splitters.append({
+      "position": [rng.uniform(0.0, 100.0), rng.uniform(0.0, 100.0)],
+      "normal": [rng.uniform(-1.0, 1.0), rng.uniform(-1.0, 1.0)],
+    })
+  for _ in range(6):
+    mirrors.append({
+      "position": [rng.uniform(0.0, 100.0), rng.uniform(0.0, 100.0)],
+      "normal": [rng.uniform(-1.0, 1.0), rng.uniform(-1.0, 1.0)],
+    })
+  return {
+    "reasoning": "Random guess",
+    "beamSplitters": beam_splitters,
+    "mirrors": mirrors
+  }, "Random guess"

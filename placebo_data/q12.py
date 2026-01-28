@@ -187,6 +187,22 @@ def _segment_intersection_point(a1, a2, b1, b2) -> Optional[Tuple[float, float]]
   return (px, py)
 
 
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  testParams, _ = _load_problem()
+  if subPass < 0 or subPass >= len(testParams):
+    return None
+  params = testParams[subPass]
+  pipes = int(params.get("pipes", 4))
+  boundary = float(params.get("boundary", 10.0))
+  points = []
+  for _ in range(max(3, min(20, pipes))):
+    x = rng.uniform(0.05 * boundary, 0.95 * boundary)
+    y = rng.uniform(0.05 * boundary, 0.95 * boundary)
+    points.append({"x": x, "y": y})
+  return {"points": points}, "Random guess"
+
+
 def _collect_error_index_sets(errors: List[Dict[str, Any]]) -> Dict[str, Any]:
   point_idxs = set()
   vertex_idxs = set()

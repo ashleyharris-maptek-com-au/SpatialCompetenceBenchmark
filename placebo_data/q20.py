@@ -119,3 +119,10 @@ def f(x,y):
       return {"minifiedCode": code}, ""
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  size = rng.randint(1, 4)
+  code = f"def f(x,y):\n  return (x-{rng.random():.3f})**2 + (y-{rng.random():.3f})**2 - {rng.random():.3f}"
+  return {"reasoningAndDiscussion": "Random guess", "minifiedCode": code}, "Random guess"

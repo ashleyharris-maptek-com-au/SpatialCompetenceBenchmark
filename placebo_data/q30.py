@@ -40,3 +40,16 @@ flipping the 3's to fit on the 6's, then a stack of 7's flipped in X, then
 2 * 1 flat (flipped in X), then a 7 on it's side, and then a 1 stacked 
 on top of it in a giant spike. Height is 86mm.
 """
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  orientations = ["flat", "flippedX", "flippedY", "rotate90X", "rotate90Y", "rotate180Z"]
+  length = rng.randint(5, 12)
+  seq = []
+  for _ in range(length):
+    seq.append({
+      "digit": rng.randint(1, 9),
+      "orientation": rng.choice(orientations),
+    })
+  return {"reasoning": "Random guess", "numberSequence": seq}, "Random guess"

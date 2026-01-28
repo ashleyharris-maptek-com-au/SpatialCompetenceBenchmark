@@ -17,3 +17,17 @@ def get_response(subPass: int):
     return {"moves": moves}, "Placebo thinking... hmmm..."
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  gridSize = [[32, 8], [48, 12], [56, 16], [64, 24], [72, 32]]
+  width, height = gridSize[subPass]
+  moves = []
+  for _ in range(100):
+    moves.append({
+      "cellX": rng.randint(1, width - 2),
+      "cellY": rng.randint(1, height - 2),
+      "direction": rng.choice(["up", "down", "left", "right"]),
+    })
+  return {"moves": moves}, "Random guess"

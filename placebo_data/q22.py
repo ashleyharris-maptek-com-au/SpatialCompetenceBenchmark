@@ -396,3 +396,26 @@ def get_response(subPass: int):
   reasoning = f"Path: start -> {' -> '.join(map(str, bestPath))}. Total delta-v: {total_dv_used:.3f} km/s"
 
   return {"reasoning": reasoning, "engineBurns": burns, "rendevouses": rdx}, reasoning
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  engineBurns = []
+  for _ in range(3):
+    engineBurns.append({
+      "time": rng.uniform(0.0, 20000.0),
+      "acceleration": [rng.uniform(-0.01, 0.01) for _ in range(3)],
+    })
+  rendevouses = []
+  for station in range(3):
+    rendevouses.append({
+      "position": [rng.uniform(-8000.0, 8000.0) for _ in range(3)],
+      "velocity": [rng.uniform(-8.0, 8.0) for _ in range(3)],
+      "time": rng.uniform(0.0, 20000.0),
+      "station": station,
+    })
+  return {
+    "reasoning": "Random guess",
+    "engineBurns": engineBurns,
+    "rendevouses": rendevouses,
+  }, "Random guess"

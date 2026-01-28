@@ -38,3 +38,19 @@ def get_response(subPass: int):
     return {"moves": basicBlocks}, "Placebo thinking... hmmm..."
 
   return None
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  widths = [10, 16, 20, 40]
+  targets = [10, 15, 20, 30]
+  width = widths[subPass] if subPass < len(widths) else 10
+  target = targets[subPass] if subPass < len(targets) else 10
+  move_count = target * 2
+  moves = []
+  for _ in range(move_count):
+    moves.append({
+      "translationCount": rng.randint(0, width - 1),
+      "rotationCount": rng.randint(0, 3),
+    })
+  return {"moves": moves}, "Random guess"

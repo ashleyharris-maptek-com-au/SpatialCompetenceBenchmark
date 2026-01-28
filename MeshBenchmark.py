@@ -73,6 +73,7 @@ class MeshBenchmarkRunner(BenchmarkRunner):
 
 
 if __name__ == "__main__":
-  set_placebo_data_provider(["always-wrong", "human-with-tools"], placebo_data.get_response)
+  set_placebo_data_provider(["always-wrong", "human-with-tools", "guessing"],
+                            placebo_data.get_response)
   runner = MeshBenchmarkRunner()
   run_benchmark_main(runner, __file__)

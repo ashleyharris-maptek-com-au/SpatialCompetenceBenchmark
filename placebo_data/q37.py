@@ -20,8 +20,16 @@ def get_response(subPass: int):
       'groups': [[1, 15, 19], [2, 5, 9], [3, 4, 6, 14, 20], [7, 11], [8, 12, 13], [10, 16],
                  [17, 18]]
     }, ""
-  if subPass == 7:
-    return {
-      'groups': [[1, 8, 11, 14, 15], [2, 10, 13], [3, 9, 12, 18, 24], [4, 7, 17, 22, 25],
-                 [5, 6, 16, 23], [19], [20], [21]]
-    }, ""
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  max_item = 4 + subPass * 3
+  items = list(range(1, max_item + 1))
+  rng.shuffle(items)
+  groups = []
+  while items:
+    size = rng.randint(1, min(3, len(items)))
+    group = [items.pop() for _ in range(size)]
+    groups.append(sorted(group))
+  return {"groups": groups}, "Random guess"

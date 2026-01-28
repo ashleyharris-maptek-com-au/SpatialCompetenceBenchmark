@@ -633,7 +633,27 @@ def get_response(subPass: int):
 
     assert len(packings) == len(prisms)
 
-    return {'boxes': packings}, f"Calculated with {method} packing. " + tsp[1]
+    if subPass == 16:
+      import random
+      rng = random.Random(42)  # deterministic random number generator
+      packings, method = get_guess(subPass, rng)
+
+    return {"boxes": packings}, f"Calculated with {method} packing. " + tsp[1]
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  prismList = g["prismList"]
+  boxes = []
+  cursor = [0, 0, 0]
+  for count, x, y, z in prismList[0:subPass + 1]:
+    for _ in range(count):
+      dx, dy, dz = rng.choice([(x, y, z), (x, z, y), (y, x, z), (y, z, x), (z, x, y), (z, y, x)])
+      min_corner = [cursor[0], cursor[1], cursor[2]]
+      max_corner = [cursor[0] + dx, cursor[1] + dy, cursor[2] + dz]
+      boxes.append({"XyzMin": min_corner, "XyzMax": max_corner})
+      cursor[0] += dx
+  return boxes, "Random guess"
 
 
 def cache_solutions():

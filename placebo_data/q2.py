@@ -47,3 +47,20 @@ def get_response(subPass: int):
   return {
     "bricks": bricks,
   }, "30 lines of python - building one giant structure, overlapping to hold together like bricks do."
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  tp = list(problem2.testParams[subPass])
+  tp[0] *= 10
+  tp[1] *= 10
+  outer = tp[1]
+  brick_count = rng.randint(10, 40)
+  bricks = []
+  for _ in range(brick_count):
+    cx = rng.uniform(-outer, outer)
+    cy = rng.uniform(-outer, outer)
+    cz = rng.uniform(0, outer)
+    rot = rng.choice([0, 90, 180, 270])
+    bricks.append({"Centroid": [cx, cy, cz], "RotationDegrees": rot})
+  return {"reasoning": "Random guess", "bricks": bricks}, "Random guess"

@@ -3248,3 +3248,15 @@ def cache_solutions():
     else:
       print(f"SUCCESS: {len(result['steps'])} steps")
     print(result)
+
+
+def get_guess(subPass: int, rng):
+  """Get a deterministic random guess for this question."""
+  grid_size = get_grid_size(subPass)
+  blocked = get_blocked_cells(subPass)
+  candidates = [(x, y) for x in range(1, grid_size + 1) for y in range(1, grid_size + 1)
+                if (x, y) not in blocked]
+  rng.shuffle(candidates)
+  step_count = min(len(candidates), max(8, grid_size))
+  steps = [{"xy": list(p)} for p in candidates[:step_count]]
+  return {"steps": steps}, "Random guess"
