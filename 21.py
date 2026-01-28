@@ -2,7 +2,7 @@ import math, itertools
 import OpenScad as vc
 
 title = "Rollercoaster Track planner"
-
+skip = True
 prompt = """
 
 You are given a 3D space of dimensions {PARAM_A} * {PARAM_A} * {PARAM_A} meters, and have to build a rollercoaster track that

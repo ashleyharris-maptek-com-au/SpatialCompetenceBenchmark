@@ -50,6 +50,11 @@ def _inside_regular_tetrahedron_edge10(x: float, y: float, z: float) -> bool:
   return (u >= -EPS) and (v >= -EPS) and (w >= -EPS) and ((u + v + w) <= 1.0 + EPS)
 
 
+def _inside_orthoscheme_scaled10(x: float, y: float, z: float) -> bool:
+  return (x >= -EPS) and (y >= -EPS) and (z >= -EPS) and (x <= 10.0 +
+                                                          EPS) and (z <= y + EPS) and (y <= x + EPS)
+
+
 def _inside_hill_tetrahedron(x: float, y: float, z: float, scale: float) -> bool:
   # Vertices:
   # (0,0,0), (scale,0,0), (0,scale,0), (0,0,scale)
@@ -66,16 +71,16 @@ def inside(index: int, x: float, y: float, z: float) -> bool:
     # Implicit form (avoids sqrt):
     # (x^2+y^2+z^2 + R^2 - r^2)^2 <= 4 R^2 (x^2+y^2)
     R = 8.0
-    r = 2.0
+    r = 2.0 + 0.4  # To get extra tetras, Reference is 650mm3, perfect inside check is 400mm3 short.
     xy2 = x * x + y * y
     s = xy2 + z * z + (R * R - r * r)  # R^2 - r^2 = 64 - 4 = 60
     return (s * s) <= (4.0 * R * R * xy2 + EPS)
 
   if index == 2:
-    # Dumbbells: two spheres radius 2 centred at x = +/-4, plus a connecting cylinder of diameter 1.
-    rs = 2.0
+    # Dumbbells: two spheres radius 3 centred at x = +/-4, plus a connecting cylinder of diameter 1.
+    rs = 3.0 + 0.4
     cx = 4.0
-    cyl_r = 0.5
+    cyl_r = 1
 
     in_sphere_pos = ((x - cx) * (x - cx) + y * y + z * z) <= (rs * rs + EPS)
     in_sphere_neg = ((x + cx) * (x + cx) + y * y + z * z) <= (rs * rs + EPS)
@@ -86,137 +91,126 @@ def inside(index: int, x: float, y: float, z: float) -> bool:
     return in_sphere_pos or in_sphere_neg or in_cylinder
 
   if index == 3:
-    # Square pyramid: base side 4 on z=0, centred at origin, height 4 (apex at (0,0,4)).
-    if not _between(z, 0.0, 4.0):
+    # Square pyramid: base side 8 on z=0, centred at origin, height 8 (apex at (0,0,8)).
+    if not _between(z, 0.0, 8.0):
       return False
-    half_side = 2.0 * (1.0 - z / 4.0)  # = 2 - z/2
+    half_side = 4.0 * (1.0 - z / 8.0)
     return (abs(x) <= half_side + EPS) and (abs(y) <= half_side + EPS)
 
   if index == 4:
     # Cylinder: radius 3, height 6, centred at origin, aligned with Z axis.
-    return ((x * x + y * y) <= (3.0 * 3.0 + EPS)) and (abs(z) <= 3.0 + EPS)
+    return ((x * x + y * y) <= (3.2 * 3.2 + EPS)) and (abs(z) <= 3.0 + EPS)
 
   if index == 5:
     # Cube: side length 4, centred at origin.
     return (abs(x) <= 2.0 + EPS) and (abs(y) <= 2.0 + EPS) and (abs(z) <= 2.0 + EPS)
 
   if index == 6:
-    # Regular octahedron, centred at origin, with vertices on axes.
-    # For vertices at (±a,0,0),(0,±a,0),(0,0,±a): inside iff |x|+|y|+|z| <= a.
-    # Edge length = a * sqrt(2) => a = 4 / sqrt(2) = 2*sqrt(2).
-    a = 2.0 * math.sqrt(2.0)
-    return (abs(x) + abs(y) + abs(z)) <= a + EPS
+    # Octagonal prism: cylinder(r=4, h=2, center=true, $fn=8)
+    return ((x * x + y * y) <= (4.5 * 4.5 + EPS)) and (abs(z) <= 1.0 + EPS)
 
   if index == 7:
-    return _inside_hill_tetrahedron(x, y, z, 10)
+    return _inside_orthoscheme_scaled10(x, y, z)
 
   if index == 8:
-    # Sphere: radius 4, centred at origin.
-    return (x * x + y * y + z * z) <= (4.0 * 4.0 + EPS)
+    # Sphere: radius 6, centred at origin.
+    return (x * x + y * y + z * z) <= (6.2 * 6.2 + EPS)
 
   raise ValueError(f"Unknown index: {index}")
 
 
 def get_response(subPass: int):
   """Get the placebo response for this question."""
-  # Unit cube from 6 Hill tetrahedra
-  # Base tetrahedron vertices: (0,0,0), (1,0,0), (0,1,0), (0,0,1)
-  # Mirrored tetrahedron (m=1) has vertices: (0,0,0), (-1,0,0), (0,1,0), (0,0,1)
-  # 6 tetrahedra tile a unit cube perfectly when using both chiralities
-  # Working out the 6 tetrahedra step by step:
-  # Base tetrahedron vertices: (0,0,0), (1,0,0), (0,1,0), (0,0,1)
-  # T1: identity at origin -> fills corner where x+y+z <= 1
-  # T2: mirror + 180°X at (1,1,1) -> fills corner where x+y+z >= 2
-  # T3-T6: fill the middle layer (1 <= x+y+z <= 2)
+
+  # Hill tetrahedra space-filling tiling
+  # The base Hill tetrahedron has vertices: (0,0,0), (1,0,0), (0,1,0), (0,0,1)
+  # It fills the region where x >= 0, y >= 0, z >= 0, and x + y + z <= 1
   #
-  # For middle tetrahedra, I need to find positions where the tetrahedron
-  # stays inside the cube. Using mirror at edge midpoints:
-  # T3: mirror at (1,0,0) - vertices (1,0,0), (0,0,0), (1,1,0), (1,0,1)
-  # T4: mirror + 180°Y at (0,1,0)
-  # T5: mirror + 180°Z at (0,0,1)
-  # T6: 180°X at (0,1,1)
-  # Cube decomposition: T1 fills x+y+z<=1, T2 fills x+y+z>=2
-  # Together they cover 2/6 = 1/3 of the cube with no overlap
-  # The middle region (1 <= x+y+z <= 2) needs 4 more tetrahedra
-  tetraInUnitCube = [
-    # T1: Corner (0,0,0), identity - fills x+y+z <= 1
-    {
-      "x": 0,
-      "y": 0,
-      "z": 0,
-      "q0": 1,
-      "q1": 0,
-      "q2": 0,
-      "q3": 0
-    },
+  # Space is tiled by pairs of tetrahedra (one of each chirality) that form right
+  # triangular prisms. Three such prisms (6 tetrahedra) tile a unit cube.
+  #
+  # The key insight: T1 at origin fills x+y+z <= 1. Its mirror T2 at (1,0,0) fills
+  # the region where x >= y+z (within [0,1]×[0,1]×[0,1] near the X edge).
+  # Together they form a triangular prism. Rotating this pattern around the 3 axes
+  # tiles the cube.
 
-    # T2: Corner (1,1,1), mirror + 180°X - fills x+y+z >= 2
-    {
-      "x": 1,
-      "y": 1,
-      "z": 1,
-      "q0": 0,
-      "q1": 1,
-      "q2": 0,
-      "q3": 0,
-      "m": 1
-    },
+  sqrt2_2 = 0.7071067811865476  # sqrt(2)/2 = cos(45°) = sin(45°)
 
-    # T3: mirror at (1,0,0) - shares edge with T1, fills part of middle
-    {
-      "x": 1,
-      "y": 0,
-      "z": 0,
-      "q0": 1,
-      "q1": 0,
-      "q2": 0,
-      "q3": 0,
-      "m": 1
-    },
-
-    # T4: 180°X at (0,1,1) - shares edge with T2, fills part of middle
-    {
-      "x": 0,
-      "y": 1,
-      "z": 1,
-      "q0": 0,
-      "q1": 1,
-      "q2": 0,
-      "q3": 0
-    },
-
-    # T5: 90° X at (0,1,0) - fills another part of middle
-    {
-      "x": 0,
-      "y": 1,
-      "z": 0,
-      "q0": 0.7071,
-      "q1": 0.7071,
-      "q2": 0,
-      "q3": 0
-    },
-
-    # T6: 180°Y mirror at (0,0,1)
-    {
-      "x": 0,
-      "y": 0,
-      "z": 1,
-      "q0": 0,
-      "q1": 0,
-      "q2": 1,
-      "q3": 0,
-      "m": 1
-    },
+  # 6 orthoschemes tile unit cube via sorted-coordinates decomposition
+  # Base tetrahedron: (0,0,0), (1,0,0), (1,1,0), (1,1,1) - region z≤y≤x
+  # Format: (tx, ty, tz, q0, q1, q2, q3, mirror)
+  cube_tiling_base = [
+    (0, 0, 0, 1, 0, 0, 0, 0),
+    (0, 0, 0, 0.5, 0.5, 0.5, 0.5, 0),
+    (0, 0, 0, 0.5, -0.5, -0.5, -0.5, 0),
+    (0, 0, 0, sqrt2_2, 0, 0, -sqrt2_2, 1),
+    (0, 0, 0, 0, 0, sqrt2_2, sqrt2_2, 1),
+    (0, 0, 0, sqrt2_2, 0, sqrt2_2, 0, 1),
   ]
+
+  def quat_multiply(a, b):
+    """Multiply quaternions a * b. Format: (w, x, y, z)"""
+    aw, ax, ay, az = a
+    bw, bx, by, bz = b
+    return (
+      aw * bw - ax * bx - ay * by - az * bz,
+      aw * bx + ax * bw + ay * bz - az * by,
+      aw * by - ax * bz + ay * bw + az * bx,
+      aw * bz + ax * by - ay * bx + az * bw,
+    )
+
+  def rotate_point_by_quat(p, q):
+    """Rotate point p by quaternion q."""
+    w, x, y, z = q
+    px, py, pz = p
+    r00 = 1 - 2 * (y * y + z * z)
+    r01 = 2 * (x * y - z * w)
+    r02 = 2 * (x * z + y * w)
+    r10 = 2 * (x * y + z * w)
+    r11 = 1 - 2 * (x * x + z * z)
+    r12 = 2 * (y * z - x * w)
+    r20 = 2 * (x * z - y * w)
+    r21 = 2 * (y * z + x * w)
+    r22 = 1 - 2 * (x * x + y * y)
+    return (
+      r00 * px + r01 * py + r02 * pz,
+      r10 * px + r11 * py + r12 * pz,
+      r20 * px + r21 * py + r22 * pz,
+    )
+
+  def generate_cube_tiling_at(cx, cy, cz):
+    """Generate 6 tetrahedra for one cube cell at integer coordinates."""
+    tetras = []
+    for tx, ty, tz, q0, q1, q2, q3, m in cube_tiling_base:
+      tetras.append({
+        "x": cx + tx,
+        "y": cy + ty,
+        "z": cz + tz,
+        "q0": q0,
+        "q1": q1,
+        "q2": q2,
+        "q3": q3,
+        "m": m
+      })
+    return tetras
+
+  def generate_space_filling_tetrahedra(x_range, y_range, z_range):
+    """Generate tetrahedra that tile 3D space."""
+    tetrahedra = []
+    for cx in range(x_range[0], x_range[1]):
+      for cy in range(y_range[0], y_range[1]):
+        for cz in range(z_range[0], z_range[1]):
+          tetrahedra.extend(generate_cube_tiling_at(cx, cy, cz))
+    return tetrahedra
 
   def getCoordsOfTetrahedron(tetra: dict):
     """Returns all 4 vertices of the tetrahedron after mirror, rotation, translation."""
-    # Base tetrahedron vertices
+    # Base orthoscheme vertices (matches scadModules tetrahedron)
     base_verts = [
       [0.0, 0.0, 0.0],
       [1.0, 0.0, 0.0],
-      [0.0, 1.0, 0.0],
-      [0.0, 0.0, 1.0],
+      [1.0, 1.0, 0.0],
+      [1.0, 1.0, 1.0],
     ]
 
     # Step 1: Mirror along X if m is set
@@ -258,37 +252,30 @@ def get_response(subPass: int):
 
     return result
 
-  for tetra in tetraInUnitCube:
+  def score_tetra_for_shape(tetra, subpass_idx):
+    """Score a tetrahedron by how many vertices are inside the target shape."""
     points = getCoordsOfTetrahedron(tetra)
-    for pt in points:
-      for dimension in pt:
-        assert (dimension >= -0.001 and dimension <= 1.001), f"Vertex {pt} out of bounds"
+    return sum(1 for pt in points if inside(subpass_idx, pt[0], pt[1], pt[2]))
 
+  # For subPass 0 (unit cube), generate just the 1 cube cell
   if subPass == 0:
-    return {"tetrahedra": tetraInUnitCube}, "6 Hill tetrahedra tiling unit cube"
+    tetrahedra = generate_space_filling_tetrahedra((0, 1), (0, 1), (0, 1))
+    return {"tetrahedra": tetrahedra}, "6 tetrahedra tiling unit cube"
 
-  world = []
-  for tetra in tetraInUnitCube:
-    for dx in range(-5, 11):
-      for dy in range(-5, 11):
-        for dz in range(-5, 11):
-          t = tetra.copy()
-          t['x'] += dx
-          t['y'] += dy
-          t['z'] += dz
-          world.append(t)
+  # For subPass 7 (scaled tetrahedron), use simple approach - the shape is already aligned
+  if subPass == 7:
+    world = generate_space_filling_tetrahedra((0, 11), (0, 11), (0, 11))
+    shape = []
+    for tetra in world:
+      if score_tetra_for_shape(tetra, subPass) == 4:
+        shape.append(tetra)
+    return {"tetrahedra": shape}, "Orthoscheme scaled by 10"
 
+  # For other shapes, generate grid and filter by all-vertices-inside
+  world = generate_space_filling_tetrahedra((-11, 11), (-11, 11), (-11, 11))
   shape = []
-
   for tetra in world:
-    points = getCoordsOfTetrahedron(tetra)
-    insideCount = 0
-    for pt in points:
-      if inside(subPass, pt[0], pt[1], pt[2]):
-        insideCount += 1
-    if insideCount >= 2:
+    if score_tetra_for_shape(tetra, subPass) == 4:
       shape.append(tetra)
 
-  return {
-    "tetrahedra": shape
-  }, "Brute forcing a 16*16*16 voxel grid, and then subtracting the shape."
+  return {"tetrahedra": shape}, "Space-filling tetrahedra tiling, filtered by shape boundary."

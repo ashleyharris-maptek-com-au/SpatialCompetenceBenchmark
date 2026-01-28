@@ -2,7 +2,7 @@ import random, scad_format
 import subprocess
 import tempfile
 import StlVolume
-import os
+import os, re
 import shutil
 from typing import List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -10,13 +10,35 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 openScadPath = os.environ.get("OPENSCAD_PATH")
 if not openScadPath:
   openScadPath = shutil.which("openscad")
+
+if not openScadPath:
+  openScadPath = R"C:\Program Files\OpenSCAD (Nightly)\openscad.exe"
+  if not os.path.exists(openScadPath): openScadPath = None
+
 if not openScadPath:
   openScadPath = R"C:\Program Files\OpenSCAD\openscad.exe"
+  if not os.path.exists(openScadPath): openScadPath = None
+
 if not os.path.exists(openScadPath):
   openScadPath = R"C:\Program Files (x86)\OpenSCAD\openscad.exe"
+  if not os.path.exists(openScadPath): openScadPath = None
+
 if not os.path.exists(openScadPath):
   raise FileNotFoundError(
     "OpenSCAD executable not found. Set OPENSCAD_PATH or add openscad to PATH.")
+
+useManifoldBackend = False
+
+version = subprocess.check_output([openScadPath, "--version"], text=True, stderr=subprocess.STDOUT)
+if versionNo := re.search(r"OpenSCAD version (\d+\.\d+)", version):
+  versionNo = versionNo.group(1)
+  if versionNo >= "2025.01":
+    print("Using OpenSCAD version " + versionNo + " with manifold backend.")
+    useManifoldBackend = True
+
+if not useManifoldBackend:
+  print(f"Your using an old version of OpenSCAD - {versionNo}. Using the old backend.")
+  print("Update to 2025 version or later to get 100x faster maths.")
 
 formatConfig = scad_format.FormatConfig(
   IndentWidth=2,
@@ -46,6 +68,9 @@ def run_openscad(input_scad: str,
       output_file,
       input_scad,
     ]
+
+    if useManifoldBackend:
+      args.append("--backend=manifold")
 
     if previewMode:
       args.append("--preview")

@@ -182,11 +182,17 @@ difference()
         result();   
         reference();
     }   
-        
+        """)
+
+    if "noMinkowski" not in testGlobals:
+      f.write("""
     minkowski()
     {
         cube(0.1,center=true);
-
+""")
+    else:
+      f.write("{")
+    f.write("""
         intersection() {
             result();
             reference();
