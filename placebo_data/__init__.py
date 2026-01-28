@@ -5,6 +5,7 @@ from . import q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15
 from . import q16, q17, q18, q19, q20, q23, q24, q25, q26, q27, q28, q29, q30, q31
 from . import q41, q42, q43, q21, q22, q49, q35, q45, q32, q37, q48
 from . import q50
+from . import q51, q52, q53, q54, q55, q56, q57
 import importlib
 import copy
 
@@ -49,7 +50,14 @@ _modules = {
   45: q45,
   48: q48,
   49: q49,
-  50: q50
+  50: q50,
+  51: q51,
+  52: q52,
+  53: q53,
+  54: q54,
+  55: q55,
+  56: q56,
+  57: q57
 }
 
 
@@ -176,6 +184,13 @@ def _always_wrong_text(questionNum: int, subPass: int):
 
 
 def _get_always_wrong_response(questionNum: int, subPass: int):
+  # VGB tests 51-57 have their own always-wrong generators
+  if questionNum in range(51, 58):
+    module = _modules.get(questionNum)
+    if module and hasattr(module, "get_always_wrong"):
+      return module.get_always_wrong(subPass)
+    return [], "Always-wrong placeholder"
+
   try:
     question_module = importlib.import_module(str(questionNum))
   except Exception:
