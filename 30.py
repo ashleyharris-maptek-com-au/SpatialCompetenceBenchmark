@@ -1,4 +1,6 @@
+import itertools
 import random
+import re
 import scad_format
 import OpenScad as vc
 
@@ -58,7 +60,7 @@ So now you understand the concept. Lets try something more advanced!
 
 Using: 
 - A 7 segment display font, 
-- Fixed diget sizes
+- Fixed digit sizes
 - Reading from the ground up,
 
 what is the largest prime number that can be 3D printed in a stack?
@@ -69,24 +71,26 @@ what is the largest prime number that can be 3D printed in a stack?
 around the y axis so that the long bar of the 7 is resting on the 1.
 
 331 can be printed. One 3 flat. One 3 rotated around y so it has 3 spikes sticking up, and
-then a 1 (rotated in y) balenced on the tip of the spikes. 
+then a 1 (rotated in y) balanced on the tip of the spikes. 
 
 Can we go any higher?
 
 Clarifications:
-- A ban on repeating any sequence of 3 more than once. 
-  - So 888 and 6969 substrings are allowed, but 8888 or 69696 are not allowed.
-  - The helps keep the problem solvable with under 1000 digits!
-- Only a single diget can be printed at any one z level. So you can't print "138" by printing
+- Only a single digit can be printed at any one z level. So you can't print "138" by printing
   the 1 and 3 concurrently and then use that to support the 8.
 - You can rotate in all 3 direction, so you can print a 3 on a 7 by rotating it "spikes up", but
-  you can't then print another rotated 3 on top of it, becasuse between the points of the 3
+  you can't then print another rotated 3 on top of it, because between the points of the 3
   it would overhang.
-- The digit segments are 10x10x1mm, with their centres on [-5,0,5],[-10,0,10]. An 8 has a span
-  of -5.5 < x < 5.5 and -10.5 < y < 10.5, and 2 interior squares each of 9x9.
-- A 0.5mm gap in Z exists between digits in the print as sent to the the printer, the dynamics
-  of molten plastic causes this gap to appear as a fracture point, to allow digits to be easily 
-  seperated after printing.
+- No duplicate triples. To ensure we don't consider infinite solutions, no triple can be repeated.
+  - When written with commas every 3 digits and split, there should be no duplicates in that list.
+  - So 123,321,123 is not allowed, but 123,111,231 is allowed.
+  - This helps keep the problem solvable with under 1000 digits!
+- The digit segments are 10x10x1mm, with their centres on [-5,0,5],[-10,0,10]. An 8 printed flat 
+  has a span of -5.5 < x < 5.5 and -10.5 < y < 10.5 and -0.5 < z < 0.5, and 2 interior squares 
+  each of 9x9mm.
+- A 0.2mm gap in Z exists between digits in the print as sent to the the printer, the dynamics
+  of molten plastic causes this gap to break thermal conductivity, to allow digits to be easily 
+  separated after printing.
 
 One of my coworkers is bragging they've solved it, and they have a stack that's 7cm high. As a 
 secondary objective, can we beat that height?
@@ -155,10 +159,10 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
   number = int(number_str)
 
   # Check for repeated 3-tuples
-  if containsAny3TupleMoreThanOnce(number_str):
-    return 0, str(number) + " contains a sequence of 3 digits repeated more than once"
+  if t := containsAny3TupleMoreThanOnce(number_str):
+    return 0, str(number) + " contains a sequence of 3 digits repeated more than once: " + str(t)
 
-  # Check if each individual diget can be printed on it's own.
+  # Check if each individual digit can be printed on its own.
   flatOrientations = ["flat", "flippedX", "flippedY", "rotate180Z"]
   height = 0
 
@@ -166,14 +170,14 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
     digit = n["digit"]
     orientation = n["orientation"]
     if orientation in flatOrientations:
-      height += 1.5
+      height += 1.2
     elif orientation == "rotate90X":
-      height += 21.5
+      height += 21.2
     elif orientation == "rotate90Y":
       if digit == 1:
-        height += 1.5
+        height += 1.2
       else:
-        height += 11.5
+        height += 11.2
 
     if orientation in flatOrientations:
       # Everything can be printed flat.
@@ -239,14 +243,15 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
 
     return 100, f"Digit {next_digit} (orientation: {next_orientation}) wasn't coded if it could be printed on top of digit {current_digit} (orientation: {current_orientation})<br>Grading code needs updating."
 
-  # The solution (AFAIK) is all of these flat, rotating the 6's to fit on the 9's, then
-  # flipping the 3's to fit on the 6's, then a stack of 7's, then 2 * 1 flat, then
-  # a 7 on it's side, and then 2 * 1's stacked on top of it.
-  solution = 888_999_6969_666_333_777_11_7_11
+  # The solution is all of these flat, rotating the 9's to fit on the 6's, then
+  # flipping the 3's to fit on the 6's, then a stack of 7's flipped in X, then 2 * 1 flat (flipped in X),
+  # then a 7 on it's side, and then a 1 stacked on top of it in a giant spike.
+
+  solution = 888999996969699696669666333377777711111171
   solution_len = len(str(solution))
 
   # I am very confident I found the best solution, however, if I'm every proven wrong,
-  # this will need updating.
+  # this will need updating. A score over 100 should stand out in the report.
   if number > solution:
     return 100, "Test needs updating. Well done!"
 
@@ -254,12 +259,12 @@ def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
 
   if height > 70:
     return numberScore, f"Answer given was of length {len(number_str)} while the "\
-      f"largest printable prime (I know of) is of length {solution_len}. "\
-      f"Height was {height}mm which was over the target height of 70mm."
+      f"largest printable prime is of length {solution_len}.<br><br> "\
+      f"Height was {height:.1f}mm which was over the target height of 70mm."
   else:
     return numberScore*0.9, f"Answer given was of length {len(number_str)} while the "\
-      f"largest printable prime (I know of) is of length {solution_len}. "\
-      f"Height was {height}mm which was under the target height of 70mm, so "\
+      f"largest printable prime is of length {solution_len}.<br><br> "\
+      f"Height was {height:.1f}mm which was under the target height of 70mm, so "\
       "penalized by 10%."
 
 
@@ -305,7 +310,7 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 
     scad += f"color({colors[index % len(colors)]}) translate([0,0,{height}])"
 
-    height += 1.5
+    height += 1.2
 
     if item["orientation"] == "rotate90X":
       if item["digit"] == 1:
@@ -315,7 +320,7 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
         # This is probably an error anyway.
         d = "rotate([90,0,0])" + d
 
-      height += 18
+      height += 19
     if item["orientation"] == "rotate90Y":
       if item["digit"] == 1:
         pass  # No-op
@@ -354,7 +359,7 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 <a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
 <img src="{os.path.basename(output_path)}" alt="Stacked digits Visualization" style="max-width: 100%; float:left">
 </a>
-<p><div style="float:right">Ai suggested {number} ({len(answer["numberSequence"])} digits).<br>The correct answer is 24 digits long.</div></p>
+<br><div style='clear:both;'>Ai suggested {int(number):,} ({len(answer["numberSequence"]):,} digits).<br>The correct answer is 24 digits long.</div>
 """
 
 
@@ -405,8 +410,110 @@ def _miller_rabin_test(n, a):
   return False
 
 
+def _jacobi_symbol(a, n):
+  """Compute Jacobi symbol (a/n) for odd n > 0."""
+  if n <= 0 or n % 2 == 0:
+    raise ValueError("n must be odd and positive")
+  a = a % n
+  result = 1
+  while a != 0:
+    while a % 2 == 0:
+      a //= 2
+      if n % 8 in (3, 5):
+        result = -result
+    a, n = n, a
+    if a % 4 == 3 and n % 4 == 3:
+      result = -result
+    a = a % n
+  return result if n == 1 else 0
+
+
+def _lucas_sequence(n, D, P, Q, k):
+  """Compute U_k and V_k of Lucas sequence mod n using binary method."""
+  if k == 0:
+    return 0, 2
+
+  # Start with U_1 = 1, V_1 = P
+  U, V = 1, P
+  Qk = Q  # Tracks Q^m where m is current index
+
+  # Process remaining bits after the leading 1
+  bits = bin(k)[3:]  # Skip '0b1'
+
+  for bit in bits:
+    # Double: U_{2m} = U_m * V_m, V_{2m} = V_m^2 - 2*Q^m
+    U = (U * V) % n
+    V = (V * V - 2 * Qk) % n
+    Qk = (Qk * Qk) % n
+
+    if bit == '1':
+      # Add 1: U_{m+1} = (P*U + V)/2, V_{m+1} = (D*U + P*V)/2
+      U_new = P * U + V
+      V_new = D * U + P * V
+      if U_new % 2: U_new += n
+      if V_new % 2: V_new += n
+      U = (U_new // 2) % n
+      V = (V_new // 2) % n
+      Qk = (Qk * Q) % n
+
+  return U, V
+
+
+def _strong_lucas_test(n):
+  """Strong Lucas primality test using Selfridge's Method A for D selection."""
+  if n < 2:
+    return False
+  if n == 2:
+    return True
+  if n % 2 == 0:
+    return False
+
+  # Check for perfect square (Lucas test requires n not be a perfect square)
+  sqrt_n = int(n**0.5)
+  if sqrt_n * sqrt_n == n:
+    return False
+
+  # Selfridge's Method A: find D where Jacobi(D, n) = -1
+  D = 5
+  while True:
+    g = _jacobi_symbol(D, n)
+    if g == 0:
+      return abs(D) != n  # n divides D, so n is composite unless n == |D|
+    if g == -1:
+      break
+    D = -D - 2 if D > 0 else -D + 2
+    if D == -15:  # Safety check for perfect squares we might have missed
+      sqrt_n = int(n**0.5)
+      if sqrt_n * sqrt_n == n:
+        return False
+
+  P, Q = 1, (1 - D) // 4
+
+  # Write n+1 = 2^s * d where d is odd
+  d = n + 1
+  s = 0
+  while d % 2 == 0:
+    d //= 2
+    s += 1
+
+  U, V = _lucas_sequence(n, D, P, Q, d)
+  Qd = pow(Q, d, n)  # Compute Q^d once
+
+  # Strong Lucas: n is probably prime if U_d ≡ 0 (mod n) or V_{d*2^r} ≡ 0 (mod n) for some 0 ≤ r < s
+  if U == 0 or V == 0:
+    return True
+
+  for _ in range(s - 1):
+    V = (V * V - 2 * Qd) % n
+    Qd = (Qd * Qd) % n  # Q^{2d}, Q^{4d}, etc.
+    if V == 0:
+      return True
+
+  return False
+
+
 def isPrime(num: int) -> bool:
-  """Miller-Rabin primality test with caching. Deterministic for n < 3,317,044,064,679,887,385,961,981."""
+  """BPSW primality test with caching. No known counterexamples exist."""
   if num < 2:
     return False
 
@@ -417,7 +524,7 @@ def isPrime(num: int) -> bool:
     return cache[key]
 
   # Small primes
-  small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+  small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
   if num in small_primes:
     cache[key] = True
     _save_prime_cache()
@@ -430,17 +537,17 @@ def isPrime(num: int) -> bool:
       _save_prime_cache()
       return False
 
-  if num >= 3_317_044_064_679_887_385_961_981:
-    # fall back to a naive prime check for numbers too large for Miller-Rabin
-    cache[key] = all(num % i != 0 for i in range(2, int(num**0.5) + 1))
+  # BPSW test: Miller-Rabin base 2 + Strong Lucas test
+  # No known counterexamples exist for any n (verified computationally to 2^64 and beyond)
+
+  # Step 1: Miller-Rabin with base 2
+  if not _miller_rabin_test(num, 2):
+    cache[key] = False
     _save_prime_cache()
-    return cache[key]
+    return False
 
-  # Miller-Rabin with deterministic witnesses for numbers up to 3,317,044,064,679,887,385,961,981
-  # These witnesses are proven sufficient for this range
-  witnesses = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
-
-  result = all(_miller_rabin_test(num, a) for a in witnesses if a < num)
+  # Step 2: Strong Lucas test
+  result = _strong_lucas_test(num)
 
   cache[key] = result
   _save_prime_cache()
@@ -448,26 +555,31 @@ def isPrime(num: int) -> bool:
 
 
 def containsAny3TupleMoreThanOnce(s: str) -> bool:
-  for i in range(0, len(s) - 2):
-    for j in range(i + 1, len(s) - 2):
-      if s[i] == s[i + 1] == s[i + 2] == s[j] == s[j + 1] == s[j + 2]:
-        return True
-  return False
+  s = s[::-1]
+
+  tuples = list(itertools.batched(s, 3))
+  sets = set(tuples)
+  if len(tuples) != len(sets):
+    for s in sets:
+      if tuples.count(s) > 1:
+        return s
+
+  return None
 
 
 printableFlats = []
 
 
 def finalAllFlatSequences(num: str):
-  lastDiget = num[-1]
+  lastDigit = num[-1]
 
-  suffixes = canPrintOnTop(int(lastDiget))[0]
+  suffixes = canPrintOnTop(int(lastDigit))[0]
   for suffix in suffixes:
     newNumber = num + str(suffix)
 
     if len(newNumber) >= 3:
-      last3Digets = str(newNumber)[-3:]
-      if newNumber.count(last3Digets) > 1:
+      last3Digits = str(newNumber)[-3:]
+      if newNumber.count(last3Digits) > 1:
         continue
 
     printableFlats.append(newNumber)
@@ -475,131 +587,113 @@ def finalAllFlatSequences(num: str):
 
 
 if __name__ == "__main__":
-  base = 888_999_6969_666_333_777
+
+  # Depending on where the boundary splitting into groups of 3 goes, we might be able
+  # to get up to 5 repeated digits.
+  # ie 888,889  888,899   888,999 so we have to build our bases algorithmically.
+
+  bases = []
+
+  for i8 in range(3, 6):
+    for i3 in range(3, 6):
+      for i7 in range(3, 6):
+        bases.append(
+          int("8" * i8 + ("999"
+                          "996"
+                          "969"
+                          "699"
+                          "696"
+                          "669"
+                          "666") + "3" * i3 + "7" * i7))
+
+  bases2 = bases
+  bases = []
+  for b in bases2:
+    if containsAny3TupleMoreThanOnce(str(b)) and containsAny3TupleMoreThanOnce(
+        str(b) + "0") and containsAny3TupleMoreThanOnce(str(b) + "00"):
+      continue
+    bases.append(b)
+
+  print("Found " + str(len(bases)) + " bases:")
+  print("\n".join(map(str, bases)))
+
   longestPrintablePrime = 7
 
-  for suffix in [
-      111711, 117111, 111311, 11311, 17111, 13111, 11711, 11311, 1711, 1311, 711, 311, 71, 31, 11, 1
-  ]:
-    num = str(base) + str(suffix)
-    if int(num) < longestPrintablePrime:
-      continue
-    if not containsAny3TupleMoreThanOnce(num) and isPrime(int(num)):
-      longestPrintablePrime = int(num)
-      print(longestPrintablePrime)
+  tried = 0
 
-if __name__ == "__main__":
-  print(
-    resultToNiceReport(
-      {
-        "numberSequence": [
-          {
-            "digit": 8,
-            "orientation": "flat"
-          },
-          {
-            "digit": 8,
-            "orientation": "flat"
-          },
-          {
-            "digit": 8,
-            "orientation": "flat"
-          },
-          {
-            "digit": 9,
-            "orientation": "flat"
-          },
-          {
-            "digit": 9,
-            "orientation": "flat"
-          },
-          {
-            "digit": 9,
-            "orientation": "flat"
-          },
-          {
-            "digit": 6,
-            "orientation": "rotate180Z"
-          },
-          {
-            "digit": 9,
-            "orientation": "flat"
-          },
-          {
-            "digit": 6,
-            "orientation": "rotate180Z"
-          },
-          {
-            "digit": 9,
-            "orientation": "flat"
-          },
-          {
-            "digit": 6,
-            "orientation": "rotate180Z"
-          },
-          {
-            "digit": 6,
-            "orientation": "rotate180Z"
-          },
-          {
-            "digit": 6,
-            "orientation": "rotate180Z"
-          },
-          {
-            "digit": 3,
-            "orientation": "flat"
-          },
-          {
-            "digit": 3,
-            "orientation": "flat"
-          },
-          {
-            "digit": 3,
-            "orientation": "flat"
-          },
-          {
-            "digit": 7,
-            "orientation": "flat"
-          },
-          {
-            "digit": 7,
-            "orientation": "flat"
-          },
-          {
-            "digit": 7,
-            "orientation": "flat"
-          },
-          {
-            "digit": 1,
-            "orientation": "flat"
-          },
-          {
-            "digit": 1,
-            "orientation": "flat"
-          },
-          {
-            "digit": 7,
-            "orientation": "rotate90X"
-          },
-          {
-            "digit": 1,
-            "orientation": "rotate90X"
-          },
-          {
-            "digit": 1,
-            "orientation": "rotate90X"
-          },
-        ]
-      }, 0, "Ash screwing around with Python"))
+  suffixes = []
+
+  for suffix in itertools.product(["", "3", "1", "7"], repeat=10):
+    suffix = "".join(suffix)
+
+    # Suffix starts printing on a flat 7.
+
+    topBarAllowed = True
+    longSideAllowed = True
+
+    invalid = False
+    for s in suffix:
+      if topBarAllowed and longSideAllowed:
+        if s == "7": continue
+        if s == "3":
+          # We have to rotate the 3
+          topBarAllowed = False
+          longSideAllowed = False
+        if s == "1":
+          # We loose the ability to print the top bar.
+          topBarAllowed = False
+      elif longSideAllowed:
+        if s == "1": continue
+        if s in ["3", "7"]:
+          # We have to rotate the 3 or 7 leaving spikes up
+          topBarAllowed = False
+          longSideAllowed = False
+      else:
+        if s == "1": continue
+        invalid = True
+
+    if invalid:
+      continue
+
+    suffixes.append(suffix)
+
+  print("Found " + str(len(suffixes)) + " suffixes:")
+  print("\n".join(suffixes))
+
+  print("\n")
+
+  for base in bases:
+    for suffix in suffixes:
+      num = str(base) + suffix
+
+      if int(num) <= longestPrintablePrime:
+        continue
+      if containsAny3TupleMoreThanOnce(num):
+        continue
+
+      tried += 1
+      if tried % 10000 == 0:
+        print("Tried " + str(tried) + " candidates. Trying " + num + " next.")
+      if isPrime(int(num)):
+        longestPrintablePrime = int(num)
+        print(longestPrintablePrime)
+        print(str(base) + " lying flat with suffix " + suffix)
+
+  for base in bases:
+    num = str(base) + "3111"
+    if isPrime(int(num)):
+      print("The tallest prime is " + num)
+
+  print("The longest printable prime is " + str(longestPrintablePrime))
 
 highLevelSummary = """
 So this test has 2 components, a visual one and a maths one.<br><br>
 
 The maths problem is computationally extreme - finding a prime
-with no 3 diget sequence repeated. The answer is around 1000
-digets long. If you tackle this first, you're going to have a bad time.<br><br>
+with no 3 digit sequence repeated. The answer is around 1000
+digits long. If you tackle this first, you're going to have a bad time.<br><br>
 
-The visual problem is way simpler - each diget and orientation
+The visual problem is way simpler - each digit and orientation
 choice limits the future choices, and the problem size drastically
 shrinks with each step of it you solve. For example an 8:<ul>
 <li>Can't be printed on it's long or short side, as that has bridge overhangs.</li>
@@ -607,10 +701,10 @@ shrinks with each step of it you solve. For example an 8:<ul>
 </ul>
 
 So... our answer set diverges into 4 immediately:<ul>
-<li>^[0123456790]+</li>
-<li>^8[0123456790]+</li>
-<li>^88[0123456790]+</li>
-<li>^888[0123456790]+</li>
+<li>^[0123456789]+</li>
+<li>^8[0123456789]+</li>
+<li>^88[0123456789]+</li>
+<li>^888[0123456789]+</li>
 </ul>
 The largest of which is the last, so the answer must start with 888, printed all flat.<br><br>
 
@@ -622,6 +716,11 @@ the search space for the suffix. If the AI is 'offering to build a program to fi
 prime number' or whatever, it probably deserves its 0, as an exhaustive search for this
 required only ~50 calls to "isPrime" to discover the 24 digit answer.<br><br>
 
-As a secondary objective, we want the AI to lay it out in the tallest possible stack. The largest
-possible is 86mm, but we tell it to aim for 70mm or higher. This is only 10% of the grade.
+As a secondary objective, we want the AI to lay it out in the tallest possible stack. The largest and
+tallest possible prime numbers are different:<br>
+Tallest: 88888999996969699696669666333337773111 (The last 3 1's are a spire).<br>
+Largest: 888999996969699696669666333377777711111171<br>
+But we instruct the AI this is a secondary priority. This complicaiton was
+added as both gemini-3-pro and gpt-5.2-pro both figured out the '9 can be printed on 8 but not 8 on 9'
+part of the problem and I foresaw it being solved by the next version.
 """
