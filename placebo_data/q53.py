@@ -28,29 +28,33 @@ def get_response(subPass: int):
   if subPass >= len(data):
     return None, "Not yet implemented"
   ground_truth = data[subPass].get("ground_truth", [])
-  return ground_truth, "Placebo: returning ground truth from dataset"
+  return {"labels": ground_truth}, "Placebo: returning ground truth from dataset"
 
 
 def get_guess(subPass: int, rng):
   """Get a deterministic random guess for this question."""
   data = _get_data()
   if subPass >= len(data):
-    return [], "Random guess"
-  count = rng.randint(1, 4)
-  labels = []
-  for _ in range(count):
-    labels.append([rng.randint(0, 3), rng.randint(0, 3)])
-  return labels, "Random guess"
+    return {"labels": []}, "Random guess"
+  gt = data[subPass].get("ground_truth", [])
+  choices = ["known behaviour", "three domains meeting", "ambiguous"]
+  labels = [rng.choice(choices) for _ in range(len(gt))]
+  return {"labels": labels}, "Random guess"
 
 
 def get_always_wrong(subPass: int):
   """Get an always-wrong response for this question."""
   data = _get_data()
   if subPass >= len(data):
-    return [], "Always-wrong placeholder"
-  # Return wrong classification - shift behaviours
+    return {"labels": []}, "Always-wrong placeholder"
+  # Return wrong classification labels while staying schema-valid
   gt = data[subPass].get("ground_truth", [])
-  if gt and isinstance(gt, list) and len(gt) > 0:
-    wrong = [[3 - i for i in pair] if isinstance(pair, list) else pair for pair in gt]
-    return wrong, "Always-wrong placeholder"
-  return [[0, 0]], "Always-wrong placeholder"
+  if gt and isinstance(gt, list):
+    label_map = {
+      "known behaviour": "ambiguous",
+      "ambiguous": "three domains meeting",
+      "three domains meeting": "known behaviour",
+    }
+    wrong = [label_map.get(label, "ambiguous") for label in gt]
+    return {"labels": wrong}, "Always-wrong placeholder"
+  return {"labels": ["ambiguous"]}, "Always-wrong placeholder"
