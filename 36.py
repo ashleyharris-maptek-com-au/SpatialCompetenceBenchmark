@@ -1,5 +1,6 @@
 import math
 import random
+import re
 import OpenScad as vc
 import os
 
@@ -15,6 +16,52 @@ PLANE_DESCRIPTION
 
 Describe the resulting 2D cross-section shape in clear text, identifying the shape and 
 any notable characteristics (symmetry, number of sides, relative proportions, etc.).
+
+Choose from the following shapes:
+- circle
+- ellipse
+- oval
+- capsule
+- lens
+- washer
+- polygon
+- triangle
+- quadrilateral
+- kite
+- square
+- rectangle
+- parallelogram
+- rhombus
+- trapezoid
+- pentagon
+- hexagon
+- heptagon
+- octagon
+- nonagon
+- decagon
+- dodecagon
+- pentagram
+- hexagram 
+- semicircle
+- octagram 
+- decagram
+- heart
+- cross
+- chevron
+- two_circles
+- two_ellipses
+- two_squares
+- two_rectangles
+- two_polygons
+- two_hexagons
+- two_octagons
+- two_stars
+- two_hearts
+- two_diamonds
+- two_pentagons
+- two_hexagrams
+- nothing
+
 """
 
 structure = {
@@ -29,12 +76,14 @@ structure = {
       "description":
       "Name of the shape (If multiple apply, use the most specific shape)",
       "enum": [
-        "circle", "ellipse", "square", "rectangle", "triangle", "trapezoid", "parallelogram",
-        "rhombus", "polygon", "pentagon", "hexagon", "heptagon", "octagon", "nonagon", "decagon",
-        "dodecagon", "star", "heart", "diamond", "hexagram", "lens", "washer", "two_circles",
-        "two_ellipses", "two_squares", "two_rectangles", "two_polygons", "two_hexagons",
-        "two_octagons", "two_stars", "two_hearts", "two_diamonds", "two_pentagons", "two_hexagrams",
-        "rhombus", "quadrilateral"
+        "circle", "ellipse", "oval", "capsule", "lens", "crescent", "lune", "washer", "annulus",
+        "ring", "polygon", "triangle", "equilateral_triangle", "isosceles_triangle",
+        "scalene_triangle", "right_triangle", "quadrilateral", "kite", "square", "rectangle",
+        "parallelogram", "rhombus", "diamond", "trapezoid", "trapezium", "pentagon", "hexagon",
+        "heptagon", "octagon", "nonagon", "decagon", "dodecagon", "pentagram", "hexagram",
+        "octagram", "decagram", "heart", "cross", "chevron", "two_circles", "two_ellipses",
+        "two_squares", "two_rectangles", "two_polygons", "two_hexagons", "two_octagons",
+        "two_stars", "two_hearts", "two_diamonds", "two_pentagons", "two_hexagrams", "nothing"
       ]
     },
     "shapeDescription": {
@@ -149,6 +198,45 @@ scale([phi,phi,phi]) {
     }
 }
 """
+SCAD_CROSS = """$fn=48;
+union() {
+  cube([6,2,2], center=true);
+  cube([2,6,2], center=true);
+}
+"""
+SCAD_CHEVRON = """$fn=48;
+union() {
+  rotate([0,0,35]) cube([6,1.5,2], center=true);
+  rotate([0,0,-35]) cube([6,1.5,2], center=true);
+}
+"""
+SCAD_RHOMBUS_HULL = """$fn=64;
+hull() {
+  translate([2,0,0]) cylinder(r=0.1, h=3, center=true);
+  translate([-2,0,0]) cylinder(r=0.1, h=3, center=true);
+  translate([0,1.6,0]) cylinder(r=0.1, h=3, center=true);
+  translate([0,-1.6,0]) cylinder(r=0.1, h=3, center=true);
+}
+"""
+SCAD_KITE_HULL = """$fn=64;
+hull() {
+  translate([0,2.2,0]) cylinder(r=0.6, h=3, center=true);
+  translate([1.8,0,0]) cylinder(r=0.6, h=3, center=true);
+  translate([0,-2.2,0]) cylinder(r=0.6, h=3, center=true);
+  translate([-1.0,0,0]) cylinder(r=0.6, h=3, center=true);
+}
+"""
+SCAD_HEART_HULL = """
+$fn=64;
+union()
+ {
+  // Two cylinders for the lobes
+  translate([-1,0,0]) cylinder(r=1.5, h=3, center=true);
+  translate([1,0,0]) cylinder(r=1.5, h=3, center=true);
+  // A rotated cube forming the point
+  translate([0,-1,0]) rotate([0,0,45])  cube([3,3,3], center=true);
+}
+"""
 
 # Define slicing problems
 problems = []
@@ -157,19 +245,16 @@ problems = []
 cube_desc = """
 A solid cube with side length 2 centered at the origin.
 """
-cube_planes = [
-  ("Cube mid horizontal slice", "Plane: Z = 0 cuts through the cube's center.", "square",
-   make_plane_spec([0, 0, 0], [0, 0, 1], span=8, thickness=0.03)),
-  ("Cube upper horizontal slice", "Plane: Z = 0.75 remains parallel to the base near the top.",
-   "square", make_plane_spec([0, 0, 0.75], [0, 0, 1], span=8, thickness=0.03)),
-  ("Cube central YZ slice", "Plane: X = 0 forms a YZ-plane cross-section.", "square",
-   make_plane_spec([0, 0, 0], [1, 0, 0], span=8, thickness=0.03)),
-  ("Cube offset vertical slice", "Plane: Y = 0.8 is parallel to XZ but shifted toward +Y.",
-   "square", make_plane_spec([0, 0.8, 0], [0, 1, 0], span=8, thickness=0.03)),
-  ("Cube diagonal hexagon slice",
-   "Plane: Normal (1,1,1) through the center yields a regular hexagon.", "hexagon",
-   make_plane_spec([0, 0, 0], [1, 1, 1], span=9, thickness=0.03))
-]
+cube_planes = [("Cube mid horizontal slice", "Plane: Z = 0.", "square",
+                make_plane_spec([0, 0, 0], [0, 0, 1], span=8, thickness=0.03)),
+               ("Cube upper horizontal slice", "Plane: Z = 0.75.", "square",
+                make_plane_spec([0, 0, 0.75], [0, 0, 1], span=8, thickness=0.03)),
+               ("Cube central YZ slice", "Plane: X = 0.", "square",
+                make_plane_spec([0, 0, 0], [1, 0, 0], span=8, thickness=0.03)),
+               ("Cube offset vertical slice", "Plane: Y = 0.8.", "square",
+                make_plane_spec([0, 0.8, 0], [0, 1, 0], span=8, thickness=0.03)),
+               ("Cube diagonal hexagon slice", "Plane: Normal (1,1,1) passing through the origin.",
+                "hexagon", make_plane_spec([0, 0, 0], [1, 1, 1], span=9, thickness=0.03))]
 for name, plane_desc, shape, spec in cube_planes:
   problems.append(make_problem(name, cube_desc, plane_desc, shape, SCAD_CUBE, spec))
 
@@ -177,15 +262,20 @@ for name, plane_desc, shape, spec in cube_planes:
 rect_desc = """
 A rectangular prism measuring 4×2×1 units, centered at the origin.
 """
-rect_planes = [("Prism horizontal mid slice", "Plane: Z = 0 bisects the prism.", "rectangle",
-                make_plane_spec([0, 0, 0], [0, 0, 1], span=[12, 8], thickness=0.03)),
-               ("Prism long-axis slice", "Plane: X = 0 cuts parallel to long faces.", "rectangle",
-                make_plane_spec([0, 0, 0], [1, 0, 0], span=[10, 6], thickness=0.03)),
-               ("Prism angled parallelogram slice",
-                "Plane: Normal (1,1,0) through the origin forms a parallelogram.", "rectangle",
-                make_plane_spec([0, 0, 0], [1, 1, 0], span=[12, 8], thickness=0.03)),
-               ("Prism tri-diagonal slice", "Plane: Normal (1,1,1) creates a six-sided profile.",
-                "parallelogram", make_plane_spec([0, 0, 0], [1, 1, 1], span=11, thickness=0.03))]
+rect_planes = [
+  ("Prism horizontal mid slice", "Plane: Z = 0 bisects the prism.", "rectangle",
+   make_plane_spec([0, 0, 0], [0, 0, 1], span=[12, 8], thickness=0.03)),
+  ("Prism long-axis slice", "Plane: X = 0", "rectangle",
+   make_plane_spec([0, 0, 0], [1, 0, 0], span=[10, 6], thickness=0.03)),
+  ("Prism angled parallelogram slice", "Plane: Normal (1,1,0) passing through the origin.",
+   "rectangle", make_plane_spec([0, 0, 0], [1, 1, 0], span=[12, 8], thickness=0.03)),
+  ("Prism tri-diagonal slice", "Plane: Normal (1,1,1) passing through the origin.", "parallelogram",
+   make_plane_spec([0, 0, 0], [1, 1, 1], span=11, thickness=0.03)),
+  ("Prism tri-diagonal slice2", "Plane: Normal (1,1,1) passing through 1,1,1.", "triangle",
+   make_plane_spec([1, 1, 1], [1, 1, 1], span=11, thickness=0.03)),
+  ("Prism tri-diagonal slice3", "Plane: Normal (1,1,1) passing through 2,2,2.", "nothing",
+   make_plane_spec([2, 2, 2], [1, 1, 1], span=11, thickness=0.03)),
+]
 for name, plane_desc, shape, spec in rect_planes:
   problems.append(
     make_problem(name, rect_desc, plane_desc, shape, SCAD_RECT, spec, [0.7, 0.5, 1.0, 0.85]))
@@ -195,16 +285,12 @@ sphere_desc = """
 A solid sphere of radius 5 centered at the origin.
 """
 sphere_planes = [
-  ("Sphere equatorial slice", "Plane: Z = 0 passes through the equator.", "circle",
+  ("Sphere equatorial slice", "Plane: Z = 0", "circle",
    make_plane_spec([0, 0, 0], [0, 0, 1], span=14, thickness=0.03)),
-  ("Sphere upper slice", "Plane: Z = 3 is parallel to XY above the center.", "circle",
-   make_plane_spec([0, 0, 3], [0, 0, 1], span=14, thickness=0.03)),
-  ("Sphere near-cap slice", "Plane: Z = 4.2 trims a small cap.", "circle",
-   make_plane_spec([0, 0, 4.2], [0, 0, 1], span=12, thickness=0.03)),
-  ("Sphere vertical chord slice", "Plane: X = 2 forms a vertical circle.", "circle",
+  ("Sphere vertical chord slice", "Plane: X = 2.", "circle",
    make_plane_spec([2, 0, 0], [1, 0, 0], span=14, thickness=0.03)),
-  ("Sphere diagonal slice", "Plane: Normal (1,1,0) through center gives a great circle.", "circle",
-   make_plane_spec([0, 0, 0], [1, 1, 0], span=15, thickness=0.03))
+  ("Sphere diagonal slice", "Plane: Normal (1,1,0) passing through 1,1,1.", "circle",
+   make_plane_spec([1, 1, 1], [1, 1, 0], span=15, thickness=0.03)),
 ]
 for name, plane_desc, shape, spec in sphere_planes:
   problems.append(
@@ -214,16 +300,18 @@ for name, plane_desc, shape, spec in sphere_planes:
 cyl_desc = """
 A right circular cylinder of radius 3 and height 10 centered on the Z-axis.
 """
-cyl_planes = [("Cylinder mid horizontal slice", "Plane: Z = 0 produces a central circle.", "circle",
+cyl_planes = [("Cylinder mid horizontal slice", "Plane: Z = 0.", "circle",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=16, thickness=0.03)),
-              ("Cylinder near-top slice", "Plane: Z = 4 stays parallel near the top.", "circle",
+              ("Cylinder near-top slice", "Plane: Z = 4", "circle",
                make_plane_spec([0, 0, 4], [0, 0, 1], span=16, thickness=0.03)),
-              ("Cylinder axial rectangle", "Plane: X = 0 splits along the axis.", "rectangle",
+              ("Cylinder axial rectangle", "Plane: X = 0", "rectangle",
                make_plane_spec([0, 0, 0], [1, 0, 0], span=[16, 16], thickness=0.03)),
-              ("Cylinder offset axial slice", "Plane: Y = 1 parallels the axis but offset.",
-               "rectangle", make_plane_spec([0, 1, 0], [0, 1, 0], span=[16, 16], thickness=0.03)),
-              ("Cylinder angled ellipse slice", "Plane: Normal (0,1,1) gives an ellipse.",
-               "ellipse", make_plane_spec([0, 0, 0], [0, 1, 1], span=17, thickness=0.03))]
+              ("Cylinder offset axial slice", "Plane: Y = 1", "rectangle",
+               make_plane_spec([0, 1, 0], [0, 1, 0], span=[16, 16], thickness=0.03)),
+              ("Cylinder angled ellipse slice", "Plane: Normal (0,1,1) passing through origin.",
+               "ellipse", make_plane_spec([0, 0, 0], [0, 1, 1], span=17, thickness=0.03)),
+              ("Cylinder angled ellipse slice2", "Plane: Normal (0,1,1) passing through 0,2.5,2.5",
+               "semicircle", make_plane_spec([0, 2.5, 2.5], [0, 1, 1], span=17, thickness=0.03))]
 for name, plane_desc, shape, spec in cyl_planes:
   problems.append(
     make_problem(name, cyl_desc, plane_desc, shape, SCAD_CYL, spec, [0.4, 0.8, 0.6, 0.85]))
@@ -232,14 +320,16 @@ for name, plane_desc, shape, spec in cyl_planes:
 cone_desc = """
 A cone with apex at Z = 5, base radius 4 at Z = -5, centered on the Z-axis.
 """
-cone_planes = [("Cone central slice", "Plane: Z = 0 forms a mid-level circle.", "circle",
+cone_planes = [("Cone central slice", "Plane: Z = 0.", "circle",
                 make_plane_spec([0, 0, 0], [0, 0, 1], span=12, thickness=0.03)),
-               ("Cone near apex slice", "Plane: Z = 3 captures a small circle near the tip.",
-                "circle", make_plane_spec([0, 0, 3], [0, 0, 1], span=9, thickness=0.03)),
-               ("Cone tilted ellipse slice", "Plane: Normal (0,1,1) produces an ellipse.",
+               ("Cone near apex slice", "Plane: Z = 3.", "circle",
+                make_plane_spec([0, 0, 3], [0, 0, 1], span=9, thickness=0.03)),
+               ("Cone tilted ellipse slice", "Plane: Normal (0,1,1) passing through origin.",
                 "ellipse", make_plane_spec([0, 0, 0], [0, 1, 1], span=13, thickness=0.03)),
-               ("Cone meridian slice", "Plane: X = 0 contains the axis yielding a triangle.",
-                "triangle", make_plane_spec([0, 0, 0], [1, 0, 0], span=[14, 14], thickness=0.03))]
+               ("Cone tilted ellipse slice", "Plane: Normal (0,1,0.1) passing through [0, 0, .5].",
+                "triangle", make_plane_spec([0, 0, .5], [0, 1, 0.1], span=13, thickness=0.03)),
+               ("Cone meridian slice", "Plane: X = 0.", "triangle",
+                make_plane_spec([0, 0, 0], [1, 0, 0], span=[14, 14], thickness=0.03))]
 for name, plane_desc, shape, spec in cone_planes:
   problems.append(
     make_problem(name, cone_desc, plane_desc, shape, SCAD_CONE, spec, [0.9, 0.5, 0.3, 0.9]))
@@ -248,29 +338,30 @@ for name, plane_desc, shape, spec in cone_planes:
 tri_desc = """
 An equilateral triangular prism extruded 6 units along Z, centered at the origin.
 """
-tri_planes = [("Triangular prism mid slice", "Plane: Z = 0 yields a congruent triangle.",
-               "triangle", make_plane_spec([0, 0, 0], [0, 0, 1], span=11, thickness=0.03)),
-              ("Triangular prism upper slice", "Plane: Z = 1 stays parallel to the base.",
-               "triangle", make_plane_spec([0, 0, 1], [0, 0, 1], span=11, thickness=0.03)),
-              ("Triangular prism axial rectangle", "Plane: X = 0 intersects the rectangular faces.",
-               "rectangle", make_plane_spec([0, 0, 0], [1, 0, 0], span=[12, 12], thickness=0.03)),
-              ("Triangular prism oblique trapezoid", "Plane: Normal (1,0,1) makes a trapezoid.",
-               "trapezoid", make_plane_spec([0, 0, 0], [1, 0, 1], span=12, thickness=0.03))]
+tri_planes = [("Triangular prism mid slice", "Plane: Z = 0.", "triangle",
+               make_plane_spec([0, 0, 0], [0, 0, 1], span=11, thickness=0.03)),
+              ("Triangular prism upper slice", "Plane: Z = 1", "triangle",
+               make_plane_spec([0, 0, 1], [0, 0, 1], span=11, thickness=0.03)),
+              ("Triangular prism axial rectangle", "Plane: X = 0.", "rectangle",
+               make_plane_spec([0, 0, 0], [1, 0, 0], span=[12, 12], thickness=0.03)),
+              ("Triangular prism oblique trapezoid",
+               "Plane: Normal (1,0,1) passing through origin.", "trapezoid",
+               make_plane_spec([0, 0, 0], [1, 0, 1], span=12, thickness=0.03))]
 for name, plane_desc, shape, spec in tri_planes:
   problems.append(
     make_problem(name, tri_desc, plane_desc, shape, SCAD_TRI_PRISM, spec, [0.4, 0.4, 0.9, 0.85]))
 
 # Hexagonal prism scenarios
 hex_desc = """
-A regular hexagonal prism of radius 3 and height 6 centered on the origin.
+A six-sided prism with equal-width side faces, radius 3, height 6, centered on the origin.
 """
-hex_planes = [("Hex prism middle slice", "Plane: Z = 0 produces a regular hexagon.", "hexagon",
+hex_planes = [("Hex prism middle slice", "Plane: Z = 0.", "hexagon",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=14, thickness=0.03)),
-              ("Hex prism offset slice", "Plane: Z = 2 stays parallel to the bases.", "hexagon",
+              ("Hex prism offset slice", "Plane: Z = 2.", "hexagon",
                make_plane_spec([0, 0, 2], [0, 0, 1], span=14, thickness=0.03)),
-              ("Hex prism axial rectangle", "Plane: X = 0 intersects opposing faces.", "rectangle",
+              ("Hex prism axial rectangle", "Plane: X = 0.", "rectangle",
                make_plane_spec([0, 0, 0], [1, 0, 0], span=[14, 14], thickness=0.03)),
-              ("Hex prism diagonal rhombus", "Plane: Normal (1,1,0) clips a rectangle.",
+              ("Hex prism diagonal rhombus", "Plane: Normal (1,1,0) passing through origin.",
                "rectangle", make_plane_spec([0, 0, 0], [1, 1, 0], span=15, thickness=0.03))]
 for name, plane_desc, shape, spec in hex_planes:
   problems.append(
@@ -278,13 +369,13 @@ for name, plane_desc, shape, spec in hex_planes:
 
 # Octagonal prism scenarios
 oct_desc = """
-A regular octagonal prism of radius 3 and height 8 centered at the origin.
+An eight-sided prism with uniform faces, radius 3, height 8, centered at the origin.
 """
-oct_planes = [("Oct prism mid slice", "Plane: Z = 0 reveals an octagon.", "octagon",
+oct_planes = [("Oct prism mid slice", "Plane: Z = 0.", "octagon",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=16, thickness=0.03)),
-              ("Oct prism axial rectangle", "Plane: Y = 0 intersects opposite faces.", "rectangle",
+              ("Oct prism axial rectangle", "Plane: Y = 0.", "rectangle",
                make_plane_spec([0, 0, 0], [0, 1, 0], span=[16, 16], thickness=0.03)),
-              ("Oct prism steep diagonal", "Plane: Normal (1,0,1) creates a hexagon-like cut.",
+              ("Oct prism steep diagonal", "Plane: Normal (1,0,1) passing through origin.",
                "hexagon", make_plane_spec([0, 0, 0], [1, 0, 1], span=16, thickness=0.03))]
 for name, plane_desc, shape, spec in oct_planes:
   problems.append(
@@ -292,13 +383,13 @@ for name, plane_desc, shape, spec in oct_planes:
 
 # Pyramid scenarios
 pyr_desc = """
-A square pyramid with base in z=-1 and apex at z=5.
+A pyramid whose four-sided base lies at z=-1 with the apex at z=5.
 """
-pyr_planes = [("Square pyramid mid slice", "Plane: Z = 1 forms a scaled square cross-section.",
-               "square", make_plane_spec([0, 0, 1], [0, 0, 1], span=10, thickness=0.03)),
-              ("Square pyramid near apex", "Plane: Z = 3.5 yields a small square near the apex.",
-               "square", make_plane_spec([0, 0, 3.5], [0, 0, 1], span=8, thickness=0.03)),
-              ("Square pyramid diagonal slice", "Plane: Normal (1,0,1) produces a pentagon.",
+pyr_planes = [("Square pyramid mid slice", "Plane: Z = 1.", "square",
+               make_plane_spec([0, 0, 1], [0, 0, 1], span=10, thickness=0.03)),
+              ("Square pyramid near apex", "Plane: Z = 3.5.", "square",
+               make_plane_spec([0, 0, 3.5], [0, 0, 1], span=8, thickness=0.03)),
+              ("Square pyramid diagonal slice", "Plane: Normal (1,0,1) passing through origin.",
                "pentagon ", make_plane_spec([0, 0, 0], [1, 0, 1], span=12, thickness=0.03))]
 for name, plane_desc, shape, spec in pyr_planes:
   problems.append(
@@ -308,9 +399,9 @@ for name, plane_desc, shape, spec in pyr_planes:
 tet_desc = """
 A tetrahedron-style pyramid centered near the origin.
 """
-tet_planes = [("Tri pyramid horizontal slice", "Plane: Z = 0 produces a triangle.", "triangle",
+tet_planes = [("Tri pyramid horizontal slice", "Plane: Z = 0.", "triangle",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=9, thickness=0.2)),
-              ("Tri pyramid diagonal slice", "Plane: Normal (1,1,0) forms a quadrilateral.",
+              ("Tri pyramid diagonal slice", "Plane: Normal (1,1,0) passing through origin.",
                "quadrilateral", make_plane_spec([0, 0, 0], [1, 1, 0], span=10, thickness=0.2))]
 for name, plane_desc, shape, spec in tet_planes:
   problems.append(
@@ -320,12 +411,14 @@ for name, plane_desc, shape, spec in tet_planes:
 torus_desc = """
 A torus with major radius 5 and minor radius 2 centered at the origin.
 """
-torus_planes = [("Torus central slice", "Plane: Z = 0 yields two tangent circles.", "washer",
+torus_planes = [("Torus central slice", "Plane: Z = 0", "washer",
                  make_plane_spec([0, 0, 0], [0, 0, 1], span=18, thickness=0.03)),
-                ("Torus elevated slice", "Plane: Z = 1 yields two disjoint circles.", "washer",
+                ("Torus elevated slice", "Plane: Z = 1 .", "washer",
                  make_plane_spec([0, 0, 1], [0, 0, 1], span=18, thickness=0.03)),
-                ("Torus diagonal slice", "Plane: Normal (0,1,0) creates two circles.",
-                 "two_circles", make_plane_spec([0, 0, 0], [0, 1, 0], span=18, thickness=0.03))]
+                ("Torus vertical slice", "Plane: Normal (0,1,0) passing through origin.",
+                 "two_circles", make_plane_spec([0, 0, 0], [0, 1, 0], span=18, thickness=0.03)),
+                ("Torus diagonal slice", "Plane: Normal (0,1,1) passing through origin.",
+                 "two_elipses", make_plane_spec([0, 0, 0], [0, 1, 1], span=18, thickness=0.03))]
 for name, plane_desc, shape, spec in torus_planes:
   problems.append(
     make_problem(name, torus_desc, plane_desc, shape, SCAD_TORUS, spec, [0.8, 0.5, 0.2, 0.85]))
@@ -333,59 +426,109 @@ for name, plane_desc, shape, spec in torus_planes:
 # Advanced solids
 problems.append(
   make_problem("Dodecahedron equatorial slice", "A regular dodecahedron centered at the origin.",
-               "Plane: Z = 0 passes through the center perpendicular to a face axis.",
-               "decagon", SCAD_DODECA, make_plane_spec([0, 0, 0], [0, 0, 1],
-                                                       span=16,
-                                                       thickness=0.03), [0.9, 0.7, 0.2, 0.85]))
-
+               "Plane: Z = 0.", "decagon", SCAD_DODECA,
+               make_plane_spec([0, 0, 0], [0, 0, 1], span=16,
+                               thickness=0.03), [0.9, 0.7, 0.2, 0.85]))
 problems.append(
   make_problem("Twisted prism mid slice",
-               "A twisted triangular prism with 60° twist between base and top.",
-               "Plane: Z = 0 intersects halfway creating a rotated triangle.", "triangle",
-               SCAD_TWISTED, make_plane_spec([0, 0, 0], [0, 0, 1], span=12,
-                                             thickness=0.03), [0.5, 0.2, 0.7, 0.9]))
+               "A twisted triangular prism with 60° twist between base and top.", "Plane: Z = 0",
+               "triangle", SCAD_TWISTED,
+               make_plane_spec([0, 0, 0], [0, 0, 1], span=12,
+                               thickness=0.03), [0.5, 0.2, 0.7, 0.9]))
 
 problems.append(
   make_problem("Steinmetz horizontal slice",
-               "Two perpendicular cylinders of radius 3 (Steinmetz solid).",
-               "Plane: Z = 2 forms a lens bounded by circular arcs and straight sides.", "lens",
-               SCAD_INTERSECTING_CYLS, make_plane_spec([0, 0, 2], [0, 0, 1],
-                                                       span=18,
-                                                       thickness=0.03), [0.6, 0.9, 0.4, 0.85]))
+               "Two perpendicular cylinders of radius 3 (Steinmetz solid).", "Plane: Z = 2",
+               "capsule", SCAD_INTERSECTING_CYLS,
+               make_plane_spec([0, 0, 2], [0, 0, 1], span=18,
+                               thickness=0.03), [0.6, 0.9, 0.4, 0.85]))
 
-# Extra variety to reach ~40 challenges
+problems.append(
+  make_problem(
+    "Cross intersection slice",
+    "A solid formed by the union of two rectangular bars 6x2x2: one aligned with the X-axis and one with the Y-axis, both centered at the origin.",
+    "Plane: Z = 0", "cross", SCAD_CROSS,
+    make_plane_spec([0, 0, 0], [0, 0, 1], span=12, thickness=0.03), [0.95, 0.9, 0.3, 0.9]))
+
+problems.append(
+  make_problem(
+    "Cross intersection slice tilted",
+    "A solid formed by the union of two rectangular bars 6x2x2: one aligned with the X-axis and one with the Y-axis, both centered at the origin.",
+    "Plane: Normal (0,0.1,1) passing through origin", "cross", SCAD_CROSS,
+    make_plane_spec([0, 0, 0], [0, 0.1, 1], span=12, thickness=0.03), [0.95, 0.9, 0.3, 0.9]))
+
+problems.append(
+  make_problem(
+    "Cross intersection slice tilted 45",
+    "A solid formed by the union of two rectangular bars 6x2x2: one aligned with the X-axis and one with the Y-axis, both centered at the origin.",
+    "Plane: Normal (0,1,1) passing through origin", "rectangle", SCAD_CROSS,
+    make_plane_spec([0, 0, 0], [0, 1, 1], span=12, thickness=0.03), [0.95, 0.9, 0.3, 0.9]))
+
+problems.append(
+  make_problem(
+    "Cross intersection slice vertical",
+    "A solid formed by the union of two rectangular bars 6x2x2: one aligned with the X-axis and one with the Y-axis, both centered at the origin.",
+    "Plane: Normal (0,1,0) passing through origin", "rectangle", SCAD_CROSS,
+    make_plane_spec([0, 0, 0], [0, 1, 0], span=12, thickness=0.03), [0.95, 0.9, 0.3, 0.9]))
+
+problems.append(
+  make_problem(
+    "Chevron intersection slice",
+    "A solid that is the union of two long rectangular prisms (6x1.5x2), overlapping at the centre, rotated +35 and -35 about the Z-axis.",
+    "Plane: Z = Normal (0,1,1) passing through (0,0,1)", "chevron", SCAD_CHEVRON,
+    make_plane_spec([0, 0, 1], [0, 1, 1], span=14, thickness=0.03), [0.8, 0.6, 0.2, 0.9]))
+
+problems.append(
+  make_problem(
+    "Rhombus hull slice",
+    "The convex hull of four vertical line segments placed in XY plane evenly around the unit circle.",
+    "Plane: Normal (1,0,1) passing through origin", "hexagon", SCAD_RHOMBUS_HULL,
+    make_plane_spec([0, 0, 0], [1, 0, 1], span=10, thickness=0.03), [0.6, 0.8, 1.0, 0.9]))
+
+problems.append(
+  make_problem(
+    "Heart hull slice vertical",
+    "Two vertical cylinders (d=3, h=3) and a 45-degree rotated cube(3,3,3), arranged in an isolocies triangle (h=1, b=2) when viewed from above. The cylinder centres share a y coordinate.",
+    "Plane: Normal (1,0,0) passing through origin", "rectangle", SCAD_HEART_HULL,
+    make_plane_spec([0, 0, 0], [1, 0, 0], span=14, thickness=0.03), [0.9, 0.3, 0.4, 0.95]))
+
+problems.append(
+  make_problem(
+    "Heart hull slice horizontal",
+    "Two vertical cylinders (d=3, h=3) and a 45-degree rotated cube(3,3,3), arranged in an isolocies triangle (h=1, b=2) when viewed from above. The cylinder centres share a y coordinate.",
+    "Plane: Normal (1,0,0) passing through origin", "heart", SCAD_HEART_HULL,
+    make_plane_spec([0, 0, 0], [0, 0, 1], span=14, thickness=0.03), [0.9, 0.3, 0.4, 0.95]))
+
 extra_shapes = [
-  ("Sphere shallow slice", sphere_desc, "Plane: Z = -2 cuts below the center.", "circle",
-   SCAD_SPHERE, make_plane_spec([0, 0, -2], [0, 0, 1], span=14,
-                                thickness=0.03), [0.9, 0.6, 0.4, 0.85]),
   ("Cylinder steep diagonal slice", cyl_desc,
-   "Plane: Normal (1,1,1) produces an elongated ellipse.", "ellipse", SCAD_CYL,
+   "Plane: Normal (1,1,1) produces an elongated skewed outline.", "ellipse", SCAD_CYL,
    make_plane_spec([0, 0, 0], [1, 1, 1], span=18, thickness=0.03), [0.4, 0.8, 0.6, 0.85]),
   ("Rect prism shallow slice", rect_desc, "Plane: Z = -0.3 skims below center.", "rectangle",
    SCAD_RECT, make_plane_spec([0, 0, -0.3], [0, 0, 1], span=[12, 8],
                               thickness=0.03), [0.7, 0.5, 1.0, 0.85]),
   ("Triangular prism steep diagonal", tri_desc,
-   "Plane: Normal (1,1,1) creates a pentagon-like polygon. (A triangle with 2 of the corners clipped)",
+   "Plane: Normal (1,1,1) clips two vertices at once, producing a heavily truncated footprint.",
    "pentagon", SCAD_TRI_PRISM, make_plane_spec([0, 0, 0], [1, 1, 1], span=13,
                                                thickness=0.03), [0.4, 0.4, 0.9, 0.85]),
   ("Cone shallow diagonal", cone_desc,
-   "Plane: Normal (1,0,1) yields a skew ellipse resembling a parabola.", "ellipse", SCAD_CONE,
+   "Plane: Normal (1,0,1) yields a skew slice resembling a stretched loop.", "ellipse", SCAD_CONE,
    make_plane_spec([0, 0, 0.5], [1, 0, 1], span=13, thickness=0.03), [0.9, 0.5, 0.3, 0.9]),
-  ("Hex prism shallow tilt", hex_desc, "Plane: Normal (0,1,1) creates a skewed hexagon.", "hexagon",
-   SCAD_HEX_PRISM, make_plane_spec([0, 0, 0], [0, 1, 1], span=15,
-                                   thickness=0.03), [0.3, 0.9, 0.7, 0.85]),
-  ("Oct prism offset horizontal", oct_desc, "Plane: Z = -2 creates a lower octagon.", "octagon",
-   SCAD_OCT_PRISM, make_plane_spec([0, 0, -2], [0, 0, 1], span=16,
-                                   thickness=0.03), [0.8, 0.4, 0.6, 0.85]),
-  ("Square pyramid base slice", pyr_desc, "Plane: Z = -1 coincides with the base square.", "square",
-   SCAD_SQ_PYRAMID, make_plane_spec([0, 0, -1], [0, 0, 1], span=10,
-                                    thickness=0.03), [0.95, 0.8, 0.3, 0.9]),
-  ("Tri pyramid high slice", tet_desc, "Plane: Z = 1.2 captures a tiny top triangle.", "triangle",
-   SCAD_TRI_PYRAMID, make_plane_spec([0, 0, 1.2], [0, 0, 1], span=8,
-                                     thickness=0.2), [0.9, 0.4, 0.4, 0.9]),
-  ("Torus shallow offset slice", torus_desc, "Plane: Z = -1.2 yields a washer.", "washer",
-   SCAD_TORUS, make_plane_spec([0, 0, -1.2], [0, 0, 1], span=18,
-                               thickness=0.03), [0.8, 0.5, 0.2, 0.85])
+  ("Hex prism shallow tilt", hex_desc, "Plane: Normal (0,0.5,1).", "hexagon", SCAD_HEX_PRISM,
+   make_plane_spec([0, 0, 0], [0, 0.5, 1], span=15, thickness=0.03), [0.3, 0.9, 0.7, 0.85]),
+  ("Oct prism offset horizontal", oct_desc, "Plane: (0,1,1) Passing through the point [0,0,-2].",
+   "heptagons", SCAD_OCT_PRISM, make_plane_spec([0, 0, -2], [0, 1, 1], span=16,
+                                                thickness=0.03), [0.8, 0.4, 0.6, 0.85]),
+  ("Square pyramid base slice", pyr_desc, "Plane: Z = -1 coincides with the base footprint plane.",
+   "square", SCAD_SQ_PYRAMID, make_plane_spec([0, 0, -1], [0, 0, 1], span=10,
+                                              thickness=0.03), [0.95, 0.8, 0.3, 0.9]),
+  ("Tri pyramid high slice", tet_desc, "Plane: Z = 1.2 captures a tiny three-sided cap.",
+   "triangle", SCAD_TRI_PYRAMID, make_plane_spec([0, 0, 1.2], [0, 0, 1], span=8,
+                                                 thickness=0.2), [0.9, 0.4, 0.4, 0.9]),
+  ("Torus shallow offset slice", torus_desc, "Plane: Z = -1.2 ", "washer", SCAD_TORUS,
+   make_plane_spec([0, 0, -1.2], [0, 0, 1], span=18, thickness=0.03), [0.8, 0.5, 0.2, 0.85]),
+  ("Torus hull shallow offset slice", "convex hull of " + torus_desc, "Plane: Z = -1.2 ", "circle",
+   "hull(){" + SCAD_TORUS + "}", make_plane_spec([0, 0, -1.2], [0, 0, 1], span=18,
+                                                 thickness=0.03), [0.8, 0.5, 0.2, 0.85])
 ]
 
 for name, obj_desc, plane_desc, shape, scad, spec, color in extra_shapes:
@@ -402,6 +545,7 @@ def prepareSubpassPrompt(index: int) -> str:
   prob = problems[index]
   p = prompt.replace("OBJECT_DESCRIPTION", prob["object"])
   p = p.replace("PLANE_DESCRIPTION", prob["plane"])
+
   return p
 
 
@@ -460,7 +604,8 @@ def generate_plane_scad(plane_spec, color=None, thickness=None):
 def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
   prob = problems[subPass]
   shape_type = answer.get("shapeType", "unknown")
-  html = f"<b>Shape type:</b> {shape_type}<br>"
+  html = f"<b>AI said shape type:</b> {shape_type}<br>"
+  html += f"<b>Correct shape type:</b> {prob['expected_type']}<br>"
 
   desc = answer.get("shapeDescription")
   if desc:
