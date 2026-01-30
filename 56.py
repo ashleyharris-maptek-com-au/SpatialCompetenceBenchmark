@@ -17,7 +17,22 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 title = "VGB7 — Shikaku Rectangles"
-structure = None
+structure = {
+  "type": "object",
+  "additionalProperties": False,
+  "required": ["rectangles"],
+  "properties": {
+    "rectangles": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 4,
+        "maxItems": 4,
+        "items": {"type": "integer", "minimum": 0},
+      },
+    },
+  },
+}
 
 
 def _get_data():
@@ -61,8 +76,14 @@ def prepareSubpassPrompt(index):
 
 def gradeAnswer(result, subPass, aiEngineName):
   data = _get_data()
-  raw = result if isinstance(result, str) else repr(result)
-  extracted = PARSER.parse_answer(raw) or raw
+  extracted = None
+  if isinstance(result, dict) and "rectangles" in result:
+    rectangles = result.get("rectangles")
+    if isinstance(rectangles, list):
+      extracted = json.dumps(rectangles)
+  if extracted is None:
+    raw = result if isinstance(result, str) else repr(result)
+    extracted = PARSER.parse_answer(raw) or raw
   diff = verify_shikaku(extracted, data[subPass], return_diff=True)
   pretty = _format_diff(diff)
   return (1 if diff.get("passed") else 0), pretty
@@ -74,9 +95,12 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     raise StopIteration
 
   record = data[subPass]
-  raw = result if isinstance(result, str) else repr(result)
-  parsed = PARSER.parse_answer(raw)
-  answer = parsed if parsed is not None else raw
+  if isinstance(result, dict) and "rectangles" in result:
+    answer = result.get("rectangles")
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    parsed = PARSER.parse_answer(raw)
+    answer = parsed if parsed is not None else raw
 
   output_dir = Path("results")
   output_dir.mkdir(parents=True, exist_ok=True)

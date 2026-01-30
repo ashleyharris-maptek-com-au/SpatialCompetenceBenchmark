@@ -1,3 +1,4 @@
+import ast
 import json
 import shutil
 import sys
@@ -17,7 +18,62 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 title = "VGB2 — Topology Edge Tasks: Enumerate Edges"
-structure = None
+structure = {
+  "type": "object",
+  "additionalProperties": False,
+  "required": ["edges"],
+  "properties": {
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"type": "integer"},
+        },
+      },
+    },
+  },
+}
+
+
+def _parse_structured_payload(raw: str):
+  if not isinstance(raw, str):
+    return None
+  payload = raw.strip()
+  if not payload:
+    return None
+  for parser in (json.loads, ast.literal_eval):
+    try:
+      return parser(payload)
+    except (ValueError, SyntaxError, json.JSONDecodeError):
+      continue
+  return None
+
+
+def _extract_edges(result):
+  if isinstance(result, dict):
+    edges = result.get("edges")
+    if isinstance(edges, list):
+      return edges
+
+  if isinstance(result, str):
+    parsed = _parse_structured_payload(result)
+    if parsed is None:
+      extracted = PARSER.parse_answer(result)
+      if extracted:
+        parsed = _parse_structured_payload(extracted)
+
+    if isinstance(parsed, dict):
+      edges = parsed.get("edges")
+      if isinstance(edges, list):
+        return edges
+    if isinstance(parsed, list):
+      return parsed
+
+  return None
 
 
 def _get_data():
@@ -89,8 +145,12 @@ def prepareSubpassPrompt(index):
 
 def gradeAnswer(result, subPass, aiEngineName):
   data = _get_data()
-  raw = result if isinstance(result, str) else repr(result)
-  extracted = PARSER.parse_answer(raw) or raw
+  edges = _extract_edges(result)
+  if edges is not None:
+    extracted = json.dumps(edges)
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    extracted = PARSER.parse_answer(raw) or raw
   diff = verify_topology_edge_tasks(extracted, data[subPass], return_diff=True)
   pretty = _format_diff(diff)
   return (1 if diff.get("passed") else 0), pretty
@@ -102,9 +162,13 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     raise StopIteration
 
   record = data[subPass]
-  raw = result if isinstance(result, str) else repr(result)
-  parsed = PARSER.parse_answer(raw)
-  answer = parsed if parsed is not None else raw
+  edges = _extract_edges(result)
+  if edges is not None:
+    answer = edges
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    parsed = PARSER.parse_answer(raw)
+    answer = parsed if parsed is not None else raw
 
   output_dir = Path("results")
   output_dir.mkdir(parents=True, exist_ok=True)
