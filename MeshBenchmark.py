@@ -13,7 +13,6 @@ This extends the abstract TestRunner framework with spatial-specific:
 
 from typing import Dict, Any
 
-import VolumeComparison
 from LLMBenchCore import BenchmarkRunner, run_benchmark_main
 from LLMBenchCore.AiEnginePlacebo import set_placebo_data_provider
 import placebo_data
@@ -48,6 +47,8 @@ class MeshBenchmarkRunner(BenchmarkRunner):
     Compares the AI's generated shape against reference OpenSCAD models
     by computing volume intersection/difference.
     """
+    # Import lazily so OpenSCAD isn't required for non-geometry tests.
+    import VolumeComparison
     return VolumeComparison.compareVolumeAgainstOpenScad(index, subPass, result, test_globals,
                                                          aiEngineName)
 
