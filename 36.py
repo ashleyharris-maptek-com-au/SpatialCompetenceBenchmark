@@ -23,23 +23,35 @@ Choose from the following shapes:
 - oval
 - capsule
 - lens
+- crescent
 - washer
 - polygon
-- triangle
+- equalateral_triangle
+- isosceles_triangle
+- scalene_triangle
+- right_triangle
 - quadrilateral
 - kite
 - square
 - rectangle
 - parallelogram
+- diamond
 - rhombus
 - trapezoid
-- pentagon
-- hexagon
-- heptagon
-- octagon
-- nonagon
-- decagon
-- dodecagon
+- regular_pentagon
+- regular_hexagon
+- regular_heptagon
+- regular_octagon
+- regular_nonagon
+- regular_decagon
+- regular_dodecagon
+- irregular_pentagon
+- irregular_hexagon
+- irregular_heptagon
+- irregular_octagon
+- irregular_nonagon
+- irregular_decagon
+- irregular_dodecagon
 - pentagram
 - hexagram 
 - semicircle
@@ -50,6 +62,7 @@ Choose from the following shapes:
 - chevron
 - two_circles
 - two_ellipses
+- two_ovals
 - two_squares
 - two_rectangles
 - two_polygons
@@ -76,14 +89,17 @@ structure = {
       "description":
       "Name of the shape (If multiple apply, use the most specific shape)",
       "enum": [
-        "circle", "ellipse", "oval", "capsule", "lens", "crescent", "lune", "washer", "annulus",
-        "ring", "polygon", "triangle", "equilateral_triangle", "isosceles_triangle",
-        "scalene_triangle", "right_triangle", "quadrilateral", "kite", "square", "rectangle",
-        "parallelogram", "rhombus", "diamond", "trapezoid", "trapezium", "pentagon", "hexagon",
-        "heptagon", "octagon", "nonagon", "decagon", "dodecagon", "pentagram", "hexagram",
-        "octagram", "decagram", "heart", "cross", "chevron", "two_circles", "two_ellipses",
-        "two_squares", "two_rectangles", "two_polygons", "two_hexagons", "two_octagons",
-        "two_stars", "two_hearts", "two_diamonds", "two_pentagons", "two_hexagrams", "nothing"
+        "circle", "ellipse", "oval", "capsule", "lens", "crescent", "washer", "polygon",
+        "equalateral_triangle", "isosceles_triangle", "scalene_triangle", "right_triangle",
+        "quadrilateral", "kite", "square", "rectangle", "parallelogram", "rhombus", "diamond",
+        "trapezoid", "trapezium", "regular_pentagon", "regular_hexagon", "regular_heptagon",
+        "regular_octagon", "regular_nonagon", "regular_decagon", "regular_dodecagon",
+        "irregular_pentagon", "irregular_hexagon", "irregular_heptagon", "irregular_octagon",
+        "irregular_nonagon", "irregular_decagon", "irregular_dodecagon", "semicircle", "pentagram",
+        "hexagram", "octagram", "decagram", "heart", "cross", "chevron", "two_circles",
+        "two_ellipses", "two_ovals", "two_squares", "two_rectangles", "two_polygons",
+        "two_hexagons", "two_octagons", "two_stars", "two_hearts", "two_diamonds", "two_pentagons",
+        "two_hexagrams", "nothing"
       ]
     },
     "shapeDescription": {
@@ -254,7 +270,7 @@ cube_planes = [("Cube mid horizontal slice", "Plane: Z = 0.", "square",
                ("Cube offset vertical slice", "Plane: Y = 0.8.", "square",
                 make_plane_spec([0, 0.8, 0], [0, 1, 0], span=8, thickness=0.03)),
                ("Cube diagonal hexagon slice", "Plane: Normal (1,1,1) passing through the origin.",
-                "hexagon", make_plane_spec([0, 0, 0], [1, 1, 1], span=9, thickness=0.03))]
+                "regular_hexagon", make_plane_spec([0, 0, 0], [1, 1, 1], span=9, thickness=0.03))]
 for name, plane_desc, shape, spec in cube_planes:
   problems.append(make_problem(name, cube_desc, plane_desc, shape, SCAD_CUBE, spec))
 
@@ -271,8 +287,8 @@ rect_planes = [
    "rectangle", make_plane_spec([0, 0, 0], [1, 1, 0], span=[12, 8], thickness=0.03)),
   ("Prism tri-diagonal slice", "Plane: Normal (1,1,1) passing through the origin.", "parallelogram",
    make_plane_spec([0, 0, 0], [1, 1, 1], span=11, thickness=0.03)),
-  ("Prism tri-diagonal slice2", "Plane: Normal (1,1,1) passing through 1,1,1.", "triangle",
-   make_plane_spec([1, 1, 1], [1, 1, 1], span=11, thickness=0.03)),
+  ("Prism tri-diagonal slice2", "Plane: Normal (1,1,1) passing through 1,1,1.",
+   "equalateral_triangle", make_plane_spec([1, 1, 1], [1, 1, 1], span=11, thickness=0.03)),
   ("Prism tri-diagonal slice3", "Plane: Normal (1,1,1) passing through 2,2,2.", "nothing",
    make_plane_spec([2, 2, 2], [1, 1, 1], span=11, thickness=0.03)),
 ]
@@ -327,8 +343,9 @@ cone_planes = [("Cone central slice", "Plane: Z = 0.", "circle",
                ("Cone tilted ellipse slice", "Plane: Normal (0,1,1) passing through origin.",
                 "ellipse", make_plane_spec([0, 0, 0], [0, 1, 1], span=13, thickness=0.03)),
                ("Cone tilted ellipse slice", "Plane: Normal (0,1,0.1) passing through [0, 0, .5].",
-                "triangle", make_plane_spec([0, 0, .5], [0, 1, 0.1], span=13, thickness=0.03)),
-               ("Cone meridian slice", "Plane: X = 0.", "triangle",
+                "isosceles_triangle",
+                make_plane_spec([0, 0, .5], [0, 1, 0.1], span=13, thickness=0.03)),
+               ("Cone meridian slice", "Plane: X = 0.", "isosceles_triangle",
                 make_plane_spec([0, 0, 0], [1, 0, 0], span=[14, 14], thickness=0.03))]
 for name, plane_desc, shape, spec in cone_planes:
   problems.append(
@@ -338,14 +355,14 @@ for name, plane_desc, shape, spec in cone_planes:
 tri_desc = """
 An equilateral triangular prism extruded 6 units along Z, centered at the origin.
 """
-tri_planes = [("Triangular prism mid slice", "Plane: Z = 0.", "triangle",
+tri_planes = [("Triangular prism mid slice", "Plane: Z = 0.", "equalateral_triangle",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=11, thickness=0.03)),
-              ("Triangular prism upper slice", "Plane: Z = 1", "triangle",
+              ("Triangular prism upper slice", "Plane: Z = 1", "equalateral_triangle",
                make_plane_spec([0, 0, 1], [0, 0, 1], span=11, thickness=0.03)),
               ("Triangular prism axial rectangle", "Plane: X = 0.", "rectangle",
                make_plane_spec([0, 0, 0], [1, 0, 0], span=[12, 12], thickness=0.03)),
               ("Triangular prism oblique trapezoid",
-               "Plane: Normal (1,0,1) passing through origin.", "trapezoid",
+               "Plane: Normal (1,0,1) passing through origin.", "isosceles_triangle",
                make_plane_spec([0, 0, 0], [1, 0, 1], span=12, thickness=0.03))]
 for name, plane_desc, shape, spec in tri_planes:
   problems.append(
@@ -355,10 +372,13 @@ for name, plane_desc, shape, spec in tri_planes:
 hex_desc = """
 A six-sided prism with equal-width side faces, radius 3, height 6, centered on the origin.
 """
-hex_planes = [("Hex prism middle slice", "Plane: Z = 0.", "hexagon",
+hex_planes = [("Hex prism middle slice", "Plane: Z = 0.", "regular_hexagon",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=14, thickness=0.03)),
-              ("Hex prism offset slice", "Plane: Z = 2.", "hexagon",
+              ("Hex prism offset slice", "Plane: Z = 2.", "regular_hexagon",
                make_plane_spec([0, 0, 2], [0, 0, 1], span=14, thickness=0.03)),
+              ("Hex prism offset slice", "Plane: Normal(0,0.1,1) passing through origin.",
+               "irregular_hexagon", make_plane_spec([0, 0, 2], [0, 0.1, 1], span=14,
+                                                    thickness=0.03)),
               ("Hex prism axial rectangle", "Plane: X = 0.", "rectangle",
                make_plane_spec([0, 0, 0], [1, 0, 0], span=[14, 14], thickness=0.03)),
               ("Hex prism diagonal rhombus", "Plane: Normal (1,1,0) passing through origin.",
@@ -371,12 +391,12 @@ for name, plane_desc, shape, spec in hex_planes:
 oct_desc = """
 An eight-sided prism with uniform faces, radius 3, height 8, centered at the origin.
 """
-oct_planes = [("Oct prism mid slice", "Plane: Z = 0.", "octagon",
+oct_planes = [("Oct prism mid slice", "Plane: Z = 0.", "regular_octagon",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=16, thickness=0.03)),
               ("Oct prism axial rectangle", "Plane: Y = 0.", "rectangle",
                make_plane_spec([0, 0, 0], [0, 1, 0], span=[16, 16], thickness=0.03)),
               ("Oct prism steep diagonal", "Plane: Normal (1,0,1) passing through origin.",
-               "hexagon", make_plane_spec([0, 0, 0], [1, 0, 1], span=16, thickness=0.03))]
+               "irregular_octagon", make_plane_spec([0, 0, 0], [1, 0, 1], span=16, thickness=0.03))]
 for name, plane_desc, shape, spec in oct_planes:
   problems.append(
     make_problem(name, oct_desc, plane_desc, shape, SCAD_OCT_PRISM, spec, [0.8, 0.4, 0.6, 0.85]))
@@ -390,7 +410,8 @@ pyr_planes = [("Square pyramid mid slice", "Plane: Z = 1.", "square",
               ("Square pyramid near apex", "Plane: Z = 3.5.", "square",
                make_plane_spec([0, 0, 3.5], [0, 0, 1], span=8, thickness=0.03)),
               ("Square pyramid diagonal slice", "Plane: Normal (1,0,1) passing through origin.",
-               "pentagon ", make_plane_spec([0, 0, 0], [1, 0, 1], span=12, thickness=0.03))]
+               "irregular_pentagon", make_plane_spec([0, 0, 0], [1, 0, 1], span=12,
+                                                     thickness=0.03))]
 for name, plane_desc, shape, spec in pyr_planes:
   problems.append(
     make_problem(name, pyr_desc, plane_desc, shape, SCAD_SQ_PYRAMID, spec, [0.95, 0.8, 0.3, 0.9]))
@@ -399,10 +420,10 @@ for name, plane_desc, shape, spec in pyr_planes:
 tet_desc = """
 A tetrahedron-style pyramid centered near the origin.
 """
-tet_planes = [("Tri pyramid horizontal slice", "Plane: Z = 0.", "triangle",
+tet_planes = [("Tri pyramid horizontal slice", "Plane: Z = 0.", "equalateral_triangle",
                make_plane_spec([0, 0, 0], [0, 0, 1], span=9, thickness=0.2)),
-              ("Tri pyramid diagonal slice", "Plane: Normal (1,1,0) passing through origin.",
-               "quadrilateral", make_plane_spec([0, 0, 0], [1, 1, 0], span=10, thickness=0.2))]
+              ("Tri pyramid diagonal slice", "Plane: Normal (1,1,0) passing through (0,0,2).",
+               "quadrilateral", make_plane_spec([0, 0, 2], [1, 1, 0], span=10, thickness=0.2))]
 for name, plane_desc, shape, spec in tet_planes:
   problems.append(
     make_problem(name, tet_desc, plane_desc, shape, SCAD_TRI_PYRAMID, spec, [0.9, 0.4, 0.4, 0.9]))
@@ -418,7 +439,9 @@ torus_planes = [("Torus central slice", "Plane: Z = 0", "washer",
                 ("Torus vertical slice", "Plane: Normal (0,1,0) passing through origin.",
                  "two_circles", make_plane_spec([0, 0, 0], [0, 1, 0], span=18, thickness=0.03)),
                 ("Torus diagonal slice", "Plane: Normal (0,1,1) passing through origin.",
-                 "two_elipses", make_plane_spec([0, 0, 0], [0, 1, 1], span=18, thickness=0.03))]
+                 "two_ovals", make_plane_spec([0, 0, 0], [0, 1, 1], span=18, thickness=0.03)),
+                ("Torus diagonal slice 2", "Plane: Normal (0,1,1) passing through (0,0,3).",
+                 "crescent", make_plane_spec([0, 0, 3], [0, 1, 1], span=18, thickness=0.03))]
 for name, plane_desc, shape, spec in torus_planes:
   problems.append(
     make_problem(name, torus_desc, plane_desc, shape, SCAD_TORUS, spec, [0.8, 0.5, 0.2, 0.85]))
@@ -426,13 +449,13 @@ for name, plane_desc, shape, spec in torus_planes:
 # Advanced solids
 problems.append(
   make_problem("Dodecahedron equatorial slice", "A regular dodecahedron centered at the origin.",
-               "Plane: Z = 0.", "decagon", SCAD_DODECA,
+               "Plane: Z = 0.", "regular_decagon", SCAD_DODECA,
                make_plane_spec([0, 0, 0], [0, 0, 1], span=16,
                                thickness=0.03), [0.9, 0.7, 0.2, 0.85]))
 problems.append(
   make_problem("Twisted prism mid slice",
                "A twisted triangular prism with 60° twist between base and top.", "Plane: Z = 0",
-               "triangle", SCAD_TWISTED,
+               "equalateral_triangle", SCAD_TWISTED,
                make_plane_spec([0, 0, 0], [0, 0, 1], span=12,
                                thickness=0.03), [0.5, 0.2, 0.7, 0.9]))
 
@@ -482,7 +505,7 @@ problems.append(
   make_problem(
     "Rhombus hull slice",
     "The convex hull of four vertical line segments placed in XY plane evenly around the unit circle.",
-    "Plane: Normal (1,0,1) passing through origin", "hexagon", SCAD_RHOMBUS_HULL,
+    "Plane: Normal (1,0,1) passing through origin", "irregular_hexagon", SCAD_RHOMBUS_HULL,
     make_plane_spec([0, 0, 0], [1, 0, 1], span=10, thickness=0.03), [0.6, 0.8, 1.0, 0.9]))
 
 problems.append(
@@ -508,22 +531,23 @@ extra_shapes = [
                               thickness=0.03), [0.7, 0.5, 1.0, 0.85]),
   ("Triangular prism steep diagonal", tri_desc,
    "Plane: Normal (1,1,1) clips two vertices at once, producing a heavily truncated footprint.",
-   "pentagon", SCAD_TRI_PRISM, make_plane_spec([0, 0, 0], [1, 1, 1], span=13,
-                                               thickness=0.03), [0.4, 0.4, 0.9, 0.85]),
+   "irregular_pentagon", SCAD_TRI_PRISM,
+   make_plane_spec([0, 0, 0], [1, 1, 1], span=13, thickness=0.03), [0.4, 0.4, 0.9, 0.85]),
   ("Cone shallow diagonal", cone_desc,
    "Plane: Normal (1,0,1) yields a skew slice resembling a stretched loop.", "ellipse", SCAD_CONE,
    make_plane_spec([0, 0, 0.5], [1, 0, 1], span=13, thickness=0.03), [0.9, 0.5, 0.3, 0.9]),
-  ("Hex prism shallow tilt", hex_desc, "Plane: Normal (0,0.5,1).", "hexagon", SCAD_HEX_PRISM,
-   make_plane_spec([0, 0, 0], [0, 0.5, 1], span=15, thickness=0.03), [0.3, 0.9, 0.7, 0.85]),
+  ("Hex prism shallow tilt", hex_desc, "Plane: Normal (0,0.5,1).", "irregular_hexagon",
+   SCAD_HEX_PRISM, make_plane_spec([0, 0, 0], [0, 0.5, 1], span=15,
+                                   thickness=0.03), [0.3, 0.9, 0.7, 0.85]),
   ("Oct prism offset horizontal", oct_desc, "Plane: (0,1,1) Passing through the point [0,0,-2].",
-   "heptagons", SCAD_OCT_PRISM, make_plane_spec([0, 0, -2], [0, 1, 1], span=16,
-                                                thickness=0.03), [0.8, 0.4, 0.6, 0.85]),
+   "irregular_heptagon", SCAD_OCT_PRISM,
+   make_plane_spec([0, 0, -2], [0, 1, 1], span=16, thickness=0.03), [0.8, 0.4, 0.6, 0.85]),
   ("Square pyramid base slice", pyr_desc, "Plane: Z = -1 coincides with the base footprint plane.",
    "square", SCAD_SQ_PYRAMID, make_plane_spec([0, 0, -1], [0, 0, 1], span=10,
                                               thickness=0.03), [0.95, 0.8, 0.3, 0.9]),
   ("Tri pyramid high slice", tet_desc, "Plane: Z = 1.2 captures a tiny three-sided cap.",
-   "triangle", SCAD_TRI_PYRAMID, make_plane_spec([0, 0, 1.2], [0, 0, 1], span=8,
-                                                 thickness=0.2), [0.9, 0.4, 0.4, 0.9]),
+   "equalateral_triangle", SCAD_TRI_PYRAMID,
+   make_plane_spec([0, 0, 1.2], [0, 0, 1], span=8, thickness=0.2), [0.9, 0.4, 0.4, 0.9]),
   ("Torus shallow offset slice", torus_desc, "Plane: Z = -1.2 ", "washer", SCAD_TORUS,
    make_plane_spec([0, 0, -1.2], [0, 0, 1], span=18, thickness=0.03), [0.8, 0.5, 0.2, 0.85]),
   ("Torus hull shallow offset slice", "convex hull of " + torus_desc, "Plane: Z = -1.2 ", "circle",
@@ -537,6 +561,68 @@ for name, obj_desc, plane_desc, shape, scad, spec, color in extra_shapes:
 subpassParamSummary = [p["name"] for p in problems]
 promptChangeSummary = "Different 3D objects and cutting planes"
 
+_TRIANGLE_SHAPES = {
+  "triangle",
+  "equalateral_triangle",
+  "equilateral_triangle",
+  "isosceles_triangle",
+  "scalene_triangle",
+  "right_triangle",
+}
+
+_QUAD_SHAPES = {
+  "quadrilateral",
+  "kite",
+  "square",
+  "rectangle",
+  "parallelogram",
+  "rhombus",
+  "diamond",
+  "trapezoid",
+  "trapezium",
+}
+
+_REG_NGON_SHAPES = {
+  "regular_pentagon",
+  "regular_hexagon",
+  "regular_heptagon",
+  "regular_octagon",
+  "regular_nonagon",
+  "regular_decagon",
+  "regular_dodecagon",
+}
+
+_IRREG_NGON_SHAPES = {
+  "irregular_pentagon",
+  "irregular_hexagon",
+  "irregular_heptagon",
+  "irregular_octagon",
+  "irregular_nonagon",
+  "irregular_decagon",
+  "irregular_dodecagon",
+}
+
+_POLYGON_SHAPES = (_TRIANGLE_SHAPES | _QUAD_SHAPES | _REG_NGON_SHAPES | _IRREG_NGON_SHAPES
+                   | {
+                     "polygon",
+                     "pentagram",
+                     "hexagram",
+                     "octagram",
+                     "decagram",
+                   })
+
+_RECT_LIKE_SHAPES = {"square", "rectangle", "parallelogram"}
+
+_ELLIPSE_FAMILY = {"ellipse", "oval"}
+
+
+def _base_ngon_name(shape: str) -> str:
+  s = shape.strip().lower()
+  for prefix in ("regular_", "irregular_"):
+    if s.startswith(prefix):
+      return s[len(prefix):]
+  return s
+
 
 def prepareSubpassPrompt(index: int) -> str:
 
@@ -546,37 +632,91 @@ def prepareSubpassPrompt(index: int) -> str:
   p = prompt.replace("OBJECT_DESCRIPTION", prob["object"])
   p = p.replace("PLANE_DESCRIPTION", prob["plane"])
 
+  assert prob["expected_type"] in structure["properties"]["shapeType"]["enum"], str(
+    index) + " is impossible as " + prob["expected_type"] + " is not allowed."
+
   return p
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   prob = problems[subPass]
 
-  shape_type = answer.get("shapeType", "").lower()
-  expected_type = prob["expected_type"].lower()
-  description = answer.get("shapeDescription", "").lower()
+  shape_type_raw = answer.get("shapeType", "") or ""
+  expected_type_raw = prob["expected_type"] or ""
+  description = (answer.get("shapeDescription") or "").lower()
 
-  # Check shape type (partial credit for close matches)
-  type_score = 0
+  shape_type = shape_type_raw.strip().lower()
+  expected_type = expected_type_raw.strip().lower()
+
+  if not shape_type:
+    return 0.0, f"No shape type provided (expected {expected_type})."
+
   if shape_type == expected_type:
-    type_score = 1
-  elif shape_type in expected_type or expected_type in shape_type:
-    type_score = 0.5
+    return 1.0, "Exact match."
 
-  # Evaluate textual description
-  desc_score = 0
-  if expected_type in description:
-    desc_score = 1
-  elif any(word in description for word in ["polygon", "shape", "section"]):
-    desc_score = 0.25
+  score = 0.0
+  reasons = [f"Expected {expected_type}, got {shape_type}."]
 
-  details = [
-    f"Shape type: {shape_type} (expected {expected_type}) - {type_score:.1f} pts",
-    f"Description mentions expected shape: {desc_score:.2f} pts"
-  ]
+  # Treat ellipse/oval as near-equivalents
+  if shape_type in _ELLIPSE_FAMILY and expected_type in _ELLIPSE_FAMILY:
+    score = max(score, 0.25)
+    reasons.append("Ellipse/oval family treated as near-equivalent.")
 
-  total_score = (type_score + desc_score) / 2
-  return total_score, "<br>".join(details)
+  # Generic polygon vs specific straight-edged shape
+  if ((shape_type == "polygon" and expected_type in _POLYGON_SHAPES)
+      or (expected_type == "polygon" and shape_type in _POLYGON_SHAPES)):
+    score = max(score, 0.1)
+    reasons.append("Generic 'polygon' vs specific polygon with straight edges.")
+
+  # Generic quadrilateral vs specific quadrilateral
+  if ((shape_type == "quadrilateral" and expected_type in _QUAD_SHAPES)
+      or (expected_type == "quadrilateral" and shape_type in _QUAD_SHAPES)):
+    score = max(score, 0.25)
+    reasons.append("Generic 'quadrilateral' vs specific four-sided shape.")
+
+  # Any two quadrilaterals (e.g. parallelogram vs rectangle/square)
+  if shape_type in _QUAD_SHAPES and expected_type in _QUAD_SHAPES:
+    # Slightly higher credit for rectangle/square/parallelogram family
+    if (shape_type in _RECT_LIKE_SHAPES and expected_type in _RECT_LIKE_SHAPES):
+      score = max(score, 0.25)
+      reasons.append("Both rectangles.")
+    else:
+      score = max(score, 0.25)
+      reasons.append("Both quadrilaterals.")
+
+  # Any two triangles
+  if shape_type in _TRIANGLE_SHAPES and expected_type in _TRIANGLE_SHAPES:
+    score = max(score, 0.25)
+    reasons.append("Both triangles (different subtype).")
+
+  # Regular vs irregular of same n-gon (e.g. regular_hexagon vs irregular_hexagon)
+  base_shape = _base_ngon_name(shape_type)
+  base_expected = _base_ngon_name(expected_type)
+  if base_shape == base_expected and base_shape in {
+      "pentagon", "hexagon", "heptagon", "octagon", "nonagon", "decagon", "dodecagon"
+  } and shape_type != expected_type:
+    score = max(score, 0.4)
+    reasons.append("Same number of sides (regular/irregular mismatch).")
+
+  # Any two straight-edged polygons
+  if shape_type == "polygon" and expected_type in _POLYGON_SHAPES and score < 0.5:
+    score = max(score, 0.1)
+    reasons.append("Polygon is very catch all, but technically accurate.")
+
+  # Description explicitly mentions correct shape name
+  if expected_type and expected_type in description:
+    score = max(score, 0.25)
+    reasons.append("Description text mentions the correct shape.")
+
+  # Fallback for textual similarity of names
+  if score == 0.0 and (shape_type in expected_type or expected_type in shape_type):
+    score = 0.25
+    reasons.append("Shape names are textually similar.")
+
+  if score == 0.0:
+    reasons.append("Answer is completely wrong.")
+
+  return float(score), "Expected and provided are different. " + " ".join(reasons)
 
 
 def generate_3d_object_scad(prob):
@@ -626,7 +766,7 @@ color({prob.get('object_color', [0.5,0.7,1.0,0.8])}) {{
 
     output_3d = f"results/36_{subPass}_{aiEngineName}_3d.png"
     vc.render_scadText_to_png(full_scad, output_3d)
-    html += f'<br><b>3D Object with Cutting Plane:</b><br><img src="{os.path.basename(output_3d)}" /><br>'
+    html += f'<br><div style="float:left"><b>3D Object with Cutting Plane:</b><br><img src="{os.path.basename(output_3d)}" /><br></div>'
 
     thin = max(0.05, plane_spec["span"] * 0.015)
     plane_slice = plane_solid_scad(plane_spec, thickness=thin)
@@ -653,7 +793,7 @@ color({prob.get('object_color', [0.5,0.7,1.0,0.8])}) {{
     view_dist = plane_spec.get("camera_distance", plane_spec["span"] * 1.5)
     camera_arg = f"--camera=0,0,{view_dist},0,0,0"
     vc.render_scadText_to_png(combined_2d, output_2d, cameraArg=camera_arg)
-    html += f'<br><b>Cross-Section (Intersection View):</b><br><img src="{os.path.basename(output_2d)}" /><br>'
+    html += f'<div style="float:left"><b>Cross-Section (Intersection View):</b><br><img src="{os.path.basename(output_2d)}" /><br></div>'
 
   except Exception as e:
     html += f"<br><i>Visualization error: {e}</i><br>"
