@@ -17,7 +17,20 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 title = "VGB3 — Topology Edge Tasks: Classify Behaviour"
-structure = None
+structure = {
+  "type": "object",
+  "additionalProperties": False,
+  "required": ["labels"],
+  "properties": {
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["known behaviour", "three domains meeting", "ambiguous"],
+      },
+    },
+  },
+}
 
 
 def _get_data():
@@ -89,8 +102,14 @@ def prepareSubpassPrompt(index):
 
 def gradeAnswer(result, subPass, aiEngineName):
   data = _get_data()
-  raw = result if isinstance(result, str) else repr(result)
-  extracted = PARSER.parse_answer(raw) or raw
+  extracted = None
+  if isinstance(result, dict) and "labels" in result:
+    labels = result.get("labels")
+    if isinstance(labels, list):
+      extracted = json.dumps(labels)
+  if extracted is None:
+    raw = result if isinstance(result, str) else repr(result)
+    extracted = PARSER.parse_answer(raw) or raw
   diff = verify_topology_edge_tasks(extracted, data[subPass], return_diff=True)
   pretty = _format_diff(diff)
   return (1 if diff.get("passed") else 0), pretty
@@ -102,9 +121,12 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     raise StopIteration
 
   record = data[subPass]
-  raw = result if isinstance(result, str) else repr(result)
-  parsed = PARSER.parse_answer(raw)
-  answer = parsed if parsed is not None else raw
+  if isinstance(result, dict) and "labels" in result:
+    answer = result.get("labels")
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    parsed = PARSER.parse_answer(raw)
+    answer = parsed if parsed is not None else raw
 
   output_dir = Path("results")
   output_dir.mkdir(parents=True, exist_ok=True)

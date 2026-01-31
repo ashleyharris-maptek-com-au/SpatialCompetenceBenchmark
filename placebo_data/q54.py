@@ -28,22 +28,22 @@ def get_response(subPass: int):
   if subPass >= len(data):
     return None, "Not yet implemented"
   ground_truth = data[subPass].get("ground_truth", [])
-  return ground_truth, "Placebo: returning ground truth from dataset"
+  return {"neighbors": ground_truth}, "Placebo: returning ground truth from dataset"
 
 
 def get_guess(subPass: int, rng):
   """Get a deterministic random guess for this question."""
   data = _get_data()
   if subPass >= len(data):
-    return [""], "Random guess"
+    return {"neighbors": [""]}, "Random guess"
   nodes = ["".join(rng.choice(["0", "1"]) for _ in range(4)) for _ in range(3)]
-  return nodes, "Random guess"
+  return {"neighbors": nodes}, "Random guess"
 
 
 def get_always_wrong(subPass: int):
   """Get an always-wrong response for this question."""
   data = _get_data()
   if subPass >= len(data):
-    return [], "Always-wrong placeholder"
+    return {"neighbors": []}, "Always-wrong placeholder"
   # Return wrong neighbours - use root label only
-  return [""], "Always-wrong placeholder"
+  return {"neighbors": [""]}, "Always-wrong placeholder"

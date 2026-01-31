@@ -28,30 +28,47 @@ def get_response(subPass: int):
   if subPass >= len(data):
     return None, "Not yet implemented"
   ground_truth = data[subPass].get("ground_truth", [])
-  return ground_truth, "Placebo: returning ground truth from dataset"
+  return {"edges": ground_truth}, "Placebo: returning ground truth from dataset"
 
 
 def get_guess(subPass: int, rng):
   """Get a deterministic random guess for this question."""
   data = _get_data()
   if subPass >= len(data):
-    return [], "Random guess"
-  count = rng.randint(1, 4)
-  edges = []
-  for _ in range(count):
-    edges.append([rng.randint(0, 3), rng.randint(0, 3)])
-  return edges, "Random guess"
+    return {"edges": []}, "Random guess"
+  gt = data[subPass].get("ground_truth", [])
+  guess = []
+  for _ in range(len(gt)):
+    count = rng.randint(0, 2)
+    pairs = []
+    for _ in range(count):
+      a = rng.randint(0, 3)
+      b = rng.randint(0, 3)
+      if a == b:
+        b = (b + 1) % 4
+      pairs.append([min(a, b), max(a, b)])
+    guess.append(pairs)
+  return {"edges": guess}, "Random guess"
 
 
 def get_always_wrong(subPass: int):
   """Get an always-wrong response for this question."""
   data = _get_data()
   if subPass >= len(data):
-    return [], "Always-wrong placeholder"
+    return {"edges": []}, "Always-wrong placeholder"
   # Return incorrect edge pairs - use inverted indices
   gt = data[subPass].get("ground_truth", [])
   if gt and isinstance(gt, list) and len(gt) > 0:
-    # Invert indices to make them wrong
-    wrong = [[3 - i for i in pair] if isinstance(pair, list) else pair for pair in gt]
-    return wrong, "Always-wrong placeholder"
-  return [[0, 0]], "Always-wrong placeholder"
+    wrong = []
+    for case in gt:
+      if isinstance(case, list):
+        pairs = []
+        for pair in case:
+          if isinstance(pair, list) and len(pair) == 2:
+            a, b = pair
+            pairs.append([3 - a, 3 - b])
+        wrong.append(pairs)
+      else:
+        wrong.append([])
+    return {"edges": wrong}, "Always-wrong placeholder"
+  return {"edges": [[]]}, "Always-wrong placeholder"

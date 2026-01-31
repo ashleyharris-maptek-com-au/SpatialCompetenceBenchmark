@@ -17,7 +17,29 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 title = "VGB5 — Two Segments"
-structure = None
+structure = {
+  "type": "object",
+  "additionalProperties": False,
+  "required": ["segments"],
+  "properties": {
+    "segments": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"type": "number"},
+        },
+      },
+    },
+  },
+}
 
 
 def _get_data():
@@ -61,8 +83,14 @@ def prepareSubpassPrompt(index):
 
 def gradeAnswer(result, subPass, aiEngineName):
   data = _get_data()
-  raw = result if isinstance(result, str) else repr(result)
-  extracted = PARSER.parse_answer(raw) or raw
+  extracted = None
+  if isinstance(result, dict) and "segments" in result:
+    segments = result.get("segments")
+    if isinstance(segments, list):
+      extracted = json.dumps(segments)
+  if extracted is None:
+    raw = result if isinstance(result, str) else repr(result)
+    extracted = PARSER.parse_answer(raw) or raw
   diff = verify_two_segments(extracted, data[subPass], return_diff=True)
   pretty = _format_diff(diff)
   return (1 if diff.get("passed") else 0), pretty
@@ -74,9 +102,12 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     raise StopIteration
 
   record = data[subPass]
-  raw = result if isinstance(result, str) else repr(result)
-  parsed = PARSER.parse_answer(raw)
-  answer = parsed if parsed is not None else raw
+  if isinstance(result, dict) and "segments" in result:
+    answer = result.get("segments")
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    parsed = PARSER.parse_answer(raw)
+    answer = parsed if parsed is not None else raw
 
   output_dir = Path("results")
   output_dir.mkdir(parents=True, exist_ok=True)

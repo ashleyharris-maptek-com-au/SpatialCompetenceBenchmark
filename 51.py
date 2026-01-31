@@ -22,7 +22,70 @@ FIGURES_DIR = VGB_ROOT / "data" / "figures" / "topology_enumeration"
 GENERATOR_SCRIPT = VGB_ROOT / "scripts" / "generate_topology_enumeration_figures.py"
 
 title = "VGB1 — Topology Enumeration"
-structure = None
+structure = {
+  "type": "object",
+  "additionalProperties": False,
+  "required": ["configs"],
+  "properties": {
+    "configs": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 4,
+        "maxItems": 4,
+        "items": {"type": "integer"},
+      },
+    },
+  },
+}
+
+
+def _parse_structured_payload(raw: str):
+  if not isinstance(raw, str):
+    return None
+  payload = raw.strip()
+  if not payload:
+    return None
+  for parser in (json.loads, ast.literal_eval):
+    try:
+      return parser(payload)
+    except (ValueError, SyntaxError, json.JSONDecodeError):
+      continue
+  return None
+
+
+def _coerce_configs(configs):
+  if not isinstance(configs, list):
+    return None
+  try:
+    return [tuple(item) for item in configs]
+  except TypeError:
+    return None
+
+
+def _extract_configs(result):
+  if isinstance(result, dict):
+    configs = _coerce_configs(result.get("configs"))
+    if configs is not None:
+      return configs
+
+  if isinstance(result, str):
+    parsed = _parse_structured_payload(result)
+    if parsed is None:
+      extracted = PARSER.parse_answer(result)
+      if extracted:
+        parsed = _parse_structured_payload(extracted)
+
+    if isinstance(parsed, dict):
+      configs = _coerce_configs(parsed.get("configs"))
+      if configs is not None:
+        return configs
+    if isinstance(parsed, list):
+      configs = _coerce_configs(parsed)
+      if configs is not None:
+        return configs
+
+  return None
 
 
 def _get_data():
@@ -89,15 +152,12 @@ def prepareSubpassPrompt(index):
 
 def gradeAnswer(result, subPass, aiEngineName):
   data = _get_data()
-  raw = result if isinstance(result, str) else repr(result)
-  extracted = PARSER.parse_answer(raw) or raw
-  try:
-    parsed = ast.literal_eval(extracted.strip())
-    if (isinstance(parsed, list)
-        and all(isinstance(item, list) and len(item) == 4 for item in parsed)):
-      extracted = repr([tuple(item) for item in parsed])
-  except (ValueError, SyntaxError):
-    pass
+  configs = _extract_configs(result)
+  if configs is not None:
+    extracted = repr(configs)
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    extracted = PARSER.parse_answer(raw) or raw
   record = data[subPass]
   gt = record.get("ground_truth")
   if isinstance(gt, list):
@@ -114,9 +174,13 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     raise StopIteration
 
   record = data[subPass]
-  raw = result if isinstance(result, str) else repr(result)
-  parsed = PARSER.parse_answer(raw)
-  answer = parsed if parsed is not None else raw
+  configs = _extract_configs(result)
+  if configs is not None:
+    answer = configs
+  else:
+    raw = result if isinstance(result, str) else repr(result)
+    parsed = PARSER.parse_answer(raw)
+    answer = parsed if parsed is not None else raw
 
   output_dir = Path("results")
   output_dir.mkdir(parents=True, exist_ok=True)
