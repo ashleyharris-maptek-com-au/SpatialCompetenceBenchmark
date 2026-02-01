@@ -552,7 +552,10 @@ extra_shapes = [
    make_plane_spec([0, 0, -1.2], [0, 0, 1], span=18, thickness=0.03), [0.8, 0.5, 0.2, 0.85]),
   ("Torus hull shallow offset slice", "convex hull of " + torus_desc, "Plane: Z = -1.2 ", "circle",
    "hull(){" + SCAD_TORUS + "}", make_plane_spec([0, 0, -1.2], [0, 0, 1], span=18,
-                                                 thickness=0.03), [0.8, 0.5, 0.2, 0.85])
+                                                 thickness=0.03), [0.8, 0.5, 0.2, 0.85]),
+  ("Torus hull shallow offset slice X", "convex hull of " + torus_desc, "Plane: X = -1.2 ",
+   "capsule", "hull(){" + SCAD_TORUS + "}",
+   make_plane_spec([-1.2, 0, 0], [1, 0, 0], span=18, thickness=0.03), [0.8, 0.5, 0.2, 0.85])
 ]
 
 for name, obj_desc, plane_desc, shape, scad, spec, color in extra_shapes:
@@ -764,8 +767,9 @@ color({prob.get('object_color', [0.5,0.7,1.0,0.8])}) {{
 {plane_overlay}
 """
 
-    output_3d = f"results/36_{subPass}_{aiEngineName}_3d.png"
-    vc.render_scadText_to_png(full_scad, output_3d)
+    output_3d = f"results/36_{subPass}_3d.png"
+    if not os.path.exists(output_3d):
+      vc.render_scadText_to_png(full_scad, output_3d)
     html += f'<br><div style="float:left"><b>3D Object with Cutting Plane:</b><br><img src="{os.path.basename(output_3d)}" /><br></div>'
 
     thin = max(0.05, plane_spec["span"] * 0.015)
@@ -789,10 +793,11 @@ color({prob.get('object_color', [0.5,0.7,1.0,0.8])}) {{
 {expected_section}
 """
 
-    output_2d = f"results/36_{subPass}_{aiEngineName}_cross_section.png"
+    output_2d = f"results/36_{subPass}_cross_section.png"
     view_dist = plane_spec.get("camera_distance", plane_spec["span"] * 1.5)
     camera_arg = f"--camera=0,0,{view_dist},0,0,0"
-    vc.render_scadText_to_png(combined_2d, output_2d, cameraArg=camera_arg)
+    if not os.path.exists(output_2d):
+      vc.render_scadText_to_png(combined_2d, output_2d, cameraArg=camera_arg)
     html += f'<div style="float:left"><b>Cross-Section (Intersection View):</b><br><img src="{os.path.basename(output_2d)}" /><br></div>'
 
   except Exception as e:
