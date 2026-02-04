@@ -86,8 +86,11 @@ def resultToImage(result, subPass, aiEngineName: str, fromAbove: bool = False):
   openScadData = f"translate([0, 0, 5]) color([0,1,0,0.9]) cube([{buildingWidth}, {buildingWidth}, 10], center=true);\n"
 
   for person in result["people"]:
-    x, y = person["xy"]
-    openScadData += f"translate([{x}, {y}, 1]) color([1,0,0]) cube([0.5, 0.5, 2], center=true);\n"
+    try:
+      x, y = person["xy"]
+      openScadData += f"translate([{x}, {y}, 1]) color([1,0,0]) cube([0.5, 0.5, 2], center=true);\n"
+    except ValueError:
+      continue
 
   output_path = f"results/13_Visualization_{aiEngineName}_subpass{subPass}_{fromAbove}.png"
   vc.render_scadText_to_png(
@@ -116,6 +119,9 @@ def gradeAnswer(result: dict, subPass, aiEngineName: str):
     return 0.0, f"Expected {expectedPopulationSize} people, got {actualPopulationSize}"
 
   for person in result["people"]:
+    if len(person["xy"]) != 2:
+      return 0.0, f"Person {person} has invalid coordinates"
+
     x, y = person["xy"]
     distance_from_center = (x**2 + y**2)**0.5
     if distance_from_center > 30:

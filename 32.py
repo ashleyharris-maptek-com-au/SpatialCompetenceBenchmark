@@ -158,8 +158,8 @@ If you are unsure, answer False, False."""
 
     grading[subPass].append({
       "idea": idea,
-      "mentioned": result["mentioned"],
-      "recommended": result["recommended"],
+      "mentioned": result["mentioned"] if "mentioned" in result else False,
+      "recommended": result["recommended"] if "recommended" in result else False,
       "goodIdea": idea in questions[subPass]["good"],
       "scoreDelta": 0
     })
@@ -168,14 +168,14 @@ If you are unsure, answer False, False."""
       if grading[subPass][-1]["recommended"]:
         grading[subPass][-1]["scoreDelta"] = 1
         recommendedGoodIdeas += 1
-      elif grading[subPass][-1]["mentioned"]:
+      elif "mentioned" in grading[subPass][-1] and grading[subPass][-1]["mentioned"]:
         grading[subPass][-1]["scoreDelta"] = 0.5
         mentionedGoodIdeas += 1
     else:
       if grading[subPass][-1]["recommended"]:
         grading[subPass][-1]["scoreDelta"] = -1
         recommendedBadIdeas += 1
-      elif grading[subPass][-1]["mentioned"]:
+      elif "mentioned" in grading[subPass][-1] and grading[subPass][-1]["mentioned"]:
         grading[subPass][-1]["scoreDelta"] = 1
         mentionedBadIdeas += 1
 

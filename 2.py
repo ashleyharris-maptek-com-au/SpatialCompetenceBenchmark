@@ -400,6 +400,9 @@ def earlyFailTest(result, subpass):
   innerR2 = innerR * innerR
   outerR2 = outerR * outerR
 
+  if "bricks" not in result:
+    return "No bricks provided"
+
   bricks = result["bricks"]
 
   # Check for empty result
