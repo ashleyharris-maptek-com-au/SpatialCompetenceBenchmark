@@ -30,9 +30,6 @@ runTest() {
     kill $TaskId
 }
 
-runTest "Qwen2-VL-2B-Instruct" "bartowski/Qwen2-VL-2B-Instruct-GGUF:Q6_K" 32768
-runTest "Qwen2.5-VL-3B-Instruct" "Mungert/Qwen2.5-VL-3B-Instruct-GGUF:q4_0" 294912
-runTest "Qwen2-VL-7B-Instruct" "bartowski/Qwen2-VL-7B-Instruct-GGUF:Q5_K_M" 294912
 runTest "LLaVA-1.6-Mistral-7B" "cjpais/llava-1.6-mistral-7b-gguf:Q5_K_M" 294912
 runTest "LLaVA-1.6-34B" "cjpais/llava-v1.6-34B-gguf:Q4_K_M" 294912
 runTest "LLaVA-1.5-7B" "mys/ggml_llava-v1.5-7b:Q4_K_M" 294912
@@ -54,3 +51,6 @@ runTest "deepseek-vl2-small" "deepseek-ai/deepseek-vl2-small" 294912
 runTest "deepseek-ocr" "deepseek-ai/deepseek-ocr" 294912
 runTest "MiniMax-VL-M2.1" "unsloth/MiniMax-M2.1-GGUF:Q4_0" 294912
 runTest "ERNIE-4.5-VL-424B" "gabriellarson/ERNIE-4.5-300B-A47B-PT-GGUF:Q4_K_M" 294912
+runTest "Qwen2.5-VL-3B-Instruct" "Mungert/Qwen2.5-VL-3B-Instruct-GGUF:q4_0" 294912
+runTest "Qwen2-VL-2B-Instruct" "bartowski/Qwen2-VL-2B-Instruct-GGUF:Q6_K" 32768
+runTest "Qwen2-VL-7B-Instruct" "bartowski/Qwen2-VL-7B-Instruct-GGUF:Q5_K_M" 294912
