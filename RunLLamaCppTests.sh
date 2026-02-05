@@ -14,7 +14,7 @@ runTest() {
 
     sleep 300 # The model needs to download and run an empty inference to warm up.
 
-    python MeshBenchmark.py -m "$model"
+    python MeshBenchmark.py -m "$model" --api-timeout 14400
     
     kill $TaskId
 
@@ -25,7 +25,7 @@ runTest() {
 
     sleep 300 # The model needs to download and run an empty inference to warm up.
 
-    python MeshBenchmark.py -m "$model-HighReasoning"
+    python MeshBenchmark.py -m "$model-HighReasoning" --api-timeout 86400
     
     kill $TaskId
 }
