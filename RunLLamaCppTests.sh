@@ -30,7 +30,7 @@ runTest() {
     kill $TaskId
 }
 
-runTest "LLaVA-1.6-Mistral-7B" "cjpais/llava-1.6-mistral-7b-gguf:Q5_K_M" 294912
+runTest "LLaVA-1.6-Mistral-7B" "cjpais/llava-1.6-mistral-7b-gguf:Q5_K_M" 32768
 runTest "LLaVA-1.6-34B" "cjpais/llava-v1.6-34B-gguf:Q4_K_M" 294912
 runTest "LLaVA-1.5-7B" "mys/ggml_llava-v1.5-7b:Q4_K_M" 294912
 runTest "LLaVA-1.5-13B" "PsiPi/liuhaotian_llava-v1.5-13b-GGUF:Q5_K_M" 294912
