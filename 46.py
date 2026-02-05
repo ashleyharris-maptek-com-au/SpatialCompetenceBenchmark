@@ -3,6 +3,7 @@ import math
 import os
 
 title = "Can you create build instructions for 3D structures?"
+skip = True
 
 # Connector definitions: which sockets each part type has
 CONNECTOR_SOCKETS = {

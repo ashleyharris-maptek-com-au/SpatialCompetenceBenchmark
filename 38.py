@@ -1309,7 +1309,8 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
     for view_id, label, gen_func in views:
       scad = gen_func(prob)
       output_path = f"results/{base_name}_{view_id}.png"
-      vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
+      if not os.path.exists(output_path):
+        vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
       image_paths.append(output_path)
       labels.append(label)
 
