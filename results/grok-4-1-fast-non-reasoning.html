@@ -46,368 +46,159 @@ img { max-width: 100%; height: auto; border: 1px solid var(--img-border); }
 h1 { color: var(--text-color); }
 h2 { color: var(--text-secondary); margin-top: 30px; }
 </style>
-<meta charset='UTF-8'/> </head>
+<meta charset='UTF-8'/>
+
+<script>
+// VizManager: Virtualizes WebGL contexts to prevent "Too many active WebGL contexts" errors
+// Only the visualization closest to the viewport center is active; all others are disposed
+window.VizManager = (function() {
+    const registeredViz = [];
+    let activeVizId = null;
+    let scrollTimeout = null;
+    
+    function getDistanceToViewportCenter(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+        const elementCenter = rect.top + rect.height / 2;
+        return Math.abs(elementCenter - viewportCenter);
+    }
+    
+    function updateActiveVisualization() {
+        let closestViz = null;
+        let closestDistance = Infinity;
+        
+        for (const viz of registeredViz) {
+            const container = document.getElementById(viz.containerId);
+            if (!container) continue;
+            
+            // Check if container is in an open <details> element
+            const details = container.closest('details');
+            if (details && !details.open) continue;
+            
+            const distance = getDistanceToViewportCenter(container);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestViz = viz;
+            }
+        }
+        
+        if (closestViz && closestViz.id !== activeVizId) {
+            // Deactivate current
+            if (activeVizId) {
+                const currentViz = registeredViz.find(v => v.id === activeVizId);
+                if (currentViz && currentViz.dispose) {
+                    try { currentViz.dispose(); } catch(e) { console.warn('Dispose error:', e); }
+                }
+            }
+            
+            // Activate new
+            activeVizId = closestViz.id;
+            if (closestViz.activate) {
+                try { closestViz.activate(); } catch(e) { console.warn('Activate error:', e); }
+            }
+        }
+    }
+    
+    function onScrollOrResize() {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateActiveVisualization, 100);
+    }
+    
+    // Listen for scroll and resize
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    
+    // Also listen for details toggle events
+    document.addEventListener('toggle', function(e) {
+        if (e.target.tagName === 'DETAILS') {
+            setTimeout(updateActiveVisualization, 50);
+        }
+    }, true);
+    
+    return {
+        register: function(vizConfig) {
+            // vizConfig: { id, containerId, activate, dispose }
+            registeredViz.push(vizConfig);
+            // Trigger update after a short delay to allow DOM to settle
+            setTimeout(updateActiveVisualization, 100);
+        },
+        
+        forceUpdate: function() {
+            updateActiveVisualization();
+        },
+        
+        getActiveId: function() {
+            return activeVizId;
+        }
+    };
+})();
+</script>
+</head>
 <body>
 <h1>Benchmark Results for grok-4-1-fast-non-reasoning</h1>
 <table>
   <tr class='test-header'>
-    <th colspan=3><a name='q45'>Test 45: Can an AI navigate via the stars?</a></th>
-    <th class='score-bad'>Score: 0.40 / 49</th>
+    <th colspan=3><a name='q16'>Test 16: Pack rectangular prisms</a></th>
+    <th class='score-bad'>Score: 0.88 / 9</th>
   </tr>
   <tr class='prompt-row'>
-    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You are a navigator on a ship in the middle of the pacific ocean. <br><br>Your GPS has failed, but you can see the stars clearly. Using the attached image of the <br>night sky as seen from your current location, determine your approximate position.<br><br>The image shows the sky looking straight up (zenith at center). The image was taken with a very high<br>resolution camera, and is ~250 megapixels. Stars of magnitudes up to 6 are visible, and there were<br>no clouds on the night. To help you understand the picture, I've annotated it and drawn the horizon <br>as a green circle, and cardinal directions are marked: N (North) is at the top.<br><br>The time is EXACTLY 2025:12:25 12:00:00 UTC. <br><br>You do not know your time zone or local time, but it's dark outside, dawn is far away, and has <br>been dark for several hours.<br><br>Your ship is (obviously) at sea level, it's 19 degrees Celsius outside, no wind, and the barometric <br>pressure is 1020 mbar. Stars are visible all the way to the (annotated) horizon.<br><br>Only jupiter is visible to the naked eye and is in the image.<br><br>Determine your longitude and latitude to the best of your ability, up to 5 significant<br>figures. If you are uncertain, guessing is acceptable, even getting the hemisphere right and <br>relation to the international date line is helpful.<br><br><img src='45_sky_loc0_time0.png' width='200px'></div></td>
-    <td><strong>Prompt Changes:</strong><br>Varies location and observation time</td>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You are given the following rectangular prisms:<br><br>7 prisms of 5x3x2<br><br>and have to pack them as efficiently as possible into the smallest volume possible.<br>You can rotate the prisms orthogonally. Return a list of min/max xyz coordinates, one<br>per box that you've successfully packed.<br><br>A perfect answer is one in which the volume of the enclosing bounding box is the same as<br>the sum of the volumes of the prisms.<br><br>Every bit of unused space is a point of failure, effort should be taken to elimiate<br>unused space.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Adds additional prisms for each run</td>
   </tr>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Location 0, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_0.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_0.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_0.txt">View chain of thought</a><br>
-Can an AI navigate using only the stars?<br><br>
-
-This pulls down ~100mb of star data, and calculates an exact night sky render,
-placing all planets and stars at correct brightness, even modelling atmospheric
-distortion and gravitational lensing, and then plots a high resolution image
-of the sky looking up from the location of the test.
-
-<b>Test dimensions:</b>
-<ul>
-<li>7 different locations (pacific ocean coordinates)</li>
-<li>7 different observation times</li>
-<li>Total: 49 subpasses</li>
-</ul>
-
-The AI is given:<ul>
-<li>a 8192x8192 image of the night sky,</li>
-<li>ocean name,</li>
-<li>that they're far from land ('middle of the ocean')</li>
-<li>exact time in UTC</li>
-<li>knowledge of what planetary bodies are visible.</li>
-</ul>
-<br>
-
-I actually personally struggled with this one, being from the southern hemisphere the first rendered
-sky looked foreign. But with some basic googling I could recognise Orion's belt and his bow, and
-the LLM needs to be able to either do this, or recognise the pattern as if it's a northern
-hemisphere native. Humans have been doing this for millennia, and the AI has access to full almanacs
-and can generate to-the-second accurate star maps via python, so I feel confident declaring this 
-solvable.<br><br>
-
-The 'human with tools' control does the following:<ul>
-<li> Parses the image using scipy's image processing tools to cluster stars.</li>
-<li> Converts the image into a binned index structure, 5 degree * 5 degree</li>
-<li> Starts with magnitude <= 1 stars only (the top 20)</li>
-<li> Starts with the area of uncertainty ~120 degree * ~140 degrees centred on the ocean centre.</li>
-<li> randomly guesses, calculates where the stars would be, compares that to the given sky,</li>
-<li> moves to the best guess.</li>
-<li> shrinks the area of uncertainty, and adds dimmer and dimmer stars as we start getting more
-  certain.</li>
-<li> To speed up the early, rough, guesses, the position of every visible star from every 
- 2 degree * 2 degree patch of the ground is precalculated (~350mb of data), allowing for fast linear interpolation.</li>
-<li> To avoid local maxima issues, it walks multi-beams until they either converge or a clear winner emerges.
-</ul>
-
-Seems to be able to get it to within about 1.5km with only a few minutes of single threaded 
-python code. Took a few hours to write the code. So 100% solvable on an $80,000 GPU.
-
-<div style="max-width:650px">
-<a href="45_sky_loc0_time0.png"><img src="45_sky_loc0_time0.png" width="300px" style="float:left; padding:4px"></a>
-</div>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: 7 prisms of 5x3x2<br><a href="prompts/grok-4-1-fast-non-reasoning_16_0.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_0.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_0.txt">View chain of thought</a><br>
+Packing prisms into the smallest possible volume 
+is NP Hard. However because we're adding multiples of the same prisms, some clever maths
+becomes available. With a few insights, factorisation of the target volume 
+and some simultaneous equations, a solver can be written to do this in a few 
+seconds perfectly when a perfect solution is possible, or to get a 95%+ packing
+efficient solution when it's not.
 </td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Wrong hemisphere.<br><br>Wrong side of international date line.<br><br>Error distance (along surface): 36.80° (4092.3 km)<br><br>Error distance (through earth): 4022.4 km</div></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>0.8750</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 210, Expected volume: 210<br>Packing efficiency: 87.5% (enclosing volume: 240)</div></td>
   </tr>
-    <td colspan='2'><p><b>Target location:</b> (35.7872°, -170.7725°)</p><p><b>AI guess:</b> (0.0000°, 180.0000°)</p><p><b>Time given:</b> EXACTLY 2025:12:25 12:00:00 UTC</p>Scoring<ul>
-<li> +10% for the correct hemisphere.</li>
-<li> +10% for the correct side of the international date line</li>
-<li> +10% for within 10° of latitude and longitude (each. 20% total)</li>
-<li> The remaining 60% is based on the great circle distance. 100m is 100%</li>
-<li> So within about 10km should get the AI 100%.</li>
-</ul>
-
-<a href='results/45_sky_loc0_time0.png'><img src='results/45_sky_loc0_time0.png' style='min-width=400px'></a><br>(Click to zoom in - picture is huge and has ~100mb of star data)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass0.png" /><br><br>Perfect packing possible! Potentially solvable with bounding boxes: [(2, 3, 35), (2, 5, 21), (2, 7, 15), (3, 5, 14), (3, 7, 10), (5, 6, 7)]</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Location 1, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_1.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_1.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_1.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.2000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Wrong hemisphere.<br><br>Error distance (along surface): 46.12° (5127.9 km)<br><br>Error distance (through earth): 4990.6 km</div></td>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br><a href="prompts/grok-4-1-fast-non-reasoning_16_1.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_1.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 2720, Expected volume: 1365<br>Boxes are overlapping: Sum of prisms volume: 1365, Union of answer prisms volume: 2720</div></td>
   </tr>
-    <td colspan='2'><p><b>Target location:</b> (45.7750°, -156.3490°)</p><p><b>AI guess:</b> (0.0000°, -150.0000°)</p><p><b>Time given:</b> EXACTLY 2025:12:25 12:00:00 UTC</p><a href='results/45_sky_loc1_time0.png'><img src='results/45_sky_loc1_time0.png' style='min-width=400px'></a><br>(Click to zoom in - picture is huge and has ~100mb of star data)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass1.png" /><br><br>Perfect packing possible! Potentially solvable with bounding boxes: [(3, 5, 91), (3, 7, 65), (3, 13, 35), (5, 7, 39), (5, 13, 21), (7, 13, 15)]</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Location 2, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_2.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_2.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_2.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.2000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Error distance (along surface): 137.64° (15305.3 km)<br><br>Error distance (through earth): 11881.4 km</div></td>
-  </tr>
-    <td colspan='2'><p><b>Target location:</b> (-11.0874°, -138.8530°)</p><p><b>AI guess:</b> (0.0000°, 0.0000°)</p><p><b>Time given:</b> EXACTLY 2025:12:25 12:00:00 UTC</p><a href='results/45_sky_loc2_time0.png'><img src='results/45_sky_loc2_time0.png' style='min-width=400px'></a><br>(Click to zoom in - picture is huge and has ~100mb of star data)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: Location 3, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_3.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_3.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_3.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br><a href="prompts/grok-4-1-fast-non-reasoning_16_2.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_2.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
   </tr>
     <td>N/A (LLM did not answer)</td>
     <td>N/A (Test forfeited)</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: Location 4, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_4.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_4.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_4.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br>17 prisms of 13x11x7<br><a href="prompts/grok-4-1-fast-non-reasoning_16_3.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_3.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
   </tr>
     <td>N/A (LLM did not answer)</td>
     <td>N/A (Test forfeited)</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Location 5, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_5.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_5.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_5.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br>17 prisms of 13x11x7<br>19 prisms of 17x13x11<br><a href="prompts/grok-4-1-fast-non-reasoning_16_4.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_4.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 9631, Expected volume: 69961<br>Boxes are overlapping: Sum of prisms volume: 69961, Union of answer prisms volume: 9631</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass4.png" /><br><br>Perfect packing not possible! Volume 69961 cannot be written as x*y*z (x,y,z > 1). Divisors: [1, 43, 1627, 69961]</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: Location 6, Time 0<br><a href="prompts/grok-4-1-fast-non-reasoning_45_6.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_6.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_6.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br>17 prisms of 13x11x7<br>19 prisms of 17x13x11<br>23 prisms of 19x17x13<br><a href="prompts/grok-4-1-fast-non-reasoning_16_5.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_5.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 0, Expected volume: 166538<br>Boxes are overlapping: Sum of prisms volume: 166538, Union of answer prisms volume: 0</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass5.png" /><br><br>Perfect packing not possible! Volume 166538 cannot be written as x*y*z (x,y,z > 1). Divisors: [1, 2, 83269, 166538]</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: Location 0, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_7.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_7.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_7.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br>17 prisms of 13x11x7<br>19 prisms of 17x13x11<br>23 prisms of 19x17x13<br>15 prisms of 5x5x1<br><a href="prompts/grok-4-1-fast-non-reasoning_16_6.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_6.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 0, Expected volume: 166913<br>Boxes are overlapping: Sum of prisms volume: 166913, Union of answer prisms volume: 0</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass6.png" /><br><br>Perfect packing not possible! Volume 166913 cannot be written as x*y*z (x,y,z > 1). Divisors: [1, 83, 2011, 166913]</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: Location 1, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_8.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_8.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_8.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br>17 prisms of 13x11x7<br>19 prisms of 17x13x11<br>23 prisms of 19x17x13<br>15 prisms of 5x5x1<br>2 prisms of 17x10x2<br><a href="prompts/grok-4-1-fast-non-reasoning_16_7.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_7.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 0, Expected volume: 167593<br>Boxes are overlapping: Sum of prisms volume: 167593, Union of answer prisms volume: 0</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass7.png" /><br><br>Perfect packing not possible! Volume 167593 cannot be written as x*y*z (x,y,z > 1). Divisors: [1, 167593]</td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 9</strong><br>Parameters: Location 2, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_9.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_9.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_9.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br>14 prisms of 11x7x5<br>17 prisms of 13x11x7<br>19 prisms of 17x13x11<br>23 prisms of 19x17x13<br>15 prisms of 5x5x1<br>2 prisms of 17x10x2<br>50 prisms of 50x50x50<br><a href="prompts/grok-4-1-fast-non-reasoning_16_8.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_16_8.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_16_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 0, Expected volume: 6417593<br>Boxes are overlapping: Sum of prisms volume: 6417593, Union of answer prisms volume: 0</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 10</strong><br>Parameters: Location 3, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_10.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_10.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_10.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 11</strong><br>Parameters: Location 4, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_11.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_11.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_11.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 12</strong><br>Parameters: Location 5, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_12.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_12.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_12.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 13</strong><br>Parameters: Location 6, Time 1<br><a href="prompts/grok-4-1-fast-non-reasoning_45_13.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_13.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_13.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 14</strong><br>Parameters: Location 0, Time 2<br><a href="prompts/grok-4-1-fast-non-reasoning_45_14.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_14.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_14.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 15</strong><br>Parameters: Location 1, Time 2<br><a href="prompts/grok-4-1-fast-non-reasoning_45_15.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_15.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_15.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 16</strong><br>Parameters: Location 2, Time 2<br><a href="prompts/grok-4-1-fast-non-reasoning_45_16.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_16.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_16.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 17</strong><br>Parameters: Location 3, Time 2<br><a href="prompts/grok-4-1-fast-non-reasoning_45_17.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_17.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_17.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 18</strong><br>Parameters: Location 4, Time 2<br><a href="prompts/grok-4-1-fast-non-reasoning_45_18.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_18.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_18.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 19</strong><br>Parameters: Location 5, Time 2<br><a href="prompts/grok-4-1-fast-non-reasoning_45_19.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_19.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_19.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 20</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_20.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_20.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_20.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 21</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_21.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_21.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_21.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 22</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_22.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_22.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_22.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 23</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_23.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_23.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_23.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 24</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_24.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_24.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_24.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 25</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_25.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_25.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_25.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 26</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_26.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_26.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_26.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 27</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_27.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_27.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_27.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 28</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_28.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_28.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_28.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 29</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_29.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_29.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_29.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 30</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_30.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_30.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_30.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 31</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_31.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_31.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_31.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 32</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_32.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_32.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_32.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 33</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_33.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_33.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_33.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 34</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_34.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_34.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_34.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 35</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_35.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_35.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_35.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 36</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_36.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_36.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_36.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 37</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_37.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_37.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_37.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 38</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_38.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_38.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_38.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 39</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_39.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_39.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_39.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 40</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_40.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_40.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_40.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 41</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_41.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_41.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_41.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 42</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_42.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_42.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_42.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 43</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_43.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_43.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_43.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 44</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_44.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_44.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_44.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 45</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_45.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_45.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_45.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 46</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_46.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_46.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_46.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 47</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_47.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_47.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_47.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 48</strong><br>Parameters: (see typical prompt)<a href="prompts/grok-4-1-fast-non-reasoning_45_48.txt">View exact prompt</a><br><a href="raw/grok-4-1-fast-non-reasoning_45_48.txt">View raw AI output</a><br><a href="cot/grok-4-1-fast-non-reasoning_45_48.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="16_Visualization_grok-4-1-fast-non-reasoning_subpass8.png" /><br><br>Perfect packing not possible! Factorises only into one size (91, 109, 647), And there aren't enough prism combinations that add up to 647 to fill a 91*109 area.</td>
 <h2>Overall Summary</h2>
 <table>
   <tr class='test-header'>
@@ -416,9 +207,9 @@ python code. Took a few hours to write the code. So 100% solvable on an $80,000 
     <th>Percentage</th>
   </tr>
   <tr>
-    <td>50</td>
-    <td>0.40 / 49</td>
-    <td>0.8%</td>
+    <td>57</td>
+    <td>0.88 / 9</td>
+    <td>9.7%</td>
   </tr>
 </table>
 </body>

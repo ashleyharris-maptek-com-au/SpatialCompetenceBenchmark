@@ -13,19 +13,27 @@ if not openScadPath:
 
 if not openScadPath:
   openScadPath = R"C:\Program Files\OpenSCAD (Nightly)\openscad.exe"
-  if not os.path.exists(openScadPath): openScadPath = None
+  if not (openScadPath and os.path.exists(openScadPath)):
+    openScadPath = None
 
 if not openScadPath:
   openScadPath = R"C:\Program Files\OpenSCAD\openscad.exe"
-  if not os.path.exists(openScadPath): openScadPath = None
+  if not (openScadPath and os.path.exists(openScadPath)):
+    openScadPath = None
 
-if not os.path.exists(openScadPath):
+if not openScadPath:
   openScadPath = R"C:\Program Files (x86)\OpenSCAD\openscad.exe"
-  if not os.path.exists(openScadPath): openScadPath = None
+  if not (openScadPath and os.path.exists(openScadPath)):
+    openScadPath = None
 
-if not os.path.exists(openScadPath):
+if not openScadPath:
   raise FileNotFoundError(
     "OpenSCAD executable not found. Set OPENSCAD_PATH or add openscad to PATH.")
+
+# Final safety: ensure we have a usable string path before invoking OpenSCAD
+if not isinstance(openScadPath, str) or not openScadPath.strip():
+  raise FileNotFoundError(
+    "OpenSCAD executable path is invalid. Set OPENSCAD_PATH or add openscad to PATH.")
 
 useManifoldBackend = False
 

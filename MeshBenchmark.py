@@ -11,6 +11,17 @@ This extends the abstract TestRunner framework with spatial-specific:
 - Spatial benchmark metadata
 """
 
+# IMPORTANT: Set up sys.path BEFORE any other imports so submodules can be found
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent
+if str(REPO_ROOT) not in sys.path:
+  sys.path.insert(0, str(REPO_ROOT))
+VGB_ROOT = REPO_ROOT / "VisGeomBench"
+if VGB_ROOT.is_dir() and str(VGB_ROOT) not in sys.path:
+  sys.path.insert(0, str(VGB_ROOT))
+
 from typing import Dict, Any
 
 from LLMBenchCore import BenchmarkRunner, run_benchmark_main
