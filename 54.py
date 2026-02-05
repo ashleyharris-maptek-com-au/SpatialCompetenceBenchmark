@@ -24,7 +24,6 @@ structure = {
   "properties": {
     "neighbors": {
       "type": "array",
-      "uniqueItems": True,
       "items": {
         "type": "string",
         "pattern": "^(?:[01]+)?$",
