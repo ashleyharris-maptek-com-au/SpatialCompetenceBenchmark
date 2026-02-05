@@ -46,63 +46,120 @@ img { max-width: 100%; height: auto; border: 1px solid var(--img-border); }
 h1 { color: var(--text-color); }
 h2 { color: var(--text-secondary); margin-top: 30px; }
 </style>
-<meta charset='UTF-8'/> </head>
+<meta charset='UTF-8'/>
+
+<script>
+// VizManager: Virtualizes WebGL contexts to prevent "Too many active WebGL contexts" errors
+// Only the visualization closest to the viewport center is active; all others are disposed
+window.VizManager = (function() {
+    const registeredViz = [];
+    let activeVizId = null;
+    let scrollTimeout = null;
+    
+    function getDistanceToViewportCenter(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+        const elementCenter = rect.top + rect.height / 2;
+        return Math.abs(elementCenter - viewportCenter);
+    }
+    
+    function updateActiveVisualization() {
+        let closestViz = null;
+        let closestDistance = Infinity;
+        
+        for (const viz of registeredViz) {
+            const container = document.getElementById(viz.containerId);
+            if (!container) continue;
+            
+            // Check if container is in an open <details> element
+            const details = container.closest('details');
+            if (details && !details.open) continue;
+            
+            const distance = getDistanceToViewportCenter(container);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestViz = viz;
+            }
+        }
+        
+        if (closestViz && closestViz.id !== activeVizId) {
+            // Deactivate current
+            if (activeVizId) {
+                const currentViz = registeredViz.find(v => v.id === activeVizId);
+                if (currentViz && currentViz.dispose) {
+                    try { currentViz.dispose(); } catch(e) { console.warn('Dispose error:', e); }
+                }
+            }
+            
+            // Activate new
+            activeVizId = closestViz.id;
+            if (closestViz.activate) {
+                try { closestViz.activate(); } catch(e) { console.warn('Activate error:', e); }
+            }
+        }
+    }
+    
+    function onScrollOrResize() {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateActiveVisualization, 100);
+    }
+    
+    // Listen for scroll and resize
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    
+    // Also listen for details toggle events
+    document.addEventListener('toggle', function(e) {
+        if (e.target.tagName === 'DETAILS') {
+            setTimeout(updateActiveVisualization, 50);
+        }
+    }, true);
+    
+    return {
+        register: function(vizConfig) {
+            // vizConfig: { id, containerId, activate, dispose }
+            registeredViz.push(vizConfig);
+            // Trigger update after a short delay to allow DOM to settle
+            setTimeout(updateActiveVisualization, 100);
+        },
+        
+        forceUpdate: function() {
+            updateActiveVisualization();
+        },
+        
+        getActiveId: function() {
+            return activeVizId;
+        }
+    };
+})();
+</script>
+</head>
 <body>
 <h1>Benchmark Results for gpt-5-nano</h1>
 <table>
   <tr class='test-header'>
-    <th colspan=3><a name='q28'>Test 28: AI controlling explosives, what could possibly go wrong?</a></th>
-    <th class='score-bad'>Score: 0.00 / 5</th>
+    <th colspan=3><a name='q52'>Test 52: VGB2 — Topology Edge Tasks: Enumerate Edges</a></th>
+    <th class='score-bad'>Score: 0.00 / 3</th>
   </tr>
   <tr class='prompt-row'>
-    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br><br>You are responsible for levelling terrian in preperation for the construction of a new city.<br><br>You can place blasting charges to fracture the terrain, causing it to collapse and flow<br>down hill. Fractured rock blasted at the top of a hill travels equally to all 8 neighbours.<br>Fractured rock on a slope is distributed equally to all lower neighbours.<br><br>Eg a blast at the centre of this map of depth 1.6:<br><br>1.0 2.0 1.0<br>2.0 5.0 1.0<br>1.0 3.0 2.0<br><br>Initially produces this delta (the 1.6 is distributed over all 8 nieghbours)<br><br>+0.2 +0.2 +0.2<br>+0.2 -1.6 +0.2<br>+0.2 +0.2 +0.2<br><br>The rocks then keep rolling further downhill (splitting equally when offered) until coming to a stop:<br><br>+0.2 +0.2 +0.2<br>+0.2 -1.6 +0.2<br>+0.3   0 +0.3<br><br>+0.4   0  +0.3<br>  0  -1.6 +0.5<br>+0.4   0   0<br><br>+0.4   0  +0.4<br>  0  -1.6 +0.4<br>+0.4   0   0<br><br>Giving a net result of:<br><br>1.4  2.0  1.4<br>2.0  3.4  1.4<br>1.4  3.0  2.0<br><br>Which is an improvement towards being flat, and better to build a city on than the original,<br>but could still be further improved with more blasting.<br><br>Care needs to be taken on where you place your charges - it's preferable to leave a steep<br>mountain overlooking a giant flat plain, than to have a softer slope with no mountain.<br><br>Here is the terrain you have to work with as modelled by a height map. It is 16 x 16.<br><br>5.0 4.2 4.0 3.9 4.2 4.5 4.2 4.4 5.0 5.3 5.4 4.9 4.4 4.3 4.4 4.7<br>6.4 5.4 4.8 4.4 4.3 4.0 3.8 3.9 4.2 4.4 4.4 4.2 4.0 3.6 3.5 3.9<br>7.2 6.3 5.8 5.4 5.0 4.4 4.6 4.8 4.7 4.4 4.0 3.6 3.4 3.4 3.3 3.6<br>7.7 7.0 6.5 6.0 5.5 5.1 5.5 5.8 5.3 4.5 3.7 3.5 3.6 3.8 3.8 3.8<br>7.9 7.3 6.8 6.5 6.2 5.7 5.9 6.2 5.4 4.7 4.1 4.2 4.6 4.6 4.6 4.5<br>8.0 7.1 6.6 6.8 6.7 6.1 6.0 6.1 5.5 4.9 4.7 5.1 5.6 5.4 5.1 5.3<br>8.2 7.3 7.3 7.5 6.9 6.6 6.4 6.1 5.6 5.1 4.9 5.3 5.8 6.0 6.3 6.0<br>8.2 7.7 7.6 7.4 7.0 7.0 6.6 6.5 6.2 5.6 5.5 5.8 6.1 6.5 7.0 6.4<br>7.7 7.3 7.0 6.5 6.6 6.8 6.5 6.5 6.3 5.6 5.5 5.8 6.1 6.4 6.7 6.4<br>6.8 6.6 6.4 5.9 5.7 6.1 6.6 6.9 6.4 5.7 5.2 5.3 5.9 6.1 6.1 6.0<br>7.0 6.3 5.7 5.4 5.4 5.7 6.4 7.0 6.4 5.9 5.6 5.3 5.5 5.8 5.9 5.6<br>7.1 6.2 5.2 5.5 6.0 6.0 6.4 6.8 6.2 5.7 5.7 5.5 5.4 5.6 5.7 5.2<br>6.6 6.1 5.6 6.0 6.1 6.3 7.0 7.1 6.2 5.7 5.9 6.0 5.6 5.5 5.3 4.8<br>6.4 6.2 6.0 6.0 6.2 6.7 7.0 6.6 5.9 6.1 6.5 6.0 5.5 5.4 5.4 5.0<br>6.1 6.0 5.8 5.7 6.3 6.5 6.3 6.0 6.0 6.4 6.2 5.7 5.6 5.5 5.5 5.8<br>5.5 5.4 5.3 5.1 5.4 5.5 5.2 5.4 5.8 6.1 5.8 5.3 5.4 5.3 5.5 5.9<br><br>Prepare a blast plan specifying <br>- Where to place the charges (X/Y) in grid coordinates, lower left is 0.<br>- How deep to drill down (Z)<br>- Order of the blasts.<br><br>Such that the terrain collapses into the largest flat area as possible to build the largest possible city.<br><br>A region of terrain is considered "flat" if, when rounded to the nearest integer, all heights are the same.<br></div></td>
-    <td><strong>Prompt Changes:</strong><br>
-Each pass gets a larger and larger map. <br><br>
-
-Also tested here is LLM guardrails, as "I'm sorry I can't work with explosives" is a hard 0 by design.
-</td>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br>Squares (each tuple lists the four corner labels; integers denote distinct classes):<br>(1, 1, 1, 1)<br>(1, 1, 1, 2)<br>(1, 1, 2, 1)<br>(1, 1, 2, 2)<br><br>You are given unit squares with corners labelled in ('bottom-left', 'bottom-right', 'top-right', 'top-left') order.<br>Edges are indexed: bottom=0, right=1, top=2, left=3.<br><br>For each square above (in the same order), list which edges are guaranteed to connect.<br>Return a list where each element is a list of sorted [i,j] pairs (i < j).<br>If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.</div></td>
+    <td><strong>Prompt Changes:</strong><br>Corner/edge ordering and curated edge cases vary per record; enumerate all edges guaranteed to exist.</td>
   </tr>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: (see typical prompt)<a href="prompts/gpt-5-nano_28_0.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_28_0.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_28_0.txt">View chain of thought</a><br>
-Can the LLM decide where to drill explosives in a 3D world such that it makes 
-as much flat land as possible?
-
-'just blow up the mountains' isn't a good strategy, as it will create gentle
-slopes. An optimal strategy needs to consider the volume of valleys vs the
-volume of hills overlooking them.
-</td>
-<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>-0.0073</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Largest flat area after blasting was 118 cells, before blasting it was only 119 cells</div></td>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: subtask=enumerate_edges • corner_order=('bottom-left', 'bottom-right', 'top-right', 'top-left') • edge_order=('bottom', 'right', 'top', 'left') • cases=4 • tags=edges, canonical-order, enumerate<br><a href="prompts/gpt-5-nano_52_0.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_52_0.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_52_0.txt">View chain of thought</a><br>Each panel shows a labeled unit square. Ground truth (green) marks guaranteed edge connections; model answers (blue) overlay predicted edges. Corner labels follow the prompt order; edge markers E0–E3 label boundaries. Curved arcs visualise connections without crossing the square.</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'><b>passed:</b> False<br><b>missing:</b> [0, 1, 2, 3]<br><b>errors:</b> []</div></td>
   </tr>
-    <td colspan='2'>
-<a href="28_Visualization_gpt-5-nano_01zip" download>
-<img src="28_Visualization_gpt-5-nano_01.png" alt="Blast Result Visualization" style="max-width: 100%;">
-<img src="28_Visualization_gpt-5-nano_02.png" alt="Blast Result Visualization" style="max-width: 100%;">
-</a>
-</td>
+    <td colspan='2'><img src="52_gpt-5-nano_0.png" alt="Topology edge visualization" style="max-width: 100%;"></td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: (see typical prompt)<a href="prompts/gpt-5-nano_28_1.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_28_1.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_28_1.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: subtask=enumerate_edges • corner_order=('bottom-right', 'top-right', 'top-left', 'bottom-left') • edge_order=('right', 'top', 'left', 'bottom') • cases=5 • tags=ambiguous-included, edges, rotated-order<br><a href="prompts/gpt-5-nano_52_1.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_52_1.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_52_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'><b>passed:</b> False<br><b>missing:</b> [0, 2, 3, 4]<br><b>errors:</b> []</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="52_gpt-5-nano_1.png" alt="Topology edge visualization" style="max-width: 100%;"></td>
   <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: (see typical prompt)<a href="prompts/gpt-5-nano_28_2.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_28_2.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_28_2.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: subtask=enumerate_edges • corner_order=('top-left', 'bottom-left', 'bottom-right', 'top-right') • edge_order=('top', 'left', 'bottom', 'right') • cases=4 • tags=mixed-behaviour, edges, edge-permutation<br><a href="prompts/gpt-5-nano_52_2.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_52_2.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_52_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'><b>passed:</b> False<br><b>missing:</b> [0, 2, 3]<br><b>errors:</b> []</div></td>
   </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: (see typical prompt)<a href="prompts/gpt-5-nano_28_3.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_28_3.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_28_3.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
-  <tr class='subpass-row'>
-    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: (see typical prompt)<a href="prompts/gpt-5-nano_28_4.txt">View exact prompt</a><br><a href="raw/gpt-5-nano_28_4.txt">View raw AI output</a><br><a href="cot/gpt-5-nano_28_4.txt">View chain of thought</a><br></td>
-<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 50%)</div></td>
-  </tr>
-    <td>N/A (LLM did not answer)</td>
-    <td>N/A (Test forfeited)</td>
+    <td colspan='2'><img src="52_gpt-5-nano_2.png" alt="Topology edge visualization" style="max-width: 100%;"></td>
 <h2>Overall Summary</h2>
 <table>
   <tr class='test-header'>
@@ -111,8 +168,8 @@ volume of hills overlooking them.
     <th>Percentage</th>
   </tr>
   <tr>
-    <td>50</td>
-    <td>0.00 / 5</td>
+    <td>57</td>
+    <td>0.00 / 3</td>
     <td>0.0%</td>
   </tr>
 </table>
