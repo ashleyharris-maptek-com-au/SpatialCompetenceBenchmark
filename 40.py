@@ -1,8 +1,12 @@
+skip = True
+
 import math
 import random
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 earlyFail = True
 title = "Mirror Reflection."
+skip = True
 
 prompt = """
 You are in a room with mirrors on some walls. Objects are placed at various positions.
@@ -892,7 +896,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
   vis_html = ""
   try:
     scad = generate_room_scad(prob)
-    output_path = f"results/40_{subPass}_{aiEngineName}_room.png"
+    output_path = result_path(f"40_{subPass}_{aiEngineName}_room.png", aiEngineName)
 
     # Calculate camera position based on room size
     all_x = [obj["pos"][0] for obj in prob["objects"]] + [prob["viewer"][0]]
@@ -904,7 +908,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
     camera_arg = f"--camera={center_x + cam_dist},{center_y - cam_dist},{cam_dist},{center_x},{center_y},1"
     vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
-    vis_html = f'<img src="{os.path.basename(output_path)}" />'
+    vis_html = f'<img src="{report_relpath(output_path, aiEngineName)}" />'
   except Exception as e:
     vis_html = f"<i>Visualization error: {e}</i>"
 

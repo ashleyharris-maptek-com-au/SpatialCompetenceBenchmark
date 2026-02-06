@@ -1,9 +1,13 @@
+skip = True
+
 import random
 from scipy.spatial import Delaunay
 import numpy as np
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "2D Delaunay Triangulation"
+skip = True
 
 # Credit to Jash Vira for the idea.
 # jashvira.github.io/blog/2025/visual_geometry_bench/
@@ -139,12 +143,12 @@ def resultToNiceReport(result, subPassIndex, aiEngineName: str):
     scad_content += "}\n"
 
   import os
-  os.makedirs("results", exist_ok=True)
-  output_path = "results/25_Visualization_" + aiEngineName + "_" + str(subPassIndex) + ".png"
+  output_path = result_path("25_Visualization_" + aiEngineName + "_" + str(subPassIndex) + ".png",
+                            aiEngineName)
   vc.render_scadText_to_png(scad_content, output_path)
   print(f"Saved visualization to {output_path}")
 
-  return f'<img src="{os.path.basename(output_path)}" alt="Pipe Loop Visualization" style="max-width: 100%;">'
+  return f'<img src="{report_relpath(output_path, aiEngineName)}" alt="Pipe Loop Visualization" style="max-width: 100%;">'
 
 
 if __name__ == "__main__":

@@ -1,7 +1,11 @@
+skip = True
+
 import OpenScad as vc
 import math
+from LLMBenchCore.ResultPaths import result_path
 
 title = "Prove a convex solid can fit throught itself"
+skip = True
 
 # See https://en.wikipedia.org/wiki/Prince_Rupert%27s_cube
 
@@ -135,17 +139,17 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   solidPrefix = "color([0,1,0]) projection() " + solidPrefix
   holePrefix = " color([1,0,0]) projection() " + holePrefix
 
-  vc.render_scadText_to_png("$fn=90;" + solidPrefix + openScadShape,
-                            "results/31_solid_" + aiEngineName + "_" + str(subPass) + ".png",
+  solid_path = result_path("31_solid_" + aiEngineName + "_" + str(subPass) + ".png", aiEngineName)
+  hole_path = result_path("31_hole_" + aiEngineName + "_" + str(subPass) + ".png", aiEngineName)
+  vc.render_scadText_to_png("$fn=90;" + solidPrefix + openScadShape, solid_path,
                             "--camera=0,0,50,0,0,0")
-  vc.render_scadText_to_png("$fn=90;" + holePrefix + openScadShape,
-                            "results/31_hole_" + aiEngineName + "_" + str(subPass) + ".png",
+  vc.render_scadText_to_png("$fn=90;" + holePrefix + openScadShape, hole_path,
                             "--camera=0,0,50,0,0,0")
 
   import PIL
 
-  solidImage = PIL.Image.open("results/31_solid_" + aiEngineName + "_" + str(subPass) + ".png")
-  holeImage = PIL.Image.open("results/31_hole_" + aiEngineName + "_" + str(subPass) + ".png")
+  solidImage = PIL.Image.open(solid_path)
+  holeImage = PIL.Image.open(hole_path)
 
   overlay = PIL.Image.new("RGB", solidImage.size, (0, 0, 0))
 
@@ -178,7 +182,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       elif holePixel:
         overlay.putpixel((x, y), (0, 0, 255))
 
-  overlay.save("results/31_overlay_" + aiEngineName + "_" + str(subPass) + ".png")
+  overlay_path = result_path("31_overlay_" + aiEngineName + "_" + str(subPass) + ".png",
+                             aiEngineName)
+  overlay.save(overlay_path)
 
   if countSolidPixels < 200:
     return 0.0, "Solid transformed away from origin and out of field of view."
@@ -221,7 +227,7 @@ Green = solid and hole lining up<br>
 Red = Excess object not fitting through the hole<br>
 Blue = Unused hole.<br>
     
-    <img src='31_overlay_""" + aiEngineName + "_" + str(subPass) + ".png'/>"
+    <img src='artifacts/31_overlay_""" + aiEngineName + "_" + str(subPass) + ".png'/>"
 
 
 highLevelSummary = """

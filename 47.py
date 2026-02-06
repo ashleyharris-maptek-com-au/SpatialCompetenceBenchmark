@@ -18,6 +18,7 @@ from typing import Dict, List, Tuple, Any, Optional
 import pybullet as p
 import pybullet_data
 import numpy as np
+from LLMBenchCore.ResultPaths import report_relpath
 
 title = "Can an AI determine how someone fell from the crime scene?"
 skip = True
@@ -609,9 +610,9 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str) -> str:
 
   html += f"<p><b>AI Choice:</b> {answer.get('answer', '?')}</p>"
 
-  image_path = f"47_scene_{subPass}.png"
-  if os.path.exists(f"results/{image_path}"):
-    html += f"<img src='{image_path}' style='max-width:400px'><br>"
+  image_path = render_scenario_image(subPass)
+  if os.path.exists(image_path):
+    html += f"<img src='{report_relpath(image_path, aiEngineName)}' style='max-width:400px'><br>"
 
   return html
 

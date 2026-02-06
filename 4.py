@@ -24,14 +24,14 @@ polyhedron(
 We define a 7-part rigid transform of (x,y,z,q0,q1,q2,q3), where q0,q1,q2,q3 is a normalised quaternion, and x, y, z are the translation.
 Rotation is defined around the 0,0,0 point (Which is NOT THE CENTRE), and is performed before translation.
 
-We create a scene with mulitple tetrahedra, each with a different transform. Return the transforms of such a scene
+We create a scene with multiple tetrahedra, each with a different transform. Return the transforms of such a scene
 such that a shadow projected vertically (onto the Z=0 plane) fully covers PARAM, centered at the origin.
 
 Use as many tetrahedra as you need, scoring is based on shadow coverage, not the number of tetrahedra used.
 
 Score will be deducted for:
 - any shadow outside of the square
-- reduntant tetrahedra
+- redundant tetrahedra
 - non-normalised quaternions
 - intersection tetrahedra
 """
@@ -76,26 +76,47 @@ structure = {
 }
 
 subpassParamSummary = [
-  """
-    Cover a square of side length 4.<br><br>
-    
-    (Note that the shadow has been linearly extruded to a height of 1 
-    to simplify volume comparison)<br><br>
-
-    (Note that a perfect score is possible - the tetrahedrons can't overlap
-    in 2D, but they can in 3D, so a right angle can be created by two tetrahedra
-    seperated on the Z axis, one rotated 90 degrees.)
-    """, "Cover a circle of diameter 4",
-  "Cover a square of side length 6, with a hole in the centre of side length 2"
+  "Cover a square of side length 4.", "Cover a circle of diameter 4.",
+  "Cover a square of side length 6, with a hole in the centre of side length 2.",
+  "Cover an equilateral triangle of side length 4.", "Cover a regular hexagon with circumradius 2.",
+  "Cover a rectangle of width 6 and height 2.", "Cover a diamond (rotated square) with diagonal 4.",
+  "Cover a plus/cross shape with arm length 4 and arm width 1.",
+  "Cover an L-shape with outer dimensions 4x4 and thickness 1.",
+  "Cover an annulus (ring) with outer radius 2 and inner radius 1.",
+  "Cover a regular pentagon with circumradius 2.",
+  "Cover a 5-pointed star inscribed in a circle of radius 2.",
+  "Cover an ellipse with semi-major axis 2 and semi-minor axis 1.",
+  "Cover a semicircle of radius 2.", "Cover a right triangle with legs of length 4.",
+  "Cover a parallelogram with base 4, height 2, and slant 1.",
+  "Cover a trapezoid with parallel sides 4 and 2, and height 2.",
+  "Cover a regular octagon with circumradius 2.",
+  "Cover an arrow shape pointing right, 4 units long.",
+  "Cover a chevron (V-shape) with span 4 and thickness 1."
 ]
 
 
 def prepareSubpassPrompt(index: int) -> str:
-  if index == 0: return prompt.replace("PARAM", "a square of side length 4")
-  if index == 1: return prompt.replace("PARAM", "a circle of diameter 4")
-  if index == 2:
-    return prompt.replace("PARAM",
-                          "a square of side length 6, with a hole in the centre of side length 2")
+  params = [
+    "a square of side length 4", "a circle of diameter 4",
+    "a square of side length 6, with a hole in the centre of side length 2",
+    "an equilateral triangle of side length 4 (rotated such that one side parallel to Y=0)",
+    "a regular hexagon with circumradius 2 (vertex to center distance) (rotated such that one side parallel to Y=0)",
+    "a rectangle of width 6 and height 2", "a diamond (square rotated 45 degrees) with diagonal 4",
+    "a plus/cross shape with arm length 4 and arm width 1",
+    "an L-shape with outer dimensions 4x4 and thickness 1",
+    "an annulus (ring) with outer radius 2 and inner radius 1",
+    "a regular pentagon with circumradius 2", "a 5-pointed star inscribed in a circle of radius 2",
+    "an ellipse with semi-major axis 2 and semi-minor axis 1",
+    "a semicircle of radius 2 (flat edge along X axis)",
+    "a right triangle with legs of length 4 along the X and Y axes",
+    "a parallelogram with base 4, height 2, and horizontal offset 1",
+    "a trapezoid with sides parallel to Y=0 of length 4 (bottom) and 2 (top), and height 2",
+    "a regular octagon with circumradius 2",
+    "an arrow shape pointing right, 4 units long and 2 units tall",
+    "a chevron (V-shape) pointing right with span 4 and thickness 1"
+  ]
+  if index < len(params):
+    return prompt.replace("PARAM", params[index])
   raise StopIteration
 
 
@@ -107,27 +128,166 @@ module reference(){
 
 
 def prepareSubpassReferenceScad(index: int) -> str:
-  if index == 0:
-    return """
+  scads = [
+    # 0: Square 4x4
+    """
 module reference(){
     translate([0,0,0.05]) cube([4,4,0.1], center=true);
 }
-"""
-  if index == 1:
-    return """
+""",
+    # 1: Circle diameter 4
+    """
 module reference(){
     translate([0,0,0.05]) cylinder(r=2, h=0.1, center=true, $fn=100);
 }
-"""
-  if index == 2:
-    return """
+""",
+    # 2: Square with hole
+    """
 module reference(){
   difference() {
     translate([0,0,0.05]) cube([6,6,0.1], center=true);
     translate([0,0,0.05]) cube([2,2,2], center=true);
   }
 }
+""",
+    # 3: Equilateral triangle side 4
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[
+      [-2, -4*sqrt(3)/6],
+      [2, -4*sqrt(3)/6],
+      [0, 4*sqrt(3)/3]
+    ]);
+}
+""",
+    # 4: Regular hexagon circumradius 2
+    """
+module reference(){
+  translate([0,0,0.05]) cylinder(r=2, h=0.1, center=true, $fn=6);
+}
+""",
+    # 5: Rectangle 6x2
+    """
+module reference(){
+  translate([0,0,0.05]) cube([6,2,0.1], center=true);
+}
+""",
+    # 6: Diamond (rotated square) diagonal 4
+    """
+module reference(){
+  translate([0,0,0.05]) rotate([0,0,45]) cube([4/sqrt(2),4/sqrt(2),0.1], center=true);
+}
+""",
+    # 7: Plus/cross shape
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true) {
+    square([4,1], center=true);
+    square([1,4], center=true);
+  }
+}
+""",
+    # 8: L-shape
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[
+      [-2,-2], [2,-2], [2,-1], [-1,-1], [-1,2], [-2,2]
+    ]);
+}
+""",
+    # 9: Annulus (ring)
+    """
+module reference(){
+  translate([0,0,0.05]) difference() {
+    cylinder(r=2, h=0.1, center=true, $fn=100);
+    cylinder(r=1, h=1, center=true, $fn=100);
+  }
+}
+""",
+    # 10: Regular pentagon circumradius 2
+    """
+module reference(){
+  translate([0,0,0.05]) cylinder(r=2, h=0.1, center=true, $fn=5);
+}
+""",
+    # 11: 5-pointed star
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true) {
+    polygon(points=[
+      for (i=[0:4]) each [
+        [2*cos(90+i*72), 2*sin(90+i*72)],
+        [0.8*cos(90+i*72+36), 0.8*sin(90+i*72+36)]
+      ]
+    ]);
+  }
+}
+""",
+    # 12: Ellipse 4x2
+    """
+module reference(){
+  translate([0,0,0.05]) scale([2,1,1]) cylinder(r=1, h=0.1, center=true, $fn=100);
+}
+""",
+    # 13: Semicircle radius 2
+    """
+module reference(){
+  translate([0,0,0.05]) intersection() {
+    cylinder(r=2, h=0.1, center=true, $fn=100);
+    translate([0,1,0]) cube([4,2,1], center=true);
+  }
+}
+""",
+    # 14: Right triangle legs 4
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[[-2,-2], [2,-2], [-2,2]]);
+}
+""",
+    # 15: Parallelogram
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[[-2,-1], [2,-1], [3,1], [-1,1]]);
+}
+""",
+    # 16: Trapezoid
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[[-2,-1], [2,-1], [1,1], [-1,1]]);
+}
+""",
+    # 17: Regular octagon circumradius 2
+    """
+module reference(){
+  translate([0,0,0.05]) cylinder(r=2, h=0.1, center=true, $fn=8);
+}
+""",
+    # 18: Arrow pointing right
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[
+      [-2,-0.5], [0,-0.5], [0,-1], [2,0], [0,1], [0,0.5], [-2,0.5]
+    ]);
+}
+""",
+    # 19: Chevron (V-shape)
+    """
+module reference(){
+  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+    polygon(points=[
+      [-2,-1], [-1,-1], [0,0], [-1,1], [-2,1], [-1,0]
+    ]);
+}
 """
+  ]
+  if index < len(scads):
+    return scads[index]
 
 
 def quaternionToPitchRollYawInDegrees(q0, q1, q2, q3):
@@ -282,8 +442,11 @@ def validatePostVolume(result, score, resultVolume, referenceVolume, intersectio
 
 
 def postProcessScore(score, subPassIndex):
-  if subPassIndex == 1:
-    return min(1, score / 0.90)  # Circle is impossible to cover.
+  if subPassIndex in [1, 12, 13]:
+    return min(1, score / 0.90)  # Circle and ellipse are impossible to cover.
+  if subPassIndex in [9, 11]:
+    return min(1, score / 0.80)  # Washer and star are too thin to perfectly cover.
+
   return score
 
 

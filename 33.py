@@ -1,3 +1,5 @@
+skip = True
+
 import math
 import hashlib
 import json
@@ -5,6 +7,7 @@ import os
 import tempfile
 
 import scad_format
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 # Cache for gradeAnswer results
 _grade_cache_path = os.path.join(tempfile.gettempdir(), "grade_cache_33.json")
@@ -29,7 +32,7 @@ def _save_grade_cache():
 
 
 title = "Gravitational trickshots"
-
+skip = True
 prompt = """
 You are playing the role of God, building the solar system (inside an N-body physics simulator).
 
@@ -578,8 +581,7 @@ def resultToNiceReport(answer, subPass, aiEngineName):
       scadOutput += f"color([1, 1, 1]) "
       scadOutput += f"translate([{start_pos[0]}, {start_pos[1]}, {start_pos[2]}]) cube(1.5, center=true);\n"
 
-  os.makedirs("results", exist_ok=True)
-  output_path = f"results/33_Visualization_{aiEngineName}_subpass{subPass}.png"
+  output_path = result_path(f"33_Visualization_{aiEngineName}_subpass{subPass}.png", aiEngineName)
   vc.render_scadText_to_png(scadOutput, output_path)
 
   # Also save scad file for debugging
@@ -592,7 +594,7 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 <p>Colors: <span style="color:red">Alice</span>, <span style="color:green">Bob</span>, <span style="color:blue">Carol</span>, 
 <span style="color:yellow">Dave</span>, <span style="color:magenta">Eve</span>, <span style="color:cyan">Frank</span>, 
 <span style="color:orange">Grace</span>, <span style="color:gold">Sun (center)</span></p>
-<img src="{os.path.basename(output_path)}" alt="Orbital Visualization" style="max-width: 100%;">
+<img src="{report_relpath(output_path, aiEngineName)}" alt="Orbital Visualization" style="max-width: 100%;">
 '''
 
 

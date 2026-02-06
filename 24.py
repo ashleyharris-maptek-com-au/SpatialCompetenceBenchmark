@@ -1,6 +1,9 @@
+skip = True
+
 import itertools, random
 
 title = "2D convex hull, identify points on the hull."
+skip = True
 
 # Credit to Jash Vira for the idea.
 # jashvira.github.io/blog/2025/visual_geometry_bench/

@@ -3,6 +3,7 @@ import OpenScad as vc
 import os
 import random
 from math import isqrt
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Pack rectangular prisms"
 
@@ -351,7 +352,7 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
 
     openScadData += f"translate([{pos[0]}, {pos[1]}, {pos[2]}]) color({randomColour}) cube([{span[0]}, {span[1]}, {span[2]}], center=true);\n"
 
-  output_path = f"results/16_Visualization_{aiEngineName}_subpass{subPass}.png"
+  output_path = result_path(f"16_Visualization_{aiEngineName}_subpass{subPass}.png", aiEngineName)
   vc.render_scadText_to_png(openScadData, output_path)
   print(f"Saved visualization to {output_path}")
 
@@ -363,7 +364,7 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
   else:
     perfectText = "<br><br>Perfect packing not possible! " + tsp[1]
 
-  return "<img src=\"" + os.path.basename(output_path) + "\" />" + perfectText
+  return "<img src=\"" + report_relpath(output_path, aiEngineName) + "\" />" + perfectText
 
 
 earlyFail = True

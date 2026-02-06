@@ -1,3 +1,5 @@
+skip = True
+
 import math, numpy
 import random
 import tempfile
@@ -6,6 +8,7 @@ import json
 import hashlib
 import pybullet as p
 import pybullet_data
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 SIMULATION_CACHE_VERSION = 9
 
@@ -1215,7 +1218,7 @@ def build_flickbook_html(image_paths, labels, viewer_id):
   image_tags = []
   for idx, (path, label) in enumerate(zip(image_paths, labels)):
     import os
-    image_tags.append(f'<img src="{os.path.basename(path)}" class="stack-view view-{idx}" '
+    image_tags.append(f'<img src="{report_relpath(path)}" class="stack-view view-{idx}" '
                       f'title="{label}" style="max-width: 100%;">')
 
   radio_name = f"{viewer_id}-view"
@@ -1308,7 +1311,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
   try:
     for view_id, label, gen_func in views:
       scad = gen_func(prob)
-      output_path = f"results/{base_name}_{view_id}.png"
+      output_path = result_path(f"{base_name}_{view_id}.png", aiEngineName)
       if not os.path.exists(output_path):
         vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
       image_paths.append(output_path)
