@@ -1,4 +1,3 @@
-import itertools
 import random
 import re
 import scad_format
@@ -559,12 +558,13 @@ def isPrime(num: int) -> bool:
 def containsAny3TupleMoreThanOnce(s: str) -> bool:
   s = s[::-1]
 
-  tuples = list(itertools.batched(s, 3))
-  sets = set(tuples)
-  if len(tuples) != len(sets):
-    for s in sets:
-      if tuples.count(s) > 1:
-        return s
+  tuples = [tuple(s[i:i + 3]) for i in range(0, len(s), 3)]
+
+  seen = set()
+  for triple in tuples:
+    if triple in seen:
+      return triple
+    seen.add(triple)
 
   return None
 
