@@ -5,7 +5,7 @@ import numpy as np
 import random
 from functools import lru_cache
 from LLMBenchCore.ResultPaths import report_relpath
-from LLMBenchCore.CadArtifacts import CadArtifactStore, write_if_changed
+from LLMBenchCore.ArtifactStore import ModelArtifactStore, write_if_changed
 
 title = "Cage match. Can LLMs design interlocking parts for 3D printing?"
 
@@ -94,16 +94,16 @@ earlyFail = False
 
 
 @lru_cache(maxsize=64)
-def _cad_store(aiEngineName: str) -> CadArtifactStore:
-  return CadArtifactStore(aiEngineName)
+def _artifact_store(aiEngineName: str) -> ModelArtifactStore:
+  return ModelArtifactStore(aiEngineName)
 
 
 def _part_name(part_index: int, aiEngineName: str) -> str:
-  return _cad_store(aiEngineName).part_name(29, part_index)
+  return _artifact_store(aiEngineName).part_name(29, part_index)
 
 
 def _artifact_path(filename: str, aiEngineName: str) -> str:
-  return _cad_store(aiEngineName).path(filename)
+  return _artifact_store(aiEngineName).path(filename)
 
 
 def _part_path(part_name: str, suffix: str, aiEngineName: str) -> str:
@@ -129,10 +129,10 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if len(answer["parts"]) < 10:
     return 0, "Answer contained too few parts. 10 is the minimum possible."
 
-  cad_store = _cad_store(aiEngineName)
+  artifact_store = _artifact_store(aiEngineName)
 
   if subPass == 0:
-    artifact_dir = cad_store.root
+    artifact_dir = artifact_store.root
     any_posed_changed = False
     for partIndex, part in enumerate(answer["parts"]):
       partName = _part_name(partIndex, aiEngineName)
@@ -160,9 +160,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
         if needs_regenerate:
           try:
-            cad_store.run_python_script_to_file(part_py_path,
-                                                part_scad_path,
-                                                python_executable=sys.executable)
+            artifact_store.run_python_script_to_file(part_py_path,
+                                                     part_scad_path,
+                                                     python_executable=sys.executable)
           except Exception as e:
             bugs += "Python generating OpenSCAD for " + partName + " failed due to " + str(
               e) + "<br>"
@@ -175,9 +175,9 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
         if needs_regenerate:
           try:
-            cad_store.run_python_script_to_file(part_py_path,
-                                                part_stl_path,
-                                                python_executable=sys.executable)
+            artifact_store.run_python_script_to_file(part_py_path,
+                                                     part_stl_path,
+                                                     python_executable=sys.executable)
           except Exception as e:
             bugs += "Python generating STL for " + partName + " failed due to " + str(e) + "<br>"
       else:
@@ -186,7 +186,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       # Generate STL from OpenSCAD if needed
       if os.path.exists(part_scad_path) and (needs_regenerate or not os.path.exists(part_stl_path)):
         try:
-          cad_store.run_openscad(part_scad_path, part_stl_path)
+          artifact_store.run_openscad(part_scad_path, part_stl_path)
         except Exception as e:
           bugs += "OpenSCAD failed to generate STL for " + partName + " due to " + str(e) + "<br>"
 
@@ -203,7 +203,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       if os.path.exists(part_stl_path) and bugs == "" and (needs_regenerate or posed_changed
                                                            or not os.path.exists(posed_stl_path)):
         try:
-          cad_store.run_openscad(posed_scad_path, posed_stl_path)
+          artifact_store.run_openscad(posed_scad_path, posed_stl_path)
         except Exception as e:
           bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
             e) + "<br>"
@@ -229,7 +229,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
     if bugs == "" and (any_posed_changed or not os.path.exists(fullposed_stl_path)):
       try:
-        cad_store.run_openscad(fullposed_scad_path, fullposed_stl_path)
+        artifact_store.run_openscad(fullposed_scad_path, fullposed_stl_path)
       except Exception as e:
         bugs += "OpenSCAD failed to generate fullposed STL for " + str(
           aiEngineName) + " due to " + str(e) + "<br>"
