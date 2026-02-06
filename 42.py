@@ -1,5 +1,6 @@
 import random, os, math
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path
 
 title = "Can you navigate a maze from photos only?"
 skip = True
@@ -38,6 +39,7 @@ maze = """
 #### #########......###### #####
 ################################
 """.strip()
+random.seed(42)
 
 
 def renderMazeAsPng():
@@ -63,6 +65,7 @@ def renderMazeAsPng():
   scad += "color([0,1,0]) translate([16,34,0]) linear_extrude(0.01) text(\"S\", size=2, valign=\"center\", halign=\"center\"); \n"
 
   for i in range(20):
+    maze_img_path = result_path(f"42_maze_{i}.png")
     while True:
       cameraPos = [int(random.random() * 32), int(random.random() * 32), 10]
       cameraLookat = [int(random.random() * 32), int(random.random() * 32), 0]
@@ -75,11 +78,11 @@ def renderMazeAsPng():
           f"--camera={cameraPos[0]:.6f},{cameraPos[1]:.6f},{cameraPos[2]:.6f}," + \
           f"{cameraLookat[0]:.6f},{cameraLookat[1]:.6f},{cameraLookat[2]:.6f}"
       vc.render_scadText_to_png(scad,
-                                f"results/42_maze_{i}.png",
+                                maze_img_path,
                                 cameraArg=cameraArg,
                                 extraScadArgs=["--projection=p"])
 
-      im = Image.open(f"results/42_maze_{i}.png")
+      im = Image.open(maze_img_path)
       colours = im.getcolors()
 
       blueColours = 0
@@ -95,7 +98,7 @@ def renderMazeAsPng():
 
       if interestingCount == 3 and not os.path.exists("images/42.png"):
         # Pick an image with lots of info to summerise the test.
-        os.rename(f"results/42_maze_{i}.png", "images/42.png")
+        os.replace(maze_img_path, "images/42.png")
         continue
 
       if interestingCount != 1:
@@ -105,7 +108,7 @@ def renderMazeAsPng():
       break
 
 
-if not os.path.exists("results/42_maze_0.png"):
+if not os.path.exists(result_path("42_maze_0.png")):
   renderMazeAsPng()
 
 prompt = """
@@ -139,7 +142,7 @@ def prepareSubpassPrompt(index: int) -> str:
 
   if index == 3: raise StopIteration
 
-  return prompt + "".join([f"[[image:results/42_maze_{i}.png]]" for i in images])
+  return prompt + "".join([f"[[image:{result_path(f'42_maze_{i}.png')}]]" for i in images])
 
 
 gradedMaze = [None] * 3

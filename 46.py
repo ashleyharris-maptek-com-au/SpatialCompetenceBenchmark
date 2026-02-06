@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import os
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Can you create build instructions for 3D structures?"
 skip = True
@@ -752,13 +753,14 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   import scad_format
 
   # Save SCAD file for visualization
-  scad_path = f"results/46_shape_{aiEngineName}_{subPass}.scad"
+  scad_path = result_path(f"46_shape_{aiEngineName}_{subPass}.scad", aiEngineName)
   with open(scad_path, "w") as f:
     f.write(scad_format.format(scad, vc.formatConfig))
 
   # Render to PNG
+  png_path = result_path(f"46_shape_{aiEngineName}_{subPass}.png", aiEngineName)
   try:
-    vc.render_scadText_to_png(scad, f"results/46_shape_{aiEngineName}_{subPass}.png")
+    vc.render_scadText_to_png(scad, png_path)
   except Exception as e:
     feedback.append(f"Render failed: {e}")
 
@@ -788,8 +790,9 @@ def resultToNiceReport(answer, subPass, aiEngineName):
     html += f"<p style='color:red'><b>Validation errors:</b><br>{'<br>'.join(assembly.errors)}</p>"
 
   # Show visualization (even if there are errors)
-  if os.path.exists(f"results/46_shape_{aiEngineName}_{subPass}.png"):
-    html += f"<img src='46_shape_{aiEngineName}_{subPass}.png' style='max-width:400px'><br>"
+  png_path = result_path(f"46_shape_{aiEngineName}_{subPass}.png", aiEngineName)
+  if os.path.exists(png_path):
+    html += f"<img src='{report_relpath(png_path, aiEngineName)}' style='max-width:400px'><br>"
 
   # Show connector details
   html += "<details><summary>Connector details</summary><pre>"

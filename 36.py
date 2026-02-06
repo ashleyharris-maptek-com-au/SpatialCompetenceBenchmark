@@ -1,8 +1,11 @@
+skip = True
+
 import math
 import random
 import re
 import OpenScad as vc
 import os
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Cross-Section Slicing - What shape results from cutting a 3D object?"
 
@@ -767,10 +770,10 @@ color({prob.get('object_color', [0.5,0.7,1.0,0.8])}) {{
 {plane_overlay}
 """
 
-    output_3d = f"results/36_{subPass}_3d.png"
+    output_3d = result_path(f"36_{subPass}_3d.png")
     if not os.path.exists(output_3d):
       vc.render_scadText_to_png(full_scad, output_3d)
-    html += f'<br><div style="float:left"><b>3D Object with Cutting Plane:</b><br><img src="{os.path.basename(output_3d)}" /><br></div>'
+    html += f'<br><div style="float:left"><b>3D Object with Cutting Plane:</b><br><img src="{report_relpath(output_3d)}" /><br></div>'
 
     thin = max(0.05, plane_spec["span"] * 0.015)
     plane_slice = plane_solid_scad(plane_spec, thickness=thin)
@@ -793,12 +796,12 @@ color({prob.get('object_color', [0.5,0.7,1.0,0.8])}) {{
 {expected_section}
 """
 
-    output_2d = f"results/36_{subPass}_cross_section.png"
+    output_2d = result_path(f"36_{subPass}_cross_section.png")
     view_dist = plane_spec.get("camera_distance", plane_spec["span"] * 1.5)
     camera_arg = f"--camera=0,0,{view_dist},0,0,0"
     if not os.path.exists(output_2d):
       vc.render_scadText_to_png(combined_2d, output_2d, cameraArg=camera_arg)
-    html += f'<div style="float:left"><b>Cross-Section (Intersection View):</b><br><img src="{os.path.basename(output_2d)}" /><br></div>'
+    html += f'<div style="float:left"><b>Cross-Section (Intersection View):</b><br><img src="{report_relpath(output_2d)}" /><br></div>'
 
   except Exception as e:
     html += f"<br><i>Visualization error: {e}</i><br>"

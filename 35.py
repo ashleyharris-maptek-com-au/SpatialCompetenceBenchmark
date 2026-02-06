@@ -1,6 +1,9 @@
+skip = True
+
 import math
 import random
 import os
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Gear Train Reasoning - predict rotation directions and speeds"
 
@@ -817,11 +820,11 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
   vis_html = ""
   if len(gears_def) <= 30:
     try:
-      output_path = f"results/35_{subPass}_{aiEngineName}_gears.png"
+      output_path = result_path(f"35_{subPass}_{aiEngineName}_gears.png", aiEngineName)
       img_path, _ = render_gear_train_image(gears_def, complications, expected, output_path,
                                             subPass)
       if img_path:
-        vis_html = f'<img src="{os.path.basename(img_path)}" style="max-width:max(400px,100%)" />'
+        vis_html = f'<img src="{report_relpath(img_path, aiEngineName)}" style="max-width:max(400px,100%)" />'
     except Exception as e:
       vis_html = f"<i>Visualization error: {e}</i>"
 
@@ -1336,9 +1339,7 @@ def render_gear_train_image(gears_def,
   scad = generate_gear_scad(gears_def, positions, complications, expected)
 
   if output_path is None:
-    output_path = f"results/35_gear_train_{subpass}.png"
-
-  os.makedirs("results", exist_ok=True)
+    output_path = result_path(f"35_gear_train_{subpass}.png")
 
   # Calculate camera position based on gear positions
   if positions:

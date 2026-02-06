@@ -7,6 +7,7 @@ import math
 import random
 import time
 from PIL import Image
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 # Cache for grading and visualization results
 _cache_dir = os.path.join(tempfile.gettempdir(), "8_polynomial_cache")
@@ -344,8 +345,7 @@ def _build_subpass_summary(subpass, config, grid_lines):
   label = config.get("label")
   header = f"{label} ({size}x{size})" if label else f"{size}x{size}"
   if size > GRID_IMAGE_THRESHOLD:
-    image_path = _ensure_grid_image(subpass, grid_lines, "reference")
-    return f"{header}<br><img src='{os.path.basename(image_path)}' style='max-width:240px'>"
+    return f"{header}<br>See prompt image."
   grid_text = "\n".join(grid_lines)
   return f"{header}<br><pre>{grid_text}</pre>"
 
@@ -557,17 +557,16 @@ def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str):
 
     if gridSize > GRID_IMAGE_THRESHOLD:
       expected_path = _ensure_grid_image(subPass, gRef, "expected")
-      output_path = _grid_image_path(subPass, f"output_{aiEngineName}")
+      output_filename = f"8_grid_output_{_safe_name(aiEngineName)}_{subPass}_{SUBPASS_CONFIG_HASHES[subPass]}.png"
+      output_path = result_path(output_filename, aiEngineName)
       _grid_lines_to_image(output_lines).save(output_path)
-      expected_name = os.path.basename(expected_path)
-      output_name = os.path.basename(output_path)
       return f"""
       <td style='font-size: 14px'><div style='max-width:800px'>
         {answer.replace(chr(10),'<br/>')}
       </div></td><td>
         <div style='display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;'>
-          <div><div>Expected</div><img src='{expected_name}' style='max-width:45%'></div>
-          <div><div>Output</div><img src='{output_name}' style='max-width:45%'></div>
+          <div><div>Expected</div><img src='{report_relpath(expected_path, aiEngineName)}' style='max-width:45%'></div>
+          <div><div>Output</div><img src='{report_relpath(output_path, aiEngineName)}' style='max-width:45%'></div>
         </div>
         <div>Mismatched cells: {mismatch_count}</div>
       </td>"""

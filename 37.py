@@ -1,6 +1,9 @@
+skip = True
+
 import math
 import random
 import itertools
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Mental Rotation - Identify which 3D shapes are rotations of each other"
 
@@ -435,7 +438,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
       scad += f"  color([0,0,0]) translate([0,-1.5,0]) text(\"{i+1}\", size=1.5);\n"
       scad += "}\n\n"
 
-    output_path = f"results/37_{subPass}_{aiEngineName}_objects.png"
+    output_path = result_path(f"37_{subPass}_{aiEngineName}_objects.png", aiEngineName)
 
     # Calculate camera position based on grid size
     center_x = (cols - 1) * spacing / 2
@@ -445,7 +448,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
     vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
     html += f'</td><td><br><b>Objects Visualization (same color = same shape group):</b><br>'
-    html += f'<img src="{os.path.basename(output_path)}" />'
+    html += f'<img src="{report_relpath(output_path, aiEngineName)}" />'
 
     html = "<td>" + html + "</td>"
   except Exception as e:

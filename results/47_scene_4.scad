@@ -32,15 +32,15 @@ color(stair_color)
 color(floor_color) translate([2.5, 0, -0.025]) cube([5, 3, 0.05], center = true); // Ragdoll body (capsule-based)
 color(body_color)
 {
-  capsule([3.6105, 0.2867, 0.1153], [3.8092, -0.0580, 0.1432], 0.1); // base to chest
+  capsule([3.6106, 0.2867, 0.1153], [3.8092, -0.0580, 0.1432], 0.1); // base to chest
   capsule([3.6207, -0.1441, 0.1570], [3.6123, -0.1240, 0.1086], 0.05); // right_shoulder to right_elbow
   capsule([3.6123, -0.1240, 0.1086], [3.6895, -0.2518, 0.0648], 0.045); // right_elbow to right_wrist
   capsule([3.9747, 0.0617, 0.1805], [3.8390, 0.3019, 0.1212], 0.05); // left_shoulder to left_elbow
   capsule([3.8390, 0.3019, 0.1212], [3.7689, 0.4288, 0.0648], 0.045); // left_elbow to left_wrist
-  capsule([3.6105, 0.2867, 0.1153], [3.4114, 0.4423, 0.0934], 0.065); // base to right_hip
+  capsule([3.6106, 0.2867, 0.1153], [3.4114, 0.4423, 0.0934], 0.065); // base to right_hip
   capsule([3.4114, 0.4423, 0.0934], [3.3967, 0.4613, 0.1473], 0.062); // right_hip to right_knee
   capsule([3.3967, 0.4613, 0.1473], [3.5064, 0.2578, 0.2770], 0.056); // right_knee to right_ankle
-  capsule([3.6105, 0.2867, 0.1153], [3.5755, 0.5377, 0.1043], 0.065); // base to left_hip
+  capsule([3.6106, 0.2867, 0.1153], [3.5755, 0.5377, 0.1043], 0.065); // base to left_hip
   capsule([3.5755, 0.5377, 0.1043], [3.3444, 0.9334, 0.1188], 0.062); // left_hip to left_knee
   capsule([3.3444, 0.9334, 0.1188], [3.2120, 1.1626, 0.1051], 0.056); // left_knee to left_ankle
   capsule([3.6207, -0.1441, 0.1570], [3.9747, 0.0617, 0.1805], 0.07); // shoulders

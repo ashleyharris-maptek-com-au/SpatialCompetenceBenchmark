@@ -1,6 +1,7 @@
 import itertools, random
 import numpy as np
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Hamiltonian Loop on Grid"
 
@@ -306,8 +307,8 @@ translate([{x}, {y}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, h
 """
 
   import os
-  os.makedirs("results", exist_ok=True)
-  output_path = "results/9_Visualization_" + aiEngineName + "_" + str(subPass) + ".png"
+  output_path = result_path("9_Visualization_" + aiEngineName + "_" + str(subPass) + ".png",
+                            aiEngineName)
 
   extraArgs = ["--projection=p"]
   if blocked: extraArgs.append("--no-autocenter")
@@ -316,7 +317,7 @@ translate([{x}, {y}, 0]) color([1,0,0])linear_extrude(0.01) text("X",size=0.5, h
                             f"--camera=8,-5,{10 + size*2},{size/2},{size/2},0", extraArgs)
   print(f"Saved visualization to {output_path}")
 
-  return f'<img src="{os.path.basename(output_path)}" alt="Hamiltonian Path Visualization" style="max-width: 100%;">'
+  return f'<img src="{report_relpath(output_path, aiEngineName)}" alt="Hamiltonian Path Visualization" style="max-width: 100%;">'
 
 
 highLevelSummary = """

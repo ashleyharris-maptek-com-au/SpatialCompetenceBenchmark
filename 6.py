@@ -1,5 +1,6 @@
 import itertools
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Voxel Grid Projection - shadow coverage and no symmetries"
 
@@ -77,12 +78,12 @@ def resultToNiceReport(result, subPass, aiEngineName):
   scad_content += "}\n"
 
   import os
-  os.makedirs("results", exist_ok=True)
-  output_path = "results/6_Visualization_" + aiEngineName + "_" + str(len(voxels)) + ".png"
+  output_path = result_path("6_Visualization_" + aiEngineName + "_" + str(len(voxels)) + ".png",
+                            aiEngineName)
   vc.render_scadText_to_png(scad_content, output_path)
   print(f"Saved visualization to {output_path}")
 
-  return f'<img src="{os.path.basename(output_path)}" alt="Voxel Grid Visualization" style="max-width: 100%;">'
+  return f'<img src="{report_relpath(output_path, aiEngineName)}" alt="Voxel Grid Visualization" style="max-width: 100%;">'
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):

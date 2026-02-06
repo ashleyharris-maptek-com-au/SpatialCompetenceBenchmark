@@ -1,3 +1,5 @@
+skip = True
+
 import itertools, random
 
 title = "2D convex hull, identify points on the hull."
