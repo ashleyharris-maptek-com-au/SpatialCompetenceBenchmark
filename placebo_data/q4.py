@@ -952,30 +952,319 @@ def get_response(subPass: int):
       }]
     }, "It's possible to rotate the tetrahedron to make it's projection a 1x1 square, but you need to make sure they don't intersect."
 
+  # Standard quaternion that makes tetra project to ~square shadow (~0.66 x 0.66)
+  sq = (0.11591689595929514, 0.3647051996310009, 0.27984814233312133, -0.8804762392171493)
+  step = 0.66
+
+  def add_tet(lst, x, y, z):
+    lst.append({'x': x, 'y': y, 'z': float(z), 'q0': sq[0], 'q1': sq[1], 'q2': sq[2], 'q3': sq[3]})
+
+  if subPass == 3:
+    # Equilateral triangle side 4, apex pointing UP
+    # Vertices: (-2, -4*sqrt(3)/6), (2, -4*sqrt(3)/6), (0, 4*sqrt(3)/3)
+    tetrahedrons = []
+    y_base = -4 * math.sqrt(3) / 6  # ~-1.15
+    y_apex = 4 * math.sqrt(3) / 3  # ~2.31
+    idx = 0
+    for row in range(-6, 10):
+      y = row * step * 0.35
+      if y_base - 0.1 <= y <= y_apex + 0.1:
+        # At y_base, half_width = 2; at y_apex, half_width = 0
+        t = (y - y_base) / (y_apex - y_base)
+        half_w = 2 * (1 - t)
+        for col in range(-8, 9):
+          x = col * step * 0.35
+          if abs(x) <= half_w + 0.05:
+            add_tet(tetrahedrons, x, y, idx)
+            idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Triangle fill"
+
+  if subPass == 4:
+    # Hexagon circumradius 2 (flat-topped)
+    tetrahedrons = []
+    idx = 0
+    for row in range(-8, 9):
+      y = row * step * 0.35
+      for col in range(-8, 9):
+        x = col * step * 0.35
+        # Flat-topped hex: |y| <= sqrt(3), |y| <= sqrt(3)*2 - sqrt(3)*|x|
+        # For circumradius 2: check 6 half-planes
+        in_hex = True
+        for i in range(6):
+          a = i * math.pi / 3
+          nx, ny = math.cos(a), math.sin(a)
+          if x * nx + y * ny > 2.05:
+            in_hex = False
+            break
+        if in_hex:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Hexagon fill"
+
+  if subPass == 5:
+    # Rectangle 6x2
+    tetrahedrons = []
+    idx = 0
+    for row in range(-3, 4):
+      y = row * step * 0.4
+      if abs(y) <= 1.1:
+        for col in range(-10, 11):
+          x = col * step * 0.4
+          if abs(x) <= 3.1:
+            add_tet(tetrahedrons, x, y, idx)
+            idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Rectangle fill"
+
+  if subPass == 6:
+    # Diamond diagonal 4
+    tetrahedrons = []
+    idx = 0
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      half_w = 2 - abs(y)
+      if half_w > 0:
+        for col in range(-7, 8):
+          x = col * step * 0.4
+          if abs(x) <= half_w + 0.1:
+            add_tet(tetrahedrons, x, y, idx)
+            idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Diamond fill"
+
+  if subPass == 7:
+    # Plus/cross arm length 4, width 1
+    tetrahedrons = []
+    idx = 0
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        if (abs(y) <= 0.6 and abs(x) <= 2.1) or (abs(x) <= 0.6 and abs(y) <= 2.1):
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Plus fill"
+
+  if subPass == 8:
+    # L-shape outer 4x4, thickness 1
+    tetrahedrons = []
+    idx = 0
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        in_bottom = (-2.1 <= y <= -1) and (-2.1 <= x <= 2.1)
+        in_left = (-2.1 <= x <= -1) and (-2.1 <= y <= 2.1)
+        if in_bottom or in_left:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "L-shape fill"
+
+  if subPass == 9:
+    # Annulus outer r=2, inner r=1
+    tetrahedrons = []
+    idx = 0
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        r = math.sqrt(x * x + y * y)
+        if 0.9 <= r <= 2.1:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Annulus fill"
+
+  if subPass == 10:
+    # Pentagon circumradius 2
+    tetrahedrons = []
+    idx = 0
+
+    def in_pent(px, py):
+      for i in range(5):
+        a = math.pi / 2 + i * 2 * math.pi / 5
+        nx, ny = math.cos(a + math.pi / 5), math.sin(a + math.pi / 5)
+        if px * nx + py * ny > 2.1 * math.cos(math.pi / 5): return False
+      return True
+
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        if in_pent(x, y):
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Pentagon fill"
+
+  if subPass == 11:
+    # 5-pointed star inscribed in circle r=2
+    tetrahedrons = []
+    idx = 0
+    # Star vertices at r=2, inner vertices at r=2*sin(18)/sin(126) ~ 0.76
+    outer_r = 2.0
+    inner_r = outer_r * math.sin(math.radians(18)) / math.sin(math.radians(126))
+
+    def in_star(px, py):
+      # Check if point is inside star polygon
+      # Star has 10 vertices alternating outer/inner
+      verts = []
+      for i in range(5):
+        a_out = math.pi / 2 + i * 2 * math.pi / 5
+        a_in = math.pi / 2 + (i + 0.5) * 2 * math.pi / 5
+        verts.append((outer_r * math.cos(a_out), outer_r * math.sin(a_out)))
+        verts.append((inner_r * math.cos(a_in), inner_r * math.sin(a_in)))
+      # Point-in-polygon test
+      n = len(verts)
+      inside = False
+      j = n - 1
+      for i in range(n):
+        xi, yi = verts[i]
+        xj, yj = verts[j]
+        if ((yi > py) != (yj > py)) and (px < (xj - xi) * (py - yi) / (yj - yi + 1e-10) + xi):
+          inside = not inside
+        j = i
+      return inside
+
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        if in_star(x, y):
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Star fill"
+
+  if subPass == 12:
+    # Ellipse semi-major 2, semi-minor 1
+    tetrahedrons = []
+    idx = 0
+    for row in range(-5, 6):
+      y = row * step * 0.35
+      for col in range(-8, 9):
+        x = col * step * 0.35
+        if (x / 2.1)**2 + (y / 1.1)**2 <= 1:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Ellipse fill"
+
+  if subPass == 13:
+    # Semicircle r=2, bulge in +y
+    tetrahedrons = []
+    idx = 0
+    for row in range(-1, 8):
+      y = row * step * 0.4
+      for col in range(-8, 9):
+        x = col * step * 0.35
+        if x * x + y * y <= 4.2 and y >= -0.15:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Semicircle fill"
+
+  if subPass == 14:
+    # Right triangle legs 4: (-2,-2), (2,-2), (-2,2)
+    tetrahedrons = []
+    idx = 0
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        if x >= -2.1 and y >= -2.1 and x + y <= 0.1:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Right triangle fill"
+
+  if subPass == 15:
+    # Parallelogram: (-2,-1), (2,-1), (3,1), (-1,1)
+    tetrahedrons = []
+    idx = 0
+    for row in range(-5, 6):
+      y = row * step * 0.35
+      if -1.1 <= y <= 1.1:
+        off = (y + 1) * 0.5
+        for col in range(-8, 10):
+          x = col * step * 0.35
+          if -2.1 + off <= x <= 2.1 + off:
+            add_tet(tetrahedrons, x, y, idx)
+            idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Parallelogram fill"
+
+  if subPass == 16:
+    # Trapezoid: (-2,-1), (2,-1), (1,1), (-1,1)
+    tetrahedrons = []
+    idx = 0
+    for row in range(-5, 6):
+      y = row * step * 0.35
+      if -1.1 <= y <= 1.1:
+        half_w = 2 - 0.5 * (y + 1)
+        for col in range(-8, 9):
+          x = col * step * 0.35
+          if abs(x) <= half_w + 0.1:
+            add_tet(tetrahedrons, x, y, idx)
+            idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Trapezoid fill"
+
+  if subPass == 17:
+    # Octagon circumradius 2
+    tetrahedrons = []
+    idx = 0
+
+    def in_oct(px, py):
+      for i in range(8):
+        a = i * math.pi / 4 + math.pi / 8
+        nx, ny = math.cos(a), math.sin(a)
+        if px * nx + py * ny > 2.1 * math.cos(math.pi / 8): return False
+      return True
+
+    for row in range(-7, 8):
+      y = row * step * 0.4
+      for col in range(-7, 8):
+        x = col * step * 0.4
+        if in_oct(x, y):
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Octagon fill"
+
+  if subPass == 18:
+    # Arrow: shaft [-2,0]x[-0.5,0.5], head triangle to (2,0)
+    tetrahedrons = []
+    idx = 0
+    for row in range(-5, 6):
+      y = row * step * 0.35
+      for col in range(-8, 9):
+        x = col * step * 0.35
+        in_shaft = (-2.1 <= x <= 0.1) and abs(y) <= 0.6
+        in_head = (0 <= x <= 2.1) and abs(y) <= 1.1 * (1 - x / 2)
+        if in_shaft or in_head:
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Arrow fill"
+
+  if subPass == 19:
+    # Chevron (V-shape): polygon [(-2,-1), (-1,-1), (0,0), (-1,1), (-2,1), (-1,0)]
+    # Point-in-polygon test for this exact hexagon
+    tetrahedrons = []
+    idx = 0
+    verts = [(-2, -1), (-1, -1), (0, 0), (-1, 1), (-2, 1), (-1, 0)]
+
+    def in_chevron(px, py):
+      n = len(verts)
+      inside = False
+      j = n - 1
+      for i in range(n):
+        xi, yi = verts[i]
+        xj, yj = verts[j]
+        if ((yi > py) != (yj > py)) and (px < (xj - xi) * (py - yi) / (yj - yi + 1e-10) + xi):
+          inside = not inside
+        j = i
+      return inside
+
+    for row in range(-8, 9):
+      y = row * step * 0.2
+      for col in range(-12, 3):
+        x = col * step * 0.2
+        if in_chevron(x, y):
+          add_tet(tetrahedrons, x, y, idx)
+          idx += 1
+    return {'tetrahedrons': tetrahedrons}, "Chevron fill"
+
   return None
-
-
-def get_guess(subPass: int, rng):
-  """Get a deterministic random guess for this question."""
-  count = rng.randint(3, 8)
-  tetrahedrons = []
-  for _ in range(count):
-    x = rng.uniform(-3.0, 3.0)
-    y = rng.uniform(-3.0, 3.0)
-    z = rng.uniform(0.0, 6.0)
-    q = [rng.uniform(-1.0, 1.0) for _ in range(4)]
-    norm = math.sqrt(sum(v * v for v in q)) or 1.0
-    q0, q1, q2, q3 = (q[0] / norm, q[1] / norm, q[2] / norm, q[3] / norm)
-    tetrahedrons.append({
-      "x": x,
-      "y": y,
-      "z": z,
-      "q0": q0,
-      "q1": q1,
-      "q2": q2,
-      "q3": q3,
-    })
-  return {"tetrahedrons": tetrahedrons}, "Random guess"
 
 
 def get_guess(subPass: int, rng):
