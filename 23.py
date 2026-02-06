@@ -6,6 +6,7 @@ import tempfile
 import json
 import hashlib
 import time
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 # Cache for grading and visualization results
 _cache_dir = os.path.join(tempfile.gettempdir(), "23_fluid_cache")
@@ -715,8 +716,6 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
 
   scad_content += "}\n"
 
-  import os
-  os.makedirs("results", exist_ok=True)
   base_name = f"23_Visualization_{aiEngineName}_{subPass}"
 
   center_x = WORLD_SIZE / 2
@@ -752,7 +751,7 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
   image_paths = []
   for view_name, camera_arg in views:
     filename = f"{base_name}_{view_name}.png"
-    output_path = os.path.join("results", filename)
+    output_path = result_path(filename, aiEngineName)
     vc.render_scadText_to_png(scad_content, output_path, camera_arg, ["--no-autocenter"])
     image_paths.append(output_path)
 
@@ -761,7 +760,7 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
   viewer_id = f"voxel-viewer-{hashlib.md5(base_name.encode()).hexdigest()}"
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(f'<img src="{os.path.basename(path)}" class="voxel-view view-{idx}" '
+    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="voxel-view view-{idx}" '
                       f'style="max-width: 100%;">')
 
   radio_name = f"{viewer_id}-view"

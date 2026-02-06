@@ -2,6 +2,7 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from LLMBenchCore.ResultPaths import model_artifact_dir, report_relpath
 
 REPO_ROOT = Path(".").resolve()
 VGB_ROOT = REPO_ROOT / "VisGeomBench"
@@ -102,7 +103,7 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     parsed = PARSER.parse_answer(raw)
     answer = parsed if parsed is not None else raw
 
-  output_dir = Path("results")
+  output_dir = Path(model_artifact_dir(aiEngineName))
   output_dir.mkdir(parents=True, exist_ok=True)
   stub_base = Path(__file__).stem if "__file__" in globals() else Path(DATA_PATH).stem
   stub = f"{stub_base}_{aiEngineName}_{subPass}"
@@ -118,13 +119,13 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
   )
 
   if isinstance(vis_result, dict):
-    file_names = [f"{stub}_{name}.png" for name in vis_result.keys()]
+    file_paths = [output_dir / f"{stub}_{name}.png" for name in vis_result.keys()]
   else:
-    file_names = [f"{stub}.png"]
+    file_paths = [output_dir / f"{stub}.png"]
 
   img_tags = [
-    f'<img src="{fname}" alt="Shikaku visualization" style="max-width: 100%;">'
-    for fname in file_names
+    f'<img src="{report_relpath(str(path), aiEngineName)}" alt="Shikaku visualization" style="max-width: 100%;">'
+    for path in file_paths
   ]
   return "".join(img_tags)
 
