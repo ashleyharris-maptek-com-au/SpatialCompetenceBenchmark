@@ -1,5 +1,5 @@
 #skip = True
-import sys, os, OpenScad as vc
+import sys, os, subprocess, OpenScad as vc
 import trimesh
 import numpy as np
 import random
@@ -114,6 +114,18 @@ def _scad_path(path: str) -> str:
   return os.path.abspath(path).replace(os.sep, "/")
 
 
+def _run_openscad_in_artifact_dir(artifact_store: ModelArtifactStore, input_path: str,
+                                  output_path: str) -> None:
+  subprocess.run([
+    vc.openScadPath,
+    os.path.basename(input_path),
+    "-o",
+    os.path.basename(output_path),
+  ],
+                 cwd=artifact_store.root,
+                 check=False)
+
+
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   global earlyFail
   score = 0
@@ -186,7 +198,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       # Generate STL from OpenSCAD if needed
       if os.path.exists(part_scad_path) and (needs_regenerate or not os.path.exists(part_stl_path)):
         try:
-          artifact_store.run_openscad(part_scad_path, part_stl_path)
+          _run_openscad_in_artifact_dir(artifact_store, part_scad_path, part_stl_path)
         except Exception as e:
           bugs += "OpenSCAD failed to generate STL for " + partName + " due to " + str(e) + "<br>"
 
@@ -203,7 +215,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       if os.path.exists(part_stl_path) and bugs == "" and (needs_regenerate or posed_changed
                                                            or not os.path.exists(posed_stl_path)):
         try:
-          artifact_store.run_openscad(posed_scad_path, posed_stl_path)
+          _run_openscad_in_artifact_dir(artifact_store, posed_scad_path, posed_stl_path)
         except Exception as e:
           bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
             e) + "<br>"
@@ -229,7 +241,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
     if bugs == "" and (any_posed_changed or not os.path.exists(fullposed_stl_path)):
       try:
-        artifact_store.run_openscad(fullposed_scad_path, fullposed_stl_path)
+        _run_openscad_in_artifact_dir(artifact_store, fullposed_scad_path, fullposed_stl_path)
       except Exception as e:
         bugs += "OpenSCAD failed to generate fullposed STL for " + str(
           aiEngineName) + " due to " + str(e) + "<br>"
