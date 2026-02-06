@@ -355,6 +355,8 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
 
   os.unlink(scadFile)
 
+  if number == "": number = 0
+
   return f"""
 <a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
 <img src="{os.path.basename(output_path)}" alt="Stacked digits Visualization" style="max-width: 100%; float:left">

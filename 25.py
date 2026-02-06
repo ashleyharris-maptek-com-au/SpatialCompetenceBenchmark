@@ -4,6 +4,7 @@ import numpy as np
 import OpenScad as vc
 
 title = "2D Delaunay Triangulation"
+skip = True
 
 # Credit to Jash Vira for the idea.
 # jashvira.github.io/blog/2025/visual_geometry_bench/

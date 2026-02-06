@@ -3,8 +3,11 @@ title = "Subdivided binary tree walk."
 # Credit to Jash Vira for the idea.
 # jashvira.github.io/blog/2025/visual_geometry_bench/
 
+skip = True
+
 prompt = """
 You are given a list of dimensions, these represent a series of recursive subdivisions of a 0,0,0->1,1,1 unit cube.
+
 
 Eg [Z,Z,Z,X] means:
 - the cube has 16 rectangular prism leaf nodes, 

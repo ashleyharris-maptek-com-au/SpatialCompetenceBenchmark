@@ -29,7 +29,7 @@ def _save_grade_cache():
 
 
 title = "Gravitational trickshots"
-
+skip = True
 prompt = """
 You are playing the role of God, building the solar system (inside an N-body physics simulator).
 

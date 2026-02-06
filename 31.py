@@ -2,6 +2,7 @@ import OpenScad as vc
 import math
 
 title = "Prove a convex solid can fit throught itself"
+skip = True
 
 # See https://en.wikipedia.org/wiki/Prince_Rupert%27s_cube
 

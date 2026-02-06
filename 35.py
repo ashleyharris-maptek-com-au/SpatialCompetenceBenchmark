@@ -3,7 +3,7 @@ import random
 import os
 
 title = "Gear Train Reasoning - predict rotation directions and speeds"
-
+skip = True
 prompt = """
 You are analyzing a gear train system with special mechanical components.
 

@@ -3,6 +3,7 @@ import random
 
 earlyFail = True
 title = "Mirror Reflection."
+skip = True
 
 prompt = """
 You are in a room with mirrors on some walls. Objects are placed at various positions.

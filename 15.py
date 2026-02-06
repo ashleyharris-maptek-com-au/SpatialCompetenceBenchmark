@@ -1,6 +1,7 @@
 import random
 
 title = "Tetris(tm) but with only the L-Piece"
+skip = True
 
 prompt = """
 You are playing Tetris(tm), and are cursed to only get the L-shaped tetrimino for all time.
@@ -40,192 +41,187 @@ the game will end and your score will be tallied. You solution must remove at le
 promptChangeSummary = "Increasing grid size and row target"
 
 subpassParamSummary = [
-    "10x30 grid, remove 10 rows. <br> Apparently this matches the original 1980s game.",
-    "16x30 grid, remove 15 rows", "20x30 grid, remove 20 rows",
-    "40x30 grid, remove 30 rows"
+  "10x30 grid, remove 10 rows. <br> Apparently this matches the original 1980s game.",
+  "16x30 grid, remove 15 rows", "20x30 grid, remove 20 rows", "40x30 grid, remove 30 rows"
 ]
 
 structure = {
-    "type": "object",
-    "properties": {
-        "moves": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "translationCount": {
-                        "type": "number"
-                    },
-                    "rotationCount": {
-                        "type": "number"
-                    }
-                },
-                "propertyOrdering": ["translationCount", "rotationCount"],
-                "required": ["translationCount", "rotationCount"],
-                "additionalProperties": False
-            }
-        }
-    },
-    "propertyOrdering": ["moves"],
-    "required": ["moves"],
-    "additionalProperties": False
+  "type": "object",
+  "properties": {
+    "moves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "translationCount": {
+            "type": "number"
+          },
+          "rotationCount": {
+            "type": "number"
+          }
+        },
+        "propertyOrdering": ["translationCount", "rotationCount"],
+        "required": ["translationCount", "rotationCount"],
+        "additionalProperties": False
+      }
+    }
+  },
+  "propertyOrdering": ["moves"],
+  "required": ["moves"],
+  "additionalProperties": False
 }
 
 earlyFail = True
 
 
 def prepareSubpassPrompt(index):
-    if index == 0:
-        return prompt.replace("PARAM_A", "10").replace("PARAM_B", "10")
-    if index == 1:
-        return prompt.replace("PARAM_A", "16").replace("PARAM_B", "15")
-    if index == 2:
-        return prompt.replace("PARAM_A", "20").replace("PARAM_B", "20")
-    if index == 3:
-        return prompt.replace("PARAM_A", "40").replace("PARAM_B", "30")
-    raise StopIteration
+  if index == 0:
+    return prompt.replace("PARAM_A", "10").replace("PARAM_B", "10")
+  if index == 1:
+    return prompt.replace("PARAM_A", "16").replace("PARAM_B", "15")
+  if index == 2:
+    return prompt.replace("PARAM_A", "20").replace("PARAM_B", "20")
+  if index == 3:
+    return prompt.replace("PARAM_A", "40").replace("PARAM_B", "30")
+  raise StopIteration
 
 
 remainsOfLastRun = [None] * 4
 
 
 def gradeAnswer(answer: dict, subPassIndex: int, aiEngineName: str):
-    global remainsOfLastRun
-    remainsOfLastRun[subPassIndex] = None
-    widths = [10, 16, 20, 40]
-    required = [10, 15, 20, 30]
-    if subPassIndex < 0 or subPassIndex >= len(widths):
-        return 0, "Invalid subPassIndex"
-    W = widths[subPassIndex]
-    H = 30
-    target = required[subPassIndex]
+  global remainsOfLastRun
+  remainsOfLastRun[subPassIndex] = None
+  widths = [10, 16, 20, 40]
+  required = [10, 15, 20, 30]
+  if subPassIndex < 0 or subPassIndex >= len(widths):
+    return 0, "Invalid subPassIndex"
+  W = widths[subPassIndex]
+  H = 30
+  target = required[subPassIndex]
 
-    moves = answer.get("moves") if isinstance(answer, dict) else None
-    if not isinstance(moves, list):
-        return 0, "Answer must contain a 'moves' array"
+  moves = answer.get("moves") if isinstance(answer, dict) else None
+  if not isinstance(moves, list):
+    return 0, "Answer must contain a 'moves' array"
 
-    # Ensure that we end with a pile of blocks up, as if a player walks away,
-    # as tetris has no good ending.
-    for _ in range(20):
-        moves.append({
-            "translationCount": random.randint(0, W),
-            "rotationCount": random.randint(0, 3)
-        })
+  # Ensure that we end with a pile of blocks up, as if a player walks away,
+  # as tetris has no good ending.
+  for _ in range(20):
+    moves.append({"translationCount": random.randint(0, W), "rotationCount": random.randint(0, 3)})
 
-    shapes = [
-        [(0, 0), (1, 0), (2, 0), (0, 1)],
-        [(0, 0), (-1, 0), (0, 1), (0, 2)],
-        [(0, 0), (-1, 0), (-2, 0), (0, -1)],
-        [(0, 0), (1, 0), (0, -1), (0, -2)],
-    ]
+  shapes = [
+    [(0, 0), (1, 0), (2, 0), (0, 1)],
+    [(0, 0), (-1, 0), (0, 1), (0, 2)],
+    [(0, 0), (-1, 0), (-2, 0), (0, -1)],
+    [(0, 0), (1, 0), (0, -1), (0, -2)],
+  ]
 
-    grid = [[0] * W for _ in range(H)]
-    cleared = 0
+  grid = [[0] * W for _ in range(H)]
+  cleared = 0
 
-    def collides(px, py, shape):
-        for dx, dy in shape:
-            x = px + dx
-            y = py + dy
-            if x < 0 or x >= W:
-                return True
-            if y >= H:
-                return True
-            if y >= 0 and grid[y][x]:
-                return True
-        return False
+  def collides(px, py, shape):
+    for dx, dy in shape:
+      x = px + dx
+      y = py + dy
+      if x < 0 or x >= W:
+        return True
+      if y >= H:
+        return True
+      if y >= 0 and grid[y][x]:
+        return True
+    return False
 
-    for mv in moves:
-        if not isinstance(mv, dict):
-            continue
-        try:
-            t = int(round(float(mv.get("translationCount", 0))))
-        except Exception:
-            t = 0
-        try:
-            r = int(round(float(mv.get("rotationCount", 0))))
-        except Exception:
-            r = 0
-        r %= 4
-        shape = shapes[r]
+  for mv in moves:
+    if not isinstance(mv, dict):
+      continue
+    try:
+      t = int(round(float(mv.get("translationCount", 0))))
+    except Exception:
+      t = 0
+    try:
+      r = int(round(float(mv.get("rotationCount", 0))))
+    except Exception:
+      r = 0
+    r %= 4
+    shape = shapes[r]
 
-        min_dx = min(d for d, _ in shape)
-        max_dx = max(d for d, _ in shape)
-        low = -min_dx
-        high = W - 1 - max_dx
-        px = t
-        if px < low:
-            px = low
-        if px > high:
-            px = high
-        py = 0
+    min_dx = min(d for d, _ in shape)
+    max_dx = max(d for d, _ in shape)
+    low = -min_dx
+    high = W - 1 - max_dx
+    px = t
+    if px < low:
+      px = low
+    if px > high:
+      px = high
+    py = 0
 
-        if collides(px, py, shape):
-            break
-        while not collides(px, py + 1, shape):
-            py += 1
+    if collides(px, py, shape):
+      break
+    while not collides(px, py + 1, shape):
+      py += 1
 
-        blockNo = random.randint(0, 48)
+    blockNo = random.randint(0, 48)
 
-        for dx, dy in shape:
-            x = px + dx
-            y = py + dy
-            if 0 <= y < H:
-                grid[y][x] = blockNo
+    for dx, dy in shape:
+      x = px + dx
+      y = py + dy
+      if 0 <= y < H:
+        grid[y][x] = blockNo
 
-        new_rows = []
-        removed = 0
-        for y in range(H):
-            row = grid[y]
-            if all(row):
-                removed += 1
-            else:
-                new_rows.append(row)
-        if removed:
-            grid = [[0] * W for _ in range(removed)] + new_rows
-            cleared += removed
+    new_rows = []
+    removed = 0
+    for y in range(H):
+      row = grid[y]
+      if all(row):
+        removed += 1
+      else:
+        new_rows.append(row)
+    if removed:
+      grid = [[0] * W for _ in range(removed)] + new_rows
+      cleared += removed
 
-    # Store the grid state for potential use in reporting
-    remainsOfLastRun[subPassIndex] = grid
+  # Store the grid state for potential use in reporting
+  remainsOfLastRun[subPassIndex] = grid
 
-    if target <= 0:
-        return 0, "Invalid target"
-    score = cleared / float(target)
-    if score > 1:
-        score = 1
-    if score < 0:
-        score = 0
-    return score, f"Cleared {cleared}/{target} rows ({score*100:.1f}%) in {len(moves)} moves"
+  if target <= 0:
+    return 0, "Invalid target"
+  score = cleared / float(target)
+  if score > 1:
+    score = 1
+  if score < 0:
+    score = 0
+  return score, f"Cleared {cleared}/{target} rows ({score*100:.1f}%) in {len(moves)} moves"
 
 
 def resultToNiceReport(result, subPassIndex, aiEngineName: str):
-    region_colours = {0: [1, 1, 1]}
+  region_colours = {0: [1, 1, 1]}
 
-    # Use the grid from the grade answer pass, so we don't have to redo the entire game.
-    grid = remainsOfLastRun[subPassIndex]
-    size = len(grid)
+  # Use the grid from the grade answer pass, so we don't have to redo the entire game.
+  grid = remainsOfLastRun[subPassIndex]
+  size = len(grid)
 
-    out = "<span style='font-family: monospace;"
+  out = "<span style='font-family: monospace;"
 
-    if size < 50: out += "font-size:32px; line-height:32px"
-    else: out += "font-size:10px; line-height:10px"
+  if size < 50: out += "font-size:32px; line-height:32px"
+  else: out += "font-size:10px; line-height:10px"
 
-    out += "'>"
+  out += "'>"
 
-    for y in range(10, size):
-        for x in range(len(grid[y])):
-            cell = grid[y][x]
-            if cell not in region_colours:
-                region_colours[cell] = [
-                    10 * random.randint(0, 25), 10 * random.randint(0, 25),
-                    10 * random.randint(0, 25)
-                ]
-            out += f"<span style='background-color: rgb({region_colours[cell][0]}, {region_colours[cell][1]}, {region_colours[cell][2]});'>"
-            out += "#" if cell else "&nbsp;"
-            out += "</span>"
-        out += "<br>"
+  for y in range(10, size):
+    for x in range(len(grid[y])):
+      cell = grid[y][x]
+      if cell not in region_colours:
+        region_colours[cell] = [
+          10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)
+        ]
+      out += f"<span style='background-color: rgb({region_colours[cell][0]}, {region_colours[cell][1]}, {region_colours[cell][2]});'>"
+      out += "#" if cell else "&nbsp;"
+      out += "</span>"
+    out += "<br>"
 
-    out += "</span>"
-    return out
+  out += "</span>"
+  return out
 
 
 highLevelSummary = """

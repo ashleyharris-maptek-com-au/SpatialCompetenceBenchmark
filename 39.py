@@ -4,6 +4,7 @@ import random
 import numpy
 
 title = "Collision Prediction - Will moving objects collide?"
+skip = True
 
 prompt = """
 Multiple objects are moving through 3D space. Each object is a sphere with a given radius,

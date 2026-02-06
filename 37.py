@@ -3,7 +3,7 @@ import random
 import itertools
 
 title = "Mental Rotation - Identify which 3D shapes are rotations of each other"
-
+skip = True
 prompt = """
 You are shown multiple 3D objects made of connected unit cubes (like 3D Tetris pieces).
 Each object is described by listing the (x, y, z) coordinates of its unit cubes.
