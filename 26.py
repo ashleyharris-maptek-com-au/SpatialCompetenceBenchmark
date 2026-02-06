@@ -1,3 +1,7 @@
+skip = True
+
+from LLMBenchCore.ResultPaths import result_path, report_relpath
+
 title = "Subdivided binary tree walk."
 
 # Credit to Jash Vira for the idea.
@@ -249,10 +253,11 @@ def resultToNiceReport(result, subPassIndex, aiEngineName: str):
   # Add wireframe unit cube for reference
   openScadData += "color([0.3,0.3,0.3,0.3]) difference() { cube([1,1,1]); translate([0.01,0.01,0.01]) cube([0.98,0.98,0.98]); }\n"
 
-  output_path = f"results/26_Visualization_{aiEngineName}_subpass{subPassIndex}.png"
+  output_path = result_path(f"26_Visualization_{aiEngineName}_subpass{subPassIndex}.png",
+                            aiEngineName)
   vc.render_scadText_to_png(openScadData, output_path)
   print(f"Saved visualization to {output_path}")
-  return "<img src=\"" + os.path.basename(output_path) + "\" />"
+  return "<img src=\"" + report_relpath(output_path, aiEngineName) + "\" />"
 
 
 highLevelSummary = """

@@ -10,6 +10,7 @@ import os
 import tempfile
 import pybullet as p
 import pybullet_data
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "AI controlling explosives, what could possibly go wrong?"
 
@@ -608,7 +609,7 @@ def resultToNiceReport(answer, subPass, aiEngineName):
     base_name = f"28_Visualization_{aiEngineName}_{subPass}_{stage_label}"
     for view_name, camera_arg in views:
       filename = f"{base_name}_{view_name}.png"
-      output_path = os.path.join("results", filename)
+      output_path = result_path(filename, aiEngineName)
       renderThreads.append(
         threading.Thread(target=vc.render_scadText_to_png,
                          args=(scad_format.format(scad_content, vc.formatConfig), output_path,
@@ -672,7 +673,7 @@ def resultToNiceReport(answer, subPass, aiEngineName):
   image_tags = []
   caption_tags = []
   for idx, (path, label) in enumerate(image_entries):
-    image_tags.append(f'<img src="{os.path.basename(path)}" class="blast-view view-{idx}" '
+    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="blast-view view-{idx}" '
                       f'style="max-width: 100%;" alt="{label}">')
     caption_tags.append(f'<div class="blast-caption caption-{idx}">{label}</div>')
 

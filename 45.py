@@ -12,6 +12,7 @@ import numpy as np
 import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
+from LLMBenchCore.ResultPaths import report_relpath
 
 skip = True
 
@@ -682,7 +683,8 @@ def resultToNiceReport(answer, subPass, aiEngineName):
 """
 
   sky_filename = getSkyMapFilename(location_idx, time_idx)
-  html += f"<a href='{sky_filename}'><img src='{sky_filename}' style='min-width=400px'></a><br>"
+  sky_relpath = report_relpath(sky_filename, aiEngineName)
+  html += f"<a href='{sky_relpath}'><img src='{sky_relpath}' style='min-width=400px'></a><br>"
   html += "(Click to zoom in - picture is huge and has ~100mb of star data)"
 
   return html
@@ -737,7 +739,7 @@ Seems to be able to get it to within about 1.5km with only a few minutes of sing
 python code. Took a few hours to write the code. So 100% solvable on an $80,000 GPU.
 
 <div style="max-width:650px">
-<a href="45_sky_loc0_time0.png"><img src="45_sky_loc0_time0.png" width="300px" style="float:left; padding:4px"></a>
+<a href="../../45_sky_loc0_time0.png"><img src="../../45_sky_loc0_time0.png" width="300px" style="float:left; padding:4px"></a>
 </div>
 """
 

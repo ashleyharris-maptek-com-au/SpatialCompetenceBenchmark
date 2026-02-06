@@ -1,6 +1,7 @@
 import random
 import os
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Reconstruct a 3D voxel grid from photos"
 earlyFail = True
@@ -80,8 +81,6 @@ def render_images_for_subpass(subpass):
   grid_size = SUBPASS_CONFIG[subpass][0]
   scad = render_voxels_to_scad(voxels, grid_size)
 
-  os.makedirs("results", exist_ok=True)
-
   # Camera positions at 8 corners of a cube surrounding the grid
   center = grid_size / 2
   dist = grid_size * 2.5
@@ -99,7 +98,7 @@ def render_images_for_subpass(subpass):
 
   for i, (cx, cy, cz) in enumerate(corners):
     camera_arg = f"--camera={cx:.2f},{cy:.2f},{cz:.2f},{center:.2f},{center:.2f},{center:.2f}"
-    output_path = f"results/43_voxels_{subpass}_{i}.png"
+    output_path = result_path(f"43_voxels_{subpass}_{i}.png")
     vc.render_scadText_to_png(scad,
                               output_path,
                               cameraArg=camera_arg,
@@ -108,7 +107,7 @@ def render_images_for_subpass(subpass):
 
 def ensure_images_exist(subpass):
   """Ensure images exist for a subpass, render if not."""
-  if not os.path.exists(f"results/43_voxels_{subpass}_0.png"):
+  if not os.path.exists(result_path(f"43_voxels_{subpass}_0.png")):
     render_images_for_subpass(subpass)
 
 
@@ -192,7 +191,7 @@ def prepareSubpassPrompt(index: int) -> str:
   p = p.replace("COLORS_LIST", ", ".join(color_names))
 
   # Add image references
-  images = "".join([f"[[image:results/43_voxels_{index}_{i}.png]]" for i in range(8)])
+  images = "".join([f"[[image:{result_path(f'43_voxels_{index}_{i}.png')}]]" for i in range(8)])
 
   return p + "\n\n" + images
 
@@ -328,9 +327,8 @@ def resultToNiceReport(answer, subPass, aiEngineName):
     scadSubmitted += f"color([{r},{g},{b}], 0.3) translate([{x+0.1},{y+0.1},{z+0.1}]) cube([0.7,0.7,0.7]);\n"
 
   # Render comparison
-  os.makedirs("results", exist_ok=True)
-  submitted_path = f"results/43_{subPass}_{aiEngineName}_submitted.png"
-  expected_path = f"results/43_{subPass}_{aiEngineName}_expected.png"
+  submitted_path = result_path(f"43_{subPass}_{aiEngineName}_submitted.png", aiEngineName)
+  expected_path = result_path(f"43_{subPass}_{aiEngineName}_expected.png", aiEngineName)
   center = grid_size / 2
   dist = grid_size * 2.5
   camera_arg = f"--camera={center+dist},{center-dist},{center+dist},{center},{center},{center}"
@@ -343,8 +341,8 @@ def resultToNiceReport(answer, subPass, aiEngineName):
                             cameraArg=camera_arg,
                             extraScadArgs=["--projection=p", "--no-autocenter"])
 
-  return f'<td>AI guess:<br><img src="{os.path.basename(submitted_path)}" alt="Voxel Comparison" style="max-width:100%;"></td><td>' + \
-         f'Actual result:<br><img src="{os.path.basename(expected_path)}" alt="Voxel Comparison" style="max-width:100%;"></td>'
+  return f'<td>AI guess:<br><img src="{report_relpath(submitted_path, aiEngineName)}" alt="Voxel Comparison" style="max-width:100%;"></td><td>' + \
+         f'Actual result:<br><img src="{report_relpath(expected_path, aiEngineName)}" alt="Voxel Comparison" style="max-width:100%;"></td>'
 
 
 highLevelSummary = """
@@ -360,7 +358,7 @@ if __name__ == "__main__":
   # Test rendering for subpass 0
   print("Generating test images for subpass 0...")
   render_images_for_subpass(0)
-  print("Done. Check results/43_voxels_0_*.png")
+  print("Done. Check generated 43_voxels_0_*.png files in result artifacts.")
 
   # Print expected voxels
   voxels = generate_voxels(0)

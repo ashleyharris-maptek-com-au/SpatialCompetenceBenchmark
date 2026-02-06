@@ -6,6 +6,7 @@ import os
 import numpy as np
 from PIL import Image
 from typing import Dict, List, Tuple
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 from OpticalEngine import (Vec3, LightSource, Screen, OpticalScene, create_device,
                            get_white_light_wavelengths, wavelength_to_rgb, DEVICE_CLASSES)
 
@@ -372,7 +373,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   except Exception as e:
     return 0, f"Simulation failed: {e}"
 
-  user_path = f"results/49_{aiEngineName}_{subPass}.png"
+  user_path = result_path(f"49_{aiEngineName}_{subPass}.png", aiEngineName)
   user_image.save(user_path)
 
   if subPass not in reference_images:
@@ -394,13 +395,13 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str) -> str:
 
   html = "<div style='display:flex; flex-wrap:wrap; gap:20px;'>"
 
-  ref_path = f"49_ref_{subPass}.png"
-  if os.path.exists(f"results/{ref_path}"):
-    html += f"<div><h4>Reference</h4><img src='{ref_path}' style='max-width:250px; border:1px solid #ccc'/></div>"
+  ref_path = f"results/49_ref_{subPass}.png"
+  if os.path.exists(ref_path):
+    html += f"<div><h4>Reference</h4><img src='{report_relpath(ref_path, aiEngineName)}' style='max-width:250px; border:1px solid #ccc'/></div>"
 
-  user_path = f"49_{aiEngineName}_{subPass}.png"
-  if os.path.exists(f"results/{user_path}"):
-    html += f"<div><h4>Result</h4><img src='{user_path}' style='max-width:250px; border:1px solid #ccc'/></div>"
+  user_path = result_path(f"49_{aiEngineName}_{subPass}.png", aiEngineName)
+  if os.path.exists(user_path):
+    html += f"<div><h4>Result</h4><img src='{report_relpath(user_path, aiEngineName)}' style='max-width:250px; border:1px solid #ccc'/></div>"
 
   html += "</div>"
 

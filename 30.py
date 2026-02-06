@@ -3,6 +3,7 @@ import random
 import re
 import scad_format
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "What's the largest prime number you can 3D print without supports?"
 
@@ -338,14 +339,13 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
     scad += "\n\n"
 
   import os
-  os.makedirs("results", exist_ok=True)
-  output_path = "results/30_Visualization_" + aiEngineName + "_" + str(len(
-    answer["numberSequence"])) + ".png"
+  output_path = result_path("30_Visualization_" + aiEngineName + "_" + str(len(
+    answer["numberSequence"])) + ".png", aiEngineName)
   vc.render_scadText_to_png(scad, output_path, "--camera=-10,-10,10,55,0,25,100")
   print(f"Saved visualization to {output_path}")
 
-  scadFile = "results/30_Visualization_" + aiEngineName + "_" + str(len(
-    answer["numberSequence"])) + "temp.scad"
+  scadFile = result_path("30_Visualization_" + aiEngineName + "_" + str(len(
+    answer["numberSequence"])) + "temp.scad", aiEngineName)
 
   open(scadFile, "w").write(scad_format.format(scad, vc.formatConfig))
 
@@ -358,8 +358,8 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
   if number == "": number = 0
 
   return f"""
-<a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
-<img src="{os.path.basename(output_path)}" alt="Stacked digits Visualization" style="max-width: 100%; float:left">
+<a href="{report_relpath(output_path.replace('.png', '.zip'), aiEngineName)}" download>
+<img src="{report_relpath(output_path, aiEngineName)}" alt="Stacked digits Visualization" style="max-width: 100%; float:left">
 </a>
 <br><div style='clear:both;'>Ai suggested {int(number):,} ({len(answer["numberSequence"]):,} digits).<br>The correct answer is 24 digits long.</div>
 """

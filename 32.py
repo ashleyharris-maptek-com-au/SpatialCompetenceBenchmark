@@ -1,3 +1,5 @@
+skip = True
+
 title = "Essay section"
 skip = True
 questions = [{

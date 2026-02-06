@@ -1,7 +1,10 @@
+skip = True
+
 import math
 import random
 import OpenScad as vc
 import os
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Net Folding - Can a 2D net fold into a 3D polyhedron?"
 
@@ -755,11 +758,10 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
   scad_content += "}\n"
 
-  os.makedirs("results", exist_ok=True)
-  output_path = f"results/34_Visualization_{aiEngineName}_subpass{subPass}.png"
+  output_path = result_path(f"34_Visualization_{aiEngineName}_subpass{subPass}.png", aiEngineName)
   vc.render_scadText_to_png(scad_content, output_path)
 
-  return f'<img src="{os.path.basename(output_path)}" alt="Net Folding Visualization" style="max-width: 100%;">'
+  return f'<img src="{report_relpath(output_path, aiEngineName)}" alt="Net Folding Visualization" style="max-width: 100%;">'
 
 
 highLevelSummary = """

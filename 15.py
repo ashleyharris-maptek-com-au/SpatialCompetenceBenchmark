@@ -1,3 +1,5 @@
+skip = True
+
 import random
 
 title = "Tetris(tm) but with only the L-Piece"

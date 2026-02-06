@@ -25,6 +25,7 @@ from typing import Dict, List, Tuple, Any, Optional
 import pybullet as p
 import pybullet_data
 import numpy as np
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Can an AI aim a catapult to destroy a structure?"
 skip = True
@@ -942,8 +943,6 @@ def render_scene_image(structure_index: int,
   """Render a scene to PNG from a specific camera angle. Returns path to image."""
   import OpenScad as vc, scad_format
 
-  os.makedirs("results", exist_ok=True)
-
   # Find camera settings
   camera_arg = "--camera=0,12,8,55,0,25,25"  # default
   for name, cam, desc in CAMERA_ANGLES:
@@ -952,8 +951,8 @@ def render_scene_image(structure_index: int,
       break
 
   angle_suffix = f"_{camera_angle}" if camera_angle != "overview" else ""
-  image_path = f"results/48_scene_{structure_index}{suffix}{angle_suffix}.png"
-  scad_path = f"results/48_scene_{structure_index}{suffix}.scad"
+  image_path = result_path(f"48_scene_{structure_index}{suffix}{angle_suffix}.png")
+  scad_path = result_path(f"48_scene_{structure_index}{suffix}.scad")
 
   if os.path.exists(image_path) and not force_rebuild:
     return image_path
@@ -1256,14 +1255,14 @@ def _resultToNiceReportImpl(answer: dict, subPass: int, aiEngineName: str) -> st
   html += f"<p><b>Total Score:</b> {result['total_score']:.1f}/{result['max_score']:.1f} ({result['normalized_score']*100:.0f}%)</p>"
 
   # Images
-  initial_img = f"48_scene_{subPass}.png"
-  post_img = f"48_scene_{subPass}_post_{aiEngineName[:10]}.png"
+  initial_img = result_path(f"48_scene_{subPass}.png")
+  post_img = result_path(f"48_scene_{subPass}_post_{aiEngineName[:10]}.png", aiEngineName)
 
   html += "<div style='display:flex; gap:20px;'>"
-  if os.path.exists(f"results/{initial_img}"):
-    html += f"<div><p>Before:</p><img src='{initial_img}' style='max-width:350px'></div>"
-  if os.path.exists(f"results/{post_img}"):
-    html += f"<div><p>After:</p><img src='{post_img}' style='max-width:350px'></div>"
+  if os.path.exists(initial_img):
+    html += f"<div><p>Before:</p><img src='{report_relpath(initial_img, aiEngineName)}' style='max-width:350px'></div>"
+  if os.path.exists(post_img):
+    html += f"<div><p>After:</p><img src='{report_relpath(post_img, aiEngineName)}' style='max-width:350px'></div>"
   html += "</div>"
 
   return html
@@ -1275,7 +1274,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str) -> str:
   cached = _load_from_cache(cache_key, "report")
 
   # Also check if the output files exist
-  post_img = f"results/48_scene_{subPass}_post_{aiEngineName[:10]}.png"
+  post_img = result_path(f"48_scene_{subPass}_post_{aiEngineName[:10]}.png", aiEngineName)
   if cached is not None and os.path.exists(post_img):
     print(f"Using cached report for {aiEngineName} subpass {subPass}")
     return cached

@@ -1,3 +1,5 @@
+skip = True
+
 import itertools
 import math
 import os
@@ -6,6 +8,7 @@ import json
 import hashlib
 
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 # Cache for grading and visualization results
 _cache_dir = os.path.join(tempfile.gettempdir(), "22_orbital_cache")
@@ -996,7 +999,7 @@ def resultToNiceReport(answer, subPass, aiEngineName):
   cached = _load_from_cache(cache_key, "report")
 
   # Also check if the output files exist
-  output_path = f"results/22_Visualization_{aiEngineName}_{subPass}.png"
+  output_path = result_path(f"22_Visualization_{aiEngineName}_{subPass}.png", aiEngineName)
   if cached is not None and os.path.exists(output_path):
     print(f"Using cached report for {aiEngineName} subpass {subPass}")
     return cached
@@ -1098,12 +1101,13 @@ def _resultToNiceReportImpl(answer, subPass, aiEngineName):
   #print("Finished Drifting Pass:" + str(subPass))
 
   import os, scad_format
-  os.makedirs("results", exist_ok=True)
-  output_path = "results/22_Visualization_" + aiEngineName + "_" + str(subPass) + ".png"
+  output_path = result_path("22_Visualization_" + aiEngineName + "_" + str(subPass) + ".png",
+                            aiEngineName)
   vc.render_scadText_to_png(scadOutput, output_path)
   print(f"Saved visualization to {output_path}")
 
-  scadFile = "results/22_Visualization_" + aiEngineName + "_" + str(subPass) + "temp.scad"
+  scadFile = result_path("22_Visualization_" + aiEngineName + "_" + str(subPass) + "temp.scad",
+                         aiEngineName)
 
   open(scadFile, "w").write(scadOutput)
 
@@ -1118,8 +1122,8 @@ def _resultToNiceReportImpl(answer, subPass, aiEngineName):
   print("Finished Orbital visualisation for subpass:" + str(subPass))
 
   return f"""
-<a href="{os.path.basename(output_path).replace(".png", "zip")}" download>
-<img src="{os.path.basename(output_path)}" alt="Orbital Visualization" style="max-width: 100%;">
+<a href="{report_relpath(output_path.replace('.png', '.zip'), aiEngineName)}" download>
+<img src="{report_relpath(output_path, aiEngineName)}" alt="Orbital Visualization" style="max-width: 100%;">
 </a>
 """
 

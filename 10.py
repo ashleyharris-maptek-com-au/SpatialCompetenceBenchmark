@@ -1,5 +1,6 @@
 import os
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path
 
 title = "Painting a 3D scene in ASCII, with lighting."
 skip = True
@@ -52,7 +53,6 @@ def prepareSubpassPrompt(index):
 
 
 def generateReferencePicture(aiEngineName: str):
-  os.makedirs("results", exist_ok=True)
   # For now, we'll create a simple placeholder scad_content
   scad_content = """
     
@@ -64,7 +64,7 @@ def generateReferencePicture(aiEngineName: str):
     }
 
      """
-  output_path = "results/10_" + aiEngineName + "_Visualization.png"
+  output_path = result_path("10_" + aiEngineName + "_Visualization.png", aiEngineName)
   vc.render_scadText_to_png(scad_content, output_path, "--camera=100,100,100,0,0,0")
   print(f"Saved visualization to {output_path}")
 
@@ -76,11 +76,12 @@ def generateReferenceAscii(gridSize: int, aiEngineName: str):
   from PIL import Image
   import numpy as np
 
-  if not os.path.exists("results/10_" + aiEngineName + "_Visualization.png"):
+  viz_path = result_path("10_" + aiEngineName + "_Visualization.png", aiEngineName)
+  if not os.path.exists(viz_path):
     generateReferencePicture(aiEngineName)
 
   # Load the PNG file
-  img = Image.open("results/10_" + aiEngineName + "_Visualization.png")
+  img = Image.open(viz_path)
   img_array = np.array(img.convert("RGB"))
 
   # Find bounding box by removing black edges

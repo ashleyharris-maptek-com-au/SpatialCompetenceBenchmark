@@ -1,3 +1,5 @@
+skip = True
+
 import random
 
 title = "Grid Partitioning with Off-Axis Lines"

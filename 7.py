@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import tempfile
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 # Cache for gradeAnswer results
 _grade_cache_path = os.path.join(tempfile.gettempdir(), "grade_cache_7.json")
@@ -251,8 +252,6 @@ def resultToNiceReport(result, subPass, aiEngineName, path=None, alt_path=None):
 
   print("Drawing 3D maze of size " + str(len(rows)) + "x" + str(len(rows[0])))
 
-  import os
-  os.makedirs("results", exist_ok=True)
   base_name = f"7_Visualization_{aiEngineName}_{len(rows)}_{subPass}"
 
   grid_size = len(rows)
@@ -306,14 +305,14 @@ def resultToNiceReport(result, subPass, aiEngineName, path=None, alt_path=None):
   image_paths = []
   for view_name, camera_arg in views:
     filename = f"{base_name}_{view_name}.png"
-    output_path = os.path.join("results", filename)
+    output_path = result_path(filename, aiEngineName)
     vc.render_scadText_to_png(scad_content, output_path, camera_arg, ["--no-autocenter"])
     image_paths.append(output_path)
 
   viewer_id = f"maze-viewer-{hashlib.md5(base_name.encode()).hexdigest()}"
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(f'<img src="{os.path.basename(path)}" class="maze-view view-{idx}" '
+    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="maze-view view-{idx}" '
                       f'style="max-width: 100%;">')
 
   radio_name = f"{viewer_id}-view"

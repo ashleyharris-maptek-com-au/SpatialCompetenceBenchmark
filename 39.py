@@ -1,7 +1,10 @@
+skip = True
+
 import math
 import random
 
 import numpy
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Collision Prediction - Will moving objects collide?"
 skip = True
@@ -641,7 +644,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
   vis_html = ""
   try:
     scad = generate_collision_scene_scad(prob)
-    output_path = f"results/39_{subPass}_{aiEngineName}_scene.png"
+    output_path = result_path(f"39_{subPass}_{aiEngineName}_scene.png", aiEngineName)
 
     # Calculate camera position based on object positions
     all_pos = [obj["pos"] for obj in prob["objects"]]
@@ -657,7 +660,7 @@ def resultToNiceReport(answer: dict, subPass: int, aiEngineName: str):
 
     camera_arg = f"--camera={center_x + cam_dist},{center_y - cam_dist},{center_z + cam_dist},{center_x},{center_y},{center_z}"
     vc.render_scadText_to_png(scad, output_path, cameraArg=camera_arg)
-    vis_html = f'<img src="{os.path.basename(output_path)}" />'
+    vis_html = f'<img src="{report_relpath(output_path, aiEngineName)}" />'
   except Exception as e:
     vis_html = f"<i>Visualization error: {e}</i>"
 

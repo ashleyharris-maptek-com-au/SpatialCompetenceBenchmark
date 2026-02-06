@@ -7,6 +7,7 @@ import json
 import tempfile
 import shutil
 from typing import Dict, List, Tuple
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Fit a loop into a square that's perimeter is smaller than the total length"
 
@@ -648,7 +649,6 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
 
   scad_content += f"translate([0,0,-0.01]) color([0.1,0.1,0.1]) cube([{squareSize},{squareSize},0.01]);"
 
-  os.makedirs("results", exist_ok=True)
   base_name = f"12_Visualization_{aiEngineName}_{subPass}"
 
   center = squareSize / 2
@@ -681,7 +681,7 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
   image_paths = []
   for view_name, camera_arg in views:
     filename = f"{base_name}_{view_name}.png"
-    output_path = os.path.join("results", filename)
+    output_path = result_path(filename, aiEngineName)
     cached_path = os.path.join(cache_dir, filename)
 
     if not os.path.exists(cached_path):
@@ -696,7 +696,7 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
   # High-res (clickable) render from the primary view
   hires_view_name, hires_camera = views[0]
   hires_filename = f"{base_name}_{hires_view_name}_hires.png"
-  hires_output_path = os.path.join("results", hires_filename)
+  hires_output_path = result_path(hires_filename, aiEngineName)
   hires_cached_path = os.path.join(cache_dir, hires_filename)
   if not os.path.exists(hires_cached_path):
     vc.render_scadText_to_png(scad_content,
@@ -725,7 +725,7 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
 
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(f'<img src="{os.path.basename(path)}" class="loop-view view-{idx}" '
+    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="loop-view view-{idx}" '
                       f'style="max-width: 100%;">')
 
   style_lines = [
@@ -747,7 +747,7 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
           f'{"".join(labels)}'
           f'<div class="loop-frame">{"".join(image_tags)}</div>'
           f'<div class="loop-hires" style="width:100%; text-align:center; margin-top:8px;">'
-          f'<a href="{os.path.basename(hires_output_path)}" target="_blank" rel="noopener" '
+          f'<a href="{report_relpath(hires_output_path, aiEngineName)}" target="_blank" rel="noopener" '
           f'style="font-size:14px; color:#1d4ed8; text-decoration:underline;">'
           f'Open high-res ({hires_filename})</a>'
           f'</div>'

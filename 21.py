@@ -1,5 +1,6 @@
 import math, itertools
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Rollercoaster Track planner"
 skip = True
@@ -371,14 +372,13 @@ hull() {{
 """
 
   import os, scad_format
-  os.makedirs("results", exist_ok=True)
-  output_path = "results/21_Visualization_" + aiEngineName + "_" + str(len(
-    answer["trackPoints"])) + ".png"
+  output_path = result_path("21_Visualization_" + aiEngineName + "_" + str(len(
+    answer["trackPoints"])) + ".png", aiEngineName)
   vc.render_scadText_to_png(scadOutput, output_path)
   print(f"Saved visualization to {output_path}")
 
-  scadFile = "results/21_Visualization_" + aiEngineName + "_" + str(len(
-    answer["trackPoints"])) + "temp.scad"
+  scadFile = result_path("21_Visualization_" + aiEngineName + "_" + str(len(
+    answer["trackPoints"])) + "temp.scad", aiEngineName)
 
   scadOutput = scad_format.format(scadOutput, vc.formatConfig)
 
@@ -392,8 +392,8 @@ hull() {{
 
   return f"""
 Visualised route starts with purple.<br>
-<a href="{os.path.basename(output_path).replace(".png", ".zip")}" download>
-<img src="{os.path.basename(output_path)}" alt="Rollercoaster Visualization" style="max-width: 100%;">
+<a href="{report_relpath(output_path.replace('.png', '.zip'), aiEngineName)}" download>
+<img src="{report_relpath(output_path, aiEngineName)}" alt="Rollercoaster Visualization" style="max-width: 100%;">
 </a>
 """
 
