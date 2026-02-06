@@ -1,8 +1,11 @@
 #skip = True
-import subprocess, sys, os, OpenScad as vc
+import sys, os, OpenScad as vc
 import trimesh
 import numpy as np
 import random
+from functools import lru_cache
+from LLMBenchCore.ResultPaths import report_relpath
+from LLMBenchCore.CadArtifacts import CadArtifactStore, write_if_changed
 
 title = "Cage match. Can LLMs design interlocking parts for 3D printing?"
 
@@ -90,24 +93,25 @@ extraGradeAnswerRuns = [1, 2, 3, 4, 5, 6, 7, 8]
 earlyFail = False
 
 
-def _file_content_changed(filepath: str, new_content: str) -> bool:
-  """Check if file doesn't exist or has different content than new_content."""
-  if not os.path.exists(filepath):
-    return True
-  try:
-    with open(filepath, "r", encoding="utf-8") as f:
-      return f.read() != new_content
-  except Exception:
-    return True
+@lru_cache(maxsize=64)
+def _cad_store(aiEngineName: str) -> CadArtifactStore:
+  return CadArtifactStore(aiEngineName)
 
 
-def _write_if_changed(filepath: str, content: str) -> bool:
-  """Write content to file only if it changed. Returns True if file was written."""
-  if _file_content_changed(filepath, content):
-    with open(filepath, "w", encoding="utf-8") as f:
-      f.write(content)
-    return True
-  return False
+def _part_name(part_index: int, aiEngineName: str) -> str:
+  return _cad_store(aiEngineName).part_name(29, part_index)
+
+
+def _artifact_path(filename: str, aiEngineName: str) -> str:
+  return _cad_store(aiEngineName).path(filename)
+
+
+def _part_path(part_name: str, suffix: str, aiEngineName: str) -> str:
+  return _artifact_path(f"{part_name}{suffix}", aiEngineName)
+
+
+def _scad_path(path: str) -> str:
+  return os.path.abspath(path).replace(os.sep, "/")
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
@@ -125,59 +129,64 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if len(answer["parts"]) < 10:
     return 0, "Answer contained too few parts. 10 is the minimum possible."
 
+  cad_store = _cad_store(aiEngineName)
+
   if subPass == 0:
+    artifact_dir = cad_store.root
     any_posed_changed = False
     for partIndex, part in enumerate(answer["parts"]):
-      partName = "29_" + str(partIndex) + "_" + aiEngineName
+      partName = _part_name(partIndex, aiEngineName)
+      part_stl_path = _part_path(partName, ".stl", aiEngineName)
+      part_scad_path = _part_path(partName, ".scad", aiEngineName)
+      part_py_path = _part_path(partName, ".py", aiEngineName)
+      posed_scad_path = _part_path(partName, "_posed.scad", aiEngineName)
+      posed_stl_path = _part_path(partName, "_posed.stl", aiEngineName)
       needs_regenerate = False
 
       # Determine source file path and check if content changed
       if part["fileType"].lower() == "stl":
-        source_path = "results/" + partName + ".stl"
-        needs_regenerate = _write_if_changed(source_path, part["fileContents"])
+        source_path = part_stl_path
+        needs_regenerate = write_if_changed(source_path, part["fileContents"])
 
       elif part["fileType"].lower() == "openscad":
-        source_path = "results/" + partName + ".scad"
+        source_path = part_scad_path
         formatted = part["fileContents"]
         formatted = scad_format.format(formatted, vc.formatConfig)
-        needs_regenerate = _write_if_changed(source_path, formatted)
+        needs_regenerate = write_if_changed(source_path, formatted)
 
       elif part["fileType"].lower() == "python generating openscad":
-        source_path = "results/" + partName + ".py"
-        needs_regenerate = _write_if_changed(source_path, part["fileContents"])
+        source_path = part_py_path
+        needs_regenerate = write_if_changed(source_path, part["fileContents"])
 
         if needs_regenerate:
           try:
-            subprocess.run(sys.executable, [partName + ".py"],
-                           stdout=open("results/" + partName + ".scad", "w", encoding="utf-8"),
-                           cwd="results")
+            cad_store.run_python_script_to_file(part_py_path,
+                                                part_scad_path,
+                                                python_executable=sys.executable)
           except Exception as e:
             bugs += "Python generating OpenSCAD for " + partName + " failed due to " + str(
               e) + "<br>"
 
-          scad_format.format_file("results/" + partName + ".scad", "results/" + partName + ".scad",
-                                  vc.formatConfig)
+          scad_format.format_file(part_scad_path, part_scad_path, vc.formatConfig)
 
       elif part["fileType"].lower() == "python generating stl":
-        source_path = "results/" + partName + ".py"
-        needs_regenerate = _write_if_changed(source_path, part["fileContents"])
+        source_path = part_py_path
+        needs_regenerate = write_if_changed(source_path, part["fileContents"])
 
         if needs_regenerate:
           try:
-            subprocess.run(sys.executable, ["results/" + partName + ".py"],
-                           stdout=open("results/" + partName + ".stl", "w", encoding="utf-8"),
-                           cwd="results")
+            cad_store.run_python_script_to_file(part_py_path,
+                                                part_stl_path,
+                                                python_executable=sys.executable)
           except Exception as e:
             bugs += "Python generating STL for " + partName + " failed due to " + str(e) + "<br>"
       else:
         bugs += "Unknown file type '" + part["fileType"] + "' for " + partName + "<br>"
 
       # Generate STL from OpenSCAD if needed
-      if os.path.exists("results/" + partName + ".scad") and (
-          needs_regenerate or not os.path.exists("results/" + partName + ".stl")):
+      if os.path.exists(part_scad_path) and (needs_regenerate or not os.path.exists(part_stl_path)):
         try:
-          subprocess.run([vc.openScadPath, partName + ".scad", "-o", partName + ".stl"],
-                         cwd="results")
+          cad_store.run_openscad(part_scad_path, part_stl_path)
         except Exception as e:
           bugs += "OpenSCAD failed to generate STL for " + partName + " due to " + str(e) + "<br>"
 
@@ -186,18 +195,15 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     multmatrix([{part["transform"][0:4]}, 
                 {part["transform"][4:8]}, 
                 {part["transform"][8:12]}, 
-                {part["transform"][12:16]}]) import("{partName}.stl");
+                {part["transform"][12:16]}]) import("{os.path.basename(part_stl_path)}");
                         """
-      posed_scad_path = "results/" + partName + "_posed.scad"
-      posed_changed = _write_if_changed(posed_scad_path,
-                                        scad_format.format(posed_scad_content, vc.formatConfig))
+      posed_changed = write_if_changed(posed_scad_path,
+                                       scad_format.format(posed_scad_content, vc.formatConfig))
 
-      if os.path.exists("results/" + partName + ".stl") and bugs == "" and (
-          needs_regenerate or posed_changed
-          or not os.path.exists("results/" + partName + "_posed.stl")):
+      if os.path.exists(part_stl_path) and bugs == "" and (needs_regenerate or posed_changed
+                                                           or not os.path.exists(posed_stl_path)):
         try:
-          subprocess.run([vc.openScadPath, partName + "_posed.scad", "-o", partName + "_posed.stl"],
-                         cwd="results")
+          cad_store.run_openscad(posed_scad_path, posed_stl_path)
         except Exception as e:
           bugs += "OpenSCAD failed to generate posed STL for " + partName + " due to " + str(
             e) + "<br>"
@@ -211,21 +217,19 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     ]
     fullposed_scad_content = ""
     for partIndex, part in enumerate(answer["parts"]):
-      partName = "29_" + str(partIndex) + "_" + str(aiEngineName)
-      fullposed_scad_content += f"color(\"{colourNames[partIndex]}\") import(\"{partName}_posed.stl\");\n"
+      partName = _part_name(partIndex, aiEngineName)
+      fullposed_scad_content += (
+        f"color(\"{colourNames[partIndex]}\") import(\"{os.path.basename(_part_path(partName, '_posed.stl', aiEngineName))}\");\n"
+      )
 
-    fullposed_scad_path = "results/29_" + str(aiEngineName) + "_fullposed.scad"
-    any_posed_changed |= _write_if_changed(
+    fullposed_scad_path = _artifact_path(f"29_{aiEngineName}_fullposed.scad", aiEngineName)
+    fullposed_stl_path = _artifact_path(f"29_{aiEngineName}_fullposed.stl", aiEngineName)
+    any_posed_changed |= write_if_changed(
       fullposed_scad_path, scad_format.format(fullposed_scad_content, vc.formatConfig))
 
-    if bugs == "" and (any_posed_changed
-                       or not os.path.exists("results/29_" + str(aiEngineName) + "_fullposed.stl")):
+    if bugs == "" and (any_posed_changed or not os.path.exists(fullposed_stl_path)):
       try:
-        subprocess.run([
-          vc.openScadPath, "29_" + str(aiEngineName) + "_fullposed.scad", "-o",
-          "29_" + str(aiEngineName) + "_fullposed.stl"
-        ],
-                       cwd="results")
+        cad_store.run_openscad(fullposed_scad_path, fullposed_stl_path)
       except Exception as e:
         bugs += "OpenSCAD failed to generate fullposed STL for " + str(
           aiEngineName) + " due to " + str(e) + "<br>"
@@ -235,8 +239,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       bugs += "Expected 10 parts, got " + str(len(answer["parts"])) + "<br>"
 
     for partIndex, part in enumerate(answer["parts"]):
-      partName = "29_" + str(partIndex) + "_" + str(aiEngineName)
-      stlFile = "results/" + partName + ".stl"
+      partName = _part_name(partIndex, aiEngineName)
+      stlFile = _part_path(partName, ".stl", aiEngineName)
 
       if not os.path.exists(stlFile):
         bugs += "Part " + str(stlFile) + " does not exist<br>"
@@ -293,8 +297,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     score = 0
     bugs = ""
     for partIndex, part in enumerate(answer["parts"]):
-      partName = "29_" + str(partIndex) + "_" + aiEngineName
-      stlFile = "results/" + partName + ".stl"
+      partName = _part_name(partIndex, aiEngineName)
+      stlFile = _part_path(partName, ".stl", aiEngineName)
 
       overFlowsFromBuildVolume = vc.hit_tests(
         stlFile, ["translate([0,0,25]) cube([400,400,50], center=true)"], "difference")
@@ -382,8 +386,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       )
 
     for partIndex, part in enumerate(answer["parts"]):
-      partName = "29_" + str(partIndex) + "_" + aiEngineName
-      stlFile = "results/" + partName + ".stl"
+      partName = _part_name(partIndex, aiEngineName)
+      stlFile = _part_path(partName, ".stl", aiEngineName)
       results4 = vc.hit_tests(stlFile, tests4)
       results10 = vc.hit_tests(stlFile, tests10)
 
@@ -402,7 +406,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             scad = "color(\"grey\") import(\"" + partName + ".stl\");\n" + tests4[i]
             scad = scad_format.format(scad, vc.formatConfig)
             vc.render_scadText_to_png(
-              scad, "results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png")
+              scad, _artifact_path(f"29_{partIndex}_{aiEngineName}_40mm.png", aiEngineName))
             break
 
       if not all(results10):
@@ -411,7 +415,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
             scad = "color(\"grey\") import(\"" + partName + ".stl\");\n" + tests10[i]
             scad = scad_format.format(scad, vc.formatConfig)
             vc.render_scadText_to_png(
-              scad, "results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_101mm.png")
+              scad, _artifact_path(f"29_{partIndex}_{aiEngineName}_101mm.png", aiEngineName))
             break
 
     return 1 if bugs == "" else 0, bugs
@@ -423,7 +427,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       "translate([0,0,370]) difference() {cube([1000,1000,1000], center=true); cube([380,380,740], center=true);}",
     ]
 
-    results = vc.hit_tests("results/29_" + str(aiEngineName) + "_fullposed.stl", tests)
+    results = vc.hit_tests(_artifact_path(f"29_{aiEngineName}_fullposed.stl", aiEngineName), tests)
 
     if results[0] == True:
       return 0, "Cage is too small or invalid transform matrices - a 350x350x700 needs to fit inside without intersecting the bars."
@@ -444,7 +448,7 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       "translate([180, 180, 0]) cylinder(r=8, h=360, center=true);",
     ]
 
-    results = vc.hit_tests("results/29_" + str(aiEngineName) + "_fullposed.stl", tests)
+    results = vc.hit_tests(_artifact_path(f"29_{aiEngineName}_fullposed.stl", aiEngineName), tests)
 
     for i, result in enumerate(results[0:4]):
       if result == True:
@@ -458,16 +462,16 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
   if subPass == 5:
     for partIndexA, partA in enumerate(answer["parts"]):
-      partNameA = "29_" + str(partIndexA) + "_" + aiEngineName
-      stlFileA = "results/" + partNameA + "_posed.stl"
+      partNameA = _part_name(partIndexA, aiEngineName)
+      stlFileA = _part_path(partNameA, "_posed.stl", aiEngineName)
       tests = []
       for partIndexB, partB in enumerate(answer["parts"]):
         if partIndexA >= partIndexB:
           continue
 
-        partNameB = "29_" + str(partIndexB) + "_" + aiEngineName
-        stlFileB = "results/" + partNameB + "_posed.stl"
-        tests.append("difference() {import(\"" + stlFileA + "\") ; import(\"" + stlFileB + "\");}")
+        partNameB = _part_name(partIndexB, aiEngineName)
+        stlFileB = _part_path(partNameB, "_posed.stl", aiEngineName)
+        tests.append(f"difference() {{import(\"{_scad_path(stlFileA)}\") ; import(\"{_scad_path(stlFileB)}\");}}")
 
       results = vc.hit_tests(stlFileA, tests)
       for i, result in enumerate(results):
@@ -482,8 +486,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
   if subPass == 6:
     bugs = ""
     for partIndexA, partA in enumerate(answer["parts"]):
-      partNameA = "29_" + str(partIndexA) + "_" + aiEngineName
-      stlFileA = "results/" + partNameA + "_posed.stl"
+      partNameA = _part_name(partIndexA, aiEngineName)
+      stlFileA = _part_path(partNameA, "_posed.stl", aiEngineName)
 
       tests = [
         "translate([-180, -180, 400]) cylinder(r=8, h=800, center=true);",
@@ -521,7 +525,7 @@ hull() {{
       scad += "color(\"grey\") import(\"" + partNameA + "_posed.stl\");\n"
       scad = scad_format.format(scad, vc.formatConfig)
       vc.render_scadText_to_png(
-        scad, "results/29_" + str(partIndexA) + "_" + str(aiEngineName) + "_6mm.png")
+        scad, _artifact_path(f"29_{partIndexA}_{aiEngineName}_6mm.png", aiEngineName))
 
     return 1 if bugs == "" else 0, bugs
 
@@ -542,8 +546,8 @@ hull() {{
     min_mode_ratio = 0.15
 
     for partIndex, part in enumerate(answer["parts"]):
-      partName = "29_" + str(partIndex) + "_" + aiEngineName
-      stlFile = "results/" + partName + ".stl"
+      partName = _part_name(partIndex, aiEngineName)
+      stlFile = _part_path(partName, ".stl", aiEngineName)
       if not os.path.exists(stlFile):
         bugs += f"Part {partIndex}.stl missing for thickness test<br>"
         continue
@@ -663,7 +667,7 @@ hull() {{
   if subPass == 8:
     # Verify bar gap spacing (50-100mm) by measuring air gaps between opposing bar side faces
     # in the assembled cage (fullposed).
-    stlFile = "results/29_" + str(aiEngineName) + "_fullposed.stl"
+    stlFile = _artifact_path(f"29_{aiEngineName}_fullposed.stl", aiEngineName)
     if not os.path.exists(stlFile):
       return 0, "Missing fullposed STL for gap spacing test<br>"
 
@@ -794,21 +798,23 @@ which gets an instant 0 for wasting 4 prints
     out = "Check to see if the parts are printable - resting on the z=0 plane, well supported, "\
       "not overhanging, and within print bounds:<br>"
     for partIndex in range(10):
-      partName = "29_" + str(partIndex) + "_" + aiEngineName
-      stlFile = "results/" + partName + ".stl"
+      partName = _part_name(partIndex, aiEngineName)
+      stlFile = _part_path(partName, ".stl", aiEngineName)
       if os.path.exists(stlFile):
-        vc.render_stl_to_png(stlFile, "results/" + partName + ".png")
-        out += "<img src='" + partName + ".png' width=320/>"
+        png_path = _part_path(partName, ".png", aiEngineName)
+        vc.render_stl_to_png(stlFile, png_path)
+        out += f"<img src='{report_relpath(png_path, aiEngineName)}' width=320/>"
     return out
 
   if subPass == 2:
     out = ""
     for partIndex in range(12):
-      if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png"):
-        out += "<img src='29_" + str(partIndex) + "_" + str(aiEngineName) + "_40mm.png' width=320/>"
-      if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_101mm.png"):
-        out += "<img src='29_" + str(partIndex) + "_" + str(
-          aiEngineName) + "_101mm.png' width=320/>"
+      img_40 = _artifact_path(f"29_{partIndex}_{aiEngineName}_40mm.png", aiEngineName)
+      img_101 = _artifact_path(f"29_{partIndex}_{aiEngineName}_101mm.png", aiEngineName)
+      if os.path.exists(img_40):
+        out += f"<img src='{report_relpath(img_40, aiEngineName)}' width=320/>"
+      if os.path.exists(img_101):
+        out += f"<img src='{report_relpath(img_101, aiEngineName)}' width=320/>"
     return out + """
 <br>Check to see if the bars in cage segments are correctly sized and spaced. 
 Can a 50mm cube pass through the bars? Does a 100mm cube get blocked? 100 random block positions
@@ -818,11 +824,13 @@ are checked, first pass is shown.
   if subPass == 3:
     out = "Check to see if the part transform matrices are correct and the cage is correctly sized.<br>"
 
-    if os.path.exists("results/29_" + aiEngineName + "_fullposed.stl"):
-      vc.render_scadText_to_png("include<29_" + aiEngineName + "_fullposed.scad>",
-                                "results/29_" + aiEngineName + "_fullposed.png")
+    fullposed_stl = _artifact_path(f"29_{aiEngineName}_fullposed.stl", aiEngineName)
+    fullposed_scad = _artifact_path(f"29_{aiEngineName}_fullposed.scad", aiEngineName)
+    fullposed_png = _artifact_path(f"29_{aiEngineName}_fullposed.png", aiEngineName)
+    if os.path.exists(fullposed_stl):
+      vc.render_scadText_to_png(f"include<{os.path.basename(fullposed_scad)}>", fullposed_png)
 
-      out += "<img src='29_" + aiEngineName + "_fullposed.png' width=640/>"
+      out += f"<img src='{report_relpath(fullposed_png, aiEngineName)}' width=640/>"
 
     return out
 
@@ -838,8 +846,9 @@ are checked, first pass is shown.
   if subPass == 6:
     out = ""
     for partIndex in range(10):
-      if os.path.exists("results/29_" + str(partIndex) + "_" + str(aiEngineName) + "_6mm.png"):
-        out += "<img src='29_" + str(partIndex) + "_" + str(aiEngineName) + "_6mm.png' width=320/>"
+      img_6 = _artifact_path(f"29_{partIndex}_{aiEngineName}_6mm.png", aiEngineName)
+      if os.path.exists(img_6):
+        out += f"<img src='{report_relpath(img_6, aiEngineName)}' width=320/>"
     return out + "<br>Check to see if every part is connected via the rod, and that there's no "\
       "swinging or loose parts once the bolts are tightened."
 

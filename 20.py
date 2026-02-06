@@ -2,6 +2,7 @@ import sys, base64, io
 from PIL import Image
 import numpy as np
 import re
+from LLMBenchCore.ResultPaths import result_path
 
 title = "Can you trace a rough map of Australia with under 1kb of data?"
 skip = True
@@ -107,7 +108,8 @@ def loadReferenceImage():
 def getReferenceImage(subPass, aiEngineName: str):
   ref = loadReferenceImage()
 
-  output_path = f"results/20_VisualizationReference_{aiEngineName}_subpass{subPass}.png"
+  output_path = result_path(f"20_VisualizationReference_{aiEngineName}_subpass{subPass}.png",
+                            aiEngineName)
   ref.save(output_path)
   return output_path
 
@@ -230,7 +232,7 @@ def resultToImage(result, subPass, aiEngineName: str):
         else:
           test.putpixel((x, y), 200)
 
-  output_path = f"results/20_Visualization_{aiEngineName}_subpass{subPass}.png"
+  output_path = result_path(f"20_Visualization_{aiEngineName}_subpass{subPass}.png", aiEngineName)
   test.save(output_path)
   print("Saved to " + output_path)
   return output_path

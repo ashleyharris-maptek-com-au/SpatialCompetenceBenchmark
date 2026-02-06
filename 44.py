@@ -2,6 +2,7 @@ import random, os, math, heapq
 import numpy as np
 from scipy.ndimage import gaussian_filter
 import OpenScad as vc
+from LLMBenchCore.ResultPaths import result_path
 
 title = "Can you navigate a mountain range without a heightmap?"
 skip = True
@@ -237,6 +238,7 @@ def renderHeightmapAsPng():
 
   # Render multiple photos from above
   for i in range(50):
+    terrain_img_path = result_path(f"44_terrain_{i}.png")
     while True:
       # Camera positions - from above looking down at terrain
       cam_x = random.random() * MAP_SIZE
@@ -255,11 +257,11 @@ def renderHeightmapAsPng():
       cameraArg = f"--camera={cam_x:.2f},{cam_y:.2f},{cam_z:.2f},{look_x:.2f},{look_y:.2f},{look_z:.2f}"
 
       vc.render_scadText_to_png(scad,
-                                f"results/44_terrain_{i}.png",
+                                terrain_img_path,
                                 cameraArg=cameraArg,
                                 extraScadArgs=["--projection=p"])
 
-      im = Image.open(f"results/44_terrain_{i}.png")
+      im = Image.open(terrain_img_path)
       colours = im.getcolors(maxcolors=10000)
 
       if colours is None:
@@ -283,7 +285,7 @@ def renderHeightmapAsPng():
 
       if interestingCount > 2 and not os.path.exists("images/44.png"):
         import shutil
-        shutil.copy(f"results/44_terrain_{i}.png", "images/44.png")
+        shutil.copy(terrain_img_path, "images/44.png")
 
       if interestingCount < 1:
         print(f"Redoing terrain photo {i} - no markers visible")
@@ -292,7 +294,7 @@ def renderHeightmapAsPng():
       break
 
 
-if not os.path.exists("results/44_terrain_0.png"):
+if not os.path.exists(result_path("44_terrain_0.png")):
   renderHeightmapAsPng()
 
 prompt = f"""
@@ -338,7 +340,7 @@ def prepareSubpassPrompt(index: int) -> str:
   if index == 5:
     raise StopIteration
 
-  return prompt + "".join([f"[[image:results/44_terrain_{i}.png]]" for i in images])
+  return prompt + "".join([f"[[image:{result_path(f'44_terrain_{i}.png')}]]" for i in images])
 
 
 def parse_path(answer: str):

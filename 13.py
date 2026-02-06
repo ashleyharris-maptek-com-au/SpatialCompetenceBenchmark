@@ -1,5 +1,6 @@
 import OpenScad as vc
 import os
+from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Hide and seek behind a building"
 
@@ -92,7 +93,8 @@ def resultToImage(result, subPass, aiEngineName: str, fromAbove: bool = False):
     except ValueError:
       continue
 
-  output_path = f"results/13_Visualization_{aiEngineName}_subpass{subPass}_{fromAbove}.png"
+  output_path = result_path(f"13_Visualization_{aiEngineName}_subpass{subPass}_{fromAbove}.png",
+                            aiEngineName)
   vc.render_scadText_to_png(
     openScadData, output_path,
     "--camera=100,100,20,0,0,2" if not fromAbove else "--camera=-10,-10,200,0,0,20")
@@ -169,8 +171,8 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
   path = resultToImage(result, subPass, aiEngineName)
   path2 = resultToImage(result, subPass, aiEngineName, True)
   return \
-      "<img src='" + os.path.basename(path) + "' alt='Subpass " + str(subPass) + " visualization' style='max-width: 100%;' />" + \
-      "<img src='" + os.path.basename(path2) + "' alt='Subpass " + str(subPass) + " visualization from above' style='max-width: 100%;' />"
+      "<img src='" + report_relpath(path, aiEngineName) + "' alt='Subpass " + str(subPass) + " visualization' style='max-width: 100%;' />" + \
+      "<img src='" + report_relpath(path2, aiEngineName) + "' alt='Subpass " + str(subPass) + " visualization from above' style='max-width: 100%;' />"
 
 
 highLevelSummary = """
