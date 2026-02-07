@@ -1,0 +1,232 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 5, 6, 7, 8, 10
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+
+Task Card:
+# Task q12: Fit a loop into a square that's perimeter is smaller than the total length
+- Source file: `12.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Evaluate constrained geometric synthesis: produce a closed polyline with unit segments that satisfies subpass-specific global rules (crossings, turns, centroid, hull, edge touching, etc.).
+
+## Output Contract
+- Return JSON with `points`.
+- `points` is a list of `{x:number, y:number}`.
+- Point count must equal the subpass pipe count.
+
+## Hard Constraints (Verifier-Checked)
+- Numeric point schema and minimum cardinality.
+- In-bounds points within `[0, boundary]`.
+- Every segment length (including closing segment) within tolerance around 1.
+- No duplicate vertices; no illegal backtracking.
+- Subpass preset constraints (crossing counts, turns, centroid box, hull area, edge touch, straight-run cap, etc.).
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `Validation failed: ...` | One or more hard constraints violated | `Local-Only`, `Near-Miss` |
+| `Crossing detected` / crossing count mismatch | Topological global failure | `Local-Only` |
+| `Segment length ... expected 1.0 ± 0.05` | Metric tolerance failure | `Near-Miss` |
+| `Expected N points ... got M` | Contract/complexity mismatch | `Trivialized`, `Near-Miss` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Missing or invalid `points` structure.
+- `Trivialized / Misframed`: Simple loop that ignores preset-specific constraints.
+- `Runaway Overthinking`: Long path construction with widespread violations.
+- `Local-Only (Global Integration Failure)`: Local step geometry works but global preset conditions fail.
+- `Near-Miss Edge Case`: One boundary/length/count/touching miss in otherwise valid loop.
+
+## Judge Input Bundle
+1. Prompt including preset details for subpass.
+2. Raw output.
+3. Parsed points list.
+4. Verifier failures and any structured diagnostics.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q12 with one failure mode using preset-aware verifier signals.
+If many coupled checks fail, prefer Local-Only; if a single tolerance/count issue, prefer Near-Miss.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+
+Attempts:
+### Subpass 5
+
+Attempt Metadata:
+- question_id: 12
+- subpass: 5
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 320
+
+Verifier Signal:
+Validation failed:
+1. closure: Closing segment length 2.2361, expected 1.0 ± 0.05 @ {'segment_index': 13}
+2. duplicate_vertex: Vertex 7 reuses point (2.5, 1.5) @ {'point_index': 7, 'duplicate_of': 3}
+3. duplicate_vertex: Vertex 8 reuses point (2.5, 0.5) @ {'point_index': 8, 'duplicate_of': 2}
+4. duplicate_vertex: Vertex 9 reuses point (1.5, 0.5) @ {'point_index': 9, 'duplicate_of': 1}
+5. duplicate_vertex: Vertex 10 reuses point (0.5, 0.5) @ {'point_index': 10, 'duplicate_of': 0}
+... (truncated, 6 errors in total)
+
+Raw Output:
+{'points': [{'x': 0.5, 'y': 0.5}, {'x': 1.5, 'y': 0.5}, {'x': 2.5, 'y': 0.5}, {'x': 2.5, 'y': 1.5}, {'x': 1.5, 'y': 1.5}, {'x': 1.5, 'y': 2.5}, {'x': 2.5, 'y': 2.5}, {'x': 2.5, 'y': 1.5}, {'x': 2.5, 'y': 0.5}, {'x': 1.5, 'y': 0.5}, {'x': 0.5, 'y': 0.5}, {'x': 0.5, 'y': 1.5}, {'x': 0.5, 'y': 2.5}, {'x': 1.5, 'y': 2.5}]}
+
+Chain of Thought:
+**Exploring path design**
+
+I'm considering a path layout, like a rectangular spiral with slight diagonals for adjustments. A polyline that approximates a 3x3 square could work, adding zigzags for length. The maximum simple path length inside should be large, and I want to ensure the coordinates I provide are precise.
+
+I’m thinking about using axis-aligned segments mostly of length 1 inside a 3x3 grid, maybe creating a Hamiltonian cycle, which would be length 12. To reach 14, I'd need diagonals that fit exactly. It’s proving to be a challenge!**Designing a path layout**
+
+I'm examining a height of 3, allowing 3 vertical lengths per pass. I need to count the moves; for example, starting near the bottom left, I can go up, right, down, right, and up again, resembling a ladder. 
+
+I’m thinking of using explicit coordinates, keeping y between 0.2 and 2.8 to avoid boundaries with vertical segments of length 1. Creating a closed loop is tricky. A simpler approach might be drawing a 7x2 rectangle path, though the area is limited. What about a circle-like polygon or a star shape? A spiral rectangle might also work to add length!**Exploring rectangular path options**
+
+I'm working with a 3x3 outer rectangle, which gives a perimeter of 12, but I need to stay inside without crossing the boundary. Insetting by 0.01 makes the perimeter roughly 11.92, but the edge lengths need to be exactly 1. 
+
+It's tricky! I’ll consider allowing touching the boundary and using integer grid points. I can create a path around the perimeter and then attach a small square inside, but without it touching itself. 
+
+Starting at (0,0), I tried various coordinates, but I’m missing the closure and length requirements. I realize I might need some creative diagonal segments.**Creating a conceptual loop**
+
+I recognize the constraints I have to work with, but I'm determined to produce a reasonable-looking loop. Even if it’s a bit off, I’m hoping it conveys the concept clearly. The aim here is to ensure I maintain the necessary structure within the provided guidelines. Ultimately, I want this loop to be useful and align with the user's expectations, even if it’s not perfect. Let's see where this leads!
+
+### Subpass 6
+
+Attempt Metadata:
+- question_id: 12
+- subpass: 6
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 381
+
+Verifier Signal:
+Validation failed:
+1. boundary: Point 13 (1.200, 3.140) is outside [0, 3] @ {'point_index': 13}
+2. boundary: Point 14 (0.200, 3.140) is outside [0, 3] @ {'point_index': 14}
+3. segment_length: Segment 14 length 2.6570, expected 1.0 ± 0.05 @ {'segment_index': 14, 'start': (0.2, 3.14), 'end': (0.5, 0.5)}
+4. closure: Closing segment length 0.0000, expected 1.0 ± 0.05 @ {'segment_index': 15}
+5. duplicate_vertex: Vertex 15 reuses point (0.5, 0.5) @ {'point_index': 15, 'duplicate_of': 0}
+
+Raw Output:
+{'points': [{'x': 0.5, 'y': 0.5}, {'x': 1.5, 'y': 0.5}, {'x': 2.45, 'y': 0.82}, {'x': 1.45, 'y': 0.82}, {'x': 0.5, 'y': 1.14}, {'x': 1.5, 'y': 1.14}, {'x': 2.45, 'y': 1.46}, {'x': 1.45, 'y': 1.46}, {'x': 0.5, 'y': 1.78}, {'x': 1.5, 'y': 1.78}, {'x': 2.45, 'y': 2.1}, {'x': 1.45, 'y': 2.1}, {'x': 0.5, 'y': 2.42}, {'x': 1.2, 'y': 3.14}, {'x': 0.2, 'y': 3.14}, {'x': 0.5, 'y': 0.5}]}
+
+Chain of Thought:
+**Exploring grid paths**
+
+I’m considering how to reduce vertical distance in our grid path design. One idea is to use a 4x4 grid, but that gives me some issues with vertices since we can't reuse them. Maybe a square of side 3 could work for the outer shape, and then I'll add an inward square of side 1. But we need to ensure the loop is simple and connected without touching itself. It’s getting pretty complex! I think using zigzag patterns horizontally could help with the dimensions.**Determining slope for steps**
+
+I need to choose a slope that makes the vertical steps around 0.2. With 16 steps, that totals about 3.2 vertically, which is a bit too much, but if I make half of those steps go up and half go down, it could work! I think a closed loop would be symmetric, which is good. I'll try to create a plausible, non-crossing loop that stays within the defined bounds. Let’s see how that turns out!
+
+### Subpass 7
+
+Attempt Metadata:
+- question_id: 12
+- subpass: 7
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 336
+
+Verifier Signal:
+Validation failed:
+1. segment_length: Segment 16 length 2.2361, expected 1.0 ± 0.05 @ {'segment_index': 16, 'start': (1.0, 3.0), 'end': (0.0, 1.0)}
+
+Raw Output:
+{'points': [{'x': 0, 'y': 0}, {'x': 1, 'y': 0}, {'x': 2, 'y': 0}, {'x': 3, 'y': 0}, {'x': 4, 'y': 0}, {'x': 4, 'y': 1}, {'x': 3, 'y': 1}, {'x': 2, 'y': 1}, {'x': 1, 'y': 1}, {'x': 1, 'y': 2}, {'x': 2, 'y': 2}, {'x': 3, 'y': 2}, {'x': 4, 'y': 2}, {'x': 4, 'y': 3}, {'x': 3, 'y': 3}, {'x': 2, 'y': 3}, {'x': 1, 'y': 3}, {'x': 0, 'y': 1}]}
+
+Chain of Thought:
+**Designing a simple polygon**
+
+I’m working on creating 18 segments, each with a length of 1, inside a square with a side of 4. The goal is to form a closed loop with unique vertices, making sure not to self-intersect or touch. It’s important all coordinates stay within the [0,4] boundary, and touching is allowed. I’m thinking of using a serpentine path or a rectangular spiral, calculating distances carefully as I draft points, starting at (0.5,0.5).**Creating a grid path**
+
+I'm mapping out a path using horizontal, vertical, and diagonal segments of length 1. It seems easiest to work on a grid with unit steps that are axis-aligned, ensuring I fit everything inside a 4x4 area. I’m starting at (0,0) and planning a snake-like route that doesn't reuse vertices and closes back to the start. So far, I've gotten to (4,0), and then I’ll move up to (4,1) and continue navigating carefully to keep track of my vertices.**Completing the path**
+
+I’m at point 16, which is (1,3), and I need to finish up with 18 edges in total. To return to the starting point (0,0), I need to find two more points. It turns out that one must be (0,1), which hasn't been used yet. The previous point has to be at a distance of 1 from (0,1). This means point 17 will connect to (0,1) as point 18, which then links back to (0,0). That works perfectly!**Determining final points**
+
+I’m exploring options for point 17, considering (1,1), but I've already used that earlier. The option (0,2) hasn't been used, but the distance from (1,3) to (0,2) is too far. Point 17 needs to be adjacent to (1,3) with a distance of 1. I think (0,3) works, moving left from (1,3). For point 18, I’ll go with (0,2) since (1,3) is already taken. However, I realize the closure from (0,2) to (0,0) is 2, which doesn't work. So, I need point 18 to be (0,1) or (1,0) and adjust point 17 accordingly.**Reassessing the path**
+
+From point 16, which is (1,3), my attempt to connect to (0,2) doesn't work because the distance is too far. Next, I tried moving down to (1,2), but that's been used already. Since I can’t reuse points, I’m considering redesigning the last rows to allow for better adjacency. I wonder if I could shift the snake’s ending closer to the starting point or choose a different starting point like (0.5,0.5). Ultimately, I need to ensure I maintain correct geometry and keep the time constraints in mind, while still aiming for a valid solution.
+
+### Subpass 8
+
+Attempt Metadata:
+- question_id: 12
+- subpass: 8
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 452
+
+Verifier Signal:
+Validation failed:
+1. segment_length: Segment 4 length 0.4000, expected 1.0 ± 0.05 @ {'segment_index': 4, 'start': (3.4, 0.2), 'end': (3.8, 0.2)}
+2. segment_length: Segment 9 length 0.4000, expected 1.0 ± 0.05 @ {'segment_index': 9, 'start': (3.8, 3.4), 'end': (3.8, 3.8)}
+3. segment_length: Segment 14 length 0.4000, expected 1.0 ± 0.05 @ {'segment_index': 14, 'start': (0.6, 3.8), 'end': (0.2, 3.8)}
+4. closure: Closing segment length 0.4000, expected 1.0 ± 0.05 @ {'segment_index': 19}
+
+Raw Output:
+{'points': [{'x': 0.2, 'y': 0.2}, {'x': 1.0, 'y': 0.8}, {'x': 1.8, 'y': 0.2}, {'x': 2.6, 'y': 0.8}, {'x': 3.4, 'y': 0.2}, {'x': 3.8, 'y': 0.2}, {'x': 3.2, 'y': 1.0}, {'x': 3.8, 'y': 1.8}, {'x': 3.2, 'y': 2.6}, {'x': 3.8, 'y': 3.4}, {'x': 3.8, 'y': 3.8}, {'x': 3.0, 'y': 3.2}, {'x': 2.2, 'y': 3.8}, {'x': 1.4, 'y': 3.2}, {'x': 0.6, 'y': 3.8}, {'x': 0.2, 'y': 3.8}, {'x': 0.8, 'y': 3.0}, {'x': 0.2, 'y': 2.2}, {'x': 0.8, 'y': 1.4}, {'x': 0.2, 'y': 0.6}]}
+
+Chain of Thought:
+**Designing a shape inside a square**
+
+I’m trying to create 20 segments of length 1 inside a 4x4 square. I need to ensure there’s no self-intersection, touching, or reused vertices. I wonder if the segments can touch the boundary, but I think it might be safer to keep them strictly inside. A simple polygon with 20 edges of unit length will not fit easily; a rounded shape like a 20-gon seems too large. I might need to go for a grid-like serpentine path to maintain the unit lengths.**Creating a wiggly polygon**
+
+I’m exploring axis-aligned unit steps to fit 20 segments inside a 4x4 square. My concern is that these might touch at grid points or cross back on themselves, which is a no-go. I could try using slightly perturbed positions or inscribe a circle, but that seems complex. Alternatively, I might create a rounded square path with zigzags along each side to meet the length requirement. I’ll need to propose explicit coordinates and ensure they don’t self-touch. Touching the boundary is still up in the air!**Designing a boundary zigzag path**
+
+I see that I can touch the boundary as long as I don’t cross it, so I’m thinking of creating a zigzag path that runs close to the boundary. I’ll set up a path offset slightly inside the square’s edge with 5 segments on each side, totaling 20 segments. Each segment will be nearly straight but with slight angle changes. However, I need to ensure each segment turns out correctly; I'll need to calculate angles carefully to keep everything within the bounds.**Calculating segments with adjustments**
+
+I'm choosing a small offset of ε=0.2 to start my path at (0.2, 0.2). For the bottom side, I plan to alternate angles +θ and -θ, aiming to finish at (3.8, 0.2). I need to verify that the vertical components cancel out, but I notice that my setup isn’t yielding a net vertical of zero, which is important. It seems I might need to switch the pattern to achieve the proper balance. 
+
+Given the complexity, while I’m assuming touching the boundary is okay, I’ll use a zigzag approach but might need to adjust the last segment to bring the vertical position back to where it should be.**Finalizing the zigzag path**
+
+I’m looking at my last segment's vertical component—the first four segments have a net y of 0, and the fifth should also be 0. If I make the last angle 0, it gives me the vector (1,0). However, my total x length ends up being 4.2, which is too long. I need to start a bit closer to the edge. I’ll aim to create a clean and symmetric zigzag path with precise coordinates that stay within the bounds of the square.
+
+### Subpass 10
+
+Attempt Metadata:
+- question_id: 12
+- subpass: 10
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 444
+
+Verifier Signal:
+Crossing detected
+
+Raw Output:
+{'points': [{'x': 1, 'y': 0}, {'x': 2, 'y': 0}, {'x': 3, 'y': 0}, {'x': 4, 'y': 0}, {'x': 4, 'y': 1}, {'x': 4, 'y': 2}, {'x': 4, 'y': 3}, {'x': 4, 'y': 4}, {'x': 3, 'y': 4}, {'x': 2, 'y': 4}, {'x': 1, 'y': 4}, {'x': 0, 'y': 4}, {'x': 0, 'y': 3}, {'x': 0, 'y': 2}, {'x': 0, 'y': 1}, {'x': 1, 'y': 1}, {'x': 2, 'y': 1}, {'x': 3, 'y': 1}, {'x': 3, 'y': 2}, {'x': 3, 'y': 3}, {'x': 2, 'y': 3}, {'x': 1, 'y': 3}, {'x': 1, 'y': 2}, {'x': 0, 'y': 0}]}
+
+Chain of Thought:
+**Considering coordinate constraints**
+
+I need to avoid having edges touch non-consecutively, so I'll be extra careful. My approach is to use coordinates on an integer grid, potentially with half-integers to help with separation. Starting the path near (0.5,0.5) and aiming for a 1-unit corridor width could work, but I have to watch out for corner touches, as those count as touching. I think using 0.25 offsets might help create a clearer rectangular spiral without unwanted overlaps!**Clarifying edge distances**
+
+I must ensure that distances along edges are exactly 1 unit, meaning I can't use lengths like 3.5. Therefore, I’ll stick to unit steps on an integer grid from (0,0) to (4,4) for my spiral design. One concern is ensuring that non-consecutive edges don’t share vertices. I wonder if a Hamiltonian cycle on a 4x4 grid is a feasible plan, as it would need 24 edges and visit 24 distinct vertices while returning to the start without counting the last vertex again.**Designing a grid path**
+
+I realize we can’t visit all 25 grid points, so one must be omitted. A Hamiltonian cycle on a 5x5 uses 25 edges, but I need to remove one detour. Instead, I could consider a Hamiltonian cycle on a 4x4 grid, but that’s only 16 edges, which is too few. To achieve 24 steps while adhering to the 1m length requirement, I’ll need to design a path on the 5x5 grid that avoids one vertex. I can try creating a perimeter path while incorporating an inward dent to extend the length, ensuring it’s an orthogonal polygon.**Mapping out the path**
+
+I’m starting to draw the path, beginning at (0,1) and then following a sequence of coordinates. However, I realize I’ve unintentionally revisited (1,2), which isn’t allowed. I might need to devise a different approach, perhaps a non-axis-aligned zigzag that stays continuous and avoids contact. As time ticks on, I wonder if a regular 24-gon could work, but fitting it inside a 4x4 grid is tricky. It seems like sticking with an axis-aligned snake or Hamiltonian cycle could be my best bet, potentially avoiding the center.**Designing a rectilinear spiral**
+
+I know that a grid with odd vertices can still have a Hamiltonian cycle even if I remove one vertex, which gives me a hopeful starting point. I want to create a clear inward spiral without reusing vertices. I tried mapping out coordinates but noticed some issues with distance and closure. So, if I start at (1,0) and aim to end at (0,0), they are adjacent, which could work for a valid path. Even though I ran into some problems with reused points, I'll put together a plausible list and hope it meets the criteria!
