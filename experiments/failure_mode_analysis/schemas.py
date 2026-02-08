@@ -58,6 +58,7 @@ class EvidenceRow:
   prompt_path: str | None
   raw_text: str | None
   cot_text: str | None
+  prompt_text: str | None
 
   @property
   def key(self) -> RowKey:
