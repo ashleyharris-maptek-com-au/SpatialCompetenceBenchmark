@@ -1,0 +1,193 @@
+Let me think about this problem step by step.
+
+The building is at the origin, axis-aligned, 10 meters wide and deep, and 10 meters tall. So it occupies:
+- x: [-5, 5]
+- y: [-5, 5]
+- z: [0, 10]
+
+The sniper is at position (100, 100, 20).
+
+Each person is represented by a 0.5×0.5×2m axis-aligned bounding box resting on z=0. So each person occupies:
+- x: [x_center - 0.25, x_center + 0.25]
+- y: [y_center - 0.25, y_center + 0.25]
+- z: [0, 2]
+
+For the sniper not to see the people, the building must block the line of sight from the sniper to each person.
+
+The sniper is at (100, 100, 20), which is in the positive x, positive y quadrant, elevated at z=20.
+
+For the building to block line of sight, the people should be positioned such that any ray from the sniper to any point on the person's bounding box intersects with the building.
+
+Since the sniper is at (100, 100, 20) and the building is at the origin, the shadow of the building (from the sniper's perspective) will extend in the direction opposite to the sniper. 
+
+The sniper is in the (+x, +y) direction from the building, so the shadow extends in the (-x, -y) direction.
+
+Let me think more carefully. The sniper is at (100, 100, 20). The building occupies [-5, 5] × [-5, 5] × [0, 10].
+
+For a person at position (px, py) with height up to 2m, the person is hidden if all rays from (100, 100, 20) to any point in the person's bounding box [px-0.25, px+0.25] × [py-0.25, py+0.25] × [0, 2] intersect the building.
+
+
+A person is hidden only when the building blocks every possible ray to their bounding box. The person becomes visible if even one ray from the sniper reaches an unobstructed point on their body. The corner of the person's bounding box closest to the sniper would be the hardest point to block—since the sniper is at (100, 100, 20), this would be the corner in the direction of positive x and y.
+
+If the person is at (px, py), I need to determine which corner is most exposed: when px < 100, the right edge at px + 0.25 is closer; when px > 100, the left edge at px - 0.25 is closer. The same logic applies to the y-coordinate. Vertically, since the sniper sits at z=20 above the person (who spans z=0 to z=2), the top of the person at z=2 would be the most visible point.
+
+Now I'm realizing the building creates a shadow effect. A point gets blocked from the sniper's view if the line of sight from (100, 100, 20) to that point passes through the building. For someone on the ground, I need to trace whether the ray from the sniper intersects the building structure.
+
+The ray can be expressed parametrically: x(t) = 100 + t(px - 100), y(t) = 100 + t(py - 100), z(t) = 20 + t(pz - 20), where t ranges from 0 at the sniper to 1 at the target position. The building occupies the region where both x and y are between -5 and 5, and z spans 0 to 10. I need to check if this ray intersects that rectangular volume for any t in [0, 1].
+
+Looking at the z-component specifically, when pz = 0, the equation becomes z(t) = 20 - 20t. The ray enters the building's height range at z = 10 (when t = 0.5) and exits at z = 0 (when t = 1), giving a valid interval of 0.5 ≤ t ≤ 1. For pz = 2, the calculation would be different, but I should verify the general approach first.
+
+The key insight is that for someone to be hidden, the ray must pass through the building across all dimensions simultaneously—not just the z-axis. I also need to account for the building's shadow cast on the ground, which extends in the direction away from the sniper's position. Since the sniper is at (100, 100, 20) and the building occupies [-5, 5] × [-5, 5] × [0, 10], the far vertices of the building will determine the shadow's extent. corners at (±5, ±5, 0) and top edges at z=10 with corners at (±5, ±5, 10). The shadow boundary depends on rays from the sniper through the building's edges. The corner at (-5, -5, 10) is the furthest point from the sniper at the top, so I need to trace where the ray from (100, 100, 20) through this corner intersects the ground plane. Setting up the parametric ray: (100, 100, 20) + t(-105, -105, -10), I can find where z=0 by solving 20 - 10t = 0.
+
+This gives t = 2, placing the shadow at (-110, -110, 0). Similarly, tracing through (-5, 5, 10) with the ray (100, 100, 20) + t(-105, -95, -10) also yields t = 2 at ground level, extending the shadow to x = -110 and y = -90.
+
+For the remaining two corners, (5, -5, 10) projects to (-90, -110, 0) and (5, 5, 10) projects to (-90, -90, 0), all with the same parameter value t = 2 since the light source height and corner heights are constant.
+
+The top surface of the building casts a shadow forming a square region from (-110, -110) to (-90, -90) on the ground plane. However, I should account for the full three-dimensional structure—the building extends from ground level up to z=10, so the shadow cast depends on which parts of the building are visible from the light source. Since the light is positioned above and outside the building's footprint, the shadow boundary is determined by the edges of the top surface, making the shadow region [-110, -90] × [-110, -90]. Now I need to determine visibility: whether a point on the ground can see the light source without obstruction from the building.
+
+A person standing at ground level within the building's footprint at (px, py) with a height of 2 meters occupies the space [px-0.25, px+0.25] × [py-0.25, py+0.25] × [0, 2]. For complete concealment, every line of sight from the sniper at (100, 100, 20) to any point within this person's bounding box must pass through the building. Since the sniper is positioned in the positive x and y direction relative to the building's center, the shadow extends toward negative x and y coordinates. The person remains hidden only if all possible rays from the sniper to their body are blocked by the building structure.
+
+The critical point to verify is the corner of the person's bounding box closest to the sniper—at (px+0.25, py+0.25, 2)—since this represents the most exposed position. If the ray from (100, 100, 20) to this corner intersects the building, then the entire person is shielded from view. I can parameterize this ray and check where it intersects the building's boundaries to determine visibility. Solving the z-constraint: 20 - 18t ≥ 0 gives t ≤ 10/9, and 20 - 18t ≤ 10 gives t ≥ 5/9. Combined with t ≤ 1, the ray passes through the building's height for t ∈ [5/9, 1]. Now I need to check if the x and y coordinates fall within the building's bounds during this interval. The x-constraint requires 100 + t(px+0.25-100) to stay between -5 and 5 for some t in that range.
+
+The algebra gets complicated depending on whether px+0.25 is greater than or less than 100, since that determines whether the inequalities flip. Rather than work through all the cases, I should write code to check this numerically.
+
+I'll set up a grid of points within the shadow region and verify for each one whether the sniper can see it. The shadow roughly extends from the building's footprint at [-5, 5] × [-5, 5] outward to approximately [-110, -110] in the negative quadrant, based on where the building's top casts its shadow from the sniper's vantage point at (100, 100, 20). I need to be more careful about the exact boundaries though, since the shadow region includes both the building itself and the extended shadow it creates.
+
+The key constraint is that all people must stay within 30 meters of the origin. So I'm looking for positions that satisfy three conditions: they fall within the 30-meter radius circle, they're outside the building's footprint, and they're in the shadow cast by the building. To check if a position is actually shadowed, I'll trace rays from the sniper toward the person's bounding box—specifically checking all 8 corners (the 4 base corners plus 2 height levels) to see if any ray intersects the building. If all rays are blocked, the position is safe.
+
+I'll implement a ray-AABB intersection test using the slab method to determine whether a ray from the sniper to a target point passes through the building's axis-aligned bounding box.
+
+For each dimension, I check if the ray is parallel to that slab—if so, the ray origin must fall within the building's bounds on that axis or it can't intersect. Otherwise, I calculate the intersection parameters t1 and t2, ensuring t1 is the smaller value, then update the valid t range. If the ranges no longer overlap, there's no intersection. Finally, I use this to determine if a person's position is blocked from the sniper's view by the building. 25, 0),
+        (person_pos[0] + 0.25, person_pos[1] - 0.25, 2),
+        (person_pos[0] + 0.25, person_pos[1] + 0.25, 0),
+        (person_pos[0] + 0.25, person_pos[1] + 0.25, 2),
+    ]
+
+The person is only hidden if every corner gets blocked by the building. I iterate through each corner and verify the ray from sniper to that corner intersects the building—if any corner has a clear line of sight, they're exposed.
+
+Now I need to generate 150 positions on a grid where each person occupies 0.5x0.5m space.
+
+The shadow region spans roughly [-110, -5] × [-110, -5], but I'm constrained to 30m from the origin, giving me a circular area of about 2827 m². I'll create a grid of candidate positions across the region within 30m, then filter for those that are hidden from the sniper and don't overlap with the building itself.
+
+My approach: generate candidates in a grid pattern, check each position for distance from origin, building overlap, and whether it falls in the shadow zone. From the valid positions, I'll select 150 that meet all criteria.
+
+```python
+import math
+
+def distance_from_origin(pos):
+    return math.sqrt(pos[0]**2 + pos[1]**2)
+
+def is_overlapping_building(person_pos, building_min, building_max):
+    """Check if person's bounding box overlaps with building footprint."""
+    person_min = [person_pos[0] - 0.25, person_pos[1] - 0.25]
+    person_max = [person_pos[0] + 0.25, person_pos[1] + 0.25]
+    
+    # Check overlap in x and y
+    if person_max[0] <= building_min[0] or person_min[0] >= building_max[0]:
+        return False
+    if person_max[1] <= building_min[1] or person_min[1] >= building_max[1]:
+        return False
+    return True
+
+# Setup
+sniper_pos = [100, 100, 20]
+building_min = [-5, -5, 0]
+building_max = [5, 5, 10]
+max_distance = 30
+person_spacing = 0.5  # each person is 0.5x0.5m
+
+# Generate candidate positions
+candidates = []
+for x in range(-35, 35):  # cover area around origin
+    for y in range(-35, 35):
+        px = x * person_spacing
+        py = y * person_spacing
+        
+        # Check constraints
+        if distance_from_origin([px, py]) > max_distance:
+            continue
+        if is_overlapping_building([px, py], building_min, building_max):
+            continue
+        if not is_person_hidden([px, py], sniper_pos, building_min, building_max):
+            continue
+        
+        candidates.append([px, py])
+
+# Select first 150 positions
+positions = candidates[:150]
+```
+
+I'm filtering positions by distance from origin, excluding any that overlap the building footprint, and keeping only those in the shadow region. Then I'll take the first 150 valid positions from the candidates list. I could also try a greedy placement approach or use the calculated shadow geometry to be more precise about which grid positions fall within the protected zone. else:
+            t1 = (building_min[i] - ray_origin[i]) / direction[i]
+            t2 = (building_max[i] - ray_origin[i]) / direction[i]
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+            if t_min > t_max:
+                return False
+    
+    return True
+
+def is_person_hidden(person_pos, sniper_pos, building_min, building_max):
+    """Check if a person at person_pos is hidden from sniper."""
+    person_corners = [
+        (person_pos[0] - 0.25, person_pos[1] - 0.25, 0),
+
+For each axis, I need to compute the intersection parameters. If the ray direction is nearly zero, I check if the ray origin is within bounds on that axis. Otherwise, I calculate where the ray enters and exits the building's bounds, swapping if needed, then update the valid parameter range. If the ranges no longer overlap, there's no intersection. After checking all three axes, if we still have a valid range, the ray hits the building.
+
+For determining if someone is hidden, I'll check multiple points around their position—corners of a small bounding box—to see if any line of sight to the sniper is blocked by the building. pos[1] - 0.25]
+    person_max = [person_pos[0] + 0.25, person_pos[1] + 0.25]
+    
+    if person_max[0] <= building_min[0] or person_min[0] >= building_max[0]:
+        return False
+    if person_max[1] <= building_min[1] or person_min[1] >= building_max[1]:
+        return False
+    return True
+
+# Setup
+sniper_pos = [100, 100, 20]
+building_min = [-5, -5, 0]
+building_max = [5, 5, 10]
+max_distance = 30
+person_spacing = 0.5
+
+# Generate grid of positions in shadow region (roughly -x, -y quadrant)
+candidates = []
+for x in range(-
+
+The overlap check compares the person's bounding box against the building's footprint using axis-aligned bounds. Then I'm setting up the scenario with a sniper at [100, 100, 20], a building occupying the space from [-5, -5, 0] to [5, 5, 10], and I'll search for safe positions within 30 units using a 0.5-unit grid spacing in the shadowed quadrant. The output is formatted as JSON and printed. The logic iterates through grid positions, filtering candidates by distance from origin, building overlap, and line-of-sight obstruction from the sniper. The ray intersection method using the slab technique should correctly identify blocked rays. However, there's a concern about whether requiring all eight corners of a person's bounding box to be blocked is too restrictive—perhaps a simpler validation approach would be more effective for finding sufficient valid positions. (-109.75, -109.75, -18)
+
+Checking if this ray intersects the building bounds [-5, 5] × [-5, 5] × [0, 10]:
+
+For the x-coordinate, I need 100 - 109.75t between -5 and 5. The upper bound gives t ≥ 0.8658, while the lower bound requires t ≥ 0.9567. For y, the same constraints apply since the direction components are identical. So both x and y require t ≥ 0.9567 to stay within range.
+
+The z-coordinate must satisfy 0 ≤ 20 - 18t ≤ 10, which means t must be between 0.5556 and 1.1111. Combining all three constraints, the valid range is t ∈ [0.9567, 1.1111]. Since this overlaps with the segment parameter range [0, 1], the ray does intersect the building.
+
+However, the intersection occurs at t ∈ [0.9567, 1], which means the building only blocks the ray near the target location itself. For the building to truly obstruct the line of sight, it would need to block some portion where t < 1, and since the intersection extends right up to t = 1 (the target point), I need to reconsider whether this actually prevents the sniper from seeing the person or if the building's edge just barely touches the endpoint. _min ≤ t_max (0.9567 ≤ 1), there is an intersection. The building blocks the view since the intersection occurs before reaching the person.
+
+I should verify my slab method implementation handles the boundary correctly. When t_min equals t_max, that's a tangent case—the ray just grazes the building. For blocking purposes, I'll treat this as blocking the view. The key is ensuring I'm checking the right interval: the building must intersect the ray segment strictly between the sniper and person, which means t ∈ (0, 1) rather than including the endpoints. sider the geometry more carefully. The person at (-10, -10) occupies a bounding box from (-10.25, -10.25) to (-9.75, -9.75). The corner nearest the sniper's line of sight is at (-9.75, -9.75), and I need to verify whether the ray from the sniper to this corner actually passes through the building before reaching it. Let me recalculate the ray intersection: at t = 0.9567, the ray position is approximately (-5, -5) in x and y, with z around 20 - 18 * 0.9, which suggests the building geometry needs more careful verification to determine if occlusion truly occurs. in the x-direction, the ray reaches -5 when 100 - 109.75t = -5, giving t ≈ 0.9567, and reaches 5 when 100 - 109.75t = 5, giving t ≈ 0.8645. Since the ray is moving from x = 100 toward x = -9.75, it enters the building's x-range at t ≈ 0.8645 and exits at t ≈ 0.9567.
+
+For the y-direction, the same bounds apply since the ray moves identically in y. The z-range [0, 10] corresponds to t ∈ [0.5556, 1.1111]. The actual intersection within the segment from sniper to person (t ∈ [0, 1]) is where all three ranges overlap, which occurs around t ∈ [0.9567, 1].
+
+Wait—I need to reconsider. The ray actually enters the x and y bounds at t ≈ 0.8658 and exits at t ≈ 0.9567, and this interval does fall within [0, 1]. So the ray does pass through the building before reaching the person. [0.8658, 0.9567].
+
+For the y and z dimensions, I get matching intervals [0.8658, 0.9567] and [0.5556, 1.1111] respectively. The intersection across all three axes is [0.8658, 0.9567], which falls entirely within the ray's valid range of (0, 1). This confirms the ray intersects the building before reaching the target point, so someone at (-10, -10) would indeed be blocked from view.
+
+Now I should verify the slab method implementation handles the ray-box intersection correctly, checking how it computes t values for each dimension and finds their intersection. = max(0.8658, 0.8658) = 0.8658
+  - t_max = min(0.9567, 0.9567) = 0.9567
+
+- For z (i=2):
+  - t1 = (0 - 20) / -18 = -20 / -18 = 1.111
+  - t2 = (10 - 20) / -18 = -10 / -18 = 0.556
+  - Since t1 > t2, swap: t1 = 0.556, t2 = 1.111
+  - t_min = max(0.8658, 0.556) = 0.8658
+  - t_max = min(0.9567, 1.111) = 0.9567
+
+Since t_min (0.8658) < t_max (0.9567), the ray intersects the building and returns True.
+
+Working through each axis, I'm computing the parametric intersection points where the ray enters and exits the bounding box. The x and y dimensions both constrain the intersection to the range [0.8658, 0.9567], while z's constraint [0.556, 1.111] is broader and doesn't further restrict this range. Since a valid overlap exists across all three dimensions, the ray successfully hits the building.
+
+Now I should verify whether 150 people can actually fit in the available space.
+
+A 15×10 grid with 0.5m spacing gives exactly 150 positions and requires 7.5m × 5m of area. The shadow region extends well beyond the building's footprint at [-5, 5] × [-5, 5], so there's sufficient room to place everyone. I'll generate the grid positions and run the code to confirm the arrangement works.

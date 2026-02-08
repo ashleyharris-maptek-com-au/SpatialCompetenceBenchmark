@@ -1,0 +1,410 @@
+I need to create a 10x10 heightmap maze where:
+1. A is at level 0, B is at level 9
+2. Only one solution exists
+3. At least 4 jumps are required
+4. Path visits at least 20% of cells (at least 20 cells)
+5. No single elevation occupies more than 30% of the grid (max 30 cells of any single height)
+6. Characters can move to adjacent cells if height difference is at most 1
+7. Characters can jump 2 cells if source and destination are same height AND the cell between is lower
+
+Let me design this carefully.
+
+Starting with A at level 0, need to reach B at level 9.
+
+The path needs to go from 0 up to 9, requiring at least 4 jumps.
+
+Let me think about the structure:
+- A is at height 0
+- Need to climb to 9 where B is
+- Need at least 4 jumps along the way
+
+A jump requires:
+- Source and destination at same height
+- Middle cell lower than source
+
+Let me design a path:
+Start at A (height 0)
+- Move to 1, then 2, then 3...
+- Need jumps incorporated
+
+Let me try to design this step by step:
+
+Path idea:
+A(0) -> 1 -> 2 -> jump over 0 to 2 -> 3 -> 4 -> jump over 2 to 4 -> 5 -> 6 -> jump over 4 to 6 -> 7 -> 8 -> jump over 6 to 8 -> 9 -> B(9)
+
+Let me sketch a maze:
+
+Row 0: A012345678
+Row 1: 9020406089
+...
+
+Wait, I need to be more careful. Let me think about this differently.
+
+For a jump at height H, I need:
+- Cell at H
+
+
+- Cell at H-1 or lower (the gap)
+- Cell at H again
+
+Let me create a winding path with jumps:
+
+```
+A123456789
+9020406080
+9999999999
+...
+```
+
+Hmm, that won't work well. Let me think more carefully.
+
+I'll design a snake-like path with jumps incorporated:
+
+Starting position A at (0,0), ending B somewhere else.
+
+Let me try:
+
+Position (row, col), height
+
+Path:
+(0,0) A=0
+(0,1) 1
+(0,2) 2
+(0,3) 2 -- now I can jump from here over a lower cell back to height 2, or continue climbing. Let me build a path that requires exactly 4 jumps to reach height 9. I'll create sections where each jump advances me up a level, with regular moves filling in the gaps between jumps. 4 at (0,2) to skip over the gap at (0,3) and land on 2 at (0,4). Then climb through 3, 4, 4 before jumping again from (0,7) over height 2 at (0,8) to reach 4 at (0,9). Continue ascending to heights 5 and 6, then make another jump from (3,9) across height 4 to land on 6 at (5,9). From there, descend through 7 and 8 as I work back toward the goal.
+
+The path reaches 18 cells total, which falls short of the 20% threshold needed. I should extend it further to capture more of the terrain. I'm going to try a cleaner approach. Let me map out a grid structure more carefully:
+
+Row 0: A 1 2 0 2 3 4 2 4 5
+Row 1: 9 9 9 9 9 9 9 9 9 6
+Row 2: 9 9 9 9 9 9 9 9 9 6
+Row 3: 9 9 9 9 9 9 9 9 9 6
+Row 4: 9 9 9 9 9 9 9 9 4 6
+Row 5: B 9 8 6 8 8 7 6 6 6
+Row 6-9: walls (9s)
+
+This is getting complicated. I need to think about this more systematically. The key constraints are ensuring there's only one valid path and that it visits exactly 20 cells.
+
+Let me design a winding path instead. I'll create a grid where the solution snakes through with walls blocking alternatives. But I realize my current attempt doesn't properly incorporate the jumps. I need to be more deliberate about where jumps occur - placing them at specific height transitions like 2→0→2, then 4→2→4, then 6→4→6, and finally 8→6→8 to get the required four jumps.
+
+Starting from A at height 0, the path should climb to height 2, jump over a valley, climb to 4 and jump again, continue to 6 with another jump, and finally reach 8 with the last jump before descending to B. Let me map this out on the grid with the path moving right and down, ensuring walls surround it to prevent shortcuts while keeping the maximum height well under 30% of the grid size. Row 1 continues down from the endpoint at (0,9) with value 6. Row 2 introduces a 4 at (2,9) to create a vertical jump opportunity from 6→4→6 across rows. Row 3 starts building the next section of the path.
+
+Looking at the vertical sequence in column 9: I need to trace through positions (3,9)=6, (3,8)=7, (3,7)=8, then a gap at (3,6)=6, followed by (3,5)=8 to enable jumping over the 6. I'm reconsidering the overall structure—the path needs at least 20 cells and 4 jumps minimum. A cleaner design places the starting cell A at (0,0), the initial sequence 1→2→0→2→3→4→2→4→5 across row 0, then uses column 9 for the vertical descent with strategic gaps to force jumps, and ends with B somewhere around row 6 to keep the path compact.
+
+Tracing the first row: from A at (0,0), I move to (0,1)=1 with a difference of 1, then (0,2)=2 also valid. At (0,3)=0 the difference becomes 2, so I can't walk there—I need to jump from (0,2) to (0,4)=2 since both are height 2 and the intermediate cell is lower. That's jump 1. Continuing to (0,5)=3 and (0,6)=4 works normally, but (0,7)=2 creates another gap, allowing a jump from (0,6)=4 to (0,8)=4 over the lower cell. That's jump 2, and the pattern continues similarly through the remaining cells.
+
+For the vertical section, I need to ensure the path can reach B. At (2,9)=4, the difference from (1,9)=6 is too steep to walk, so I'd need a jump from (1,9) to (3,9) where both are height 6 and (2,9)=4 sits between them as the lower cell. This means redesigning the grid so the heights support valid jumps at critical points. Row 3 should be 9999999876, giving me (3,7)=8, (3,8)=7, (3,9)=6. This satisfies the jump from (1,9)=6 over (2,9)=4 to land at (3,9)=6, and the consecutive decrements work: 6→7→8. Now I need to set up Jump 4, which could go from (3,7)=8 to (5,7)=8 if I place the right values there.
+
+Looking at the grid, Row 4 at position 7 is currently 6, which is less than 8, so that jump is possible. But Row 4 position 9 shows 8, and since my path is at (3,9)=6, I can't move there. I need to reconsider the arrangement—specifically ensuring (5,7)=8 while keeping (4,7)<8 to allow the vertical jump.
+
+From (5,7)=8, I can move horizontally to (5,6)=9, which gives a difference of 1. The next position (5,5) needs to be either 8 or 9 to continue. Since B marks the endpoint at height 9, I should place it where the path naturally reaches that maximum height rather than treating it as a separate entity—B itself represents a position with height 9.
+
+Let me trace the complete path more systematically: starting at A (height 0), I move through positions with increasing heights, using jumps when needed to skip over gaps. The sequence goes through (0,0)→(0,1)→(0,2), then jumps to (0,4), continues to (0,5)→(0,6), jumps to (0,8)→(0,9)→(1,9), jumps to (3,9)→(3,8)→(3,7), jumps to (5,7)→(5,8), and finally reaches (5,9) where B is located at height 9.
+
+This gives me 15 cells visited, which is only 15% coverage—I need to reach 20%. I should extend the path by adding more cells with additional meandering before reaching the endpoint.
+
+Let me continue from (5,8)=9 by moving right: (6,8)=9, (7,8)=9, then up to (7,9)=B. That adds three more cells, bringing the total to 18. Alternatively, I could redesign the grid with a longer initial sequence using the height progression A=0, then 0, 1, 1, 2, and so on. A horizontal snake pattern might work better—starting with A at the beginning of row 0, then moving through increasing values before eventually reaching B at the end. - The main path winds through the grid with walls creating barriers and forcing specific jumps
+- Starting from A, the sequence goes 0→1→2 with gaps at certain positions, then 2→3→4 with another gap before reaching 4
+- At the right edge, the path turns downward: 4→5 at position (1,9)
+- Row 1 is mostly blocked by walls except for the single opening at (1,9)
+- A vertical jump spans from (1,9) down to (3,9), skipping over the gap at (2,9)
+- From (3,9), the path continues left to (3,8) and then makes a horizontal jump to (3,6), bypassing the gap at (3,7)
+- Moving further left: (3,6)→(3,5)→(3,4), then another jump from (3,4) to (3,2) across the gap at (3,3)
+- After (3,2)=8, I need to continue extending the path downward to reach B, so I'm placing 9s at (4,2) and (5,2) to complete the sequence
+
+Reconsidering the layout, I could wind the path differently through row 0 with strategic jumps, then connect vertically down the right side. This would give me more cells to work with—roughly 8 cells across row 0, then 3 more moving down column 9, before jumping back left to avoid repeating values.
+
+From there, I'd descend through column 3 with another jump to skip over a conflicting cell, then move left along row 3 and finally down column 0 to complete the sequence. Let me verify the total count carefully, making sure I'm not double-counting any positions in the path. Let me reconsider the path layout. Row 0 has heights: A 0 1 2 0 2 3 4 2 4 at positions 0-9. So (0,0)=A, (0,1)=0, (0,2)=1, (0,3)=2, (0,4)=0, (0,5)=2, (0,6)=3, (0,7)=4, (0,8)=2, (0,9)=4.
+
+For a jump from (0,3) over (0,4) to (0,5): the middle cell (0,4)=0 is lower than both endpoints (0,3)=2 and (0,5)=2, so this jump is valid. Starting from (0,0)=A, I can move through (0,1), (0,2), (0,3), then jump to (0,5).
+
+From (0,7)=4, I can jump over (0,8)=2 to reach (0,9)=4 since the middle is lower. Then moving down column 9: (1,9)=5, (2,9)=6. But I need to verify whether I'm jumping from (1,9) to (3,9) or moving sequentially—let me recalculate the grid dimensions and what values should actually be at each position. Let me reconsider the path more carefully. If (0,9)=4 and I set (1,9)=5, that's a valid step down. Then (2,9)=6 continues the descent naturally without requiring a jump.
+
+To force jumps into the solution, I should restructure the grid to create barriers. Let me try a winding pattern instead:
+
+Row 0: A 0 1 2 0 2 3 4 2 4
+Row 1: 9 9 9 9 9 9 9 9 9 5
+
+This creates a wall of 9s that blocks the direct path, forcing the algorithm to find alternative routes with jumps. (3,9)=5 to (3,8)=6 starts a horizontal walk leftward. For a jump opportunity, I can set (3,8)=6, (3,7)=4, (3,6)=6, creating a valid jump from (3,8) to (3,6) over the smaller value at (3,7). Continuing left: (3,6)=6, (3,5)=7, (3,4)=8, then another jump possibility with (3,4)=8 jumping over (3,3)=6.
+
+From (3,4)=8, I jump to (3,2)=8 over (3,3)=6. Then the path continues: (3,2)=8, (3,1)=9, (3,0)=9, (4,0)=9, reaching (5,0)=B=9. Now I'm tallying all the positions and their values to verify the complete sequence works correctly. )=8, (3,2)=8, (3,1)=9, (3,0)=9, (4,0)=9, (5,0)=B
+
+That's 19 cells total, so I need one more. Let me reconsider the layout.
+
+I could extend the starting path instead. If I set row 0 to all 9s except the start, then build the main path along row 1:
+
+Row 0: A 9 9 9 9 9 9 9 9 9
+Row 1: 0 0 1 2 0 2 3 4 2 4
+
+The route would go A(0,0)=0 → (1,0)=0 → (1,1)=0 → (1,2)=1 → (1,3)=2 → skip (1,4)=0 → (1,5)=2 → (1,6)=3 → (1,7)=4 → skip (1,8)=2 → (1,9)=
+
+4
+
+Then moving downward, I'd place (2,9)=5 and continue down the right edge with jumps where the intermediate values allow it. For instance, jumping from (2,9)=5 over (3,9)=3 to (4,9)=5 works since 5 > 3. I need to be careful about which cells get which values to ensure the path remains valid. 3)=9, (4,2)=9, (4,1)=9, (4,0)=B=9
+
+Counting all the cells: (0,0)=A, (1,0)=0, (1,1)=0, (1,2)=1, (1,3)=2, (1,5)=2, (1,6)=3, (1,7)=4, (1,9)=4, (2,9)=5, (4,9)=5, (4,8)=6, (4,7)=7, (4,5)=7, (4,4)=8, (4,3)=9, (4,2)=9, (4,1)=9, (4,0)=B. That gives me 19 cells, so I'm still missing one.
+
+I could extend the path further by adding (5,0)=9 and moving the endpoint to (5,0)=B instead. This would give me the 20th cell I need. Let me verify the count with this adjustment. 9 9 9 3 9
+Row 4: B 9 9 9 8 7 5 7 6 5
+Row 5: 9 9 9 9 9 9 9 9 9 9
+
+I'm running into conflicts with this layout. Let me start fresh and place the path cells systematically first. The path starts at (0,0) with A, then moves through (1,0) through (1,9) with values 0, 0, 1, 2, 0, 2, 3, 4, 2, 4 respectively, before reaching (2,9)=5.
+
+Continuing down the right edge and back along row 4: (3,9)=3, (4,9)=5, (4,8)=6, (4,7)=7, (4,6)=5, (4,5)=7, (4,4)=8, (4,3)=9, (4,2)=9, (4,1)=9, (4,0)=9, and finally (5,0)=B. Now I need to fill remaining cells with walls or heights that prevent shortcuts. I should verify there are no alternative paths from A that could bypass the intended route.
+
+From A at (0,0), moving to (0,1) is blocked since it's 9. The only option is (1,0)=0, which is the correct path. From (1,0), I can reach (1,1)=0 but (2,0) must be 9 to prevent deviations. Similarly, from (1,1), (0,1) is blocked and (2,1) is set to 9, leaving only (1,2)=1 as the valid next step. I need to check that no other cells allow shortcuts, particularly around the perimeter and any cells not yet assigned.
+
+For the jump at (1,3)=2 to (1,5)=2, walking through (1,4)=0 is impossible due to the height difference. The jump itself works since both cells equal 2. To prevent reaching (1,5) from adjacent cells, I'll set (0,5) and (2,5) to values greater than 3, and ensure (1,6)=3 doesn't create an unintended shortcut since it comes later in the intended sequence.
+
+Similar constraints apply to the second jump at (1,7)=4 to (1,9)=4 over (1,8)=2—the intermediate cell can't be walked to, but the jump is valid. I need to block (0,8) and (2,8) by setting them above 3, and prevent (2,9)=5 from offering an alternative path even though it's one step away.
+
+For the third jump starting at (2,9)=5 to (4,9)=5 over (3,9)=3, the same logic holds: walking is blocked by the height difference, the jump succeeds, and adjacent cells must be configured to prevent shortcuts.
+
+The fourth jump at (4,7)=7 to (4,5)=7 over (4,6)=5 follows the same pattern—the intermediate cell is unreachable by walking, the jump works, and I need to set (4,6)=5 to block access from neighbors while ensuring the destination remains reachable only via the jump.
+
+For the path down from (4,4)=8 through (4,3), (4,2), (4,1) to (4,0)=9, I need to verify (4,3)=9 by preventing shortcuts from adjacent cells—setting (3,3) and (5,3) to 9 to avoid creating alternative routes.
+
+But if both (3,3) and (4,3) equal 9, movement between them becomes possible, which breaks the intended path. I should instead use different height values to block connections—perhaps setting (3,3)=7 so it doesn't connect to (4,3)=9, ensuring the path remains constrained to the vertical line.
+
+Now I'm constructing the actual grid. The path goes vertically down column 4 from A at (4,0) to B at (4,5), with heights decreasing along that route: 0, 1, 2, 0, 2, 3, 4, 2, 4 in row 1, then 5 in row 2, 3 in row 3, and 5, 7, 6, 5 in row 4. Everything else gets filled with 9s to prevent alternative routes. -> (5,0)=B
+
+The transition from (4,4)=8 to (4,3)=9 works with a difference of 1. However, I need to prevent the path from detouring at (4,0)=9. Since (5,0)=B is the intended next step, I should block (3,0) by setting it to 7, creating a difference of 2 from the 9 above it. Updating row 3 to have (3,0)=7 while keeping most cells at 9 and (3,9)=3 ensures the path stays constrained.
+
+Now checking the elevation constraint—no single value should exceed 30% of the grid. I'm counting the frequency of each elevation to verify this holds across all rows. , 2 sevens, 2 fives, 1 six. Row 5 has 9 nines plus B (which equals 9), and rows 6-9 are entirely 9s, adding 40 more nines.
+
+Tallying this up: 9 + 0 + 9 + 8 + 4 + 9 + 40 = 79 nines total. That's 79% of the grid—far exceeding the 30% threshold. I need to drastically cut down on these tall cells and introduce more height variation instead. The strategy should focus on making walls unreachable from the traversable path by using a range of intermediate heights rather than maxing everything out.
+
+For any path cell at a given height, adjacent walls need to be at least 2 units away vertically—so a path cell at height 0 requires walls of 2 or higher, while a path cell at height 4 could have walls at 2 or below, or 6 and above. This constraint-based approach gets complicated quickly, so a simpler tactic is to design a sparser maze with genuinely varied terrain throughout, ensuring most cells aren't just default 9s but instead use the full spectrum of available heights.
+
+I'm thinking of creating distinct "islands" of traversable terrain that connect only through specific jumps, with unreachable wall regions filling the gaps. Each island would occupy a narrow band of heights—the first around 0-2, the next at 2-4, then 4-6, 6-8, and finally 8-B—so the player must make deliberate vertical transitions between zones. The walls separating these islands would use heights that don't overlap with any accessible path, making them genuinely impassable obstacles rather than just visual barriers. I need to construct a valid maze where movement between adjacent cells requires a height difference of at most 1.
+
+Let me trace the path from A to B systematically. Starting at (0,0) with height 0, I can move right through increasing heights: 0→0→1→2→3→4, then maintain height 4 across the top row. Moving down at (1,9) to height 5 works since the difference is 1. Continuing down the right edge, each step increases by 1: 5→6→7→8→9, reaching B at the bottom right. The left side and interior are filled with 9s to create walls that block alternative routes, ensuring the path follows the intended sequence.
+
+To force the solution to use jumps, I need to create sections where the only way forward requires skipping over higher terrain. By strategically placing height barriers and gaps, I can design a maze where certain cells are unreachable without jumping, making jumps mandatory rather than optional. 0 1 2 3 4 5 6 7 8 9
+Height: A 0 1 2 0 2 3 4 2 4
+
+The path goes A → 0 → 1 → 2, then jumps over the 0 to reach 2 → 3 → 4, then jumps over the 2 to reach 4. That gives me two jumps already. From (0,9)=4, I can move down to (1,9)=5 with a difference of 1. For the third jump, I'll use heights 5, 3, 5 arranged vertically at column 9: (1,9)=5, (2,9)=3, (3,9)=5. Continuing from (3,9)=5, I can go left with (3,8)=6, (3,7)=7, and so on.
+
+For the fourth jump, I'll set up (3,7)=6 to jump over (3,6)=4 and land on (3,5)=6. From there, the path descends through (3,4)=7, (3,3)=8, (3,2)=9, (3,1)=9, ending at (3,0)=B=9. The full sequence is (0,0), (0,1), (0,2), (0,3), (0,5), (0,6), (0,7), (0,9), (1,9), (3,9), (3,8), (3,7), (3,5), (3,4), (3,3), (3,2), (3,1), (3,0).
+
+That gives me 18 cells, but I need 20. I can extend by adding (4,0)=9 and (5,0)=B after (3,0), which brings the total to exactly 20 cells. Now I'm ready to construct the actual maze grid with Row 0 containing A 0 1 2 0 2 3 4 2 4 and Row 1 filled with barriers.
+
+Looking at Row 3, I realize (3,0) should connect to the path properly. Let me trace back: (3,2)=9, then (3,1)=9, (3,0)=9, followed by (4,0)=9 and finally (5,0)=B as the endpoint. This creates a valid descending path that reaches the goal.
+
+Counting all cells in the complete path: starting from (0,0) and moving through (0,1), (0,2), (0,3), (0,5), (0,6), (0,7), (0,9), then (1,9), (3,9), (3,8), (3,7), (3,5), (3,4), (3,3), (3,2), (4,2), (5,2), (5,1), and ending at (5,0)=B gives exactly 20 cells, which matches the required count.
+
+Now I need to verify the transitions are valid—each step between consecutive cells should have a difference of 0 in the distance values. The path from (3,2) through (4,2), (5,2), (5,1) to (5,0) all maintain this property. With the grid structure laid out, I should fill in the remaining cells strategically to ensure no shortcuts exist around the intended path.
+
+For row 1, I need heights that create barriers. If I use values like 6, 7, or 8 for most positions, cells adjacent to the row 0 path won't be reachable since the height difference would exceed 1. But I have to be careful—if (0,7)=4 and (1,7)=5, that's only a difference of 1, which means it would be reachable. So I need to ensure cells in row 1 that touch the row 0 path are at least 2 units away in height to block unintended connections.
+
+Looking at specific adjacencies: (1,0) must differ from (0,0)=0 by at least 2, so it needs to be ≥2. Similarly, (1,1) needs ≥2 to block from (0,1)=0. For (1,2) adjacent to (0,2)=1, I need either ≥3 or ≤-1, so ≥3 works. At (1,3) adjacent to (0,3)=2, I need ≥4 or ≤0, meaning either 0 or ≥4. The gap at (0,4) isn't part of the path, but I still need (1,4)≥2 to maintain the barrier.
+
+Continuing down the column: (1,5) must be ≥4 or ≤0 (adjacent to (0,5)=2), (1,6) needs ≥5 or ≤1 (adjacent to (0,6)=3), and (1,7) requires ≥6 or ≤2 (adjacent to (0,7)=4). At (1,8) adjacent to (0,8)=2, I need ≥4 or ≤0. Finally, (1,9)=5 works since it's part of the path and differs from (0,9)=4 by exactly 1.
+
+Setting most of row 1 to 7 satisfies these constraints. Now for row 2: (2,9)=3 serves as a gap for jumping, positioned between (1,9)=5 and (3,9)=5. I need to verify whether moving from (1,9)=5 to (2,9)=3 is valid.
+
+The difference is 2, which blocks movement. For (2,8), I need it ≤4 to satisfy constraints from both (1,8)=7 and (3,8)=6. Setting (2,8)=4 works, but then the difference between (2,8)=4 and (2,9)=3 is only 1, which could allow traversal. Since (2,9) is meant as a gap rather than part of the main path, I need to ensure no unintended routes form through this cell.
+
+The core issue is ensuring the main path stays isolated. Rather than trying to patch individual cells, I should restructure with distinct platforms at different height ranges—one around the start, intermediate platforms at heights 2-4 and 4-6, and a final platform around the goal. Each platform connects via jumps that require specific height differences, preventing shortcuts. For instance, moving from a height-2 cell to height-2 elsewhere allows continuation, but heights between platforms (like 3 or 5) create barriers that block unintended paths.
+
+Let me construct a concrete example and verify it works. I'll map out the grid with explicit heights and trace whether the intended route succeeds while alternatives fail.
+
+Starting with row 0: A 0 1 2 0 2 3 4 2 4
+
+Following the path: A at (0,0) with height 0, then (0,1)=0 (no height change), (0,2)=1 (increase by 1, valid), (0,3)=2 (increase by 1, valid). At (0,4)=0 the height drops by 2, which exceeds the single-step limit, so I need to jump over it to (0,5)=2, landing back at the same height I left from. Continuing forward, (0,6)=3 increases by 1 from the previous position, and (0,7)=4 increases by 1 again.
+
+From (0,7)=4, I can jump across (0,8)=2 to reach (0,9)=4, which has the same height. Now I need to move down to row 1 at column 9 and work toward B.
+
+Rather than building this incrementally, I'll design the full grid more systematically. The key is ensuring most cells have height 6 to create a uniform base, with strategic variations for the path. Row 0 stays as the starting sequence, row 1 has mostly 6s with a 5 at the end, row 2 introduces a 3 at position (2,8) to create variation, and subsequent rows maintain the 6-base while B is placed at (6,6) with surrounding heights of 8 and 9 to mark the endpoint clearly. Checking row 2 again: position 8 is 3, position 9 is 6, so (2,9)=6. Moving down from (1,9)=5 to (2,9)=6 is a difference of 1, which works. Then (3,9)=5 is also fine, and (4,9)=6 continues the pattern smoothly. But I want to force additional jumps here instead of allowing straightforward progression. I could set (2,9)=5, (3,9)=3, and (4,9)=5 to create a blocked cell at (3,9) that requires jumping over it. to (2,9)=5, the difference is 0, which works. Moving from (2,9)=5 to (2,8)=3 has a difference of 2, so that's blocked. Checking (3,9): it's currently 5, giving another difference of 0—but I need a jump to occur. To force a jump, I should set (3,9)=3 instead, creating the sequence (2,9)=5, (3,9)=3, (4,9)=5 with alternating differences of 2.
+
+Adjusting row 3 to have (3,9)=3 and row 4 to have (4,9)=5 allows me to jump from (2,9) over (3,9) to land on (4,9). From there, moving to (4,8)=6 gives a difference of 1, which is valid.
+
+Now I need to ensure (5,9) is blocked to prevent an unwanted connection. Setting row 5 with (5,9)=3 creates a difference of 2 from (4,9)=5, making that path impossible. Continuing along row 4, I can progress through (4,7)=7, (4,6)=8, and reach (4,5)=9 as the destination. This path requires traversing all 10 height levels, which demands exactly 10 transitions total.
+
+Let me map out the full sequence with the necessary jumps. Starting from height 0, I move through 0→1→2, then use a jump to stay at 2→3→4, another jump to maintain 4→5, and continue 5→6→7→8→9. This gives me 14 cells total. I can add another jump by going from (4,5)=8 to (4,3)=8, skipping over (4,4)=6 as the intermediate cell. Then I finish the path with (4,2)=9, (4,1)=9, (4,0)=9, and finally (5,0)=B=9.
+
+Counting all the cells in the path: (0,0) through (0,3), then (0,5) through (0,7), (0,9), (1,9), (2,9), (4,9), (4,8), (4,7), (4,6), (4,5), (4,3), (4,2), (4,1), (4,0), and (5,0)—that's 20 cells with exactly 4 jumps. Now I can fill in the maze grid with the height values for each row.
+
+Verifying the path works: starting at A(0,0) with height 0, moving right through increasing heights 0→1→2, jumping over the gap at column 4, continuing to 3→4, jumping over column 8, then moving down the right edge and back along row 4 to reach B at (5,0). Each step either increases by 1 or jumps over a lower cell, maintaining the valid path constraint. - From A(0,0)=0, only (0,1)=0 is accessible since (1,0)=6 exceeds the diff threshold.
+- (0,1)=0 can advance to (0,2)=1, with (1,1)=6 blocked by its high diff.
+- (0,2)=1 progresses to (0,3)=2, while (1,2)=6 is inaccessible.
+- (0,3)=2 cannot reach (0,4)=0 or (1,3)=6 due to diff constraints, so it must jump to (0,5).
+- From (0,5)=2, the path continues forward to (0,6)=3, with (1,5)=6 blocked.
+- (0,6)=3 advances to (0,7)=4, while (1,6)=6 remains inaccessible.
+- (0,7)=4 hits a dead end with both (0,8)=2 and (1,7)=6 blocked, requiring a jump to (0,9).
+- (0,9)=4 can reach (1,9)=5, which then connects back to (0,9) or forward to (1,8)=6 with a diff of 1
+
+, making it blocked.
+
+Actually, (1,8) should be 7 based on row 1, not 6. That means from (1,9)=5 to (1,8)=7 has a diff of 2, which is also blocked. Looking at row 2, (2,8)=6, so I need to check the transition from (1,8)=7 to (2,8)=6.
+
+That's a diff of 1, which means it's passable. From (2,8), I can move to (2,9)=5 with a diff of 1, reconnecting to the main path. So there's an alternate route through (2,8) that avoids the direct (1,9) to (1,8) transition.
+
+Let me verify the connections more carefully. From (2,9)=5, moving to (2,8)=6 works since the difference is only 1. And from (2,8)=6, I can go back to (2,9)=5 or explore other neighbors. The key question is whether this creates any unintended loops or shortcuts that break the intended path structure.
+
+Looking at the neighbors of (2,8)=6: moving to (2,7)=6 has no height difference, (1,8)=7 differs by 1, and (3,8)=6 also has no difference. This means the wall cells can connect to each other in ways I didn't anticipate, potentially allowing the solver to bypass my intended barriers. I need to redesign with more dramatic height variations to truly isolate the solution path.
+
+Using steeper gradients: Row 1 becomes all 9s, Row 2 ends with 5, Row 3 ends with 3, Row 4 has a mix including 8s, 7s, and 6s leading to 5, and Row 5 starts with the goal. The key transitions now show that moving from (1,9)=5 to (1,8)=9 requires crossing a 4-unit difference, which blocks that route. Similarly, (2,9)=5 to (2,8)=9 is blocked by the same 4-unit gap, and (4,9)=5 to (5,9)=3 is blocked by a 2-unit difference.
+
+Let me trace the complete path: Starting at A(0,0)=0, I move through (0,1)=0, (0,2)=1, (0,3)=2, then jump over (0,4)=0 to reach (0,5)=2. Continuing through (0,6)=3 and (0,7)=4, I jump over (0,8)=2 to (0,9)=4. From there, I reach (1,9)=5 and (2,9)=5, then jump over (3,9)=3 to (4,9)=5. Moving backward along row 4 through (4,8)=6, (4,7)=7, (4,6)=8, (4,5)=8, I jump over (4,4)=6 to (4,3)=8. Finally, I traverse (4,2)=9, (4,1)=9, (4,0)=9, and reach B at (5,0)=9.
+
+Counting the 9s in the grid: Row 1 has nine 9s, Row 2 has nine 9s, Row 3 has nine 9s, Row 4 has three 9s in the first positions. Row 5 contains eight 9s plus B itself. I haven't yet filled rows 6-9, so I need to reconsider the total count without assuming those rows are complete.
+
+For the remaining rows, I'll use different values instead. Row 6 becomes all 0s, Row 7 all 1s, Row 8 all 2s, and Row 9 all 3s. This gives me a clearer picture of the height distribution across the grid.
+
+Counting the occurrences: 0s appear 13 times total (including the 10 in row 6), 1s appear 11 times (with 10 from row 7), 2s total 13 (10 from row 8 plus scattered cells), and 3s also reach 13. For the 4s, I need to verify—position (0,7) and (0,9) both contain 4, but I should double-check row 4 since (4,4) actually holds a 6, not a 4.
+
+Looking at the remaining digits: 5s show up only 3 times across the grid, 6s appear twice, 7s just once, 8s three times, and 9s are problematic—they're everywhere. Counting 9s from the first three rows (9 each), plus three more in row 4, eight instances in row 5, and one more gives me around 39 total, which exceeds the target of 30. I need to adjust the earlier rows to reduce the frequency of 9s.
+
+The constraint between rows is strict: adjacent cells must differ by at least 2. From (0,0)=0, the cell below needs to be ≥2. From (0,1)=0, same requirement. From (0,2)=1, I need ≥3 or negative values. From (0,3)=2, I need ≥4. This severely limits what values I can place in row 1 directly below row 0, which blocks many straightforward approaches. I can see the constraints are narrowing down the possible values for each cell in row 1. Most positions are forced to be 4, but a few have alternatives. Let me check if these assignments are actually valid by verifying the differences are all at least 2.
+
+Looking at the sequence: 4, 4, 4, 4, 4, 4, 1, 2, 0, 5. The first six cells form a connected component since adjacent 4s have difference 0. Then (1,6)=1 breaks the chain with a difference of 3 from the previous cell. From there, (1,6) to (1,7) is a difference of 1 (connected), but (1,7)=2 to (1,8)=0 is a difference of 2 (blocked). The final jump from (1,8)=0 to (1,9)=5 is also blocked. So I'm getting three separate segments in row 1: cells 0-5 form one group, cells 6-7 form another, and cells 8-9 are isolated.
+
+Now checking vertical connections: (1,6)=1 can only connect downward if (2,6) is within distance 1, meaning it needs to be 0 or 2. Similarly, I need to set row 2 values to either block or allow connections from row 1. For cells below the first segment, I'll use values that create barriers—anything ≥6 or ≤2 blocks from (1,0)=4, and similar constraints apply to the other row 1 cells.
+
+The key constraint is (2,9)=5 must connect to (1,9)=5 to maintain the path, while all other row 2 cells need to be positioned to prevent unintended connections to row 3 except through the designated jump sequence. Rather than calculate each constraint individually, I'll adopt a simpler approach using heights that naturally prevent cross-row connectivity.
+
+Using 0 and 9 as barriers—values far enough from mid-range to isolate regions—I can construct a grid where most rows are blocked from each other. The design places row 1 entirely at height 9, row 2 at height 0 except for the critical (2,9)=5 junction, row 3 at height 9, and row 4 with mixed heights to create the necessary path structure. Row 5 sits at height 0 with B at the start, and row 6 is all 9s to seal off the bottom.
+
+Rows 7-9 continue the barrier pattern: alternating 0s and 9s to prevent vertical movement except through designated junctions. From A at (0,0), I can move right along row 0 through increasing heights, then drop to (0,9)=4 and move down to (1,9)=5 to enter the lower section. The height differences between adjacent cells either allow passage (differences ≤1) or block it (differences >1), ensuring the path stays constrained to the intended route. From (3,8)=9, diff 3, blocked, and (5,8)=0, diff 6, blocked. Continuing to explore other paths...
+
+At (4,0)=9, I can move to (3,0)=9 since the difference is 0, which is allowed. From (3,0)=9, I reach (3,1)=9 with no difference. This creates a cycle between cells with value 9, which might be problematic. From (3,1)=9, moving to (2,1)=0 is blocked due to the large difference, but (3,2)=9 appears reachable.
+
+The 9s in row 3 connect to row 4's 9s but lead only to dead ends, not creating an alternative route to B. I need to verify there's a unique solution—checking whether row 3's 9s can somehow connect to row 5's 0 at position 0 would create an unintended path.
+
+From (3,0)=9, I can reach (5,0)=B through (4,0)=9 since both transitions have a difference of 0. However, accessing (3,0) requires going through the intended sequence: A → row 1 → row 2 → row 4 via jump. The only exception is (3,9)=3, which breaks the pattern of 9s in that row.
+
+The issue is that (3,0)=9 can't be reached from (2,0)=0 due to the difference of 9, and reaching it from (4,0) creates a circular dependency. To get to (4,0), I'd need to come from (4,1)=9, (3,0)=9, or (5,0)=B. Tracing (4,1)=9 backward, I can reach it from (3,1)=9 with a difference of 0, but that requires first determining how to access (3,1).
+
+From (3,1)=9, the only viable predecessor is (3,0) or (3,2) since (2,1)=0 has a blocked difference of 9. This creates a dependency loop—I can't enter rows 3 or 4 on the left side without first completing the jump from (2,9) to (4,9). Once at (4,9), the path descends through (4,8), (4,7), (4,6), (4,5), jumps to (4,3), then continues through (4,2)
+
+=9, (4,1)=9, (4,0)=9, and finally reaches (5,0)=B. The row 3 cells connect to row 4's 9s at positions (4,0), (4,1), and (4,2), but there's no alternate route since B requires passing through (4,0). The path is forced and unique.
+
+Checking the height distribution reveals too many 0s—A, (0,1), (0,4), plus the long stretches of 9s and 10s total over 30% of the grid. I need to reduce the 0 count and redistribute the heights more evenly.
+
+Replacing the zero-filled rows with different values: Row 2 becomes all 1s except the last cell (5), Row 5 becomes all 1s with B at (5,0), Row 7 becomes all 2s, and Row 9 becomes all 3s. This gives only three 0s total (A and two other cells), while spreading the remaining heights across 1s, 2s, and 3s to balance the distribution better. The total comes to 42, which exceeds the 30% threshold. I need to significantly reduce the number of 9s being used as barriers throughout the grid.
+
+Rather than relying so heavily on 9s for walls, I should employ a more varied height palette. Using heights that differ by at least 2 from adjacent cells—like pairing height H with H+2 or H-2—creates natural incompatibilities without overusing any single digit. I'm also going to compress the wall sections to make the overall maze more compact and efficient.
+
+For the wall placement strategy: Row 1 cells (1,0) through (1,8) need heights that prevent connections both upward to row 0 and downward to row 2. Similarly, row 2 walls must block connections to rows 1 and 3. Row 4's critical cell at (4,4) requires a height incompatible with both the 8s at (4,3) and (4,5) to force the jump. Row 5 walls from (5,2) onward need careful height assignment to maintain the barrier effect.
+
+Setting row 1 to height 7 across most cells creates sufficient gaps—the differences from row 0's varying heights (0 through 4) all exceed the threshold, and pairing with row 2 at height 5 maintains the blockade. I need to recalculate more precisely to ensure the height differences actually prevent unintended connections while preserving the intended path. , blocked. ✓
+From (2,8)=3 to (2,9)=5, diff = 2 ≥ 2, blocked. ✓
+
+For row 3, I'll use (3,0) to (3,8) = 5. This creates a difference of 2 from the row above, blocking vertical movement. The boundary at (3,9)=3 also blocks with a difference of 2. Checking downward transitions: (4,0)=9 to (3,0)=5 gives a difference of 4, which blocks the path.
+
+However, (4,4)=6 to (3,4)=5 only has a difference of 1, creating an unwanted connection. I need to adjust (3,4) to either ≥8 or ≤4 to prevent this alternative route.
+
+Setting (3,4)=8 blocks the connection since |6-8|=2. With row 3 as [5 5 5 5 8 5 5 5 5 3], I can verify that (4,4) is now properly isolated from above. The adjacent cells in row 3 remain at 5, maintaining the barrier pattern across the grid.
+
+However, (4,8)=6 connects to (3,8)=5 since their difference is only 1. I need to increase (3,8) to either 3 or 8. Setting (3,8)=8 creates a difference of 2 with (4,8), blocking the connection, and also maintains a difference of 3 with (3,7)=5.
+
+Checking (3,8)=8 against its other neighbors: the difference with (3,9)=3 is 5, which blocks that connection. Row 3 is now complete as 5 5 5 5 8 5 5 5 8 3, and (4,9)=5 to (3,9)=3 has the required difference of 2.
+
+For row 5, I'm starting with (5,0)=B=9. The cells (5,1) through (5,9) need to be blocked from both row 4 and row 6. Testing (5,1)=7 against (4,1)=9 gives a difference of 2, which blocks the connection, and the same applies to (5,2).
+
+For (5,3), since (4,3)=8 requires a difference of at least 2, I can use 5, giving a difference of 3. Similarly, (5,4)=4 blocks (4,4)=6 with a difference of 2, and (5,5)=5 blocks (4,5)=8 with a difference of 3.
+
+Continuing down the column: (5,6)=5 blocks (4,6)=8, (5,7)=4 blocks (4,7)=7 with a difference of 3, (5,8)=8 blocks (4,8)=6 with a difference of 2, and (5,9)=7 blocks (4,9)=5 with a difference of 2.
+
+Row 5 is complete: B 7 7 5 4 5 5 4 8 7. Now I need to construct row 6, which must be blocked from both row 5 above and row 7 below. For each position, I'm selecting values that differ from row 5 by at least 3. Starting with (6,0): since (5,0)=9, I can use 6 or less, so I'll place 6. At (6,1) and (6,2), where row 5 has 7, I need 4 or less or 9, using 4 for both. At (6,3), row 5 has 5, so I need 2 or less.
+
+or 7+. Use 7.
+(6,4): blocked from (5,4)=4, use 1 or less or 6+. Use 6.
+(6,5): blocked from (5,5)=5, use 2 or less or 7+. Use 7.
+(6,6): blocked from (5,6)=5, use 2 or less or 7+. Use 2.
+(6,7): blocked from (5,7)=4, use 1 or less or 6+. Use 1.
+(6,8): blocked from (5,8)=8, use 5 or less. Use 5.
+(6,9): blocked from (5,9)=7, use 4 or less or 9. Use 4.
+
+Row 6: 6 4 4 7 6 7 2 1 5 4
+
+For rows 7-9, I'll fill in heights that avoid creating unintended paths through the main structure. This is getting complicated, so let me reconsider the overall approach. I need to verify the constraints: at least 20 cells visited, no single height exceeding 30% of cells, and exactly 4 jumps. Let me construct a complete maze carefully and check all requirements against these limits.
+
+I'll try a simpler design where walls are represented as 0s (pits) and the solution path traverses elevated terrain instead. The path would move through row 0 with some jumps over low areas, then navigate down the right side where heights 3 and 5 create the accessible corridor, while the left side remains blocked by zeros. Row 4 continues the pattern with mixed heights to maintain the path structure. 1, OK.
+- (4,6)=8 -> (4,5)=8, diff 0, OK.
+- (4,5)=8 jumps to (4,3)=8 over (4,4)=6.
+
+If (4,3)=8, then 8-6=2 works (6 < 8). ✓
+
+Updating row 4 to: 0 0 0 8 6 8 8 7 6 5
+
+From (4,3)=8, I need to move to (4,2) with a height that's either 9 or 7 to maintain valid transitions.
+
+Setting (4,2)=9 gives: 0 0 9 8 6 8 8 7 6 5
+
+This allows (4,3)=8 -> (4,2)=9 with diff 1. Moving left again, (4,2)=9 requires (4,1) to be 9 or 8 to avoid a blocked jump. Setting (4,1)=9 creates: 0 9 9 8 6 8 8 7 6 5
+
+Now (4,2)=9 -> (4,1)=9 works with diff 0. The final step (4,1)=9 -> (4,0) needs careful consideration since a height of 0 would block the transition entirely.
+
+Setting (4,0)=9 gives: 9 9 9 8 6 8 8 7 6 5
+
+This allows (4,1)=9 -> (4,0)=9 with diff 0, and crucially (4,0)=9 -> (5,0)=B=9 also has diff 0, which works. Checking vertical connections: (4,0)=9 to (3,0)=0 is blocked by diff 9, and (4,1)=9 to (3,1)=0 and (5,1)=0 are both blocked similarly, so row 4 only connects downward as intended.
+
+The endpoints also check out—(4,9)=5 to (3,9)=3 is blocked (diff 2), and (4,9)=5 to (5,9)=0 is blocked (diff 5).
+
+Counting the zeros across the grid: rows 1-3 each have 9 zeros, row 5 has 9 zeros, and row 6 has 10 zeros, with two additional zeros at (0,1) and (0,4).
+
+Adding rows 7-9, which are all zeros, gives 10 each. The total comes to 78 zeros—far exceeding the 30% threshold. I need to reduce this significantly by introducing varied heights in the wall sections instead of using all zeros.
+
+Let me try filling rows 6-9 with different numbers: row 6 gets all 1s, row 7 gets all 2s, row 8 gets all 3s, and row 9 gets all 4s. But I need to verify these don't create unwanted connections with row 5. Since row 5 contains 0s and row 6 contains 1s, the difference is 1, which means they'd connect—that's a problem. I should use heights that create larger gaps between row 5 and the wall sections below it.
+
+If row 5 has heights of 0, then row 6 needs heights differing by at least 2, so I'll use 2s. This blocks the connection since |0-2|=2. For row 7, I need heights differing by at least 2 from the 2s in row 6, so I'll use 4s or higher. Using 4s gives |2-4|=2, which blocks it. Row 8 can then use 6s, and row 9 can use 8s, maintaining the blocking pattern throughout. 0s: (0,1)=0, (0,4)=0, (1,0)-(1,8)=0, (2,0)-(2,8)=0, (3,0)-(3,8)=0, (5,1)-(5,9)=0. That's 38 cells total—still exceeding the 30% threshold. I need to replace some of these zeros with nonzero values, particularly in rows 1-3 and 5.
+
+For row 1, each position must differ by at least 2 from the corresponding cell in row 0 and from (1,9)=5. Position (1,0) requires a height ≥2 since (0,0)=0, and (1,1) needs ≥2 from (0,1)=0. Continuing this constraint check across the row will determine which positions can remain zero and which must be increased. and must satisfy both constraints: ≥7 or ≤3. The intersection of (≥4 or ≤0) with (≥7 or ≤3) gives ≥7 or ≤0. So (1,8) can be 0 or from {7,8,9}—I'll set it to 7. Now (1,8) also needs to differ by at least 2 from (2,8), which constrains what value I can place there.
+
+Let me tentatively assign values across row 1: (1,0)=2, (1,1)=2, (1,2)=3, (1,3)=4, (1,4)=2, (1,5)=4, (1,6)=5, (1,7)=6, (1,8)=7, (1,9)=5. But I should verify these cells don't form an unwanted connected component—checking consecutive differences, most are 0 or 1, meaning they're all connected to each other. This creates a single segment spanning most of row 1, which might interfere with the main structure I'm trying to build.
+
+Now I need to ensure this segment stays isolated from the rest of the maze. Checking boundaries: (1,0)=2 can't reach (0,0)=0 since the difference is 2 (blocked). Similarly, (1,8)=7 can't reach (0,8)=2 or (1,9)=5 due to insufficient differences. However, I also need to prevent connections downward to row 2, which requires careful value selection there. The constraints are multiplying—each cell in row 1 must differ by at least 2 from its corresponding row 2 cell to maintain isolation. Rather than continue this intricate case-by-case analysis, I should finalize a concrete configuration and systematically verify it works.
+
+Let me construct the complete grid and trace through the path carefully. Starting with A at (0,0)=0, I can move right through cells with difference ≤1, then navigate downward and rightward while avoiding blocked transitions. The path needs to reach B at (5,0) while respecting all adjacency constraints. Checking the initial moves: from (0,0)=0 to (0,1)=0 is valid (diff 0), but (0,1)=0 to (1,1)=2 is blocked (diff 2). Moving to (0,2)=1 works (diff 1), then (0,3)=2 (diff 1), and continuing this way traces a valid route through the upper rows before descending to B. 1, OK.
+- (4,6)=8 to (4,7)=7, diff 1, OK.
+- (4,6)=8 to (4,5)=8, diff 0, OK.
+- (4,5)=8 to (4,4)=6, diff 2, blocked.
+- Jump from (4,5)=8 to (4,3)=8 over (4,4)=6. ✓
+- (4,3)=8 to (4,2)=9, diff 1, blocked.
+- Jump from (4,3)=8 to (4,1)=9 over (4,2)=9... wait, that's not a valid jump since (4,2)=9 equals the target. Need to check if we can reach (4,0)=9 instead.
+- (4,1)=9 to (4,0)=9, diff 0, OK.
+- (4,0)=9 to (5,0)=B=9, diff 0, OK. ✓
+
+Path uses 20 cells with 4 jumps total. Now checking if row 1 interferes with the path.
+
+Row 1 values are: 2 2 3 4 2 4 2. Each cell in row 1 is blocked from moving up to row 0 since all differences equal 2. The sequence continues through (1,6)=2.
+
+Wait, (1,6)=2 to (0,6)=3 has a difference of only 1, which means they're connected—that's a problem. I need to change (1,6) to something with at least a 2-unit gap from 3, so either 5 or higher, or 1 or lower. Setting (1,6)=5 works. Now checking: (1,6)=5 differs from (0,6)=3 by 2 (blocked ✓), but (1,6)=5 is adjacent to (1,5)=4 and (1,7)=6 with differences of 1, so it connects horizontally within row 1.
+
+Verifying the vertical barrier between rows 1 and 2: all positions in row 1 have differences of at least 2 from their corresponding row 2 values, confirming the rows are properly isolated.
+
+The only connection point is at (1,9)-(2,9) where both cells equal 5, allowing passage as intended. This means the segment spanning (1,0) through (1,8) is trapped—it can't reach row 0 due to height differences of 2 or more, and the only exit to row 2 is blocked by the barrier I've established.
+
+Now examining row 3: it's mostly zeros except for a 3 at the end. The cell (3,0)=0 connects downward to (2,0)=0, which links into the row 2 segment. I need to verify whether row 2's segment from (2,0) to (2,8) can actually reach point B.
+
+The pit formed by rows 2 and 3 is blocked from accessing (2,9)=5 because the difference between (2,8)=0 and (2,9)=5 is 5, exceeding the threshold. Similarly, (3,9)=3 cannot reach (4,9)=5 due to a difference of 2. This confirms the pit is isolated from both the path and point B.
+
+Moving to row 4: (4,0)=9 connects to (5,0)=B=9 with no difference, which is the intended connection. However, (4,0)=9 is blocked from (3,0)=0 by a difference of 9. The right side of row 4 is also blocked—(4,9)=5 cannot reach (3,9)=3 (difference 2) or (5,9)=0 (difference 5).
+
+For row 5, B at (5,0) connects properly to (4,0)=9, and checking the rest of the row to verify B's isolation from other regions.
+
+Rows 6 through 9 form a separate structure with uniform values in each row (2s, 4s, 6s, 8s respectively). These rows are blocked from row 5 by the differences between their values and the 0s above them, and consecutive rows are blocked from each other by differences of 2 between their uniform values.
+
+Now I'm counting the heights across the grid. The 0s appear at specific positions: (0,1), (0,4), and filling rows 2-3 and row 5 (except column 0), totaling 29 cells. There's a single 1 at (0,2). The 2s are scattered across row 0 and row 1, with row 6 also containing all 2s.
+
+For the remaining values: 3s appear at (0,6), (1,2), and (3,9). The 4s are at (0,7), (0,9), (1,3), (1,5), and filling row 7 entirely. The 5s cluster at (1,6), (1,9), (2,9), and (4,9). The 6s show up at (1,7), (4,4), (4,8), and row 8 is completely filled with 6s.
+
+For 7s, I have (1,8) and (4,7). The 8s appear at (4,3), (4,5), (4,6), plus all of row 9. The 9s are at (4,0), (4,1), (4,2), and position B. The maximum frequency is 29 for the 0s, which stays under the 30% threshold. I should verify this by reconstructing the full grid to ensure accuracy. From A, the only path forward is moving to (0,1)=0, then (0,2)=1, then (0,3)=2. At (0,3)=2, I must jump to (0,5)=2 since walking to adjacent cells isn't possible. From there I can walk through (0,6)=3 and (0,7)=4, but then need to jump again to (0,9)=4. The path continues by walking to (1,9)=5, then (2,9)=5, confirming each step has only one valid option.
+
+From (2,9)=5, jumping to (4,9)=5 is the only move available. Walking to (4,8)=6 follows, then continuing through (4,7)=7, (4,6)=8, and (4,5)=8. At (4,5)=8, another forced jump leads to (4,3)=8, with no alternative paths at any of these positions.
+
+The path then descends through (4,2)=9, (4,1)=9, and (4,0)=9 before reaching the exit at (5,0)=B=9. This solution is the only valid one. The final grid shows the complete maze with all values filled in correctly, confirming the path works as traced. Row 1 is "2234245675", so position 6 contains 5, which checks out. The complete maze is:
+
+```
+A012023424
+2234245675
+0000000005
+0000000003
+9998688765
+B000000000
+2222222222
+4444444444
+6666666666
+8888888888
+```
