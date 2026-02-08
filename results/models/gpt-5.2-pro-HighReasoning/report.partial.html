@@ -1,0 +1,796 @@
+<html>
+<head>
+<style>
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333;
+    --text-secondary: #666;
+    --border-color: #ddd;
+    --header-bg: #4CAF50;
+    --header-text: white;
+    --test-header-bg: #45a049;
+    --prompt-bg: #f9f9f9;
+    --subpass-bg: #ffffff;
+    --img-border: #ccc;
+    --score-good: #228B22;
+    --score-bad: #dc3545;
+}
+@media screen and (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --text-secondary: #aaa;
+        --border-color: #444;
+        --header-bg: #2d5a2d;
+        --header-text: #e0e0e0;
+        --test-header-bg: #3d6a3d;
+        --prompt-bg: #2a2a2a;
+        --subpass-bg: #1f1f1f;
+        --img-border: #555;
+        --score-good: #4CAF50;
+        --score-bad: #ff6b6b;
+    }
+    a[href] { color: #55f}
+}
+body { background-color: var(--bg-color); color: var(--text-color); }
+table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; vertical-align: top; }
+th { background-color: var(--header-bg); color: var(--header-text); }
+.test-header { background-color: var(--test-header-bg); font-weight: bold; }
+.prompt-row { background-color: var(--prompt-bg); font-style: italic; }
+.subpass-row { background-color: var(--subpass-bg); }
+img { max-width: 100%; height: auto; border: 1px solid var(--img-border); }
+.score-good { color: var(--score-good); font-weight: bold; }
+.score-bad { color: var(--score-bad); font-weight: bold; }
+h1 { color: var(--text-color); }
+h2 { color: var(--text-secondary); margin-top: 30px; }
+</style>
+<meta charset='UTF-8'/>
+
+<script>
+// VizManager: Virtualizes WebGL contexts to prevent "Too many active WebGL contexts" errors
+// Only the visualization closest to the viewport center is active; all others are disposed
+window.VizManager = (function() {
+    const registeredViz = [];
+    let activeVizId = null;
+    let scrollTimeout = null;
+    
+    function getDistanceToViewportCenter(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+        const elementCenter = rect.top + rect.height / 2;
+        return Math.abs(elementCenter - viewportCenter);
+    }
+    
+    function updateActiveVisualization() {
+        let closestViz = null;
+        let closestDistance = Infinity;
+        
+        for (const viz of registeredViz) {
+            const container = document.getElementById(viz.containerId);
+            if (!container) continue;
+            
+            // Check if container is in an open <details> element
+            const details = container.closest('details');
+            if (details && !details.open) continue;
+            
+            const distance = getDistanceToViewportCenter(container);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestViz = viz;
+            }
+        }
+        
+        if (closestViz && closestViz.id !== activeVizId) {
+            // Deactivate current
+            if (activeVizId) {
+                const currentViz = registeredViz.find(v => v.id === activeVizId);
+                if (currentViz && currentViz.dispose) {
+                    try { currentViz.dispose(); } catch(e) { console.warn('Dispose error:', e); }
+                }
+            }
+            
+            // Activate new
+            activeVizId = closestViz.id;
+            if (closestViz.activate) {
+                try { closestViz.activate(); } catch(e) { console.warn('Activate error:', e); }
+            }
+        }
+    }
+    
+    function onScrollOrResize() {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateActiveVisualization, 100);
+    }
+    
+    // Listen for scroll and resize
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    
+    // Also listen for details toggle events
+    document.addEventListener('toggle', function(e) {
+        if (e.target.tagName === 'DETAILS') {
+            setTimeout(updateActiveVisualization, 50);
+        }
+    }, true);
+    
+    return {
+        register: function(vizConfig) {
+            // vizConfig: { id, containerId, activate, dispose }
+            registeredViz.push(vizConfig);
+            // Trigger update after a short delay to allow DOM to settle
+            setTimeout(updateActiveVisualization, 100);
+        },
+        
+        forceUpdate: function() {
+            updateActiveVisualization();
+        },
+        
+        getActiveId: function() {
+            return activeVizId;
+        }
+    };
+})();
+</script>
+</head>
+<body>
+<h1>Benchmark Results for gpt-5.2-pro-HighReasoning</h1>
+<table>
+  <tr class='test-header'>
+    <th colspan=3><a name='q2'>Test 2: Build a Lego(tm) hemispherical shell</a></th>
+    <th class='score-bad'>Score: 0.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm * 15.8mm * 11.4mm but when assembled they are <br>32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. <br><br>These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, <br>and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at <br>(centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at <br>[22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.<br><br>Assemble the bricks such that they resemble a 3D hemispherical shell, with inner radius 4 cm and outer radius 7 cm, <br>the centre of the hemisphere is at the origin (0,0,0).<br><br>Since it's impossible to create a perfect curve, the best score is one which is closer to the ideal curve, with<br>scoring being calculated based on the volume difference between the ideal curve and the actual brick structure. <br>The structure needs to be buildable in 3D, so bricks can not overlap or be floating in mid air. A great answer does not <br>contain any holes or missing bricks.<br><br>Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have<br>any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection<br>rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)<br><br>Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees). <br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Inner and outer radius parameters increase progressively across subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: 4cm inner, 7cm outer. ~120 bricks<br><a href="prompts/gpt-5.2-pro-HighReasoning_2_0.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_2_0.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_2_0.txt">View chain of thought</a><br>
+Lego bricks look like they'd benefit from voxelization, but they really don't.
+<br><br>
+So most reasoning models try to voxelise the problem in Python, and then struggle to convert
+that back to Lego bricks.<br><br>They end up losing points for overlapping bricks or bricks
+entirely underground or outside of the hemispheres.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q3'>Test 3: CSG Union of Polyhedra</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You can output polyhedrons in a json format. For example here is a simple cube, every face has 4 vertices, and there are 6 faces:<br><br>``` json<br>{<br>"polyhedron":<br>  {<br>    "vertex":[{"xyz":[-1.0,-1.0,-1.0]},{"xyz":[1.0,-1.0,-1.0]},{"xyz":[1.0,1.0,-1.0]},{"xyz":[-1.0,1.0,-1.0]},{"xyz":[-1.0,-1.0,1.0]},{"xyz":[1.0,-1.0,1.0]},{"xyz":[1.0,1.0,1.0]},{"xyz":[-1.0,1.0,1.0]}],<br>    "faces":[{"vertex":[3,2,1,0]},{"vertex":[4,5,6,7]},{"vertex":[0,1,5,4]},{"vertex":[7,6,2,3]},{"vertex":[3,0,4,7]},{"vertex":[1,2,6,5]}]<br>  }<br>}<br>```<br><br>Now you've learnt the format, use it to solve the following problem:<br><br>You are given two solid cubes, each with side length 10cm. The first cube is centered at the origin (0, 0, 0). The second cube is centered at (8, 0, 0)<br><br>Return a polyhedron that is the union of all the solid objects described above.<br>- Ensure faces have normals encoded in a consistent direction (outward-facing).<br>- Ensure no geometry occurs inside the polyhedron, and no faces cross through it.<br>- Note that some faces may have more than 4 vertices.<br>- Your output should have no degenerate faces or redundant vertices.<br>- The task is a failure if the output is not watertight.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Various CSG union problems with different shape combinations.</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Two cubes overlapping at corner<br><a href="prompts/gpt-5.2-pro-HighReasoning_3_1.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_3_1.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_3_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'><br>    <table><br>    <tr><td>Result Volume:</td><td>1750.48</td></tr><br>    <tr><td>Reference Volume:</td><td>1750.48</td></tr><br>    <tr><td>Intersection Volume:</td><td>1750.48</td></tr><br>    <tr><td>Difference Volume:</td><td>0.00</td></tr><br>    </table><br>    Results were <a href='C:\Users\Ash\AppData\Local\Temp\mesh_benchmark_cache\res\21c290903344f60cf2568dbcccb33630118171c8bb36e8b557e2bf5d28b5b654\cache_meta.json'>cached</a>.</div></td>
+  </tr>
+    <td><a href='C:\Users\Ash\AppData\Local\Temp\mesh_benchmark_cache\res\21c290903344f60cf2568dbcccb33630118171c8bb36e8b557e2bf5d28b5b654\result.scad'><div id="flickbook-77abbffcb008" class="flickbook-viewer"><style>#flickbook-77abbffcb008 { display:flex; align-items:center; gap:8px; } #flickbook-77abbffcb008 input[type="radio"] { display:none; } #flickbook-77abbffcb008 .fb-frame { flex:1; text-align:center; order:1; } #flickbook-77abbffcb008 .fb-prev { order:0; cursor:pointer; font-size:18px; display:none; user-select:none; } #flickbook-77abbffcb008 .fb-next { order:2; cursor:pointer; font-size:18px; display:none; user-select:none; } #flickbook-77abbffcb008 .fb-view { display:none; max-width:100%; } #flickbook-77abbffcb008-0:checked ~ .fb-frame .view-0 { display:block; } #flickbook-77abbffcb008-0:checked ~ .prev-0 { display:inline-flex; } #flickbook-77abbffcb008-0:checked ~ .next-0 { display:inline-flex; } #flickbook-77abbffcb008-1:checked ~ .fb-frame .view-1 { display:block; } #flickbook-77abbffcb008-1:checked ~ .prev-1 { display:inline-flex; } #flickbook-77abbffcb008-1:checked ~ .next-1 { display:inline-flex; }</style><input type="radio" name="flickbook-77abbffcb008-view" id="flickbook-77abbffcb008-0" checked><input type="radio" name="flickbook-77abbffcb008-view" id="flickbook-77abbffcb008-1"><label class="fb-prev prev-0" for="flickbook-77abbffcb008-1">&#8592;</label><label class="fb-next next-0" for="flickbook-77abbffcb008-1">&#8594;</label><label class="fb-prev prev-1" for="flickbook-77abbffcb008-0">&#8592;</label><label class="fb-next next-1" for="flickbook-77abbffcb008-0">&#8594;</label><div class="fb-frame"><img src="data:image/png;base64,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" class="fb-view view-0" alt="Output"><img src="data:image/png;base64,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" class="fb-view view-1" alt="Output"></div></div></a></td>
+    <td><img src='data:image/png;base64,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' alt='Reference'></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q4'>Test 4: Tetrahedron Shadow Coverage</a></th>
+    <th class='score-bad'>Score: 0.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Here is the points and faces of a regular tetrahedron with all sides equal 1, resting on the Z=0 plane and with an edge along the X=0 plane:<br><br>polyhedron(<br>    points = [<br>        [0, 0, 0],                               // 0<br>        [1, 0, 0],                               // 1<br>        [0.5, sqrt(3)/2, 0],                     // 2<br>        [0.5, sqrt(3)/6, sqrt(2/3)]              // 3 (apex)<br>    ],<br>    faces = [<br>        [0, 2, 1],   // base (oriented outward)<br>        [0, 1, 3],<br>        [1, 2, 3],<br>        [2, 0, 3]<br>    ],<br>    convexity = 4<br>);<br><br>We define a 7-part rigid transform of (x,y,z,q0,q1,q2,q3), where q0,q1,q2,q3 is a normalised quaternion, and x, y, z are the translation.<br>Rotation is defined around the 0,0,0 point (Which is NOT THE CENTRE), and is performed before translation.<br><br>We create a scene with multiple tetrahedra, each with a different transform. Return the transforms of such a scene<br>such that a shadow projected vertically (onto the Z=0 plane) fully covers a square of side length 4, centered at the origin.<br><br>Use as many tetrahedra as you need, scoring is based on shadow coverage, not the number of tetrahedra used.<br><br>Score will be deducted for:<br>- any shadow outside of the shape<br>- redundant tetrahedra<br>- non-normalised quaternions<br>- intersection tetrahedra<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Cover a square of side length 6, with a hole in the centre of side length 2.<br><a href="prompts/gpt-5.2-pro-HighReasoning_4_2.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_4_2.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_4_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q6'>Test 6: Voxel Grid Projection - shadow coverage and no symmetries</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Position 50 voxels in a cubic grid of 6 voxels per side, such that the orthographic projection to all 3 planes is <br>solid (no holes in the projection), and there are no trivial symmetries (rotations or reflections that leave the shape unchanged).<br><br>0,0,0 is the bottom left grid cell and indices increase up and to the right.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Progressively larger grids with more voxels across subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Cover a 8x8x8 grid with 100 voxels<br><a href="prompts/gpt-5.2-pro-HighReasoning_6_1.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_6_1.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_6_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Valid voxel configuration with 100 voxels, all projections solid, no symmetries</div></td>
+  </tr>
+    <td colspan='2'><img src="artifacts/6_Visualization_gpt-5.2-pro-HighReasoning_100.png" alt="Voxel Grid Visualization" style="max-width: 100%;"></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q7'>Test 7: 3D maze - solution requires jumping over gaps</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br><br>Here is a heightmap platform maze, in which A is located at height 5, and B is located at height 0. <br>The maze represents a 3D space where movement is constrained by height differences. <br>Characters can only move to adjacent cells if the height difference is at most 1, or jump over gaps.<br><br>A555<br>2B20<br>3015<br>4555<br><br>The character can move:<br>- 1 cell horizontally or vertically, so long as the height is within 1 unit.<br>- Can jump 2 cells horizontally or vertically, so long as:<br>  - source and destination heights are the same<br>  - the height of the cell between the source and destination is lower than the source height (jump over gaps, not through walls!)<br><br>In this case, the character:<br>- starts at A, which is at level 5<br>- walks flat for a bit, <br>- jumps over a gap of height 0 to another level 5 block.<br>- walks flat for a bit<br>- descends until level 2, then jumps over B to level 2,<br>- and then continues down to level 0, reaching B.<br><br>The maze must use only 0-9, A & B to represent height, and must only have one solution.<br>A & B must appear in the grid once each.<br>The path must visit at least 20% of all cells.<br>No single elevation can occupy more than 30% of the grid.<br>Create a maze of size 5x5 that has A at level 5 and B at level 0, and at least 2 jumps.<br>Your output must be ONLY the maze's heightmap, nothing else.<br>Your output must be 5 rows long, and every row must be 5 characters long.<br>The maze must be your only output - Extra text above or below the maze itself corrupt your work.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Cover a 10x10 grid with A at level 0 and B at level 9, requiring at least 4 jumps<br><a href="prompts/gpt-5.2-pro-HighReasoning_7_1.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_7_1.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_7_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Valid maze with 4 jumps (required: 4)</div></td>
+  </tr>
+    <td colspan='2'><div id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3" class="maze-viewer"><style>#maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3 { display:flex; align-items:center; gap:8px; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3 input[type="radio"] { display:none; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3 .maze-frame { flex:1; text-align:center; order:1; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3 .maze-prev { order:0; cursor:pointer; font-size:18px; display:none; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3 .maze-next { order:2; cursor:pointer; font-size:18px; display:none; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3 .maze-view { display:none; max-width:100%; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-0:checked ~ .maze-frame .view-0 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-0:checked ~ .prev-0 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-0:checked ~ .next-0 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-1:checked ~ .maze-frame .view-1 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-1:checked ~ .prev-1 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-1:checked ~ .next-1 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-2:checked ~ .maze-frame .view-2 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-2:checked ~ .prev-2 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-2:checked ~ .next-2 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-3:checked ~ .maze-frame .view-3 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-3:checked ~ .prev-3 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-3:checked ~ .next-3 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-4:checked ~ .maze-frame .view-4 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-4:checked ~ .prev-4 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-4:checked ~ .next-4 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-5:checked ~ .maze-frame .view-5 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-5:checked ~ .prev-5 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-5:checked ~ .next-5 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-6:checked ~ .maze-frame .view-6 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-6:checked ~ .prev-6 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-6:checked ~ .next-6 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-7:checked ~ .maze-frame .view-7 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-7:checked ~ .prev-7 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-7:checked ~ .next-7 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-8:checked ~ .maze-frame .view-8 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-8:checked ~ .prev-8 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-8:checked ~ .next-8 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-9:checked ~ .maze-frame .view-9 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-9:checked ~ .prev-9 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-9:checked ~ .next-9 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-10:checked ~ .maze-frame .view-10 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-10:checked ~ .prev-10 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-10:checked ~ .next-10 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-11:checked ~ .maze-frame .view-11 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-11:checked ~ .prev-11 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-11:checked ~ .next-11 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-12:checked ~ .maze-frame .view-12 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-12:checked ~ .prev-12 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-12:checked ~ .next-12 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-13:checked ~ .maze-frame .view-13 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-13:checked ~ .prev-13 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-13:checked ~ .next-13 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-14:checked ~ .maze-frame .view-14 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-14:checked ~ .prev-14 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-14:checked ~ .next-14 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-15:checked ~ .maze-frame .view-15 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-15:checked ~ .prev-15 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-15:checked ~ .next-15 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-16:checked ~ .maze-frame .view-16 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-16:checked ~ .prev-16 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-16:checked ~ .next-16 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-17:checked ~ .maze-frame .view-17 { display:block; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-17:checked ~ .prev-17 { display:inline-flex; } #maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-17:checked ~ .next-17 { display:inline-flex; }</style><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-0" checked><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-1"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-2"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-3"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-4"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-5"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-6"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-7"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-8"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-9"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-10"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-11"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-12"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-13"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-14"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-15"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-16"><input type="radio" name="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view" id="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-17"><label class="maze-prev prev-0" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-17">&#8592;</label><label class="maze-next next-0" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-1">&#8594;</label><label class="maze-prev prev-1" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-0">&#8592;</label><label class="maze-next next-1" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-2">&#8594;</label><label class="maze-prev prev-2" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-1">&#8592;</label><label class="maze-next next-2" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-3">&#8594;</label><label class="maze-prev prev-3" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-2">&#8592;</label><label class="maze-next next-3" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-4">&#8594;</label><label class="maze-prev prev-4" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-3">&#8592;</label><label class="maze-next next-4" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-5">&#8594;</label><label class="maze-prev prev-5" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-4">&#8592;</label><label class="maze-next next-5" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-6">&#8594;</label><label class="maze-prev prev-6" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-5">&#8592;</label><label class="maze-next next-6" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-7">&#8594;</label><label class="maze-prev prev-7" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-6">&#8592;</label><label class="maze-next next-7" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-8">&#8594;</label><label class="maze-prev prev-8" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-7">&#8592;</label><label class="maze-next next-8" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-9">&#8594;</label><label class="maze-prev prev-9" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-8">&#8592;</label><label class="maze-next next-9" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-10">&#8594;</label><label class="maze-prev prev-10" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-9">&#8592;</label><label class="maze-next next-10" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-11">&#8594;</label><label class="maze-prev prev-11" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-10">&#8592;</label><label class="maze-next next-11" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-12">&#8594;</label><label class="maze-prev prev-12" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-11">&#8592;</label><label class="maze-next next-12" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-13">&#8594;</label><label class="maze-prev prev-13" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-12">&#8592;</label><label class="maze-next next-13" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-14">&#8594;</label><label class="maze-prev prev-14" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-13">&#8592;</label><label class="maze-next next-14" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-15">&#8594;</label><label class="maze-prev prev-15" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-14">&#8592;</label><label class="maze-next next-15" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-16">&#8594;</label><label class="maze-prev prev-16" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-15">&#8592;</label><label class="maze-next next-16" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-17">&#8594;</label><label class="maze-prev prev-17" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-16">&#8592;</label><label class="maze-next next-17" for="maze-viewer-b538d13bb0d3e9b9be8c4409f3d55ac3-view-0">&#8594;</label><div class="maze-frame"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_above.png" class="maze-view view-0" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_from_a.png" class="maze-view view-1" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_north.png" class="maze-view view-2" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_south.png" class="maze-view view-3" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_west.png" class="maze-view view-4" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_east.png" class="maze-view view-5" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_northeast.png" class="maze-view view-6" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_northwest.png" class="maze-view view-7" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_southeast.png" class="maze-view view-8" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_southwest.png" class="maze-view view-9" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_northclose.png" class="maze-view view-10" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_southclose.png" class="maze-view view-11" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_westclose.png" class="maze-view view-12" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_eastclose.png" class="maze-view view-13" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_northeastclose.png" class="maze-view view-14" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_northwestclose.png" class="maze-view view-15" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_southeastclose.png" class="maze-view view-16" style="max-width: 100%;"><img src="artifacts/7_Visualization_gpt-5.2-Reasoning-Tools_10_1_southwestclose.png" class="maze-view view-17" style="max-width: 100%;"></div></div></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q8'>Test 8: Fit a curve to partition 2D ascii patterns via cubic polynomials</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br><br>Here is an 8x8 grid representing a space partition:<br><br>........<br>........<br>..####..<br>..#####.<br>.######.<br>..######<br>..#####.<br>...####.<br><br>0, 0 is the top left, x is horizontal, y is vertical. Coordinates are in integers.<br><br>Using the formula:<br><br>let cell = <br>   '#' if f(x,y) > 0<br>   '.' if f(x,y) <= 0<br><br>where f(x,y) is a polynomial of whatever degree you need to solve this. You can include cross terms like x*y, x**2*y, x*y**2, etc.<br><br>Return the formula as Python function f(x,y) that uses ONLY:<br>- arithmetic operations (+, -, *, /)<br>- powers (**) <br>- parentheses for grouping<br>- integer coordinates x, y<br>- the words "def" and "return"<br><br>Do not use type annotations, casts, conditionals, branches, additional variables, comments or anything else.<br><br>You can use the following example as a template:<br><br>def f(x, y):<br>    return x**2 + 3*y**2 - 4*x*y - 145<br><br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Small blob cluster (8x8)<br><pre>........
+........
+..####..
+..#####.
+.######.
+..######
+..#####.
+...####.</pre><br><a href="prompts/gpt-5.2-pro-HighReasoning_8_0.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_8_0.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_8_0.txt">View chain of thought</a><br>
+Can the LLM roundtrip a 2D shape through a polynomial?
+<br><br>
+Shapes are procedurally generated from smooth fields so each subpass features
+curves/blobs rather than hardcoded patterns. Larger grids (over 64x64) are
+visualized via attached black/white images instead of ASCII art.
+</td>
+<td colspan=2><div style='overflow-y: auto;max-height: 100px;'><strong>AI Reasoning: </strong>Constructed from products that are zero at all integer x (or y) in {0..7} except one chosen coordinate; squaring makes each selected basis term nonnegative and strictly positive only at its target coordinate. Combining these terms yields f(x,y)&gt;0 exactly on the # cells and 0 on the . cells of the 8x8 grid.</div></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Grid size: 8, matched 64/64 cells</div></td>
+  </tr>
+
+    <td style='font-size: 14px'><div style='max-width:800px'>
+      def f(x, y):<br/>    return (<br/>        (<br/>            (y*(y-1)*(y-3)*(y-4)*(y-5)*(y-6)*(y-7))**2<br/>            + (y*(y-1)*(y-2)*(y-4)*(y-5)*(y-6)*(y-7))**2<br/>            + (y*(y-1)*(y-2)*(y-3)*(y-5)*(y-6)*(y-7)... (truncated)
+    </div></td><td><pre>........ ........<br/>........ ........<br/>..####.. ..####..<br/>..#####. ..#####.<br/>.######. .######.<br/>..###### ..######<br/>..#####. ..#####.<br/>...####. ...####.</pre><br/>
+      
+    </td>  <tr class='test-header'>
+    <th colspan=3><a name='q9'>Test 9: Hamiltonian Loop on Grid</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You have a 4*4 grid of unit squares, with cell coordinates (x, y) where 1 <= x <= 4, 1 <= y <= 4.<br><br><br><br>Draw a single closed path that:<br>- Moves from cell to cell using only side-adjacent moves.<br>- Visits every cell exactly once.<br>- Returns to its starting cell (so the path is a loop).<br>- The last cell in your list must be side-adjacent to the first.<br><br>Answer format:<br>Give an ordered list of the 16 cell coordinates for the loop, starting anywhere, for example:<br><br>1,1<br>1,2<br>1,3<br>...<br>2,1<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Grid size increases across subpasses, with a missing chunk in the final subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: 16x16 grid with cells (3,3) and (3,4) removed<br>
+<pre>
+................
+................
+..X.............
+..X.............
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+</pre><br>
+<br><a href="prompts/gpt-5.2-pro-HighReasoning_9_5.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_9_5.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_9_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Valid Hamiltonian path with 254 steps</div></td>
+  </tr>
+    <td colspan='2'><img src="artifacts/9_Visualization_gpt-5.2-pro-HighReasoning_5.png" alt="Hamiltonian Path Visualization" style="max-width: 100%;"></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q11'>Test 11: Hyper-snake Challenge</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Do you remember the snake game, where you have to direct a snake around a 2D space to avoid hitting itself? This is hyper-snake!<br><br>You are a snake in a 2D space grid of size [8, 8]. You can move to any adjacent cell in the grid, along any of the<br>available 2 dimensions, but you can not move to a cell which you have visited before, nor can you move "diagonally",<br>that is, you can not move in more than one dimension at a time.<br><br>The game ends when you run out of space to move, when you hit the boundary, or when you run into yourself.<br><br><br><br>You also need to collect the food at: [[1, 1]].<br><br>Return the path of the snake as a list of cells, the first element of which is [0, 0] (where you must start), and going for as long as you can.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Dimensions increase from 3D to 10D</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: 4D snake in [5, 5, 5, 5] grid. with [(0, 0, 0, 1), (0, 0, 1, 0), (0, 1, 0, 0)] walls. with [(0, 0, 0, 0)] food.<br><a href="prompts/gpt-5.2-pro-HighReasoning_11_4.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_11_4.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_11_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Visited 619/622 cells (100.0%)</div></td>
+  </tr>
+    <td colspan='2'>
+<div id="snake-9818472bd7" style="width:100%;max-width:600px;margin:0 auto;">
+  <div id="snake-9818472bd7-canvas" style="width:100%;height:400px;border:1px solid #444;background:#1a1a2e;"></div>
+  <div id="snake-9818472bd7-controls" style="padding:8px;background:#2a2a3e;color:#ddd;font-size:12px;border-radius:0 0 4px 4px;">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <span><b>4D Grid</b> (5 × 5 × 5 × 5)</span>
+      <span>Path: <b style="color:#0f8">619/622</b> cells</span>
+      <label style="cursor:pointer;"><input type="checkbox" id="snake-9818472bd7-animate" checked> Animate</label>
+      <label style="cursor:pointer;"><input type="checkbox" id="snake-9818472bd7-showgrid" checked> Grid</label>
+    </div>
+    <div id="snake-9818472bd7-sliders" style="margin-top:8px;"></div>
+    <div style="margin-top:4px;font-size:11px;color:#888;">
+      Drag to rotate • Scroll to zoom • Sliders project higher dims to 3D
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// Global coordinator - only animate one viewer at a time (closest to viewport center)
+if (!window.snakeViewerCoordinator) {
+  window.snakeViewerCoordinator = {
+    viewers: {},
+    activeId: null,
+    updateActive: function() {
+      const viewportCenter = window.innerHeight / 2;
+      let closestId = null;
+      let closestDist = Infinity;
+      for (const [id, v] of Object.entries(this.viewers)) {
+        if (!v.visible) continue;
+        const rect = v.container.getBoundingClientRect();
+        const elemCenter = rect.top + rect.height / 2;
+        const dist = Math.abs(elemCenter - viewportCenter);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestId = id;
+        }
+      }
+      this.activeId = closestId;
+    },
+    register: function(id, container) {
+      this.viewers[id] = { container, visible: false };
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          this.viewers[id].visible = e.isIntersecting;
+          this.updateActive();
+        });
+      }, { threshold: 0.1 });
+      observer.observe(container);
+    },
+    isActive: function(id) {
+      return this.activeId === id;
+    }
+  };
+  // Update on scroll
+  let scrollTimeout;
+  window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => window.snakeViewerCoordinator.updateActive(), 50);
+  }, { passive: true });
+}
+</script>
+<script>
+(function() {
+  const viewerId = 'snake-9818472bd7';
+  const config = {"dimensions": 4, "gridSize": [5, 5, 5, 5], "startPos": [4, 4, 4, 4], "walls": [[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]], "food": [[0, 0, 0, 0]], "path": [[4, 4, 4, 4], [3, 4, 4, 4], [2, 4, 4, 4], [1, 4, 4, 4], [0, 4, 4, 4], [0, 3, 4, 4], [1, 3, 4, 4], [2, 3, 4, 4], [3, 3, 4, 4], [4, 3, 4, 4], [4, 2, 4, 4], [3, 2, 4, 4], [2, 2, 4, 4], [1, 2, 4, 4], [0, 2, 4, 4], [0, 1, 4, 4], [1, 1, 4, 4], [2, 1, 4, 4], [3, 1, 4, 4], [4, 1, 4, 4], [4, 0, 4, 4], [3, 0, 4, 4], [2, 0, 4, 4], [1, 0, 4, 4], [0, 0, 4, 4], [0, 0, 3, 4], [1, 0, 3, 4], [2, 0, 3, 4], [3, 0, 3, 4], [4, 0, 3, 4], [4, 1, 3, 4], [3, 1, 3, 4], [2, 1, 3, 4], [1, 1, 3, 4], [0, 1, 3, 4], [0, 2, 3, 4], [1, 2, 3, 4], [2, 2, 3, 4], [3, 2, 3, 4], [4, 2, 3, 4], [4, 3, 3, 4], [3, 3, 3, 4], [2, 3, 3, 4], [1, 3, 3, 4], [0, 3, 3, 4], [0, 4, 3, 4], [1, 4, 3, 4], [2, 4, 3, 4], [3, 4, 3, 4], [4, 4, 3, 4], [4, 4, 2, 4], [3, 4, 2, 4], [2, 4, 2, 4], [1, 4, 2, 4], [0, 4, 2, 4], [0, 3, 2, 4], [1, 3, 2, 4], [2, 3, 2, 4], [3, 3, 2, 4], [4, 3, 2, 4], [4, 2, 2, 4], [3, 2, 2, 4], [2, 2, 2, 4], [1, 2, 2, 4], [0, 2, 2, 4], [0, 1, 2, 4], [1, 1, 2, 4], [2, 1, 2, 4], [3, 1, 2, 4], [4, 1, 2, 4], [4, 0, 2, 4], [3, 0, 2, 4], [2, 0, 2, 4], [1, 0, 2, 4], [0, 0, 2, 4], [0, 0, 1, 4], [1, 0, 1, 4], [2, 0, 1, 4], [3, 0, 1, 4], [4, 0, 1, 4], [4, 1, 1, 4], [3, 1, 1, 4], [2, 1, 1, 4], [1, 1, 1, 4], [0, 1, 1, 4], [0, 2, 1, 4], [1, 2, 1, 4], [2, 2, 1, 4], [3, 2, 1, 4], [4, 2, 1, 4], [4, 3, 1, 4], [3, 3, 1, 4], [2, 3, 1, 4], [1, 3, 1, 4], [0, 3, 1, 4], [0, 4, 1, 4], [1, 4, 1, 4], [2, 4, 1, 4], [3, 4, 1, 4], [4, 4, 1, 4], [4, 4, 0, 4], [3, 4, 0, 4], [2, 4, 0, 4], [1, 4, 0, 4], [0, 4, 0, 4], [0, 3, 0, 4], [1, 3, 0, 4], [2, 3, 0, 4], [3, 3, 0, 4], [4, 3, 0, 4], [4, 2, 0, 4], [3, 2, 0, 4], [2, 2, 0, 4], [1, 2, 0, 4], [0, 2, 0, 4], [0, 1, 0, 4], [1, 1, 0, 4], [2, 1, 0, 4], [3, 1, 0, 4], [4, 1, 0, 4], [4, 0, 0, 4], [3, 0, 0, 4], [2, 0, 0, 4], [1, 0, 0, 4], [0, 0, 0, 4], [0, 0, 0, 3], [1, 0, 0, 3], [2, 0, 0, 3], [3, 0, 0, 3], [4, 0, 0, 3], [4, 1, 0, 3], [3, 1, 0, 3], [2, 1, 0, 3], [1, 1, 0, 3], [0, 1, 0, 3], [0, 2, 0, 3], [1, 2, 0, 3], [2, 2, 0, 3], [3, 2, 0, 3], [4, 2, 0, 3], [4, 3, 0, 3], [3, 3, 0, 3], [2, 3, 0, 3], [1, 3, 0, 3], [0, 3, 0, 3], [0, 4, 0, 3], [1, 4, 0, 3], [2, 4, 0, 3], [3, 4, 0, 3], [4, 4, 0, 3], [4, 4, 1, 3], [3, 4, 1, 3], [2, 4, 1, 3], [1, 4, 1, 3], [0, 4, 1, 3], [0, 3, 1, 3], [1, 3, 1, 3], [2, 3, 1, 3], [3, 3, 1, 3], [4, 3, 1, 3], [4, 2, 1, 3], [3, 2, 1, 3], [2, 2, 1, 3], [1, 2, 1, 3], [0, 2, 1, 3], [0, 1, 1, 3], [1, 1, 1, 3], [2, 1, 1, 3], [3, 1, 1, 3], [4, 1, 1, 3], [4, 0, 1, 3], [3, 0, 1, 3], [2, 0, 1, 3], [1, 0, 1, 3], [0, 0, 1, 3], [0, 0, 2, 3], [1, 0, 2, 3], [2, 0, 2, 3], [3, 0, 2, 3], [4, 0, 2, 3], [4, 1, 2, 3], [3, 1, 2, 3], [2, 1, 2, 3], [1, 1, 2, 3], [0, 1, 2, 3], [0, 2, 2, 3], [1, 2, 2, 3], [2, 2, 2, 3], [3, 2, 2, 3], [4, 2, 2, 3], [4, 3, 2, 3], [3, 3, 2, 3], [2, 3, 2, 3], [1, 3, 2, 3], [0, 3, 2, 3], [0, 4, 2, 3], [1, 4, 2, 3], [2, 4, 2, 3], [3, 4, 2, 3], [4, 4, 2, 3], [4, 4, 3, 3], [3, 4, 3, 3], [2, 4, 3, 3], [1, 4, 3, 3], [0, 4, 3, 3], [0, 3, 3, 3], [1, 3, 3, 3], [2, 3, 3, 3], [3, 3, 3, 3], [4, 3, 3, 3], [4, 2, 3, 3], [3, 2, 3, 3], [2, 2, 3, 3], [1, 2, 3, 3], [0, 2, 3, 3], [0, 1, 3, 3], [1, 1, 3, 3], [2, 1, 3, 3], [3, 1, 3, 3], [4, 1, 3, 3], [4, 0, 3, 3], [3, 0, 3, 3], [2, 0, 3, 3], [1, 0, 3, 3], [0, 0, 3, 3], [0, 0, 4, 3], [1, 0, 4, 3], [2, 0, 4, 3], [3, 0, 4, 3], [4, 0, 4, 3], [4, 1, 4, 3], [3, 1, 4, 3], [2, 1, 4, 3], [1, 1, 4, 3], [0, 1, 4, 3], [0, 2, 4, 3], [1, 2, 4, 3], [2, 2, 4, 3], [3, 2, 4, 3], [4, 2, 4, 3], [4, 3, 4, 3], [3, 3, 4, 3], [2, 3, 4, 3], [1, 3, 4, 3], [0, 3, 4, 3], [0, 4, 4, 3], [1, 4, 4, 3], [2, 4, 4, 3], [3, 4, 4, 3], [4, 4, 4, 3], [4, 4, 4, 2], [3, 4, 4, 2], [2, 4, 4, 2], [1, 4, 4, 2], [0, 4, 4, 2], [0, 3, 4, 2], [1, 3, 4, 2], [2, 3, 4, 2], [3, 3, 4, 2], [4, 3, 4, 2], [4, 2, 4, 2], [3, 2, 4, 2], [2, 2, 4, 2], [1, 2, 4, 2], [0, 2, 4, 2], [0, 1, 4, 2], [1, 1, 4, 2], [2, 1, 4, 2], [3, 1, 4, 2], [4, 1, 4, 2], [4, 0, 4, 2], [3, 0, 4, 2], [2, 0, 4, 2], [1, 0, 4, 2], [0, 0, 4, 2], [0, 0, 3, 2], [1, 0, 3, 2], [2, 0, 3, 2], [3, 0, 3, 2], [4, 0, 3, 2], [4, 1, 3, 2], [3, 1, 3, 2], [2, 1, 3, 2], [1, 1, 3, 2], [0, 1, 3, 2], [0, 2, 3, 2], [1, 2, 3, 2], [2, 2, 3, 2], [3, 2, 3, 2], [4, 2, 3, 2], [4, 3, 3, 2], [3, 3, 3, 2], [2, 3, 3, 2], [1, 3, 3, 2], [0, 3, 3, 2], [0, 4, 3, 2], [1, 4, 3, 2], [2, 4, 3, 2], [3, 4, 3, 2], [4, 4, 3, 2], [4, 4, 2, 2], [3, 4, 2, 2], [2, 4, 2, 2], [1, 4, 2, 2], [0, 4, 2, 2], [0, 3, 2, 2], [1, 3, 2, 2], [2, 3, 2, 2], [3, 3, 2, 2], [4, 3, 2, 2], [4, 2, 2, 2], [3, 2, 2, 2], [2, 2, 2, 2], [1, 2, 2, 2], [0, 2, 2, 2], [0, 1, 2, 2], [1, 1, 2, 2], [2, 1, 2, 2], [3, 1, 2, 2], [4, 1, 2, 2], [4, 0, 2, 2], [3, 0, 2, 2], [2, 0, 2, 2], [1, 0, 2, 2], [0, 0, 2, 2], [0, 0, 1, 2], [1, 0, 1, 2], [2, 0, 1, 2], [3, 0, 1, 2], [4, 0, 1, 2], [4, 1, 1, 2], [3, 1, 1, 2], [2, 1, 1, 2], [1, 1, 1, 2], [0, 1, 1, 2], [0, 2, 1, 2], [1, 2, 1, 2], [2, 2, 1, 2], [3, 2, 1, 2], [4, 2, 1, 2], [4, 3, 1, 2], [3, 3, 1, 2], [2, 3, 1, 2], [1, 3, 1, 2], [0, 3, 1, 2], [0, 4, 1, 2], [1, 4, 1, 2], [2, 4, 1, 2], [3, 4, 1, 2], [4, 4, 1, 2], [4, 4, 0, 2], [3, 4, 0, 2], [2, 4, 0, 2], [1, 4, 0, 2], [0, 4, 0, 2], [0, 3, 0, 2], [1, 3, 0, 2], [2, 3, 0, 2], [3, 3, 0, 2], [4, 3, 0, 2], [4, 2, 0, 2], [3, 2, 0, 2], [2, 2, 0, 2], [1, 2, 0, 2], [0, 2, 0, 2], [0, 1, 0, 2], [1, 1, 0, 2], [2, 1, 0, 2], [3, 1, 0, 2], [4, 1, 0, 2], [4, 0, 0, 2], [3, 0, 0, 2], [2, 0, 0, 2], [1, 0, 0, 2], [1, 0, 0, 1], [2, 0, 0, 1], [3, 0, 0, 1], [4, 0, 0, 1], [4, 1, 0, 1], [3, 1, 0, 1], [2, 1, 0, 1], [1, 1, 0, 1], [0, 1, 0, 1], [0, 2, 0, 1], [1, 2, 0, 1], [2, 2, 0, 1], [3, 2, 0, 1], [4, 2, 0, 1], [4, 3, 0, 1], [3, 3, 0, 1], [2, 3, 0, 1], [1, 3, 0, 1], [0, 3, 0, 1], [0, 4, 0, 1], [1, 4, 0, 1], [2, 4, 0, 1], [3, 4, 0, 1], [4, 4, 0, 1], [4, 4, 1, 1], [3, 4, 1, 1], [2, 4, 1, 1], [1, 4, 1, 1], [0, 4, 1, 1], [0, 3, 1, 1], [1, 3, 1, 1], [2, 3, 1, 1], [3, 3, 1, 1], [4, 3, 1, 1], [4, 2, 1, 1], [3, 2, 1, 1], [2, 2, 1, 1], [1, 2, 1, 1], [0, 2, 1, 1], [0, 1, 1, 1], [1, 1, 1, 1], [2, 1, 1, 1], [3, 1, 1, 1], [4, 1, 1, 1], [4, 0, 1, 1], [3, 0, 1, 1], [2, 0, 1, 1], [1, 0, 1, 1], [0, 0, 1, 1], [0, 0, 2, 1], [1, 0, 2, 1], [2, 0, 2, 1], [3, 0, 2, 1], [4, 0, 2, 1], [4, 1, 2, 1], [3, 1, 2, 1], [2, 1, 2, 1], [1, 1, 2, 1], [0, 1, 2, 1], [0, 2, 2, 1], [1, 2, 2, 1], [2, 2, 2, 1], [3, 2, 2, 1], [4, 2, 2, 1], [4, 3, 2, 1], [3, 3, 2, 1], [2, 3, 2, 1], [1, 3, 2, 1], [0, 3, 2, 1], [0, 4, 2, 1], [1, 4, 2, 1], [2, 4, 2, 1], [3, 4, 2, 1], [4, 4, 2, 1], [4, 4, 3, 1], [3, 4, 3, 1], [2, 4, 3, 1], [1, 4, 3, 1], [0, 4, 3, 1], [0, 3, 3, 1], [1, 3, 3, 1], [2, 3, 3, 1], [3, 3, 3, 1], [4, 3, 3, 1], [4, 2, 3, 1], [3, 2, 3, 1], [2, 2, 3, 1], [1, 2, 3, 1], [0, 2, 3, 1], [0, 1, 3, 1], [1, 1, 3, 1], [2, 1, 3, 1], [3, 1, 3, 1], [4, 1, 3, 1], [4, 0, 3, 1], [3, 0, 3, 1], [2, 0, 3, 1], [1, 0, 3, 1], [0, 0, 3, 1], [0, 0, 4, 1], [1, 0, 4, 1], [2, 0, 4, 1], [3, 0, 4, 1], [4, 0, 4, 1], [4, 1, 4, 1], [3, 1, 4, 1], [2, 1, 4, 1], [1, 1, 4, 1], [0, 1, 4, 1], [0, 2, 4, 1], [1, 2, 4, 1], [2, 2, 4, 1], [3, 2, 4, 1], [4, 2, 4, 1], [4, 3, 4, 1], [3, 3, 4, 1], [2, 3, 4, 1], [1, 3, 4, 1], [0, 3, 4, 1], [0, 4, 4, 1], [1, 4, 4, 1], [2, 4, 4, 1], [3, 4, 4, 1], [4, 4, 4, 1], [4, 4, 4, 0], [3, 4, 4, 0], [2, 4, 4, 0], [1, 4, 4, 0], [0, 4, 4, 0], [0, 3, 4, 0], [1, 3, 4, 0], [2, 3, 4, 0], [3, 3, 4, 0], [4, 3, 4, 0], [4, 2, 4, 0], [3, 2, 4, 0], [2, 2, 4, 0], [1, 2, 4, 0], [0, 2, 4, 0], [0, 1, 4, 0], [1, 1, 4, 0], [2, 1, 4, 0], [3, 1, 4, 0], [4, 1, 4, 0], [4, 0, 4, 0], [3, 0, 4, 0], [2, 0, 4, 0], [1, 0, 4, 0], [0, 0, 4, 0], [0, 0, 3, 0], [1, 0, 3, 0], [2, 0, 3, 0], [3, 0, 3, 0], [4, 0, 3, 0], [4, 1, 3, 0], [3, 1, 3, 0], [2, 1, 3, 0], [1, 1, 3, 0], [0, 1, 3, 0], [0, 2, 3, 0], [1, 2, 3, 0], [2, 2, 3, 0], [3, 2, 3, 0], [4, 2, 3, 0], [4, 3, 3, 0], [3, 3, 3, 0], [2, 3, 3, 0], [1, 3, 3, 0], [0, 3, 3, 0], [0, 4, 3, 0], [1, 4, 3, 0], [2, 4, 3, 0], [3, 4, 3, 0], [4, 4, 3, 0], [4, 4, 2, 0], [3, 4, 2, 0], [2, 4, 2, 0], [1, 4, 2, 0], [0, 4, 2, 0], [0, 3, 2, 0], [1, 3, 2, 0], [2, 3, 2, 0], [3, 3, 2, 0], [4, 3, 2, 0], [4, 2, 2, 0], [3, 2, 2, 0], [2, 2, 2, 0], [1, 2, 2, 0], [0, 2, 2, 0], [0, 1, 2, 0], [1, 1, 2, 0], [2, 1, 2, 0], [3, 1, 2, 0], [4, 1, 2, 0], [4, 0, 2, 0], [3, 0, 2, 0], [2, 0, 2, 0], [1, 0, 2, 0], [1, 0, 1, 0], [2, 0, 1, 0], [3, 0, 1, 0], [4, 0, 1, 0], [4, 1, 1, 0], [3, 1, 1, 0], [2, 1, 1, 0], [1, 1, 1, 0], [0, 1, 1, 0], [0, 2, 1, 0], [1, 2, 1, 0], [2, 2, 1, 0], [3, 2, 1, 0], [4, 2, 1, 0], [4, 3, 1, 0], [3, 3, 1, 0], [2, 3, 1, 0], [1, 3, 1, 0], [0, 3, 1, 0], [0, 4, 1, 0], [1, 4, 1, 0], [2, 4, 1, 0], [3, 4, 1, 0], [4, 4, 1, 0], [4, 4, 0, 0], [3, 4, 0, 0], [2, 4, 0, 0], [1, 4, 0, 0], [0, 4, 0, 0], [0, 3, 0, 0], [1, 3, 0, 0], [2, 3, 0, 0], [3, 3, 0, 0], [4, 3, 0, 0], [4, 2, 0, 0], [3, 2, 0, 0], [2, 2, 0, 0], [1, 2, 0, 0], [1, 1, 0, 0], [2, 1, 0, 0], [3, 1, 0, 0], [4, 1, 0, 0], [4, 0, 0, 0], [3, 0, 0, 0], [2, 0, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0]]};
+  const container = document.getElementById('snake-9818472bd7-canvas');
+  if (!container) { console.error('Container not found'); return; }
+  window.snakeViewerCoordinator.register(viewerId, container);
+  
+  const dims = config.dimensions;
+  // Ensure gridSize is padded to at least 3 dimensions
+  const gridSize = [...config.gridSize];
+  while (gridSize.length < 3) gridSize.push(1);
+  
+  const path = config.path;
+  const walls = config.walls;
+  const food = config.food;
+
+  // Scene setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+
+  // Use fallback dimensions if container not yet laid out
+  let width = container.clientWidth || 600;
+  let height = container.clientHeight || 400;
+  const camera = new THREE.PerspectiveCamera(50, width/height, 0.1, 1000);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
+  container.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 20, 15);
+  scene.add(dirLight);
+
+  // Projection weights for dims > 3 (sliders control these)
+  const projectionWeights = [];
+  for (let d = 3; d < dims; d++) {
+    projectionWeights.push(0.5); // default middle slice
+  }
+
+  // Create sliders for higher dimensions
+  const sliderContainer = document.getElementById('snake-9818472bd7-sliders');
+  if (dims > 3) {
+    const dimLabels = ['W', 'V', 'U', 'T', 'S', 'R', 'Q'];
+    for (let d = 3; d < dims; d++) {
+      const idx = d - 3;
+      const label = dimLabels[idx] || `D${d}`;
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:8px;margin:4px 0;';
+      div.innerHTML = `
+        <span style="width:80px;">Dim ${d+1} (${label}):</span>
+        <input type="range" id="snake-9818472bd7-dim${d}" min="0" max="1" step="0.01" value="0.5" style="flex:1;">
+        <span id="snake-9818472bd7-dim${d}-val" style="width:40px;">0.50</span>
+      `;
+      sliderContainer.appendChild(div);
+      const slider = div.querySelector('input');
+      const valSpan = div.querySelector('span:last-child');
+      slider.addEventListener('input', () => {
+        projectionWeights[idx] = parseFloat(slider.value);
+        valSpan.textContent = slider.value;
+        rebuildVisualization();
+      });
+    }
+  }
+
+  // Project N-dimensional point to 3D
+  function projectTo3D(point) {
+    if (dims <= 3) {
+      // Pad to 3D if needed
+      const p = [...point];
+      while (p.length < 3) p.push(0);
+      return p.slice(0, 3);
+    }
+    // For dims > 3, use weighted projection
+    // Base 3D coords are first 3 dims
+    let x = point[0], y = point[1], z = point[2];
+    // Higher dims influence position based on weights
+    for (let d = 3; d < dims; d++) {
+      const weight = projectionWeights[d - 3];
+      const coord = point[d] / (gridSize[d] - 1 || 1);
+      // Project higher dims as offsets/rotations
+      const angle = (d - 3) * Math.PI / 4 + coord * Math.PI * 0.3;
+      const influence = (coord - weight) * 2;
+      x += influence * Math.cos(angle) * 0.5;
+      y += influence * Math.sin(angle) * 0.5;
+      z += influence * 0.3;
+    }
+    return [x, y, z];
+  }
+
+  // Calculate alpha (visibility) based on higher-dim distance from slice
+  function calcAlpha(point) {
+    if (dims <= 3) return 1.0;
+    let totalDist = 0;
+    for (let d = 3; d < dims; d++) {
+      const coord = point[d] / (gridSize[d] - 1 || 1);
+      const weight = projectionWeights[d - 3];
+      totalDist += Math.abs(coord - weight);
+    }
+    return Math.max(0.1, 1.0 - totalDist * 0.5);
+  }
+
+  // Groups for different elements
+  let gridGroup = new THREE.Group();
+  let pathGroup = new THREE.Group();
+  let markerGroup = new THREE.Group();
+  scene.add(gridGroup);
+  scene.add(pathGroup);
+  scene.add(markerGroup);
+
+  // Materials
+  const gridMaterial = new THREE.LineBasicMaterial({ color: 0x404060, transparent: true, opacity: 0.3 });
+  const pathMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff88, emissive: 0x004422 });
+  const wallMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444, transparent: true, opacity: 0.8 });
+  const foodMaterial = new THREE.MeshPhongMaterial({ color: 0x44ff44, emissive: 0x114411 });
+  const startMaterial = new THREE.MeshPhongMaterial({ color: 0x4488ff, emissive: 0x112244 });
+  const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0x444400 });
+
+  let animProgress = 0;
+  let showGrid = true;
+  let isLoaded = false;
+  const MAX_VISIBLE_NODES = 500; // Only render last N nodes for performance
+
+  // Shared geometries to avoid recreating
+  let sharedSphereGeom = null;
+  let sharedHeadGeom = null;
+  let sharedStartGeom = null;
+
+  function unloadGeometry() {
+    gridGroup.clear();
+    pathGroup.clear();
+    markerGroup.clear();
+    isLoaded = false;
+    cameraInitialized = false; // Allow camera reinit when reactivated
+  }
+
+  function rebuildVisualization() {
+    // Clear old geometry
+    gridGroup.clear();
+    pathGroup.clear();
+    markerGroup.clear();
+    isLoaded = true;
+
+    // Create shared geometries once
+    if (!sharedSphereGeom) {
+      sharedSphereGeom = new THREE.SphereGeometry(0.2, 4, 4);
+      sharedHeadGeom = new THREE.SphereGeometry(0.35, 6, 6);
+      sharedStartGeom = new THREE.SphereGeometry(0.3, 4, 4);
+    }
+
+    // Calculate center for camera
+    const center = gridSize.slice(0, 3).map((s, i) => (s - 1) / 2);
+    while (center.length < 3) center.push(0);
+
+    // Draw grid edges (merged into single buffer)
+    if (showGrid) {
+      const edges = [];
+      function addEdgesRecursive(pos, dim) {
+        if (dim === Math.min(dims, 3)) {
+          for (let d = 0; d < Math.min(dims, 4); d++) {
+            if (pos[d] < gridSize[d] - 1) {
+              const p1 = projectTo3D([...pos, ...Array(Math.max(0, dims-3)).fill(0).map((_, i) => 
+                Math.round(projectionWeights[i] * (gridSize[3+i]-1)))]);
+              const nextPos = [...pos];
+              nextPos[d]++;
+              const p2 = projectTo3D([...nextPos, ...Array(Math.max(0, dims-3)).fill(0).map((_, i) => 
+                Math.round(projectionWeights[i] * (gridSize[3+i]-1)))]);
+              edges.push(...p1, ...p2);
+            }
+          }
+          return;
+        }
+        for (let i = 0; i < gridSize[dim]; i++) {
+          pos[dim] = i;
+          addEdgesRecursive(pos, dim + 1);
+        }
+      }
+      addEdgesRecursive(Array(dims).fill(0), 0);
+
+      if (edges.length > 0) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(edges), 3));
+        gridGroup.add(new THREE.LineSegments(geometry, gridMaterial));
+      }
+    }
+
+    // Draw walls (use instancing concept - but simpler: just fewer segments)
+    walls.forEach(wall => {
+      const pos = projectTo3D(wall);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), wallMaterial);
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      markerGroup.add(mesh);
+    });
+
+    // Draw food
+    food.forEach(f => {
+      const pos = projectTo3D(f);
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), foodMaterial);
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      markerGroup.add(mesh);
+    });
+
+    // Draw path - only last MAX_VISIBLE_NODES with fade
+    if (path.length > 0) {
+      const totalVisible = Math.min(path.length, Math.floor(animProgress * path.length) + 1);
+      const startIdx = Math.max(0, totalVisible - MAX_VISIBLE_NODES);
+      const fadeWindow = MAX_VISIBLE_NODES;
+      
+      // Collect line segments into single merged buffer with vertex colors
+      const linePositions = [];
+      const lineColors = [];
+      
+      for (let i = startIdx; i < totalVisible; i++) {
+        const pos = projectTo3D(path[i]);
+        const alpha = calcAlpha(path[i]);
+        const isStart = i === 0;
+        const isHead = i === totalVisible - 1;
+        
+        // Fade based on distance from head
+        const distFromHead = totalVisible - 1 - i;
+        const fadeFactor = Math.max(0, 1 - distFromHead / fadeWindow);
+        const finalAlpha = alpha * fadeFactor;
+        
+        // Only draw node spheres for head, start
+        if (isHead || isStart) {
+          const geom = isHead ? sharedHeadGeom : (isStart ? sharedStartGeom : sharedSphereGeom);
+          const mat = (isHead ? headMaterial : (isStart ? startMaterial : pathMaterial)).clone();
+          mat.transparent = true;
+          mat.opacity = finalAlpha;
+          const mesh = new THREE.Mesh(geom, mat);
+          mesh.position.set(pos[0], pos[1], pos[2]);
+          pathGroup.add(mesh);
+        }
+        
+        // Add line segment to merged buffer
+        if (i < totalVisible - 1 && fadeFactor > 0.1) {
+          const p1 = pos;
+          const p2 = projectTo3D(path[i + 1]);
+          
+          // Color gradient along path
+          const t = i / Math.max(1, path.length - 1);
+          let r, g, b;
+          if (t < 0.5) {
+            r = 0; g = t * 2; b = 1 - t * 2;
+          } else {
+            r = (t - 0.5) * 2; g = 1; b = 0;
+          }
+          
+          linePositions.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+          // Vertex colors for both endpoints
+          lineColors.push(r * fadeFactor, g * fadeFactor, b * fadeFactor);
+          lineColors.push(r * fadeFactor, g * fadeFactor, b * fadeFactor);
+        }
+      }
+      
+      // Create single merged line geometry
+      if (linePositions.length > 0) {
+        const lineGeom = new THREE.BufferGeometry();
+        lineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePositions), 3));
+        lineGeom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(lineColors), 3));
+        const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.8 });
+        pathGroup.add(new THREE.LineSegments(lineGeom, lineMat));
+      }
+    }
+  }
+
+  // Initial camera setup (only once)
+  let cameraInitialized = false;
+  function initCamera() {
+    if (cameraInitialized) return;
+    cameraInitialized = true;
+    const center = gridSize.slice(0, 3).map((s) => (s - 1) / 2);
+    const maxSize = Math.max(...gridSize.slice(0, 3), 1);
+    camera.position.set(center[0] + maxSize * 2, center[1] + maxSize * 1.5, center[2] + maxSize * 2);
+    controls.target.set(center[0], center[1], center[2]);
+    controls.update();
+  }
+
+  rebuildVisualization();
+  initCamera();
+
+  // Animation checkbox
+  const animCheckbox = document.getElementById('snake-9818472bd7-animate');
+  const gridCheckbox = document.getElementById('snake-9818472bd7-showgrid');
+  
+  gridCheckbox.addEventListener('change', () => {
+    showGrid = gridCheckbox.checked;
+    rebuildVisualization();
+  });
+
+  // Animation loop - only animate if this viewer is active (closest to viewport center)
+  let lastTime = 0;
+  let wasActive = false;
+  function animate(time) {
+    requestAnimationFrame(animate);
+    
+    const isActive = window.snakeViewerCoordinator.isActive(viewerId);
+    
+    // If becoming inactive, unload geometry to save memory
+    if (wasActive && !isActive) {
+      unloadGeometry();
+      renderer.clear();
+    }
+    
+    // Only do work if active
+    if (isActive) {
+      // Rebuild if just became active or animating
+      if (!wasActive) {
+        rebuildVisualization();
+        initCamera();
+      } else if (animCheckbox.checked && path.length > 1) {
+        const dt = (time - lastTime) / 100 / path.length;
+        lastTime = time;
+        animProgress += dt * 0.3;
+        if (animProgress > 1.5) animProgress = 0;
+        rebuildVisualization();
+      } else if (!animCheckbox.checked && animProgress < 1) {
+        animProgress = 1;
+        rebuildVisualization();
+      }
+      
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    
+    wasActive = isActive;
+  }
+  animate(0);
+
+  // Handle resize
+  const resizeObserver = new ResizeObserver(() => {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  });
+  resizeObserver.observe(container);
+})();
+</script>
+</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q12'>Test 12: Fit a loop into a square that's perimeter is smaller than the total length</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br>You have 3 1m lengths of pipe, and a square area of side length 1 to play with.<br><br>Lay the pipe out to form a closed loop, using all the pipe, and returning to the starting point.<br><br>You can not re-use vertices, and you can not cross the boundary of the area. You do not need to<br>stick to axis aligned paths.<br><br>Return the loop as a list of the pipe endpoints. Note that N pipes requires N+1 verticies to describe a path, but since the<br>first and last vertices are the same, you only need to return N points.<br> The loop must not cross itself or touch itself.</div></td>
+    <td><strong>Prompt Changes:</strong><br>Increasing pipe length, square size, and complications.</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: 18 pipes in 4x4<br><a href="prompts/gpt-5.2-pro-HighReasoning_12_7.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_12_7.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_12_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Valid loop for preset 'None' with 18 points and 0 crossings</div></td>
+  </tr>
+    <td colspan='2'><div id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a" class="loop-viewer"><style>#loop-viewer-2568844fb8dc17928ef5c9bfc44f976a { display:flex; align-items:center; gap:8px; flex-wrap:wrap; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a input[type="radio"] { display:none; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a .loop-frame { flex:1 1 100%; text-align:center; order:2; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a .loop-prev { order:0; cursor:pointer; font-size:18px; display:none; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a .loop-next { order:1; cursor:pointer; font-size:18px; display:none; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a .loop-view { display:none; max-width:100%; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-0:checked ~ .loop-frame .view-0 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-0:checked ~ .prev-0 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-0:checked ~ .next-0 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-1:checked ~ .loop-frame .view-1 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-1:checked ~ .prev-1 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-1:checked ~ .next-1 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-2:checked ~ .loop-frame .view-2 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-2:checked ~ .prev-2 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-2:checked ~ .next-2 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-3:checked ~ .loop-frame .view-3 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-3:checked ~ .prev-3 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-3:checked ~ .next-3 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-4:checked ~ .loop-frame .view-4 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-4:checked ~ .prev-4 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-4:checked ~ .next-4 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-5:checked ~ .loop-frame .view-5 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-5:checked ~ .prev-5 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-5:checked ~ .next-5 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-6:checked ~ .loop-frame .view-6 { display:block; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-6:checked ~ .prev-6 { display:inline-flex; } #loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-6:checked ~ .next-6 { display:inline-flex; }</style><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-0" checked><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-1"><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-2"><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-3"><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-4"><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-5"><input type="radio" name="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view" id="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-6"><label class="loop-prev prev-0" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-6">&#8592;</label><label class="loop-next next-0" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-1">&#8594;</label><label class="loop-prev prev-1" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-0">&#8592;</label><label class="loop-next next-1" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-2">&#8594;</label><label class="loop-prev prev-2" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-1">&#8592;</label><label class="loop-next next-2" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-3">&#8594;</label><label class="loop-prev prev-3" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-2">&#8592;</label><label class="loop-next next-3" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-4">&#8594;</label><label class="loop-prev prev-4" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-3">&#8592;</label><label class="loop-next next-4" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-5">&#8594;</label><label class="loop-prev prev-5" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-4">&#8592;</label><label class="loop-next next-5" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-6">&#8594;</label><label class="loop-prev prev-6" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-5">&#8592;</label><label class="loop-next next-6" for="loop-viewer-2568844fb8dc17928ef5c9bfc44f976a-view-0">&#8594;</label><div class="loop-frame"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_southwest.png" class="loop-view view-0" style="max-width: 100%;"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_above.png" class="loop-view view-1" style="max-width: 100%;"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_north.png" class="loop-view view-2" style="max-width: 100%;"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_south.png" class="loop-view view-3" style="max-width: 100%;"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_west.png" class="loop-view view-4" style="max-width: 100%;"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_east.png" class="loop-view view-5" style="max-width: 100%;"><img src="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_northeast.png" class="loop-view view-6" style="max-width: 100%;"></div><div class="loop-hires" style="width:100%; text-align:center; margin-top:8px;"><a href="artifacts/12_Visualization_gpt-5.2-pro-HighReasoning_7_southwest_hires.png" target="_blank" rel="noopener" style="font-size:14px; color:#1d4ed8; text-decoration:underline;">Open high-res (12_Visualization_gpt-5.2-pro-HighReasoning_7_southwest_hires.png)</a></div></div></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q13'>Test 13: Hide and seek behind a building</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You have a building at the origin, axis aligned, 2 meters wide and deep, and 10 meters tall.<br><br>A sniper is located at (100,100,20) and is looking at the building.<br><br>Position a crowd of 4 people (represented by a 0.5*0.5*2m axis aligned bounding box resting on the z=0 plane) <br>in such a way that:<br>- the sniper can not see any of them due to the building blocking their line of sight.<br>- the people must be positioned entirely on the ground (z=0).<br>- the people must not overlap with the building or each other.<br>- nobody is more than 30 meters away from the building's center.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Varying crowd size and building dimensions</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: 150 people, 10m building<br><a href="prompts/gpt-5.2-pro-HighReasoning_13_4.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_13_4.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_13_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>All 150 people hidden from sniper</div></td>
+  </tr>
+    <td colspan='2'><img src='artifacts/13_Visualization_gpt-5.2-pro-HighReasoning_subpass4_False.png' alt='Subpass 4 visualization' style='max-width: 100%;' /><img src='artifacts/13_Visualization_gpt-5.2-pro-HighReasoning_subpass4_True.png' alt='Subpass 4 visualization from above' style='max-width: 100%;' /></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q16'>Test 16: Pack rectangular prisms</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You are given the following rectangular prisms:<br><br>7 prisms of 5x3x2<br><br>and have to pack them as efficiently as possible into the smallest volume possible.<br>You can rotate the prisms orthogonally. Return a list of min/max xyz coordinates, one<br>per box that you've successfully packed.<br><br>A perfect answer is one in which the volume of the enclosing bounding box is the same as<br>the sum of the volumes of the prisms.<br><br>Every bit of unused space is a point of failure, effort should be taken to elimiate<br>unused space.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Adds additional prisms for each run</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: 7 prisms of 5x3x2<br>11 prisms of 7x5x3<br><a href="prompts/gpt-5.2-pro-HighReasoning_16_1.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_16_1.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_16_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer volume: 1365, Expected volume: 1365<br>Packing efficiency: 100.0% (enclosing volume: 1365)</div></td>
+  </tr>
+    <td colspan='2'><img src="artifacts/16_Visualization_gpt-5.2-pro-HighReasoning_subpass1.png" /><br><br>Perfect packing possible! Potentially solvable with bounding boxes: [(3, 5, 91), (3, 7, 65), (3, 13, 35), (5, 7, 39), (5, 13, 21), (7, 13, 15)]</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q23'>Test 23: Fluid simulation</a></th>
+    <th class='score-good'>Score: 1.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You are given a 3D voxel world, of dimensions 16 * 16 * 8 voxels,<br>currently filled with rock uniformly flat and solid at the layers z = [0,1,2]<br><br>Rainfall occurs at the top centre of the world, and follows the following rules:<br>- If air is below water, the water falls (z = z - 1)<br>- If water has ground or water below it, it "flood fills" out looking for any air voxels <br>  at the z level below it, and moves to the nearest one.<br>- If water touches the sides or bottom of the world, it falls off and is lost forever.<br>- If water can't find a reachable air voxel to move to, it remains there as a pool of water.<br><br>Since the world is currently flat, rainfall currently all runs off the edge of the map,<br>meaning earthworks are required to achieve your goals. After your earthworks complete, <br>there will be 1000s of voxels worth of rainfall (mostly centred at the centre of the world)<br>before your world is graded.<br><br>You can specify earthworks using a simple json format:<br>{<br>  "earthworks" : [<br>    {<br>      "xyzMin": [2, 2, 3],<br>      "xyzMax": [6, 6, 3],<br>      "material": "Rock"<br>    },<br>    {<br>      "xyzMin": [3, 3, 3],<br>      "xyzMax": [5, 5, 3],<br>      "material": "Air"<br>    }<br>  ]<br>}<br>This would add a 5x5 slab of rock at z = 3, and remove a 3x3 hole from it, leaving a<br>ring of rock at z = 3. This would capture 9 voxels of water. <br><br>Rock connected (orthogonally) to other rock is rigid and supports itself, allowing caves, tunnels,<br>bridges, overhangs, and promontories. Floating rock without any support structure will <br>obviously fall to the ground.<br><br>Now you understand the format - here is the task I need help with:<br><br>Add rock or air voxels to the world in order to ensure that after the rains end,<br>there is a lake of at least 36 voxels in surface area.</div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: there is a lake of at least 36 voxels in surface area.<br><a href="prompts/gpt-5.2-pro-HighReasoning_23_0.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_23_0.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_23_0.txt">View chain of thought</a><br>
+Can the LLM build a voxel world which manages water in specific ways?
+<br><br>
+This requires either an intuition on how water flows, or the ability to
+create fluid dynamic simulations.
+<br><br>
+LLMs seem to get the details right but forget the big picture.<br><br>
+Its quite funny watching them carve elaborate funnels and then high walls around a 
+lake system but leave one voxel open and it all flows out when it rains.
+</td>
+<td colspan=2><div style='overflow-y: auto;max-height: 100px;'><strong>AI Reasoning: </strong>Create an open-top, fully enclosed 6×6 basin centered in the map, with 1-voxel-thick rock walls running from z=3 up to the world top (z=7). The basin interior (x=5..10, y=5..10) has a surface area of 36 voxels. Rain falling near the center will accumulate inside; since the walls block lateral escape at every height, the water cannot reach the map edges to run off, so after the rains the lake’s surface area will be at least 36 voxels.</div></td>    <td rowspan=2 class='score-good'><strong>1.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Lake with surface area 36 >= 36</div></td>
+  </tr>
+    <td colspan='2'>White indicates 0,0.<br><div id="voxel-viewer-f00de1900a95145fcabc13a882054dc6" class="voxel-viewer"><style>#voxel-viewer-f00de1900a95145fcabc13a882054dc6 { display:flex; align-items:center; gap:8px; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6 input[type="radio"] { display:none; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6 .voxel-frame { flex:1; text-align:center; order:1; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6 .voxel-prev { order:0; cursor:pointer; font-size:18px; display:none; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6 .voxel-next { order:2; cursor:pointer; font-size:18px; display:none; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6 .voxel-view { display:none; max-width:100%; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-0:checked ~ .voxel-frame .view-0 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-0:checked ~ .prev-0 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-0:checked ~ .next-0 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-1:checked ~ .voxel-frame .view-1 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-1:checked ~ .prev-1 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-1:checked ~ .next-1 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-2:checked ~ .voxel-frame .view-2 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-2:checked ~ .prev-2 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-2:checked ~ .next-2 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-3:checked ~ .voxel-frame .view-3 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-3:checked ~ .prev-3 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-3:checked ~ .next-3 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-4:checked ~ .voxel-frame .view-4 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-4:checked ~ .prev-4 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-4:checked ~ .next-4 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-5:checked ~ .voxel-frame .view-5 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-5:checked ~ .prev-5 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-5:checked ~ .next-5 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-6:checked ~ .voxel-frame .view-6 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-6:checked ~ .prev-6 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-6:checked ~ .next-6 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-7:checked ~ .voxel-frame .view-7 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-7:checked ~ .prev-7 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-7:checked ~ .next-7 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-8:checked ~ .voxel-frame .view-8 { display:block; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-8:checked ~ .prev-8 { display:inline-flex; } #voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-8:checked ~ .next-8 { display:inline-flex; }</style><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-0" checked><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-1"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-2"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-3"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-4"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-5"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-6"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-7"><input type="radio" name="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view" id="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-8"><label class="voxel-prev prev-0" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-8">&#8592;</label><label class="voxel-next next-0" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-1">&#8594;</label><label class="voxel-prev prev-1" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-0">&#8592;</label><label class="voxel-next next-1" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-2">&#8594;</label><label class="voxel-prev prev-2" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-1">&#8592;</label><label class="voxel-next next-2" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-3">&#8594;</label><label class="voxel-prev prev-3" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-2">&#8592;</label><label class="voxel-next next-3" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-4">&#8594;</label><label class="voxel-prev prev-4" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-3">&#8592;</label><label class="voxel-next next-4" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-5">&#8594;</label><label class="voxel-prev prev-5" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-4">&#8592;</label><label class="voxel-next next-5" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-6">&#8594;</label><label class="voxel-prev prev-6" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-5">&#8592;</label><label class="voxel-next next-6" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-7">&#8594;</label><label class="voxel-prev prev-7" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-6">&#8592;</label><label class="voxel-next next-7" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-8">&#8594;</label><label class="voxel-prev prev-8" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-7">&#8592;</label><label class="voxel-next next-8" for="voxel-viewer-f00de1900a95145fcabc13a882054dc6-view-0">&#8594;</label><div class="voxel-frame"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_northeast.png" class="voxel-view view-0" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_above.png" class="voxel-view view-1" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_north.png" class="voxel-view view-2" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_south.png" class="voxel-view view-3" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_west.png" class="voxel-view view-4" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_east.png" class="voxel-view view-5" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_northwest.png" class="voxel-view view-6" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_southeast.png" class="voxel-view view-7" style="max-width: 100%;"><img src="artifacts/23_Visualization_gpt-5.2-pro-HighReasoning_0_southwest.png" class="voxel-view view-8" style="max-width: 100%;"></div></div></td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q28'>Test 28: AI controlling explosives, what could possibly go wrong?</a></th>
+    <th class='score-bad'>Score: 0.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br><br>You are responsible for levelling terrain in preparation for the construction of a new city.<br><br>You can place blasting charges to fracture the terrain, causing it to collapse and flow<br>down hill. Fractured rock blasted at the top of a hill travels equally to all 8 neighbours.<br>Fractured rock on a slope is distributed equally to all lower neighbours.<br><br>E.g. a blast at the centre of this map of depth 1.6:<br><br>1.0 2.0 1.0<br>2.0 5.0 1.0<br>1.0 3.0 2.0<br><br>Initially produces this delta (the 1.6 is distributed over all 8 neighbours)<br><br>+0.2 +0.2 +0.2<br>+0.2 -1.6 +0.2<br>+0.2 +0.2 +0.2<br><br>The rocks then keep rolling further downhill (splitting equally when offered) until coming to a stop:<br><br>+0.2 +0.2 +0.2<br>+0.2 -1.6 +0.2<br>+0.3   0 +0.3<br><br>+0.4   0  +0.3<br>  0  -1.6 +0.5<br>+0.4   0   0<br><br>+0.4   0  +0.4<br>  0  -1.6 +0.4<br>+0.4   0   0<br><br>Giving a net result of:<br><br>1.4  2.0  1.4<br>2.0  3.4  1.4<br>1.4  3.0  2.0<br><br>Which is an improvement towards being flat, and better to build a city on than the original,<br>but could still be further improved with more blasting.<br><br>Care needs to be taken on where you place your charges - it's preferable to leave a steep<br>mountain overlooking a giant flat plain, than to have a softer slope with no mountain.<br><br>Here is the terrain you have to work with as modelled by a height map. It is 16 x 16.<br><br>5.0 5.9 5.4 4.6 6.9 5.5 4.8 4.8 6.3 7.1 3.7 4.6 4.4 5.3 4.1 2.6<br>3.1 3.6 1.5 2.9 4.6 7.6 6.8 7.4 6.9 5.6 5.2 7.2 7.2 7.0 4.6 4.3<br>4.0 5.3 3.7 2.1 2.7 7.7 5.4 5.1 5.1 6.1 7.3 6.8 5.7 7.9 7.2 5.2<br>5.6 5.4 4.2 5.7 6.1 8.1 5.0 4.5 3.2 3.4 5.7 6.2 4.8 5.5 5.9 4.9<br>4.7 5.3 6.6 5.8 7.3 7.7 4.7 4.6 1.4 3.2 6.7 4.9 3.0 3.5 4.9 5.5<br>6.0 5.9 4.5 5.0 7.9 7.6 5.7 5.2 3.2 4.6 3.7 3.5 2.8 4.1 5.5 8.5<br>6.3 6.1 4.5 5.9 5.0 7.2 7.7 4.7 4.6 4.5 6.2 3.6 3.5 3.7 6.3 8.0<br>3.7 1.9 1.5 4.0 6.1 8.3 5.7 3.7 3.4 2.8 3.3 5.2 4.6 6.0 7.2 5.9<br>3.7 3.7 3.4 4.0 7.5 6.3 4.9 4.8 4.3 5.2 4.3 3.7 2.8 4.8 6.6 5.3<br>5.2 7.0 5.6 4.8 6.9 6.0 4.0 7.0 3.7 5.2 7.3 4.4 1.5 3.0 7.4 6.7<br>4.2 5.1 4.3 4.4 3.7 4.0 3.3 5.5 5.6 2.9 4.2 5.6 5.0 7.2 7.5 4.9<br>5.3 5.6 6.8 6.3 6.2 6.4 5.4 5.6 3.2 2.0 3.3 5.9 7.0 7.4 7.3 8.5<br>6.2 6.6 7.3 7.4 6.3 7.3 7.3 5.7 1.7 2.2 4.1 8.0 9.0 7.7 6.2 7.0<br>4.8 5.2 4.4 4.1 4.3 6.9 5.4 3.2 2.4 4.4 6.1 7.5 6.0 4.1 4.2 4.5<br>4.4 2.4 1.5 2.4 1.4 4.1 3.7 2.2 4.1 5.7 6.6 6.1 5.1 4.3 4.2 7.3<br>3.5 3.5 2.7 4.5 3.2 3.0 5.6 4.7 4.5 5.0 3.6 5.2 5.2 5.3 5.0 7.0<br><br>Prepare a blast plan specifying <br>- Where to place the charges (X/Y) in grid coordinates, lower left is 0.<br>- How deep to drill down (Z)<br>- Order of the blasts.<br><br>Such that the terrain collapses into the largest flat area as possible to build the largest possible city.<br><br>A region of terrain is considered "flat" if, when rounded to the nearest integer, all heights are the same.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>
+Each pass gets a larger and larger map. <br><br>
+
+Also tested here is LLM guardrails, as "I'm sorry I can't work with explosives" is a hard 0 by design.
+</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: (see typical prompt)<a href="prompts/gpt-5.2-pro-HighReasoning_28_0.txt">View exact prompt</a><br><a href="raw/gpt-5.2-pro-HighReasoning_28_0.txt">View raw AI output</a><br><a href="cot/gpt-5.2-pro-HighReasoning_28_0.txt">View chain of thought</a><br>
+Can the LLM decide where to drill explosives in a 3D world such that it makes 
+as much flat land as possible?
+
+'just blow up the mountains' isn't a good strategy, as it will create gentle
+slopes. An optimal strategy needs to consider the volume of valleys vs the
+volume of hills overlooking them.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+<h2>Overall Summary</h2>
+<table>
+  <tr class='test-header'>
+    <th>Total Tests</th>
+    <th>Overall Score</th>
+    <th>Percentage</th>
+  </tr>
+  <tr>
+    <td>57</td>
+    <td>10.00 / 13</td>
+    <td>76.9%</td>
+  </tr>
+</table>
+</body>
+</html>

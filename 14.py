@@ -1,5 +1,3 @@
-skip = True
-
 import random
 
 title = "Grid Partitioning with Off-Axis Lines"
@@ -63,12 +61,12 @@ def prepareSubpassPrompt(index):
 
   prompt += """
 Partition this space such that each cell contains exactly one of the letters.
-Use lines of the form ax+b =0 to partition the space. The topleft of the grid is (0,0) and cell cooridinates are integers.
+Use lines of the form ax+b =0 to partition the space. The topleft of the grid is (0,0) and cell coordinates are integers.
 Return the lines as a list of (a,b) tuples.
 
 You can create a horizontal line by setting a=0 and b to the y coordinate of the line. Giving an equation of the form y=b.
 You can create a vertical line by setting a to +/- infinity and b to the x coordinate of the line, which although not mathematically 
-rigerous, is a common convention in computer graphics. Giving an "equation" that simplifies to the form x=b.
+rigorous, is a common convention in computer graphics. Giving an "equation" that simplifies to the form x=b.
 """
 
   return prompt

@@ -1,0 +1,236 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 4, 6, 7, 8, 10
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+
+Task Card:
+# Task q03: CSG Union of Polyhedra
+- Source file: `3.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Evaluate whether the model can output a single valid polyhedron representing the exact constructive-solid-geometry union of described primitives.
+
+## Output Contract
+- Return JSON object with `polyhedron`.
+- `polyhedron.vertex` is list of `{xyz:[x,y,z]}`.
+- `polyhedron.faces` is list of `{vertex:[indices...]}`.
+
+## Hard Constraints (Verifier-Checked)
+- Output must represent one union result, not disjoint primitive list.
+- Mesh must be topologically valid (watertight/oriented/manifold under verifier).
+- Geometry must match target union.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `Edge ... appears twice ... inconsistent winding` | Mesh orientation/manifold violation | `Local-Only` |
+| `Result Volume ... Difference Volume ...` | Geometric mismatch vs reference union | `Local-Only`, `Near-Miss` |
+| Empty/invalid polyhedron fields | Failed structured output | `Evasion / Forfeit`, `Trivialized / Misframed` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Missing/empty `polyhedron`.
+- `Trivialized / Misframed`: Returns a primitive or partial shape instead of full union.
+- `Runaway Overthinking`: Unnecessarily complex mesh with redundant/internal geometry.
+- `Local-Only (Global Integration Failure)`: Local faces seem plausible but global topology or volume is wrong.
+- `Near-Miss Edge Case`: Single small topology defect with close overall union.
+
+## Judge Input Bundle
+1. Exact union prompt for subpass.
+2. Raw output.
+3. Parsed polyhedron object.
+4. Verifier text including topology and volume diagnostics.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q03 with one failure mode. Prioritize verifier topology/volume signals over stylistic output quality.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+
+Attempts:
+### Subpass 4
+
+Attempt Metadata:
+- question_id: 3
+- subpass: 4
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 823
+
+Verifier Signal:
+Early failure: Edge (4, 0) appears twice in same direction (faces 0 and 1) - inconsistent winding
+
+Raw Output:
+{'polyhedron': {'vertex': [{'xyz': [-5, -10, -15]}, {'xyz': [5, -10, -15]}, {'xyz': [5, 10, -15]}, {'xyz': [-5, 10, -15]}, {'xyz': [-5, -10, 15]}, {'xyz': [5, -10, 15]}, {'xyz': [5, 10, 15]}, {'xyz': [-5, 10, 15]}, {'xyz': [5, -7.5, -7.5]}, {'xyz': [5, 7.5, -7.5]}, {'xyz': [5, 7.5, 7.5]}, {'xyz': [5, -7.5, 7.5]}, {'xyz': [17.5, -7.5, -7.5]}, {'xyz': [17.5, 7.5, -7.5]}, {'xyz': [17.5, 7.5, 7.5]}, {'xyz': [17.5, -7.5, 7.5]}], 'faces': [{'vertex': [0, 3, 7, 4]}, {'vertex': [0, 1, 5, 4]}, {'vertex': [3, 2, 6, 7]}, {'vertex': [0, 1, 2, 3]}, {'vertex': [4, 5, 6, 7]}, {'vertex': [1, 2, 9, 8]}, {'vertex': [2, 6, 10, 9]}, {'vertex': [6, 5, 11, 10]}, {'vertex': [5, 1, 8, 11]}, {'vertex': [12, 13, 14, 15]}, {'vertex': [8, 12, 13, 9]}, {'vertex': [9, 13, 14, 10]}, {'vertex': [10, 14, 15, 11]}, {'vertex': [11, 15, 12, 8]}]}}
+
+Chain of Thought:
+**Computing union shape**
+
+I need to determine the boolean union of a rectangular prism centered at the origin, measuring 10x20x30, with half-sizes of x=5, y=10, z=15. There's also a cube, side length 15, centered at (10,0,0) with half-size 7.5. I must calculate the overlap between the prism and cube dimensions. It looks like the cube intrudes partially into the prism, so the union will have a protrusion. I'll need to construct the boundary polyhedron with the resulting vertices and faces in mind.**Analyzing internal boundaries**
+
+I’m working through which parts of the cube are fully inside the prism and realizing that for y and z within the cube extents, they are completely interior, so I need to remove that face from consideration. The prism's right face at x=5 overlaps with the cube, creating an internal boundary. This leaves a rectangular hole that cube faces will fill. The resulting boundary faces will be non-rectangular due to the overlapping, and I need to explicitly define coordinates for the corners of both shapes to continue modeling.**Defining prism faces**
+
+I'm analyzing the dimensions of the prism. The left face at x=-5 is a full rectangle spanning y from -10 to 10 and z from -15 to 15. The right face at x=5 excludes the central rectangle covering y and z from -7.5 to 7.5, creating four distinct faces around the hole. While each band is planar, there's a question if they could be merged into a single polygon, but separate faces work fine. 
+
+For the top and bottom faces, the cube’s y extents are within ±7.5, so they remain uninterrupted as well as the z faces. The cube's face at x=17.5 is fully exposed while its y face only affects the range from x=5 to 17.5; thus, there's some internal overlap to consider.**Mapping the vertices**
+
+I’m outlining the visibility of the cube's y faces, which are only visible for x≥5, and the same goes for the z faces at ±7.5. The cube face at x=2.5 is removed entirely. Now, to define the vertices, I need to focus on edges of the intersection rectangle at x=5 with y and z at ±7.5. 
+
+After gathering the prism corners and intersection points, I total 16 vertices. Checking for duplicates indicates none coincide. Next, I'll index these vertices and describe the faces, starting with the prism's left face. The vertices for it are 0, 3, 7, and 4, organized in a counter-clockwise manner from the outside view.**Defining more vertices**
+
+I’m organizing the vertices for the prism faces. For the bottom face at y=-10, the outward direction is -y, with vertices 0, 1, 5, and 4. The top face at y=10 has outward vertices 3, 2, 6, and 7. Next, I realize the right face splits and requires additional vertices along z from -7.5 to 15 since the cube affects the prism's structure. 
+
+To accurately represent this, I need to add eight more intersection vertices where just one coordinate intersects, while considering the complexity of the shape. Although it feels lengthy, I'll push through to ensure everything is watertight.
+
+### Subpass 6
+
+Attempt Metadata:
+- question_id: 3
+- subpass: 6
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1318
+
+Verifier Signal:
+Early failure: Face 12 has invalid vertex index 32 (valid range: 0-31)
+
+Raw Output:
+{'polyhedron': {'vertex': [{'xyz': [-5, -5, -5]}, {'xyz': [5, -5, -5]}, {'xyz': [5, 5, -5]}, {'xyz': [-5, 5, -5]}, {'xyz': [-5, -5, 5]}, {'xyz': [5, -5, 5]}, {'xyz': [5, 5, 5]}, {'xyz': [-5, 5, 5]}, {'xyz': [-15, -5, -5]}, {'xyz': [-15, 5, -5]}, {'xyz': [-15, 5, 5]}, {'xyz': [-15, -5, 5]}, {'xyz': [15, -5, -5]}, {'xyz': [15, 5, -5]}, {'xyz': [15, 5, 5]}, {'xyz': [15, -5, 5]}, {'xyz': [-5, -15, -5]}, {'xyz': [5, -15, -5]}, {'xyz': [5, -15, 5]}, {'xyz': [-5, -15, 5]}, {'xyz': [-5, 15, -5]}, {'xyz': [5, 15, -5]}, {'xyz': [5, 15, 5]}, {'xyz': [-5, 15, 5]}, {'xyz': [-5, -5, -15]}, {'xyz': [5, -5, -15]}, {'xyz': [5, 5, -15]}, {'xyz': [-5, 5, -15]}, {'xyz': [-5, -5, 15]}, {'xyz': [5, -5, 15]}, {'xyz': [5, 5, 15]}, {'xyz': [-5, 5, 15]}], 'faces': [{'vertex': [12, 13, 14, 15]}, {'vertex': [9, 8, 11, 10]}, {'vertex': [0, 1, 13, 12, 15, 4]}, {'vertex': [3, 2, 14, 13, 1, 0]}, {'vertex': [4, 5, 15, 14, 2, 3]}, {'vertex': [8, 9, 3, 0, 4, 11]}, {'vertex': [21, 20, 23, 22]}, {'vertex': [16, 17, 18, 19]}, {'vertex': [0, 1, 17, 16, 19, 4]}, {'vertex': [1, 2, 22, 21, 17]}, {'vertex': [3, 0, 16, 20, 23]}, {'vertex': [4, 19, 18, 5]}, {'vertex': [30, 31, 32, 33]}, {'vertex': [24, 25, 26, 27]}, {'vertex': [0, 1, 25, 24, 27, 3]}, {'vertex': [1, 2, 26, 25]}, {'vertex': [2, 3, 27, 26]}, {'vertex': [4, 7, 31, 30, 28, 5]}]}}
+
+Chain of Thought:
+**Constructing a 3D shape**
+
+I need to create a union of three orthogonal rectangular prisms, all centered at the origin, forming a 3D cross shape. The first prism measures 30 x 10 x 10, extending along the x-axis and slightly on the y and z. The second is 10 x 30 x 10, while the third is 10 x 10 x 30. The final shape will resemble a plus sign in three dimensions. I must ensure the shape is a watertight orthogonal polyhedron with consistent vertices and faces.**Identifying extreme vertices**
+
+I’m working on listing all extreme vertices on the boundary of my shape. These coordinates will have either one coordinate at ±15 with the others within ±5 or two coordinates at ±5 with one at ±15, which represent the prism arms. 
+
+For the x-arm, that gives us vertices like (±15, ±5, ±5), and similarly for the other arms. Interestingly, while the corners of the central cube seem to be interior, they also function as face corners where the arms meet. So, to finalize, the corners at (±5, ±5, ±5) are inside but also relevant to outer surfaces.**Clarifying boundaries and vertices**
+
+I realize that the central cube is completely inside the first prism along the x-axis. Since the first prism stretches out along x and limits the y and z coordinates, the point (5, 5, 5) is indeed inside the prism, making it part of the interior rather than the boundary. 
+
+The boundary only exists at points where one coordinate is ±15. The surfaces will be rectangular at those boundaries with various combinations of coordinates. I need to explicitly list the faces as well as the vertices, like (15, 5, 5) and others.**Identifying boundary vertices and edges**
+
+I’m examining the internal edges between the arms, noting that some faces start at x=5. The vertices at (5, ±5, ±5) are indeed boundary points where the x-arm meets the central part. At this plane, for y beyond ±5, there’s a face at y=5 that extends from x=5 to 15.
+
+I realize (5, 5, 5) is also a boundary edge, but it's still inside the first prism. I need to include all combinations of coordinates in {±15, ±5}, bearing in mind that at most one coordinate can be ±15. Counting these vertices will yield quite a few!**Clarifying boundary vertices and faces**
+
+I've realized that the corners of the central cube aren't on the boundary faces; rather, they function as inner corners and may be considered concave points since the shape is non-convex. These concave vertices do count as boundary points. So, I need to include coordinates like ±5, ±5, ±5 in my vertex set.
+
+I'll focus on all combinations of coordinates where at most one coordinate is ±15. This yields 32 vertices. I need to account for various rectangular faces, and while it’s a lengthy process, it’s necessary for accuracy, even if it feels complex!
+
+### Subpass 7
+
+Attempt Metadata:
+- question_id: 3
+- subpass: 7
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 585
+
+Verifier Signal:
+Early failure: Edge (1, 0) appears twice in same direction (faces 0 and 5) - inconsistent winding
+
+Raw Output:
+{'polyhedron': {'vertex': [{'xyz': [-5, -5, -5]}, {'xyz': [5, -5, -5]}, {'xyz': [5, 5, -5]}, {'xyz': [-5, 5, -5]}, {'xyz': [-5, -5, 5]}, {'xyz': [5, -5, 5]}, {'xyz': [5, 5, 5]}, {'xyz': [-5, 5, 5]}, {'xyz': [15, -5, -5]}, {'xyz': [15, 5, -5]}, {'xyz': [15, -5, 5]}, {'xyz': [15, 5, 5]}], 'faces': [{'vertex': [3, 2, 1, 0]}, {'vertex': [4, 5, 6, 7]}, {'vertex': [1, 2, 6, 5]}, {'vertex': [7, 6, 2, 3]}, {'vertex': [3, 0, 4, 7]}, {'vertex': [1, 0, 4, 5]}, {'vertex': [2, 9, 8, 1]}, {'vertex': [8, 9, 11, 10]}, {'vertex': [1, 8, 10]}, {'vertex': [2, 11, 9]}, {'vertex': [1, 10, 11, 2]}]}}
+
+Chain of Thought:
+**Defining a prism solid**
+
+I'm thinking about a prism base, specifically if it should have a rectangular face on the bottom. For a triangular prism, it has triangular faces on the ends along the Y-axis. I’m centering the base at (10,0,0) within its bounding box. The x spans from [5,15], y from [-5,5], and z from [-5,5]. The slope from the top-front edge to the bottom-back edge creates a diagonal plane. So, the solid occupies the region beneath this sloped plane. Let's define that plane's equation as z = x - 10.**Analyzing solid geometry**
+
+I’m considering points below the plane defined by z ≤ x - 10, which represent the solid under the ramp; points above that are just empty space. At the central point where x = 10, z equals 0, so the solid includes z ≤ 0 there, which makes sense. Now, I need to think about the cube that occupies x ≤ 5 and the wedge starting at x ≥ 5. They meet at x = 5, and there’s minimal overlap with just a line touching. Essentially, they just touch at an edge, so when we create the union polyhedron, we’ll make sure to note all external faces without internal ones.**Defining the wedge geometry**
+
+I'm checking the wedge's bounding box and the plane at x=5, which I initially thought was a back face, but it turns out that the slope makes it triangular. At x=5, allowable z is just -5, which creates a degenerate rectangle along y. So, there's no actual face there, meaning the cube's face at x=5 is fully external, only touching the wedge at a line. 
+
+Now I need to define the wedge vertices. It’s a triangular prism with six vertices, and the triangular cross-section includes points: back-bottom (5,-5), front-bottom (15,-5), and front-top (15,5). This forms a right triangle with edges correctly matching the slope.**Listing vertices and faces**
+
+I’m verifying the diagonal plane that connects points A to C, while point B is below it. So that gives me vertices where y = ±5, leading to a total of six vertices for the wedge. Overall, I have 14 vertices: eight from the cube and six from the wedge. The cube contributes six quadrilateral faces, and the wedge adds two triangular ends and three rectangular faces, making a total of five faces for the wedge.
+
+Now, I need to ensure the orientation of the outward normals is consistent. I’ll start enumerating the vertices: the cube vertices are indexed from 0-7, and I’ll list them out. The wedge shares some vertices with the cube, which means I can reuse certain indices instead of creating redundant ones.**Finalizing wedge geometry**
+
+I’m identifying the remaining wedge vertices. For the front-bottom, I list (15,-5,-5) and (15,5,-5) as new points, along with (15,-5,5) and (15,5,5) for the front-top. With those, the unique wedge vertices total four new ones, plus two shared, bringing us to twelve vertices overall.
+
+Next, for the faces, I’ll use the defined vertex orderings to calculate outward normals. The wedge's bottom face sits at z=-5, and I need to ensure that the vertices are ordered clockwise when viewed from above. After organizing all the faces systematically, I’ll confirm that the cube and the wedge share edges but no overlapping faces before finalizing the output in JSON format.
+
+### Subpass 8
+
+Attempt Metadata:
+- question_id: 3
+- subpass: 8
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 538
+
+Verifier Signal:
+Early failure: Edge (4, 5) is only used by one face - mesh is not watertight (boundary edge)
+
+Raw Output:
+{'polyhedron': {'vertex': [{'xyz': [-5, -5, -5]}, {'xyz': [5, -5, -5]}, {'xyz': [5, 5, -5]}, {'xyz': [-5, 5, -5]}, {'xyz': [-5, -5, 5]}, {'xyz': [5, -5, 5]}, {'xyz': [5, 5, 5]}, {'xyz': [-5, 5, 5]}, {'xyz': [0, 0, 15]}, {'xyz': [8.16, 0, 5]}, {'xyz': [-4.08, 7.07, 5]}, {'xyz': [-4.08, -7.07, 5]}], 'faces': [{'vertex': [3, 2, 1, 0]}, {'vertex': [0, 1, 5, 4]}, {'vertex': [1, 2, 6, 5]}, {'vertex': [2, 3, 7, 6]}, {'vertex': [3, 0, 4, 7]}, {'vertex': [8, 9, 10]}, {'vertex': [8, 10, 11]}, {'vertex': [8, 11, 9]}, {'vertex': [9, 11, 10]}]}}
+
+Chain of Thought:
+**Evaluating geometric shapes**
+
+I need to compute the boolean union of a cube and a tetrahedron, which seems a bit complex. The tetrahedron likely intersects the cube partially. With the cube centered at the origin and a side length of 10, it extends from -5 to 5. The tetrahedron has one vertex above the cube and its base vertices on the cube's top face. So, it seems like the tetrahedron sits atop the cube, sharing a triangular base. I’ll have to focus on the intersection where the tetrahedron penetrates the cube.**Clarifying the union of shapes**
+
+The tetrahedron’s base plane aligns perfectly with the cube’s top plane at z=5, but the triangle extends beyond the square, causing some overlap without entering the cube below. So, the union consists of the cube and tetrahedron sharing this coplanar face, with overlap only on that plane. 
+
+For the resulting shape, I’ll need to remove the areas where they share space. Essentially, the triangle beneath the tetrahedron is an internal face, while the portions of the cube's top face outside the triangle remain exposed.**Exploring the boundaries of shapes**
+
+Above the cube, there's no tetrahedron; instead, the cube ends at z=5, creating boundary faces. The top boundary actually has a square shape with a triangular hole. However, the union needs to be watertight, so the tetrahedron's sides connect to the cube's top along the triangle edges. This results in a boundary composed of the tetrahedron’s side faces and the square minus the triangle, creating a polygon with a triangular hole. 
+
+To achieve this, I’ll need to split the top face into multiple faces around the triangle, which sounds complex but manageable! I'll also need to find the intersection of the triangle edges with the square edges to identify new vertices.**Assessing geometric complexities**
+
+This task feels quite heavy, given its complexity, which raises the risk of errors. It might be simpler to consider whether the base triangle fully covers the square. I should check if the square defined by [-5,5] x [-5,5] falls entirely inside the triangle. 
+
+To do this, I’ll inspect the corners, particularly (5,5). That’s tricky, but it seems possible the triangle could cover the square completely. If that’s the case, the cube's top face would be entirely internal and removed, simplifying things considerably. I'll need to examine the triangle vertices quickly to confirm whether they can fully cover the square!**Analyzing coverage and complexity**
+
+Let’s check the extreme points of the triangle: the rightmost x is 8.16, and the leftmost is -4.08. Since the square's left side at -5 is to the left of the triangle, the corner (-5,0) is outside, meaning the square isn't fully covered. This complexity raises the risk of errors, and computing intersections feels beyond my reach. 
+
+Despite the challenges, I feel I should at least attempt to provide an approximate union, even if it involves assuming no overlap removal. Time’s running out, but it’s important to give my best shot!
+
+### Subpass 10
+
+Attempt Metadata:
+- question_id: 3
+- subpass: 10
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1013
+
+Verifier Signal:
+Early failure: Edge (0, 1) appears twice in same direction (faces 0 and 2) - inconsistent winding
+
+Raw Output:
+{'polyhedron': {'vertex': [{'xyz': [-5, -5, -5]}, {'xyz': [5, -5, -5]}, {'xyz': [5, -5, 0]}, {'xyz': [15, -5, 0]}, {'xyz': [15, -5, 5]}, {'xyz': [25, -5, 5]}, {'xyz': [25, -5, 15]}, {'xyz': [15, -5, 15]}, {'xyz': [15, -5, 10]}, {'xyz': [5, -5, 10]}, {'xyz': [5, -5, 5]}, {'xyz': [-5, -5, 5]}, {'xyz': [-5, 5, -5]}, {'xyz': [5, 5, -5]}, {'xyz': [5, 5, 0]}, {'xyz': [15, 5, 0]}, {'xyz': [15, 5, 5]}, {'xyz': [25, 5, 5]}, {'xyz': [25, 5, 15]}, {'xyz': [15, 5, 15]}, {'xyz': [15, 5, 10]}, {'xyz': [5, 5, 10]}, {'xyz': [5, 5, 5]}, {'xyz': [-5, 5, 5]}], 'faces': [{'vertex': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}, {'vertex': [23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12]}, {'vertex': [0, 1, 13, 12]}, {'vertex': [1, 2, 14, 13]}, {'vertex': [2, 3, 15, 14]}, {'vertex': [3, 4, 16, 15]}, {'vertex': [4, 5, 17, 16]}, {'vertex': [5, 6, 18, 17]}, {'vertex': [6, 7, 19, 18]}, {'vertex': [7, 8, 20, 19]}, {'vertex': [8, 9, 21, 20]}, {'vertex': [9, 10, 22, 21]}, {'vertex': [10, 11, 23, 22]}, {'vertex': [11, 0, 12, 23]}]}}
+
+Chain of Thought:
+**Calculating union of cubes**
+
+I'm figuring out the union of three axis-aligned cubes, each with a size of 10, and they are centered at different points. The spans for each cube are established, and I notice they pairwise overlap in specific areas. For instance, Cube1 and Cube2 touch at the x=5 plane, sharing an overlapping face. Cube2 and Cube3 touch similarly at x=15. The overall union shape resembles a stepped diagonal extrusion, and I’ll need to identify the vertices and faces for this shape.**Determining outward normals and hull**
+
+I'm working on finding outward normals and ensuring they're in counterclockwise order when viewed from the outside. I need to compute the outer hull of the union shape, which is monotone in the x dimension. The y coordinate remains constant at a range of [-5,5], so the shape becomes a prism with an x-z cross-section. I’ll create a step polyline for the boundary of this cross-section, carefully listing the points in counterclockwise order and confirming there are no self-intersections.**Constructing the polyhedron**
+
+I’m extruding the shape along the y-axis from -5 to 5 to form a polyhedron. This gives me vertices at both y=-5 and y=5. I’ll list the cross-section vertices in order, resulting in twelve points. The faces consist of two large ones at the top and bottom with the same vertex loops—one reversed. The side faces are quads connecting corresponding vertices, and I need to ensure the normals are oriented correctly; the top face should have a normal pointing up, while the bottom face points down. Consistent ordering is key!**Defining polygon geometry**
+
+I’m defining the polygon in a counterclockwise (CCW) manner in the x-z plane. As I extrude, each side face between vertex i and i+1 will include the vertices [i_bottom, i+1_bottom, i+1_top, i_top] to ensure an outward normal. Since the polygon is CCW, this should work correctly. I need to produce a JSON representation without any redundant vertices, ensuring the faces are watertight. I can count a total of 24 vertices and 14 faces, so that looks good!

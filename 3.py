@@ -407,8 +407,12 @@ def earlyFailTest(result, subpass):
 
   # Edge manifold check: each edge should appear exactly twice (once in each direction)
   # For a watertight mesh with consistent winding
+  #
+  # NOTE: We collect ALL edge errors before returning so that the failure-mode
+  # judge sees the full defect picture.
   edge_count = {}  # (min_idx, max_idx) -> count of directed edges
   directed_edges = {}  # (from, to) -> face index
+  winding_errors = []
 
   for face_idx, face in enumerate(faces):
     n = len(face)
@@ -419,17 +423,21 @@ def earlyFailTest(result, subpass):
 
       # Track directed edges for winding check
       if directed_key in directed_edges:
-        return f"Edge ({v1}, {v2}) appears twice in same direction (faces {directed_edges[directed_key]} and {face_idx}) - inconsistent winding"
+        winding_errors.append(
+          f"Edge ({v1}, {v2}) appears twice in same direction "
+          f"(faces {directed_edges[directed_key]} and {face_idx})")
       directed_edges[directed_key] = face_idx
 
       edge_count[edge_key] = edge_count.get(edge_key, 0) + 1
 
   # Check that each edge is shared by exactly 2 faces (watertight)
+  boundary_edges = []
+  nonmanifold_edges = []
   for edge, count in edge_count.items():
     if count == 1:
-      return f"Edge {edge} is only used by one face - mesh is not watertight (boundary edge)"
-    if count > 2:
-      return f"Edge {edge} is used by {count} faces - non-manifold geometry"
+      boundary_edges.append(edge)
+    elif count > 2:
+      nonmanifold_edges.append((edge, count))
 
   # Check winding consistency: for each undirected edge, we should have
   # exactly one (a,b) and one (b,a) directed edge
@@ -443,7 +451,22 @@ def earlyFailTest(result, subpass):
       # Only one direction - this shouldn't happen if edge_count == 2
       pass
     else:
-      return f"Edge {edge} has inconsistent winding order"
+      winding_errors.append(f"Edge {edge} has inconsistent winding order")
+
+  # Report all collected edge errors in one message
+  if winding_errors or boundary_edges or nonmanifold_edges:
+    parts = []
+    if winding_errors:
+      parts.append(f"{len(winding_errors)} winding error(s): "
+                   + "; ".join(winding_errors))
+    if boundary_edges:
+      parts.append(f"{len(boundary_edges)} boundary edge(s) (not watertight): "
+                   + ", ".join(str(e) for e in boundary_edges))
+    if nonmanifold_edges:
+      parts.append(f"{len(nonmanifold_edges)} non-manifold edge(s): "
+                   + "; ".join(f"{e} used by {c} faces"
+                               for e, c in nonmanifold_edges))
+    return " | ".join(parts)
 
   # Calculate signed volume to check for inside-out mesh or zero volume
   total_volume = 0

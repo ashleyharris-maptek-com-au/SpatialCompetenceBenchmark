@@ -1,0 +1,856 @@
+
+
+Failed to parse JSON.
+<thinking>
+The user wants to find the neighbors of a specific leaf node (`01111100`) in a binary space partitioning tree.
+The tree structure is provided in a text format.
+The splitting rule is a repeating cycle: z -> z -> x -> y -> z -> x.
+I need to:
+1.  Parse the tree to identify all leaf nodes.
+2.  Determine the geometric bounds (min/max coordinates) for each leaf node based on the splitting cycle.
+3.  Identify the target leaf node's bounds.
+4.  Find all other leaf nodes that share a face with the target leaf.
+    *   Sharing a face means they touch in one dimension and overlap strictly in the other two dimensions.
+
+My previous python code attempted to do this but had a bug in the parsing logic.
+The input string `tree_text` was just a string literal in the code, but I need to make sure I parse the *actual* tree structure provided in the prompt.
+The prompt contains a large tree. I should probably re-parse the tree from the prompt text carefully.
+Also, the splitting cycle logic in my previous code was:
+`axis_idx = i % 6`
+0: z
+1: z
+2: x
+3: y
+4: z
+5: x
+This matches the prompt "z -> z -> x -> y -> z -> x".
+
+Let's re-verify the parsing.
+The tree is provided as an indented list.
+I need to extract all the leaf nodes.
+A leaf node is a node that does not appear as a prefix to any other node.
+
+Let's refine the python script to:
+1.  Read the tree structure.
+2.  Parse it into a list of paths (strings of 0s and 1s).
+3.  Filter for leaves.
+4.  Calculate bounds.
+5.  Check adjacency.
+
+Wait, looking at the previous code's output: `['01101100', '01110111', '01111000', '01111101']`.
+Let's double check the logic in the python script.
+The `get_box` function had a logic error.
+Inside the loop:
+```python
+        if axis_idx == 0: # z
+            axis = z
+        ...
+        mid = (axis[0] + axis[1]) / 2.0
+        if bit == 0:
+            axis[1] = mid
+        else:
+            axis[0] = mid
+```
+This updates the local variable `axis` which is a reference to one of the lists `x`, `y`, or `z`. This is correct in Python (lists are mutable).
+However, the `touching` logic:
+`touching` was defined as `abs(int1[1] - int2[0]) < 1e-9 or abs(int1[0] - int2[1]) < 1e-9`.
+This checks if the intervals touch at the edges.
+`overlap` was `max(int1[0], int2[0]) < min(int1[1], int2[1])`.
+This checks for strict intersection.
+
+The condition for sharing a face is:
+(Touch X AND Overlap Y AND Overlap Z) OR
+(Overlap X AND Touch Y AND Overlap Z) OR
+(Overlap X AND Overlap Y AND Touch Z).
+
+This logic seems correct for "sharing a face".
+
+However, I need to make sure I captured *all* leaves from the text.
+The `tree_text` variable in the previous code was incomplete/truncated in the display?
+No, I pasted a large chunk. Let me make sure I use the full tree from the prompt.
+The prompt text is quite long. I will copy it exactly.
+
+Also, I need to verify the parsing logic.
+Lines look like `│   │   │   ├── 0000`.
+Regex `r'\b([01]+)\b'` extracts the binary string.
+The indentation implies the hierarchy, but the binary string itself encodes the full path from the root.
+So if I see `0000`, that is the node.
+If `00000` exists, then `0000` is not a leaf.
+So collecting all binary strings and filtering for those that are not prefixes of another is the correct approach to find leaves.
+
+Let's do this again to be sure, with the full tree.
+
+One detail: "z -> z -> x -> y -> z -> x".
+Indices:
+0: z
+1: z
+2: x
+3: y
+4: z
+5: x
+6: z (repeats)
+...
+
+Let's run the python code again with the full tree and robust logic.
+The target leaf is `01111100`.
+Length 8.
+Sequence of splits:
+0 (z), 1 (z), 1 (x), 1 (y), 1 (z), 1 (x), 0 (z), 0 (z).
+
+Let's calculate the bounds of the target manually to verify the code's output later.
+Start: x=[0,1], y=[0,1], z=[0,1]
+1. `0` (idx 0, z): z becomes [0, 0.5]
+2. `1` (idx 1, z): z becomes [0.25, 0.5]
+3. `1` (idx 2, x): x becomes [0.5, 1.0]
+4. `1` (idx 3, y): y becomes [0.5, 1.0]
+5. `1` (idx 4, z): z becomes [0.375, 0.5]
+6. `1` (idx 5, x): x becomes [0.75, 1.0]
+7. `0` (idx 6, z): z becomes [0.375, 0.4375]
+8. `0` (idx 7, z): z becomes [0.375, 0.40625]
+
+Target Box:
+x: [0.75, 1.0]
+y: [0.5, 1.0]
+z: [0.375, 0.40625]
+
+Now, neighbors must share a face.
+Face 1 (Low X): x=0.75. Range y[0.5, 1.0], z[0.375, 0.40625].
+Face 2 (High X): x=1.0. Range y[0.5, 1.0], z[0.375, 0.40625].
+Face 3 (Low Y): y=0.5. Range x[0.75, 1.0], z[0.375, 0.40625].
+Face 4 (High Y): y=1.0. Range x[0.75, 1.0], z[0.375, 0.40625].
+Face 5 (Low Z): z=0.375. Range x[0.75, 1.0], y[0.5, 1.0].
+Face 6 (High Z): z=0.40625. Range x[0.75, 1.0], y[0.5, 1.0].
+
+I will use Python to find the leaves and check these conditions.
+I'll copy the full tree into the variable.
+The tree provided in the prompt is quite large. I'll read it carefully.
+Actually, I can just parse the provided text using the Python tool to handle the large string.
+
+One specific check:
+Target `01111100`.
+Parent `0111110`.
+Sibling `01111101`?
+If `01111101` exists, it shares the split at index 7 (z-axis).
+Split 7 was z-axis halving [0.375, 0.4375].
+0 went to [0.375, 0.40625].
+1 went to [0.40625, 0.4375].
+They share the face z=0.40625.
+They have exact same x and y.
+So `01111101` is definitely a neighbor (Face 6).
+
+Let's check the previous code's output `01111101`. Correct.
+
+What about `01111000`?
+Split 5 (x) separated `011110` and `011111`.
+Index 5 is x-axis.
+Target is in `011111` (x upper half of [0.5, 1.0] -> [0.75, 1.0]).
+`011110` is x lower half ([0.5, 0.75]).
+Boundary is x=0.75.
+Target x range is [0.75, 1.0].
+`011110` x range is [0.5, 0.75].
+They touch at x=0.75.
+Do they overlap in Y and Z?
+Target ancestry: `01111` (common).
+Y range determined by index 3 (y). Both have `1` at index 3. y=[0.5, 1.0].
+Z range determined by indices 0,1,4.
+0: `0` -> z[0, 0.5]
+1: `1` -> z[0.25, 0.5]
+4: `1` -> z[0.375, 0.5]
+So `01111` has z in [0.375, 0.5].
+Target `01111100` further splits z at 6 and 7.
+`011110` might splits z differently?
+Let's check the tree for `011110`.
+Tree:
+```
+                │   └── 011110
+                │       ├── 0111100
+                │       │   ├── 01111000
+                │       │   └── 01111001
+                │       └── 0111101
+                │           ├── 01111010
+                │           └── 01111011
+```
+Leafs under `011110`: `01111000`, `01111001`, `01111010`, `01111011`.
+All these are in x=[0.5, 0.75].
+They touch target at x=0.75.
+We need overlap in Y=[0.5, 1.0] and Z=[0.375, 0.40625].
+All `011110...` have same Y as target (inherited from `0111`).
+Z range for `011110`:
+Inherited `0111` z is [0.375, 0.5].
+Next splits for `011110`:
+Index 6 (z).
+Children `0111100` (z low) and `0111101` (z high).
+`0111100`: z [0.375, 0.4375].
+`0111101`: z [0.4375, 0.5].
+Target z is [0.375, 0.40625].
+Overlap with `0111101`? No. Target is in [0.375, 0.4375], `101` is [0.4375, 0.5].
+Overlap with `0111100`? Yes. `0111100` is [0.375, 0.4375].
+Now check children of `0111100`.
+Index 7 (z).
+`01111000`: z [0.375, 0.40625].
+`01111001`: z [0.40625, 0.4375].
+Target is [0.375, 0.40625].
+Matches `01111000` perfectly in Z.
+So `01111000` is a neighbor (Face 1).
+`01111001` touches target at z=0.40625, but x is different (separated by face x=0.75).
+Touching in X and Z (edge contact), not face contact.
+So `01111000` is a neighbor. `01111001` is not.
+
+Previous code found: `01111000`. Correct.
+
+I need to process the whole tree to find all such neighbors.
+
+One tricky part:
+Is `0111110` a leaf? No, it has children `00` and `01`. Not present in tree as leaf.
+Wait, I need to check if my manual tree parsing is correct.
+The provided tree text shows:
+```
+                    └── 011111
+                        ├── 0111110
+                        │   ├── 01111100
+                        │   └── 01111101
+                        └── 0111111
+```
+So `0111110` is not a leaf. `01111100` is a leaf.
+
+Let's refine the script to handle the full tree text securely. I'll read the text from the prompt, store it in a string, and run the logic.
+
+Special attention to the "z -> z -> x -> y -> z -> x" cycle.
+My manual trace:
+0: z
+1: z
+2: x
+3: y
+4: z
+5: x
+6: z
+7: z
+8: x
+...
+
+Wait, the prompt says "repeating cycle z -> z -> x -> y -> z -> x".
+Does it reset for children? Usually, subdivision depth corresponds to the cycle index.
+Root: split 0 (z).
+Depth 1 nodes: split 1 (z).
+Depth 2 nodes: split 2 (x).
+Depth 3 nodes: split 3 (y).
+Depth 4 nodes: split 4 (z).
+Depth 5 nodes: split 5 (x).
+Depth 6 nodes: split 0 (z).
+...
+
+Let's verify this interpretation.
+"Each node splits its parent cell... by bisecting along axes in the repeating cycle".
+Yes, depth $d$ splits along axis `cycle[d % 6]`.
+
+Let's verify my manual trace for `01111100`.
+Length 8 string.
+Bits at indices 0 to 7.
+0: bit 0. Split axis cycle[0]=z. Lower z.
+1: bit 1. Split axis cycle[1]=z. Upper z.
+2: bit 1. Split axis cycle[2]=x. Upper x.
+3: bit 1. Split axis cycle[3]=y. Upper y.
+4: bit 1. Split axis cycle[4]=z. Upper z.
+5: bit 1. Split axis cycle[5]=x. Upper x.
+6: bit 0. Split axis cycle[6]=z. Lower z.
+7: bit 0. Split axis cycle[7]=z. Lower z.
+This matches my manual trace.
+
+I will paste the full tree into the python script to be absolutely sure.
+I'll also print the target box to confirm my manual calculation.
+
+One more check: Is it possible for a neighbor to be larger (less depth) or smaller (more depth)?
+Yes.
+Example: A neighbor might not be split as deep.
+If I have a face at x=0.75, and the neighbor on the other side is a huge leaf that covers y=[0, 1], it overlaps my y=[0.5, 1.0].
+My code handles this by checking interval intersection `max(a0, b0) < min(a1, b1)`.
+Intersection of [0, 1] and [0.5, 1.0] is [0.5, 1.0], length 0.5 > 0. Valid overlap.
+
+I should also sort the neighbors alphabetically.
+
+I will construct the `tree_text` variable using the raw text. I'll omit the lines `""` and use a multiline string.
+I'll clean up the parsing to be robust against characters like `|`, `─`, `└`, etc.
+Regex `[01]+` is good.
+
+Double check the cycle.
+z, z, x, y, z, x.
+0, 1, 2, 3, 4, 5.
+Then 6 is z (0).
+Correct.
+
+Let's run the code.
+</thinking>
+<thinking>
+The code ran successfully with the full tree (implicitly, as the variable `tree_text` contains the relevant parts around the target leaf).
+Wait, in the previous execution, I copied a large chunk of the tree, but was it *all* of it?
+The prompt contains a tree that starts with `""` and ends with `11111111`.
+My `tree_text` variable in the code block was truncated in the display but I should assume the tool execution environment processed the string I provided.
+Wait, I provided a string in the code block.
+In the second execution, I pasted the *entire* tree from the prompt into the `tree_text` variable.
+Let's verify the neighbors found:
+`01101100`
+`01110111`
+`01111000`
+`01111101`
+
+Let's double check these manually to be absolutely sure.
+
+Target: `01111100`
+Box: X[0.75, 1.0], Y[0.5, 1.0], Z[0.375, 0.40625]
+
+Neighbor 1: `01101100`
+Path: 0, 1, 1, 0, 1, 1, 0, 0
+0 (z) -> lower z [0, 0.5]
+1 (z) -> upper z [0.25, 0.5]
+1 (x) -> upper x [0.5, 1.0]
+0 (y) -> lower y [0, 0.5]
+1 (z) -> upper z [0.375, 0.5]
+1 (x) -> upper x [0.75, 1.0]
+0 (z) -> lower z [0.375, 0.4375]
+0 (z) -> lower z [0.375, 0.40625]
+Final box for `01101100`:
+X: [0.75, 1.0]
+Y: [0, 0.5]
+Z: [0.375, 0.40625]
+Comparison with Target:
+X: Identical ([0.75, 1.0]) -> Overlap
+Y: Target [0.5, 1.0], Neighbor [0, 0.5]. Touch at Y=0.5.
+Z: Identical ([0.375, 0.40625]) -> Overlap
+Conclusion: Shares Face Y=0.5 (Front face). Correct.
+
+Neighbor 2: `01110111`
+Path: 0, 1, 1, 1, 0, 1, 1, 1
+0 (z) -> [0, 0.5]
+1 (z) -> [0.25, 0.5]
+1 (x) -> [0.5, 1.0]
+1 (y) -> [0.5, 1.0]
+0 (z) -> [0.25, 0.375]  <-- NOTE: Bit 4 is '0' here. Target has '1'.
+1 (x) -> [0.75, 1.0]
+1 (z) -> [0.3125, 0.375]
+1 (z) -> [0.34375, 0.375]
+Final box:
+X: [0.75, 1.0]
+Y: [0.5, 1.0]
+Z: [0.34375, 0.375]
+Comparison with Target:
+X: Identical ([0.75, 1.0]) -> Overlap
+Y: Identical ([0.5, 1.0]) -> Overlap
+Z: Target [0.375, 0.40625], Neighbor [0.34375, 0.375]. Touch at Z=0.375.
+Conclusion: Shares Face Z=0.375 (Bottom face). Correct.
+
+Neighbor 3: `01111000`
+Path: 0, 1, 1, 1, 1, 0, 0, 0
+0 (z) -> [0, 0.5]
+1 (z) -> [0.25, 0.5]
+1 (x) -> [0.5, 1.0]
+1 (y) -> [0.5, 1.0]
+1 (z) -> [0.375, 0.5]
+0 (x) -> [0.5, 0.75]   <-- Bit 5 is '0'. Target has '1'.
+0 (z) -> [0.375, 0.4375]
+0 (z) -> [0.375, 0.40625]
+Final box:
+X: [0.5, 0.75]
+Y: [0.5, 1.0]
+Z: [0.375, 0.40625]
+Comparison with Target:
+X: Target [0.75, 1.0], Neighbor [0.5, 0.75]. Touch at X=0.75.
+Y: Identical -> Overlap
+Z: Identical -> Overlap
+Conclusion: Shares Face X=0.75 (Left face). Correct.
+
+Neighbor 4: `01111101`
+Path: 0, 1, 1, 1, 1, 1, 0, 1
+Matches target everywhere except last bit.
+Target: ...0 (z lower half of [0.375, 0.4375]) -> [0.375, 0.40625]
+Neighbor: ...1 (z upper half of [0.375, 0.4375]) -> [0.40625, 0.4375]
+Comparison:
+X: Identical
+Y: Identical
+Z: Touch at Z=0.40625.
+Conclusion: Shares Face Z=0.40625 (Top face). Correct.
+
+Are there any others?
+Faces of target:
+X=0.75 (checked, `01111000`)
+X=1.0 (boundary, no neighbor unless wrapping, assume no wrapping)
+Y=0.5 (checked, `01101100`)
+Y=1.0 (boundary)
+Z=0.375 (checked, `01110111`)
+Z=0.40625 (checked, `01111101`)
+
+Is it possible there are multiple neighbors on one face?
+Example: On face X=0.75.
+Neighbor `01111000` has Y=[0.5, 1.0], Z=[0.375, 0.40625]. This perfectly covers the target's face in Y and Z.
+So no other neighbor on X=0.75 can exist (partitions are disjoint).
+
+On face Y=0.5.
+Neighbor `01101100` has X=[0.75, 1.0], Z=[0.375, 0.40625]. Perfectly covers.
+So no other neighbor on Y=0.5.
+
+On face Z=0.375.
+Neighbor `01110111` has X=[0.75, 1.0], Y=[0.5, 1.0]. Perfectly covers.
+So no other neighbor on Z=0.375.
+
+On face Z=0.40625.
+Neighbor `01111101` has X=[0.75, 1.0], Y=[0.5, 1.0]. Perfectly covers.
+So no other neighbor on Z=0.40625.
+
+Wait, I should verify the "perfectly covers" claim.
+Let's look at `01111000`.
+Box: X[0.5, 0.75], Y[0.5, 1.0], Z[0.375, 0.40625].
+Target Face X=0.75 is defined by Y in [0.5, 1.0] and Z in [0.375, 0.40625].
+The neighbor's face at X=0.75 has Y in [0.5, 1.0] and Z in [0.375, 0.40625].
+Yes, identical.
+
+What if the neighbor was split further?
+Example: `01111000` split into `011110000` and `011110001`.
+If `01111000` is NOT a leaf, but `011110000` and `011110001` are.
+I need to check if `01111000` is indeed a leaf in the provided tree.
+In the provided tree text:
+```
+                    │   └── 011110
+                    │       ├── 0111100
+                    │       │   ├── 01111000
+                    │       │   └── 01111001
+```
+Wait, `01111000` is a leaf (no children shown under it).
+If it had children, they would be indented further.
+But wait, `01111001` is its sibling.
+The line `├── 01111000` is followed by `└── 01111001`.
+Then indentation goes back.
+So `01111000` is a leaf.
+
+Check `01101100`.
+Tree:
+```
+            │       └── 011011
+            │           ├── 0110110
+            │           │   ├── 01101100
+            │           │   └── 01101101
+            │           └── 0110111
+```
+`01101100` is a leaf.
+
+Check `01110111`.
+Tree:
+```
+            │       └── 0111011
+            │           ├── 01110110
+            │           └── 01110111
+```
+`01110111` is a leaf.
+
+Check `01111101`.
+Tree:
+```
+                    └── 011111
+                        ├── 0111110
+                        │   ├── 01111100
+                        │   └── 01111101
+```
+`01111101` is a leaf.
+
+All identified neighbors are leaves.
+Since they perfectly cover the respective faces, there are no other neighbors on those faces.
+The boundary faces (X=1, Y=1) have no neighbors.
+
+The list is: `01101100`, `01110111`, `01111000`, `01111101`.
+I should probably list them in ascending string order, which they are.
+
+Final verification of the cycle.
+"z -> z -> x -> y -> z -> x".
+Indices:
+0: z
+1: z
+2: x
+3: y
+4: z
+5: x
+6: z
+7: z
+...
+This has been used consistently.
+
+One sanity check:
+What if the tree provided in the prompt is not the full tree, but the user implies the rule continues?
+"You are given a binary tree describing..."
+"Here is the subdivision tree:"
+This implies the tree is the specific instance I must work with. The neighbors must be in this tree.
+The leaves are the terminal nodes of this specific tree.
+
+Is there any ambiguity about "shares a face"?
+"List every leaf that shares a face with the target voxel."
+Voxel usually implies 3D.
+Sharing a face is 2D contact.
+My logic checks for 2D contact (overlap in 2 dims, touch in 1).
+Edge contact (overlap in 1 dim, touch in 2) or corner contact (touch in 3) is excluded.
+My code explicitly checks `overlap` for the non-touching dimensions. `overlap` ensures > 0 length intersection.
+So edge/corner neighbors are excluded. This is standard definition of "face-adjacent".
+
+Final check on the list format.
+"Return the labels as a comma-separated list of strings (quotes optional)."
+JSON output is requested.
+"neighbors": ["...", "..."]
+
+I have the list.
+
+Double check the tree text for `01111000`.
+In the prompt:
+```
+│   │   │       │   └── 0111101
+│   │   │       │       ├── 01111010
+│   │   │       │       └── 01111011
+│   │   │       └── 011111
+```
+Wait, looking at `011110`:
+```
+│   │   │       ├── 011110
+│   │   │       │   ├── 0111100
+│   │   │       │   │   ├── 01111000
+│   │   │       │   │   └── 01111001
+```
+Yes, `01111000` is there.
+
+What about `01101100`?
+```
+│   │   │           └── 011011
+│   │   │               ├── 0110110
+│   │   │               │   ├── 01101100
+│   │   │               │   └── 01101101
+```
+Yes.
+
+What about `01110111`?
+```
+│   │   │       └── 0111011
+│   │   │           ├── 01110110
+│   │   │           └── 01110111
+```
+Yes.
+
+What about `01111101`?
+```
+│   │   │       └── 011111
+│   │   │           ├── 0111110
+│   │   │           │   ├── 01111100
+│   │   │           │   └── 01111101
+```
+Yes.
+
+The solution seems robust.
+
+One detail: "Target leaf: 01111100".
+If the target wasn't a leaf, the question would be ill-posed ("target voxel").
+But it is a leaf.
+
+Are there any "hidden" neighbors?
+Maybe a large neighbor that wasn't split much?
+I checked all leaves. My code iterates through *all* leaves in the tree.
+The adjacency check is general.
+So if a large leaf existed, it would have been found.
+The fact that I found exactly one neighbor per internal face suggests the mesh is "conforming" or "balanced" enough locally, or just coincidence.
+Actually, the neighbors I found are all same depth (8).
+`01101100` (8)
+`01110111` (8)
+`01111000` (8)
+`01111101` (8)
+This suggests the tree is locally balanced.
+
+Wait, check `01111000`.
+Target `01111100` (depth 8).
+Neighbor `01111000` (depth 8).
+Common ancestor `01111` (depth 5).
+Split 5 (x) separates them.
+`01111` covers some region.
+`011110...` is left child (x low).
+`011111...` is right child (x high).
+Are the depths consistent?
+`011110` -> `0111100` -> `01111000`.
+`011111` -> `0111110` -> `01111100`.
+Yes, both depth 8.
+
+The list `['01101100', '01110111', '01111000', '01111101']` is correct.
+
+I will formulate the response.
+
+One final sanity check on the binary to decimal or coordinate mapping.
+Target X: `0.75` to `1.0`.
+Split 5 (x) was '1' -> `[0.75, 1.0]`. Correct.
+Split 2 (x) was '1' -> `[0.5, 1.0]`. Correct.
+Neighbor `01111000`:
+Split 2 (x) '1' -> `[0.5, 1.0]`.
+Split 5 (x) '0' -> `[0.5, 0.75]`.
+They meet at 0.75. Correct.
+
+Target Y: `0.5` to `1.0`.
+Split 3 (y) was '1' -> `[0.5, 1.0]`.
+Neighbor `01101100`:
+Split 3 (y) was '0'.
+Wait. `0110...`
+Index 3 is '0'.
+Split 3 (y) '0' -> `[0, 0.5]`.
+Target is `[0.5, 1.0]`.
+They meet at 0.5. Correct.
+
+Target Z: `0.375` to `0.40625`.
+Split 0 (z) '0' -> `[0, 0.5]`.
+Split 1 (z) '1' -> `[0.25, 0.5]`.
+Split 4 (z) '1' -> `[0.375, 0.5]`.
+Split 6 (z) '0' -> `[0.375, 0.4375]`.
+Split 7 (z) '0' -> `[0.375, 0.40625]`.
+
+Neighbor `01110111` (Z-neighbor, bottom):
+Path `01110111`.
+Index 4 is '0'. (Target has '1').
+Let's check Z splits for `01110...`.
+0: '0' -> `[0, 0.5]`.
+1: '1' -> `[0.25, 0.5]`.
+4: '0' -> `[0.25, 0.375]`. (Target is `[0.375, 0.5]`).
+So they meet at 0.375.
+Neighbor Z range is inside `[0.25, 0.375]`.
+Does it cover the X and Y of target?
+Target X: `[0.75, 1.0]`. Y: `[0.5, 1.0]`.
+Neighbor `01110111`:
+Index 2 (x): '1' -> `[0.5, 1.0]`.
+Index 3 (y): '1' -> `[0.5, 1.0]`.
+Index 5 (x): '1' -> `[0.75, 1.0]`.
+Index 6 (z): '1'. (Inside `[0.25, 0.375]`).
+Z range `[0.25, 0.375]` -> `[0.3125, 0.375]` (Split 6 '1').
+Index 7 (z): '1'.
+Z range `[0.3125, 0.375]` -> `[0.34375, 0.375]` (Split 7 '1').
+So Neighbor is X`[0.75, 1.0]`, Y`[0.5, 1.0]`, Z`[0.34375, 0.375]`.
+Target starts at Z=0.375.
+They touch at Z=0.375 and overlap in X and Y. Correct.
+
+Neighbor `01111101` (Z-neighbor, top).
+Path `01111101`.
+Differs at index 7.
+Target '0' -> `[0.375, 0.40625]`.
+Neighbor '1' -> `[0.40625, 0.4375]`.
+Touch at 0.40625. Overlap X, Y (identical prefixes). Correct.
+
+The list is solid.
+
+One observation:
+The list in JSON should be sorted? The prompt doesn't specify sort order, but standard is usually lexicographical. I will provide them sorted.
+
+List:
+"01101100"
+"01110111"
+"01111000"
+"01111101"
+
+All good.
+
+One final check on "Unit Cube".
+The bounds are [0,1].
+My code assumed this.
+Bisecting "z -> z -> x -> y -> z -> x".
+Matches code.
+
+Final Answer seems to be the list of 4 neighbors.
+
+One thing: `0000001` vs `00000010`.
+The tree has both `00000010` and `00000011`.
+So `0000001` is not a leaf.
+My code correctly identifies leaves.
+
+The result is consistent.
+
+Final check on the question wording: "List every leaf that shares a face with the target voxel."
+"target voxel" refers to `01111100`.
+"shares a face" checked.
+"Return the labels as a comma-separated list of strings".
+
+I will output the JSON with the neighbors list.
+
+One minor detail: `01110111` vs `01111100`.
+Comparing `01110` and `01111`.
+Index 4 (z): `0` vs `1`.
+Face is Z=0.375.
+Index 0,1,2,3 are `0111`.
+0 (z): `0`.
+1 (z): `1`.
+2 (x): `1`.
+3 (y): `1`.
+So they share X, Y ranges (at this level).
+Then index 4 splits Z.
+So yes, valid face neighbors.
+
+Seems correct.
+
+Neighbors:
+1. `01101100` (Face Y=0.5)
+2. `01110111` (Face Z=0.375)
+3. `01111000` (Face X=0.75)
+4. `01111101` (Face Z=0.40625)
+
+The other faces (X=1, Y=1) are on the boundary of the unit cube.
+Since the tree subdivides the unit cube, there are no neighbors outside (unless wrap-around, which is not stated).
+
+I am confident.
+
+One edge case: Is the root `""` considered? No, it's not a leaf.
+The code filters for leaves.
+
+Is the provided tree complete?
+"Here is the subdivision tree".
+Yes.
+
+I'm ready to write the JSON.
+
+Double check the sorting.
+'0' < '1'.
+`0110...` comes first.
+`01110...` second.
+`011110...` third.
+`011111...` fourth.
+The order matches.
+
+List: `01101100`, `01110111`, `01111000`, `01111101`.
+
+Wait, just to be paranoid.
+Check `01101101`.
+Sibling of `01101100`.
+`0110110` -> split 6 (z).
+`0` -> `01101100`.
+`1` -> `01101101`.
+`01101100` is z-lower `[0.375, 0.40625]`.
+`01101101` is z-upper `[0.40625, 0.4375]`.
+Target Z is `[0.375, 0.40625]`.
+Neighbor `01101101` has Z `[0.40625, 0.4375]`.
+Touch Z?
+But target Y is `[0.5, 1.0]`. Neighbor `0110...` has Y `[0, 0.5]`.
+So they touch at Y=0.5.
+And Z?
+Target Z `[0.375, 0.40625]`.
+Neighbor `01101101` Z `[0.40625, 0.4375]`.
+They don't overlap in Z. They touch at Z=0.40625 (edge/corner).
+Touch in Y and Touch in Z = Edge contact (or corner).
+Not a face neighbor.
+So `01101101` is NOT a neighbor.
+Correct.
+
+Check `01110110`.
+Sibling of `01110111`.
+`0111011` split 7 (z).
+`0` -> `01110110`. Z `[0.3125, 0.34375]`.
+`1` -> `01110111`. Z `[0.34375, 0.375]`.
+Target Z `[0.375, 0.40625]`.
+`01110110` is too far away in Z.
+Correct.
+
+Seems robust.
+
+One more check on the `tree_text`.
+Does `01110111` exist?
+Prompt:
+```
+│   │   │       └── 0111011
+│   │   │           ├── 01110110
+│   │   │           └── 01110111
+```
+Yes.
+
+Does `01111000` exist?
+Prompt:
+```
+│   │   │       │   ├── 0111100
+│   │   │       │   │   ├── 01111000
+│   │   │       │   │   └── 01111001
+```
+Yes.
+
+Does `01111101` exist?
+Prompt:
+```
+│   │   │       └── 011111
+│   │   │           ├── 0111110
+│   │   │           │   ├── 01111100
+│   │   │           │   └── 01111101
+```
+Yes.
+
+Does `01101100` exist?
+Prompt:
+```
+│   │   │           └── 011011
+│   │   │               ├── 0110110
+│   │   │               │   ├── 01101100
+│   │   │               │   └── 01101101
+```
+Yes.
+
+Everything is verified.
+
+Final check on the splitting logic indices.
+Prompt: "repeating cycle z -> z -> x -> y -> z -> x".
+Indices:
+0: z
+1: z
+2: x
+3: y
+4: z
+5: x
+6: z
+7: z
+My code used `axis_idx = i % 6`.
+0->z, 1->z, 2->x, 3->y, 4->z, 5->x.
+6->z (0), 7->z (1).
+Matches.
+
+One subtle thing:
+Is "z -> z -> x -> y -> z -> x" the order of *axes* or the order of *splits*?
+"Each node splits its parent cell... by bisecting along axes in the repeating cycle..."
+This implies the depth determines the axis.
+Correct.
+
+The solution stands.
+
+Target Leaf: `01111100`
+Neighbors:
+`01101100`
+`01110111`
+`01111000`
+`01111101`
+</thinking>
+The binary subdivision tree splits nodes based on their depth using the repeating axis cycle: **z** (depth 0), **z** (depth 1), **x** (depth 2), **y** (depth 3), **z** (depth 4), **x** (depth 5), and then repeating.
+
+The target leaf node is **01111100**. Its path from the root corresponds to the following splits:
+1.  **Bit 0 ('0', axis z):** Lower half of $z \in [0, 1] \to [0, 0.5]$.
+2.  **Bit 1 ('1', axis z):** Upper half of $z \in [0, 0.5] \to [0.25, 0.5]$.
+3.  **Bit 2 ('1', axis x):** Upper half of $x \in [0, 1] \to [0.5, 1.0]$.
+4.  **Bit 3 ('1', axis y):** Upper half of $y \in [0, 1] \to [0.5, 1.0]$.
+5.  **Bit 4 ('1', axis z):** Upper half of $z \in [0.25, 0.5] \to [0.375, 0.5]$.
+6.  **Bit 5 ('1', axis x):** Upper half of $x \in [0.5, 1.0] \to [0.75, 1.0]$.
+7.  **Bit 6 ('0', axis z):** Lower half of $z \in [0.375, 0.5] \to [0.375, 0.4375]$.
+8.  **Bit 7 ('0', axis z):** Lower half of $z \in [0.375, 0.4375] \to [0.375, 0.40625]$.
+
+The target voxel's bounds are:
+*   $x \in [0.75, 1.0]$
+*   $y \in [0.5, 1.0]$
+*   $z \in [0.375, 0.40625]$
+
+We identify the leaf nodes in the provided tree that share a face with this voxel (overlap in two dimensions and touch in the third):
+
+1.  **Face $y = 0.5$:** The neighbor is **01101100**.
+    *   This node has $y \in [0, 0.5]$ (touching at 0.5), $x \in [0.75, 1.0]$, and $z \in [0.375, 0.40625]$.
+2.  **Face $z = 0.375$:** The neighbor is **01110111**.
+    *   This node has $z \in [0.34375, 0.375]$ (touching at 0.375), $x \in [0.75, 1.0]$, and $y \in [0.5, 1.0]$.
+3.  **Face $x = 0.75$:** The neighbor is **01111000**.
+    *   This node has $x \in [0.5, 0.75]$ (touching at 0.75), $y \in [0.5, 1.0]$, and $z \in [0.375, 0.40625]$.
+4.  **Face $z = 0.40625$:** The neighbor is **01111101**.
+    *   This node is the immediate sibling in the final $z$-split, occupying $z \in [0.40625, 0.4375]$.
+
+The faces at $x=1$ and $y=1$ are on the boundary of the unit cube and have no neighbors.
+
+```json
+{
+  "neighbors": [
+    "01101100",
+    "01110111",
+    "01111000",
+    "01111101"
+  ]
+}
+```

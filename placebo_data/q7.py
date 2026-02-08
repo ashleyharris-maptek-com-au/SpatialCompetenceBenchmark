@@ -378,8 +378,8 @@ def get_response(subPass: int):
   best = None, 0
   for a in range(10):
     b = get_response_impl(subPass)
-    if problem7.gradeAnswer(b, subPass, "placebo") > best[1]:
-      best = b, problem7.gradeAnswer(b, subPass, "placebo")
+    if problem7.gradeAnswer(b[0], subPass, "placebo")[0] > best[1]:
+      best = b, problem7.gradeAnswer(b[0], subPass, "placebo")[0]
       if best[1] == 1:
         break
   return best[0]

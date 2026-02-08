@@ -1,0 +1,210 @@
+<html>
+<head>
+<style>
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333;
+    --text-secondary: #666;
+    --border-color: #ddd;
+    --header-bg: #4CAF50;
+    --header-text: white;
+    --test-header-bg: #45a049;
+    --prompt-bg: #f9f9f9;
+    --subpass-bg: #ffffff;
+    --img-border: #ccc;
+    --score-good: #228B22;
+    --score-bad: #dc3545;
+}
+@media screen and (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --text-secondary: #aaa;
+        --border-color: #444;
+        --header-bg: #2d5a2d;
+        --header-text: #e0e0e0;
+        --test-header-bg: #3d6a3d;
+        --prompt-bg: #2a2a2a;
+        --subpass-bg: #1f1f1f;
+        --img-border: #555;
+        --score-good: #4CAF50;
+        --score-bad: #ff6b6b;
+    }
+    a[href] { color: #55f}
+}
+body { background-color: var(--bg-color); color: var(--text-color); }
+table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; vertical-align: top; }
+th { background-color: var(--header-bg); color: var(--header-text); }
+.test-header { background-color: var(--test-header-bg); font-weight: bold; }
+.prompt-row { background-color: var(--prompt-bg); font-style: italic; }
+.subpass-row { background-color: var(--subpass-bg); }
+img { max-width: 100%; height: auto; border: 1px solid var(--img-border); }
+.score-good { color: var(--score-good); font-weight: bold; }
+.score-bad { color: var(--score-bad); font-weight: bold; }
+h1 { color: var(--text-color); }
+h2 { color: var(--text-secondary); margin-top: 30px; }
+</style>
+<meta charset='UTF-8'/>
+
+<script>
+// VizManager: Virtualizes WebGL contexts to prevent "Too many active WebGL contexts" errors
+// Only the visualization closest to the viewport center is active; all others are disposed
+window.VizManager = (function() {
+    const registeredViz = [];
+    let activeVizId = null;
+    let scrollTimeout = null;
+    
+    function getDistanceToViewportCenter(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+        const elementCenter = rect.top + rect.height / 2;
+        return Math.abs(elementCenter - viewportCenter);
+    }
+    
+    function updateActiveVisualization() {
+        let closestViz = null;
+        let closestDistance = Infinity;
+        
+        for (const viz of registeredViz) {
+            const container = document.getElementById(viz.containerId);
+            if (!container) continue;
+            
+            // Check if container is in an open <details> element
+            const details = container.closest('details');
+            if (details && !details.open) continue;
+            
+            const distance = getDistanceToViewportCenter(container);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestViz = viz;
+            }
+        }
+        
+        if (closestViz && closestViz.id !== activeVizId) {
+            // Deactivate current
+            if (activeVizId) {
+                const currentViz = registeredViz.find(v => v.id === activeVizId);
+                if (currentViz && currentViz.dispose) {
+                    try { currentViz.dispose(); } catch(e) { console.warn('Dispose error:', e); }
+                }
+            }
+            
+            // Activate new
+            activeVizId = closestViz.id;
+            if (closestViz.activate) {
+                try { closestViz.activate(); } catch(e) { console.warn('Activate error:', e); }
+            }
+        }
+    }
+    
+    function onScrollOrResize() {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateActiveVisualization, 100);
+    }
+    
+    // Listen for scroll and resize
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    
+    // Also listen for details toggle events
+    document.addEventListener('toggle', function(e) {
+        if (e.target.tagName === 'DETAILS') {
+            setTimeout(updateActiveVisualization, 50);
+        }
+    }, true);
+    
+    return {
+        register: function(vizConfig) {
+            // vizConfig: { id, containerId, activate, dispose }
+            registeredViz.push(vizConfig);
+            // Trigger update after a short delay to allow DOM to settle
+            setTimeout(updateActiveVisualization, 100);
+        },
+        
+        forceUpdate: function() {
+            updateActiveVisualization();
+        },
+        
+        getActiveId: function() {
+            return activeVizId;
+        }
+    };
+})();
+</script>
+</head>
+<body>
+<h1>Benchmark Results for llama3-70b-bedrock-HighReasoning</h1>
+<table>
+  <tr class='test-header'>
+    <th colspan=3><a name='q52'>Test 52: VGB2 — Topology Edge Tasks: Enumerate Edges</a></th>
+    <th class='score-bad'>Score: 0.00 / 8</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br>Squares (each tuple lists the four corner labels; integers denote distinct classes):<br>(1, 1, 1, 1)<br>(1, 1, 1, 2)<br>(1, 1, 2, 1)<br>(1, 1, 2, 2)<br><br>You are given unit squares with corners labelled in ('bottom-left', 'bottom-right', 'top-right', 'top-left') order.<br>Edges are indexed: bottom=0, right=1, top=2, left=3.<br><br>For each square above (in the same order), list which edges are guaranteed to connect.<br>Return a list where each element is a list of sorted [i,j] pairs (i < j).<br>If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.</div></td>
+    <td><strong>Prompt Changes:</strong><br>Corner/edge ordering and curated edge cases vary per record; enumerate all edges guaranteed to exist.</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: subtask=enumerate_edges • corner_order=('bottom-left', 'bottom-right', 'top-right', 'top-left') • edge_order=('bottom', 'right', 'top', 'left') • cases=4 • tags=topology, edges, two-class<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_0.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_0.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_0.txt">View chain of thought</a><br>Each panel shows a labeled unit square. Ground truth (green) marks guaranteed edge connections; model answers (blue) overlay predicted edges. Corner labels follow the prompt order; edge markers E0–E3 label boundaries. Curved arcs visualise connections without crossing the square.</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: subtask=enumerate_edges • corner_order=('bottom-right', 'top-right', 'top-left', 'bottom-left') • edge_order=('right', 'top', 'left', 'bottom') • cases=5 • tags=topology, ambiguous-included, edges<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_1.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_1.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: subtask=enumerate_edges • corner_order=('top-left', 'bottom-left', 'bottom-right', 'top-right') • edge_order=('top', 'left', 'bottom', 'right') • cases=4 • tags=topology, edge-permutation, edges<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_2.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_2.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: subtask=enumerate_edges • corner_order=('top-right', 'bottom-left', 'top-left', 'bottom-right') • edge_order=('left', 'bottom', 'right', 'top') • cases=6 • tags=topology, edges, enumerate<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_3.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_3.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: subtask=enumerate_edges • corner_order=('bottom-left', 'top-right', 'bottom-right', 'top-left') • edge_order=('bottom', 'left', 'top', 'right') • cases=5 • tags=topology, edges, enumerate<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_4.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_4.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: subtask=enumerate_edges • corner_order=('top-left', 'top-right', 'bottom-left', 'bottom-right') • edge_order=('right', 'bottom', 'left', 'top') • cases=4 • tags=topology, edges, enumerate<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_5.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_5.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: subtask=enumerate_edges • corner_order=('bottom-right', 'bottom-left', 'top-right', 'top-left') • edge_order=('top', 'right', 'bottom', 'left') • cases=7 • tags=topology, edges, enumerate<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_6.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_6.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: subtask=enumerate_edges • corner_order=('top-right', 'top-left', 'bottom-right', 'bottom-left') • edge_order=('left', 'top', 'right', 'bottom') • cases=5 • tags=topology, edges, enumerate<br><a href="prompts/llama3-70b-bedrock-HighReasoning_52_7.txt">View exact prompt</a><br><a href="raw/llama3-70b-bedrock-HighReasoning_52_7.txt">View raw AI output</a><br><a href="cot/llama3-70b-bedrock-HighReasoning_52_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+<h2>Overall Summary</h2>
+<table>
+  <tr class='test-header'>
+    <th>Total Tests</th>
+    <th>Overall Score</th>
+    <th>Percentage</th>
+  </tr>
+  <tr>
+    <td>57</td>
+    <td>0.00 / 8</td>
+    <td>0.0%</td>
+  </tr>
+</table>
+</body>
+</html>

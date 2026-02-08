@@ -1,0 +1,60 @@
+# Task q02: Build a Lego(tm) hemispherical shell
+- Source file: `2.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Test whether the model can construct a discrete, physically plausible 3D brick assembly that approximates a target hemispherical shell while respecting hard buildability constraints. Scoring is driven by volume-difference vs the ideal shell, so large holes/missing regions are typically fatal even if local placements look “reasonable”.
+
+## Output Contract
+- Return JSON object with `reasoning` and `bricks`.
+- `bricks` is a list of brick objects with `Centroid` and `RotationDegrees`.
+- Missing `bricks` or malformed brick entries is invalid.
+
+## Hard Constraints (Verifier-Checked)
+- Schema validity for required keys and value types.
+- Brick Z layer alignment: `Centroid[2]` must match `4.8 + n*9.6` within tolerance.
+- No brick below ground; no brick wholly inside inner sphere; no brick wholly outside outer sphere.
+- Duplicate brick rejection on rounded centroid/rotation key.
+- Stud-grid compatibility in connected components.
+- Stability check: center of mass must lie inside support polygon of ground bricks.
+- Support check: every brick must be grounded, supported from below, or held from above.
+- Post-volume consistency check may apply overlap-like volume penalty.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `No bricks provided` | Empty or missing usable assembly | `Evasion / Forfeit`, `Trivialized / Misframed` |
+| `Brick ... Z=... not at valid layer height (should be 4.8 + n*9.6)` | Illegal brick layering | `Local-Only (Global Constraint Integration Failure)` |
+| `A brick ... below ground is invalid` | Ground intersection violation | `Local-Only (Global Constraint Integration Failure)` |
+| `A brick ... wholly inside the inner sphere is redundant` | Ignored shell hollow-region constraint | `Trivialized / Misframed`, `Local-Only (Global Constraint Integration Failure)` |
+| `Duplicate brick at ...` | Duplicate placement key after rounding centroid/rotation | `Near-Miss Edge Case`, `Local-Only (Global Constraint Integration Failure)` |
+| `Stud grid misalignment: bricks at same center but ... relative rotation` | Same-center bricks have illegal relative rotation (not near a 90° multiple) | `Local-Only (Global Constraint Integration Failure)` |
+| `Stud grid misalignment in connected component: ...` | Connected bricks’ stud grids do not align | `Local-Only (Global Constraint Integration Failure)` |
+| `Structure unstable: center of mass ... is outside support polygon ...` | Physically unstable stack | `Local-Only (Global Constraint Integration Failure)` |
+| `Brick ... is floating (not supported from below or held from above)` | Unsupported geometry in final assembly | `Local-Only (Global Constraint Integration Failure)` |
+| `A brick ... wholly outside the outer sphere is a waste` | Brick placed beyond valid shell region | `Local-Only (Global Constraint Integration Failure)` |
+| Low `intersectionVolume / referenceVolume` ratio | Post-volume comparison shows poor geometric match to target shell | `Near-Miss Edge Case`, `Local-Only (Global Constraint Integration Failure)` |
+| `50% penalty due to bricks overlapping: Volume error of ...` | Post-volume consistency penalty (typically indicates overlaps or severe packing inconsistency) | `Near-Miss Edge Case`, `Local-Only (Global Constraint Integration Failure)` |
+| Schema parse failure | Output not in expected structured format | `Evasion / Forfeit`, `Trivialized / Misframed` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: No usable `bricks` list or placeholder output.
+- `Trivialized / Misframed`: Very small/simple assembly that ignores hemispherical shell target.
+- `Runaway Overthinking`: COT shows spiraling reasoning producing a bloated brick plan that fails diverse constraint types simultaneously.
+- `Local-Only (Global Constraint Integration Failure)`: Locally plausible placements but global volume/buildability invalid.
+- `Near-Miss Edge Case`: Structure is broadly right with limited overlap/volume deviations.
+
+## Judge Input Bundle
+1. Full prompt with radius/brick context.
+2. Raw model output text.
+3. Parsed JSON object.
+4. Verifier score explanation and penalty messages.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify this q02 attempt with exactly one failure mode from FAILURE_TAXONOMY.md.
+Ground your choice in schema validity plus structural (layer/support/stability/stud) and volume signals.
+Return JSON with: failure_mode, confidence, justification.
+```
