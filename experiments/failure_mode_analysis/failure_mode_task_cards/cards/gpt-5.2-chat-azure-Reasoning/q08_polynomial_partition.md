@@ -28,7 +28,7 @@ Test symbolic program synthesis under strict syntax limits: produce a function w
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing function body or non-code answer.
 - `Trivialized / Misframed`: Constant/degenerate function, or ignores allowed grammar.
-- `Runaway Overthinking`: Verbose symbolic expression that violates parser/eval constraints.
+- `Runaway Overthinking`: COT shows spiraling symbolic derivation producing an overly complex expression that violates parser/eval constraints.
 - `Local-Only (Global Constraint Integration Failure)`: Partial local fit but poor full-grid match under threshold.
 - `Near-Miss Edge Case`: Valid function with small mismatch or one parse/eval defect.
 

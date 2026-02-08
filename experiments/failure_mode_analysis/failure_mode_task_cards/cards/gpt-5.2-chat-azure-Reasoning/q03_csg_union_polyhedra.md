@@ -32,7 +32,7 @@ Evaluate whether the model can output a single valid polyhedron representing the
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing/empty `polyhedron`.
 - `Trivialized / Misframed`: Returns a primitive or partial shape instead of full union.
-- `Runaway Overthinking`: Unnecessarily complex mesh with redundant/internal geometry.
+- `Runaway Overthinking`: COT shows spiraling derivation producing an overcomplicated mesh that fails diverse constraint types (topology AND volume AND winding).
 - `Local-Only (Global Constraint Integration Failure)`: Local faces seem plausible but global topology or volume is wrong.
 - `Near-Miss Edge Case`: Single small topology defect with close overall union.
 

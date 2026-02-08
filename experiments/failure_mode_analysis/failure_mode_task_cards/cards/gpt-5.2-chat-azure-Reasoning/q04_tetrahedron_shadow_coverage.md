@@ -26,7 +26,7 @@ Assess transformed-primitive composition: place tetrahedra so their projected sh
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing or malformed tetrahedron list.
 - `Trivialized / Misframed`: Tiny/simple placement that does not attempt target coverage.
-- `Runaway Overthinking`: Excessive tetrahedra causing avoidable collisions.
+- `Runaway Overthinking`: COT shows the model spiraling on an overcomplicated approach (e.g. analytically deriving exact tiling) that produces diverse error types (malformed transforms AND runtime errors AND coverage failures).
 - `Local-Only (Global Constraint Integration Failure)`: Pieces locally placed but global coverage/intersection checks fail.
 - `Near-Miss Edge Case`: One normalization/intersection issue with otherwise close coverage.
 

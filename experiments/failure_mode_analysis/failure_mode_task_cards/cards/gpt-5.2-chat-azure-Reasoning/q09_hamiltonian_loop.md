@@ -31,7 +31,7 @@ Assess whether the model can produce a complete closed Hamiltonian loop visiting
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Empty `steps` or explicit refusal-style output.
 - `Trivialized / Misframed`: Short path that does not attempt full Hamiltonian requirement.
-- `Runaway Overthinking`: Long narrative with still-invalid path artifact.
+- `Runaway Overthinking`: COT shows spiraling path-planning narrative that produces diverse error types (invalid transitions AND missed cells AND cycle failures).
 - `Local-Only (Global Constraint Integration Failure)`: Many locally valid moves but full-cycle constraints fail.
 - `Near-Miss Edge Case`: Off-by-one step count or one bad transition.
 

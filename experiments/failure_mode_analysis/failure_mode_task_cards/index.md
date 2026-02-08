@@ -21,7 +21,6 @@ Cards are in `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gp
 - [q52 - Topology Edge Enumeration](cards/gpt-5.2-chat-azure-Reasoning/q52_topology_edge_enumeration.md): Enumerate guaranteed edge connections for labeled square cases.
 - [q53 - Topology Behaviour Classification](cards/gpt-5.2-chat-azure-Reasoning/q53_topology_behaviour_classification.md): Classify edge behavior labels from constrained topology cases.
 - [q54 - Half Subdivision Neighbors](cards/gpt-5.2-chat-azure-Reasoning/q54_half_subdivision_neighbors.md): Infer neighboring leaves in recursive subdivision trees.
-- [q55 - VGB Task](cards/gpt-5.2-chat-azure-Reasoning/q55_vgb_task.md): Delaunay triangulation output judged against curated reference.
-- [q56 - Two Segments](cards/gpt-5.2-chat-azure-Reasoning/q56_two_segments.md): Shikaku rectangle partition judged against curated puzzle constraints.
+- [q55 - Delaunay Triangulation](cards/gpt-5.2-chat-azure-Reasoning/q55_vgb_task.md): Delaunay triangulation output judged against curated reference.
+- [q56 - Shikaku Rectangles](cards/gpt-5.2-chat-azure-Reasoning/q56_shikaku_rectangles.md): Shikaku rectangle partition judged against curated puzzle constraints.
 - [q57 - Two Segments Variant](cards/gpt-5.2-chat-azure-Reasoning/q57_two_segments_variant.md): Two-segment geometric partition judged via curated verifier.
-

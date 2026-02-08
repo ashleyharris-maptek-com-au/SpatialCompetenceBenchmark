@@ -28,7 +28,7 @@ Evaluate simulator-aware terrain editing: craft earthworks that induce target wa
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing/empty earthworks with no meaningful attempt.
 - `Trivialized / Misframed`: Edits ignore simulator objective (e.g., random/no-op plan).
-- `Runaway Overthinking`: Large complicated edit program that destabilizes/undoes goals.
+- `Runaway Overthinking`: COT shows spiraling edit planning that produces a complex program failing diverse objective dimensions simultaneously.
 - `Local-Only (Global Constraint Integration Failure)`: Some metrics improve but multi-condition objective fails globally.
 - `Near-Miss Edge Case`: Close on counts/depth/levels with one threshold miss.
 

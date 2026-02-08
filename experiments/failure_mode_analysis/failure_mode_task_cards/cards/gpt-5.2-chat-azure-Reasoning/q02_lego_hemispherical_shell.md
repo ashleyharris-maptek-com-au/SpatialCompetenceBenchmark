@@ -41,7 +41,7 @@ Test whether the model can construct a discrete, physically plausible 3D brick a
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: No usable `bricks` list or placeholder output.
 - `Trivialized / Misframed`: Very small/simple assembly that ignores hemispherical shell target.
-- `Runaway Overthinking`: Large verbose plan with bloated bricks that still violate core checks.
+- `Runaway Overthinking`: COT shows spiraling reasoning producing a bloated brick plan that fails diverse constraint types simultaneously.
 - `Local-Only (Global Constraint Integration Failure)`: Locally plausible placements but global volume/buildability invalid.
 - `Near-Miss Edge Case`: Structure is broadly right with limited overlap/volume deviations.
 
