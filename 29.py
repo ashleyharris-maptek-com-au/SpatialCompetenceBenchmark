@@ -114,6 +114,45 @@ def _scad_path(path: str) -> str:
   return os.path.abspath(path).replace(os.sep, "/")
 
 
+def _is_rigid_transform(matrix_flat: list, tol: float = 1e-4) -> tuple:
+  """
+  Check if a 16-element flat matrix represents a valid rigid transform.
+  Returns (is_valid, error_message).
+  A rigid transform has:
+  - Orthonormal 3x3 rotation part (det = 1, columns are orthonormal)
+  - Last row is [0, 0, 0, 1]
+  """
+  if len(matrix_flat) != 16:
+    return False, f"Matrix must have 16 elements, got {len(matrix_flat)}"
+
+  try:
+    m = np.array(matrix_flat, dtype=float).reshape(4, 4)
+  except Exception as e:
+    return False, f"Could not reshape matrix: {e}"
+
+  # Check last row is [0, 0, 0, 1]
+  expected_last_row = np.array([0, 0, 0, 1])
+  if not np.allclose(m[3, :], expected_last_row, atol=tol):
+    return False, f"Last row must be [0,0,0,1], got {m[3, :].tolist()}"
+
+  # Extract 3x3 rotation part
+  R = m[:3, :3]
+
+  # Check orthonormality: R^T * R should be identity
+  RtR = R.T @ R
+  if not np.allclose(RtR, np.eye(3), atol=tol):
+    return False, f"Rotation part is not orthonormal (R^T*R != I)"
+
+  # Check determinant is +1 (proper rotation, not reflection)
+  det = np.linalg.det(R)
+  if not np.isclose(det, 1.0, atol=tol):
+    if np.isclose(det, -1.0, atol=tol):
+      return False, f"Matrix includes a reflection (det=-1)"
+    return False, f"Rotation determinant is {det:.4f}, expected 1.0 (contains scale/shear)"
+
+  return True, ""
+
+
 def _run_openscad_in_artifact_dir(artifact_store: ModelArtifactStore, input_path: str,
                                   output_path: str) -> None:
   subprocess.run([
@@ -266,6 +305,12 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
       print(partName + " Volume: " + str(volume))
       if volume == 0:
         bugs += "Part " + str(partIndex) + ".stl had a volume of 0<br>"
+
+      # Validate transform matrix is a rigid transform
+      transform = part.get("transform", [])
+      is_rigid, rigid_error = _is_rigid_transform(transform)
+      if not is_rigid:
+        bugs += f"Part {partIndex} transform is not a valid rigid transform: {rigid_error}<br>"
 
       # Mesh integrity checks (watertight, manifold)
       try:
@@ -473,25 +518,66 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
     return 1, ""
 
   if subPass == 5:
+    # Trivial intersection threshold in mm^3 (allow small overlaps from floating point)
+    TRIVIAL_VOLUME_THRESHOLD = 1.0  # 1 cubic mm
+
+    artifact_store = _artifact_store(aiEngineName)
+    significant_intersections = []
+
     for partIndexA, partA in enumerate(answer["parts"]):
       partNameA = _part_name(partIndexA, aiEngineName)
       stlFileA = _part_path(partNameA, "_posed.stl", aiEngineName)
-      tests = []
+
       for partIndexB, partB in enumerate(answer["parts"]):
         if partIndexA >= partIndexB:
           continue
 
         partNameB = _part_name(partIndexB, aiEngineName)
         stlFileB = _part_path(partNameB, "_posed.stl", aiEngineName)
-        tests.append(f"difference() {{import(\"{_scad_path(stlFileA)}\") ; import(\"{_scad_path(stlFileB)}\");}}")
 
-      results = vc.hit_tests(stlFileA, tests)
-      for i, result in enumerate(results):
-        if result == True:
-          # Find which part B corresponds to this test result
-          partIndexB = i + partIndexA + 1  # Since we skip parts <= partIndexA
-          return 0, "When assembled, part " + str(partIndexA) + " intersects with part " + str(
-            partIndexB)
+        # Generate intersection STL
+        intersection_scad = f"intersection() {{import(\"{_scad_path(stlFileA)}\"); import(\"{_scad_path(stlFileB)}\");}}"
+        intersection_scad_path = _artifact_path(
+          f"29_{aiEngineName}_intersect_{partIndexA}_{partIndexB}.scad", aiEngineName)
+        intersection_stl_path = _artifact_path(
+          f"29_{aiEngineName}_intersect_{partIndexA}_{partIndexB}.stl", aiEngineName)
+
+        import scad_format
+        write_if_changed(intersection_scad_path,
+                         scad_format.format(intersection_scad, vc.formatConfig))
+
+        try:
+          _run_openscad_in_artifact_dir(artifact_store, intersection_scad_path,
+                                        intersection_stl_path)
+        except Exception as e:
+          continue
+
+        if not os.path.exists(intersection_stl_path):
+          continue
+
+        # Calculate intersection volume
+        try:
+          intersection_volume = vc.StlVolume.calculate_stl_volume(intersection_stl_path)
+        except Exception:
+          intersection_volume = 0
+
+        if intersection_volume > TRIVIAL_VOLUME_THRESHOLD:
+          significant_intersections.append({
+            "partA": partIndexA,
+            "partB": partIndexB,
+            "volume": intersection_volume,
+            "stl_path": intersection_stl_path
+          })
+
+    # Save intersection data for the nice report
+    intersections_json_path = _artifact_path(f"29_{aiEngineName}_intersections.json", aiEngineName)
+    import json
+    with open(intersections_json_path, "w") as f:
+      json.dump(significant_intersections, f, indent=2)
+
+    if significant_intersections:
+      worst = max(significant_intersections, key=lambda x: x["volume"])
+      return 0, f"When assembled, parts have significant intersections. Worst: part {worst['partA']} and part {worst['partB']} overlap by {worst['volume']:.2f} mm³"
 
     return 1, ""
 
@@ -853,7 +939,48 @@ are checked, first pass is shown.
         "The rods position in 3D space must be exactly x =+/180, y=+-180,"
 
   if subPass == 5:
-    return "Check to see if projected parts intersect each other - testing to see if all 90 combinations have 0 intersection volume."
+    out = "Check to see if projected parts intersect each other - testing to see if all 45 combinations have trivial or zero intersection volume.<br><br>"
+
+    # Load intersection data if it exists
+    intersections_json_path = _artifact_path(f"29_{aiEngineName}_intersections.json", aiEngineName)
+    if os.path.exists(intersections_json_path):
+      import json
+      try:
+        with open(intersections_json_path, "r") as f:
+          intersections = json.load(f)
+
+        if intersections:
+          out += f"<b style='color:red'>Found {len(intersections)} significant intersection(s):</b><br><br>"
+          out += "<table border='1' style='border-collapse:collapse;'>"
+          out += "<tr><th>Part A</th><th>Part B</th><th>Volume (mm³)</th><th>Visualization</th></tr>"
+
+          for intersection in sorted(intersections, key=lambda x: -x["volume"]):
+            partA = intersection["partA"]
+            partB = intersection["partB"]
+            volume = intersection["volume"]
+            stl_path = intersection["stl_path"]
+
+            # Render intersection to PNG
+            png_path = stl_path.replace(".stl", ".png")
+            if os.path.exists(stl_path):
+              try:
+                vc.render_stl_to_png(stl_path, png_path)
+              except Exception:
+                pass
+
+            img_html = ""
+            if os.path.exists(png_path):
+              img_html = f"<img src='{report_relpath(png_path, aiEngineName)}' width=200/>"
+
+            out += f"<tr><td>{partA}</td><td>{partB}</td><td>{volume:.2f}</td><td>{img_html}</td></tr>"
+
+          out += "</table>"
+        else:
+          out += "<b style='color:green'>No significant intersections found.</b>"
+      except Exception as e:
+        out += f"Error loading intersection data: {e}"
+
+    return out
 
   if subPass == 6:
     out = ""
