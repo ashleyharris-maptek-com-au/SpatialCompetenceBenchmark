@@ -37,6 +37,18 @@ def _read_optional_text(path: Path) -> str | None:
     return None
 
 
+_IMAGE_TAG_RE = re.compile(r'<image[^>]*>.*?</image>', re.DOTALL)
+
+
+def _strip_prompt_for_judge(text: str | None) -> str | None:
+  if not text:
+    return None
+  cleaned = _IMAGE_TAG_RE.sub("[image omitted]", text).strip()
+  if not cleaned:
+    return None
+  return cleaned
+
+
 def is_candidate_for_judge(row: EvidenceRow, low_score_threshold: float) -> bool:
   if row.score <= 0:
     return True
@@ -101,7 +113,8 @@ def build_evidence_rows(model_runs: Iterable[dict],
                       cot_path=str(cot_path) if cot_text is not None else None,
                       prompt_path=str(prompt_path) if prompt_path.exists() else None,
                       raw_text=raw_text,
-                      cot_text=cot_text))
+                      cot_text=cot_text,
+                      prompt_text=_strip_prompt_for_judge(_read_optional_text(prompt_path))))
 
   rows.sort(key=lambda row: (row.model_name, row.test_index, row.subpass))
   return rows
@@ -137,6 +150,7 @@ def _build_labeled_row(row: EvidenceRow,
                     prompt_path=row.prompt_path,
                     raw_text=row.raw_text,
                     cot_text=row.cot_text,
+                    prompt_text=row.prompt_text,
                     candidate_for_judge=candidate_for_judge,
                     judge_status=judge_status,
                     failure_mode=failure_mode,

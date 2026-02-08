@@ -18,6 +18,7 @@ def build_task_batch_prompt(task_card_markdown: str,
   for row in rows:
     raw_text = (row.raw_text or "").strip()
     cot_text = (row.cot_text or "").strip()
+    prompt_text = (row.prompt_text or "").strip()
     attempts_lines.extend([
       f"### Subpass {row.subpass}",
       "",
@@ -28,6 +29,9 @@ def build_task_batch_prompt(task_card_markdown: str,
       f"- status: {row.status}",
       f"- incomplete_reason: {row.incomplete_reason}",
       f"- output_text_chars: {row.output_text_chars}",
+      "",
+      "Original Prompt:",
+      prompt_text or "(none)",
       "",
       "Verifier Signal:",
       row.score_explanation or "(none)",
@@ -52,7 +56,8 @@ def build_task_batch_prompt(task_card_markdown: str,
     "- You must output one decision per listed subpass.\n"
     f"- Listed subpasses: {subpasses}\n"
     "- Base justification on verifier signals and model output/COT evidence.\n"
-    "- Do not invent constraints absent from the task card.\n\n"
+    "- Do not invent constraints absent from the task card.\n"
+    "- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.\n\n"
     "Task Card:\n"
     f"{task_card_markdown}\n\n"
     "Attempts:\n"

@@ -28,7 +28,7 @@ Test exact puzzle partition reasoning: cover a grid with rectangles matching clu
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing/empty `rectangles`.
 - `Trivialized / Misframed`: Rectangles do not respect clue semantics.
-- `Runaway Overthinking`: Many rectangle fragments still violating coverage/clues.
+- `Runaway Overthinking`: COT shows spiraling partition reasoning that produces diverse error types (coverage gaps AND clue mismatches AND overlaps).
 - `Local-Only (Global Constraint Integration Failure)`: Local boxes plausible but global partition validity fails.
 - `Near-Miss Edge Case`: One clue or one uncovered-cell defect.
 

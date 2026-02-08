@@ -29,7 +29,7 @@ Measure 3D packing quality under strict inventory and validity constraints while
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Empty or unusable `boxes`.
 - `Trivialized / Misframed`: Ignores required prism inventory.
-- `Runaway Overthinking`: Excessive arrangement complexity still yielding overlaps.
+- `Runaway Overthinking`: COT shows spiraling packing strategy that produces diverse error types (overlaps AND missing prisms AND boundary violations).
 - `Local-Only (Global Constraint Integration Failure)`: Individual boxes plausible but full packing constraints fail.
 - `Near-Miss Edge Case`: One count/coordinate/overlap defect in otherwise coherent pack.
 

@@ -26,7 +26,7 @@ Evaluate discrete topological reasoning by enumerating corner-label configuratio
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: No parseable configs.
 - `Trivialized / Misframed`: Wrong output form or misunderstanding of tuple-equivalence setup.
-- `Runaway Overthinking`: Long prose with malformed structured payload.
+- `Runaway Overthinking`: COT shows spiraling enumeration reasoning that produces diverse error types (malformed format AND wrong count AND invalid configurations).
 - `Local-Only (Global Constraint Integration Failure)`: Many missing/extra configurations.
 - `Near-Miss Edge Case`: One configuration mismatch only.
 

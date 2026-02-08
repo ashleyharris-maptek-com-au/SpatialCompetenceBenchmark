@@ -1,6 +1,15 @@
 import json
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
+
+
+def safe_float(value: Any, default: float | None = None) -> float | None:
+  try:
+    if value is None:
+      return default
+    return float(value)
+  except Exception:
+    return default
 
 
 def model_run_summary_path(model_name: str) -> Path:

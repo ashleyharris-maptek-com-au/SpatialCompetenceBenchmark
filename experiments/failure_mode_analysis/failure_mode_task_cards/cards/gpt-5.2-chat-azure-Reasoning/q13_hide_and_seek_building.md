@@ -30,7 +30,7 @@ Test multi-agent spatial placement under occlusion and non-overlap constraints a
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing people list or malformed coordinates.
 - `Trivialized / Misframed`: Under-populated solution or ignores hide objective.
-- `Runaway Overthinking`: Over-dense arrangement causing avoidable collisions.
+- `Runaway Overthinking`: COT shows spiraling placement strategy that produces diverse error types (collisions AND visibility AND count failures).
 - `Local-Only (Global Constraint Integration Failure)`: Local placement mostly valid but global occlusion/collision constraints fail.
 - `Near-Miss Edge Case`: Small count miss or minor residual visibility.
 

@@ -30,7 +30,7 @@ Test constrained combinatorial reasoning: produce a long prime digit stack respe
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Empty sequence or no parseable structured answer.
 - `Trivialized / Misframed`: Very short obvious primes without meaningful optimization attempt.
-- `Runaway Overthinking`: Long reasoning with invalid sequence transitions.
+- `Runaway Overthinking`: COT shows spiraling number-theory reasoning that produces diverse error types (primality AND transition AND length failures).
 - `Local-Only (Global Constraint Integration Failure)`: Local digit choices valid but full stackability/primality rules fail.
 - `Near-Miss Edge Case`: One tuple-repeat/primality/transition issue in otherwise coherent sequence.
 

@@ -32,7 +32,7 @@ Assess geometric partition reasoning by placing exactly two boundary-to-boundary
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing or empty `segments`.
 - `Trivialized / Misframed`: Segments ignore partition-count objective.
-- `Runaway Overthinking`: Complex coordinates without satisfying simple two-segment constraints.
+- `Runaway Overthinking`: COT shows spiraling coordinate derivation that produces diverse error types (endpoint AND boundary AND class-count failures).
 - `Local-Only (Global Constraint Integration Failure)`: Endpoints/segments local-valid but global class counts fail.
 - `Near-Miss Edge Case`: Single endpoint/grid/boundary error in an otherwise plausible construction.
 

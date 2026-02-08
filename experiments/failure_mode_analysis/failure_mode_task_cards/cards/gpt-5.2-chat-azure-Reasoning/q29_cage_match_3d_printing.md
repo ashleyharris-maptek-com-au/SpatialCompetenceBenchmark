@@ -32,7 +32,7 @@ Evaluate end-to-end fabrication-aware geometric design: generate printable part 
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing `parts` or unusable artifact payload.
 - `Trivialized / Misframed`: Ignores core manufacturing/assembly contract (wrong part count/types).
-- `Runaway Overthinking`: Complex over-engineered output that increases generation/validation failures.
+- `Runaway Overthinking`: COT shows spiraling design that produces diverse error types (format AND assembly AND tolerance failures).
 - `Local-Only (Global Constraint Integration Failure)`: Individual parts may parse but assembled system fails constraints.
 - `Near-Miss Edge Case`: One tolerance-level issue (gap/thickness/clearance) in an otherwise valid build.
 

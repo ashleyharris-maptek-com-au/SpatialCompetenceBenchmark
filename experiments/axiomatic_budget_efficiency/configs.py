@@ -5,7 +5,6 @@ from LLMBenchCore import get_default_model_configs
 
 from .constants import (BUDGETS, DEFAULT_BASE_MODEL_CONFIG_NAME, EXPERIMENT_TAG,
                         MODEL_NAME_ALIASES)
-from .prompting import build_budget_informed_prefix
 
 
 def resolve_model_config_name(model_name: str) -> str:
@@ -40,7 +39,6 @@ def build_budget_model_configs(model_config_name: str = DEFAULT_BASE_MODEL_CONFI
       base_variant["tools"] = False
       base_variant["max_output_tokens"] = int(budget)
       base_variant["budget_informed_tokens"] = int(budget)
-      base_variant["prompt_prefix"] = build_budget_informed_prefix(int(budget))
       if temperature is not None:
         base_variant["temperature"] = float(temperature)
       else:
@@ -54,7 +52,6 @@ def build_budget_model_configs(model_config_name: str = DEFAULT_BASE_MODEL_CONFI
       tools_variant["tools"] = True
       tools_variant["max_output_tokens"] = int(budget)
       tools_variant["budget_informed_tokens"] = int(budget)
-      tools_variant["prompt_prefix"] = build_budget_informed_prefix(int(budget))
       if temperature is not None:
         tools_variant["temperature"] = float(temperature)
       else:

@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from LLMBenchCore.Concurrency import parallel_map
+from concurrent.futures import ThreadPoolExecutor
 
 from .failure_mode_task_cards.paths import get_task_card_path
 from .prompting import SYSTEM_PROMPT, build_task_batch_prompt
@@ -47,7 +47,10 @@ def _make_llmbenchcore_engine(config: AnalysisConfig):
     return AzureOpenAIEngine(model=config.judge_model,
                              reasoning=config.judge_reasoning,
                              tools=False,
-                             timeout=timeout)
+                             timeout=timeout,
+                             max_output_tokens=config.judge_max_output_tokens,
+                             temperature=config.judge_temperature,
+                             emit_meta=True)
 
   if config.judge_engine == "openai":
     from LLMBenchCore.AiEngineOpenAiChatGPT import OpenAIEngine
@@ -55,7 +58,10 @@ def _make_llmbenchcore_engine(config: AnalysisConfig):
     return OpenAIEngine(model=config.judge_model,
                         reasoning=config.judge_reasoning,
                         tools=False,
-                        timeout=timeout)
+                        timeout=timeout,
+                        max_output_tokens=config.judge_max_output_tokens,
+                        temperature=config.judge_temperature,
+                        emit_meta=True)
 
   raise ValueError(f"Unsupported judge engine: {config.judge_engine}")
 
@@ -255,7 +261,8 @@ def classify_rows(rows: list[EvidenceRow], config: AnalysisConfig) -> dict[RowKe
   def _judge_group(task_rows: list[EvidenceRow]) -> dict[RowKey, JudgeDecision]:
     return _judge_task_group(task_rows, config)
 
-  task_results = parallel_map(task_groups, _judge_group, max_workers=_TASK_GROUP_MAX_WORKERS)
+  with ThreadPoolExecutor(max_workers=_TASK_GROUP_MAX_WORKERS) as pool:
+    task_results = list(pool.map(_judge_group, task_groups))
 
   decisions: dict[RowKey, JudgeDecision] = {}
   for task_decisions in task_results:

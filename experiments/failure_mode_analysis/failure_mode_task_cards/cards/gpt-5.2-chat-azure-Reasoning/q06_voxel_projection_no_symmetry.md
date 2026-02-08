@@ -34,7 +34,7 @@ Judge whether the model can satisfy multiple coupled global constraints in a vox
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Empty or unparseable voxel output.
 - `Trivialized / Misframed`: Simple shape that ignores anti-symmetry/projection goals.
-- `Runaway Overthinking`: Overcomplicated coordinate schemes that still violate core checks.
+- `Runaway Overthinking`: COT shows spiraling coordinate derivation that produces diverse error types (projection AND symmetry AND count failures).
 - `Local-Only (Global Constraint Integration Failure)`: Some constraints pass but projections/symmetry fail globally.
 - `Near-Miss Edge Case`: One count, one duplicate, or one small projection defect.
 
