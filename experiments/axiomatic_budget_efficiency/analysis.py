@@ -10,16 +10,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from .constants import RESULTS_DIR
-from .io import iter_subpasses, load_run_summary, model_run_summary_path
+from .io import iter_subpasses, load_run_summary, model_run_summary_path, safe_float
 
-
-def _safe_float(value):
-  try:
-    if value is None:
-      return None
-    return float(value)
-  except Exception:
-    return None
 
 
 def _parse_budget_from_model_name(model_name: str) -> int | None:
@@ -71,53 +63,32 @@ def compute_metrics(model_configs: Iterable[dict]) -> list[dict]:
     budget_value = run["budget"]
 
     overall = summary.get("overall", {})
-    total_score = _safe_float(overall.get("total_score")) or 0.0
-    max_score = _safe_float(overall.get("max_score")) or 0.0
+    total_score = safe_float(overall.get("total_score")) or 0.0
+    max_score = safe_float(overall.get("max_score")) or 0.0
     accuracy = (total_score / max_score) if max_score > 0 else 0.0
 
+    # Collect output token values for mean calculation (not stored in summary).
     output_tokens = []
-    empty_output_count = 0
-    api_error_count = 0
-    non_completed_count = 0
-    incomplete_response_count = 0
-    budget_cap_hit_count = 0
-    reasoning_equals_output_count = 0
-    missing_meta_count = 0
-
     for subpass in iter_subpasses(summary):
       meta = subpass.get("meta")
-      has_meta = isinstance(meta, dict)
-      if not isinstance(meta, dict):
-        missing_meta_count += 1
-        meta = {}
-      if has_meta and int(meta.get("output_text_chars", 0) or 0) == 0:
-        empty_output_count += 1
-
-      status = str(meta.get("status", ""))
-      if status and status != "completed":
-        non_completed_count += 1
-      if status == "error" or meta.get("error"):
-        api_error_count += 1
-      if status == "incomplete" or meta.get("incomplete_reason"):
-        incomplete_response_count += 1
-
-      usage = subpass.get("usage") or meta.get("usage")
-      token_value = None
+      usage = subpass.get("usage") or (meta.get("usage") if isinstance(meta, dict) else None)
       if isinstance(usage, dict):
-        token_value = _safe_float(usage.get("output_tokens"))
-        reasoning_tokens = _safe_float(usage.get("reasoning_tokens"))
-        if token_value is not None and budget_value is not None and token_value >= budget_value:
-          budget_cap_hit_count += 1
-        if token_value is not None and reasoning_tokens is not None and token_value == reasoning_tokens:
-          reasoning_equals_output_count += 1
-      if token_value is not None:
-        output_tokens.append(token_value)
+        token_value = safe_float(usage.get("output_tokens"))
+        if token_value is not None:
+          output_tokens.append(token_value)
 
     mean_output_tokens = mean(output_tokens) if output_tokens else None
     subpass_total = int(max_score)
 
-    def rate(count: int) -> float:
-      return (count / subpass_total) if subpass_total > 0 else 0.0
+    # Read diagnostics computed at sweep time from run_summary.
+    diag = summary.get("diagnostics", {})
+
+    def _diag_int(key: str) -> int:
+      return int(safe_float(diag.get(key)) or 0)
+
+    def _diag_rate(key: str) -> float:
+      val = safe_float(diag.get(key))
+      return val if val is not None else 0.0
 
     metrics.append({
       "model_name": model_name,
@@ -128,20 +99,20 @@ def compute_metrics(model_configs: Iterable[dict]) -> list[dict]:
       "total_score": total_score,
       "total_subpasses": subpass_total,
       "token_observations": len(output_tokens),
-      "empty_output_count": empty_output_count,
-      "empty_output_rate": rate(empty_output_count),
-      "api_error_count": api_error_count,
-      "api_error_rate": rate(api_error_count),
-      "non_completed_count": non_completed_count,
-      "non_completed_rate": rate(non_completed_count),
-      "incomplete_response_count": incomplete_response_count,
-      "incomplete_response_rate": rate(incomplete_response_count),
-      "budget_cap_hit_count": budget_cap_hit_count,
-      "budget_cap_hit_rate": rate(budget_cap_hit_count),
-      "reasoning_equals_output_count": reasoning_equals_output_count,
-      "reasoning_equals_output_rate": rate(reasoning_equals_output_count),
-      "missing_meta_count": missing_meta_count,
-      "missing_meta_rate": rate(missing_meta_count),
+      "empty_output_count": _diag_int("empty_output_count"),
+      "empty_output_rate": _diag_rate("empty_output_rate"),
+      "api_error_count": _diag_int("api_error_count"),
+      "api_error_rate": _diag_rate("api_error_rate"),
+      "non_completed_count": _diag_int("non_completed_count"),
+      "non_completed_rate": _diag_rate("non_completed_rate"),
+      "incomplete_response_count": _diag_int("incomplete_response_count"),
+      "incomplete_response_rate": _diag_rate("incomplete_response_rate"),
+      "budget_cap_hit_count": _diag_int("budget_cap_hit_count"),
+      "budget_cap_hit_rate": _diag_rate("budget_cap_hit_rate"),
+      "reasoning_equals_output_count": _diag_int("reasoning_equals_output_count"),
+      "reasoning_equals_output_rate": _diag_rate("reasoning_equals_output_rate"),
+      "missing_meta_count": _diag_int("missing_meta_count"),
+      "missing_meta_rate": _diag_rate("missing_meta_rate"),
     })
 
   metrics.sort(key=lambda m: (m["budget"] if m["budget"] is not None else math.inf, m["model_name"]))

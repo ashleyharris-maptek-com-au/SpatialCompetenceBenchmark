@@ -9,8 +9,10 @@ from urllib.parse import parse_qs, urlparse
 import LLMBenchCore.ResultPaths as rp
 import LLMBenchCore.TestRunner as tr
 from LLMBenchCore import PromptImageTagging as pit
+from LLMBenchCore._openai_usage_utils import extract_openai_usage_meta
 
 from .configs import build_budget_model_configs
+from .io import model_run_summary_path, safe_float
 from .constants import (AXIOMATIC_TEST_IDS, BUDGETS, DEFAULT_BASE_MODEL_CONFIG_NAME,
                         EXPERIMENT_NAME, EXPERIMENT_TAG, RESULTS_DIR)
 from .manifest import build_manifest, write_manifest
@@ -61,33 +63,10 @@ def _coerce_int(value):
     return None
 
 
-def _extract_reasoning_tokens(usage) -> int | None:
-  output_details = _read_field(usage, "output_tokens_details")
-  from_output = _coerce_int(_read_field(output_details, "reasoning_tokens"))
-  if from_output is not None:
-    return from_output
-  completion_details = _read_field(usage, "completion_tokens_details")
-  return _coerce_int(_read_field(completion_details, "reasoning_tokens"))
-
-
 def _extract_usage(response_obj) -> dict | None:
-  usage = _read_field(response_obj, "usage")
-  if usage is None:
+  if _read_field(response_obj, "usage") is None:
     return None
-
-  input_tokens = _coerce_int(_read_field(usage, "input_tokens"))
-  if input_tokens is None:
-    input_tokens = _coerce_int(_read_field(usage, "prompt_tokens"))
-
-  output_tokens = _coerce_int(_read_field(usage, "output_tokens"))
-  if output_tokens is None:
-    output_tokens = _coerce_int(_read_field(usage, "completion_tokens"))
-
-  return {
-    "input_tokens": input_tokens,
-    "output_tokens": output_tokens,
-    "reasoning_tokens": _extract_reasoning_tokens(usage),
-  }
+  return extract_openai_usage_meta(response_obj, "")["usage"]
 
 
 def _extract_incomplete_reason(response_obj) -> str | None:
@@ -239,14 +218,80 @@ def _model_meta_path(model_name: str, test_index: int, subpass: int) -> Path:
   return Path("results") / "models" / model_name / "meta" / f"{model_name}_{test_index}_{subpass}.json"
 
 
-def _model_run_summary_path(model_name: str) -> Path:
-  return Path("results") / "models" / model_name / "run_summary.json"
-
 
 def _write_json(path: Path, data: dict) -> None:
   path.parent.mkdir(parents=True, exist_ok=True)
   with path.open("w", encoding="utf-8") as f:
     json.dump(data, f, indent=2)
+
+
+def _make_hook(client, provider: str, model_name: str, reasoning_effort: str | None,
+               temperature: float | None, tools_param: list[dict] | None,
+               budget: int, usage_log: dict[tuple[int, int], dict],
+               prompt_log: dict[tuple[int, int], str]):
+
+  def hook(prompt: str, structure: dict | None, test_index: int, subpass: int):
+    key = (test_index, subpass)
+    started_at = time.time()
+    effective_prompt = apply_budget_informed_prefix(prompt, budget)
+    prompt_log[key] = effective_prompt
+
+    params = {
+      "model": model_name,
+      "input": _build_openai_input(effective_prompt),
+      "max_output_tokens": int(budget),
+    }
+
+    if reasoning_effort:
+      params["reasoning"] = {"effort": reasoning_effort, "summary": "auto"}
+
+    if temperature is not None:
+      params["temperature"] = temperature
+
+    if structure is not None:
+      params["text"] = {
+        "format": {
+          "type": "json_schema",
+          "name": "structured_response",
+          "schema": structure,
+          "strict": True,
+        }
+      }
+
+    if tools_param:
+      params["tools"] = tools_param
+
+    try:
+      response = client.responses.create(**params)
+    except Exception as exc:
+      usage_log[key] = {
+        "provider": provider,
+        "budget": int(budget),
+        "status": "error",
+        "error": str(exc),
+        "usage": None,
+        "elapsed_ms": int((time.time() - started_at) * 1000),
+        "output_text_chars": 0,
+      }
+      raise
+
+    output_text = _extract_output_text(response)
+    usage_log[key] = {
+      "provider": provider,
+      "budget": int(budget),
+      "status": _read_field(response, "status") or "completed",
+      "incomplete_reason": _extract_incomplete_reason(response),
+      "response_id": _read_field(response, "id"),
+      "usage": _extract_usage(response),
+      "elapsed_ms": int((time.time() - started_at) * 1000),
+      "output_text_chars": len(output_text),
+    }
+
+    if structure is not None:
+      return _parse_structured_output(output_text), ""
+    return output_text or "", ""
+
+  return hook
 
 
 def _build_azure_hook(config: dict, budget: int, usage_log: dict[tuple[int, int], dict],
@@ -274,55 +319,8 @@ def _build_azure_hook(config: dict, budget: int, usage_log: dict[tuple[int, int]
   temperature = config.get("temperature")
   tools_param = _resolve_tools_param("azure_openai", model_name, config.get("tools"))
 
-  def hook(prompt: str, structure: dict | None, test_index: int, subpass: int):
-    key = (test_index, subpass)
-    started_at = time.time()
-    effective_prompt = apply_budget_informed_prefix(prompt, budget)
-    prompt_log[key] = effective_prompt
-
-    params = {
-      "model": model_name,
-      "input": _build_openai_input(effective_prompt),
-      "max_output_tokens": int(budget),
-    }
-
-    if reasoning_effort:
-      params["reasoning"] = {"effort": reasoning_effort, "summary": "auto"}
-
-    if temperature is not None:
-      params["temperature"] = temperature
-
-    if structure is not None:
-      params["text"] = {
-        "format": {
-          "type": "json_schema",
-          "name": "structured_response",
-          "schema": structure,
-          "strict": True,
-        }
-      }
-
-    if tools_param:
-      params["tools"] = tools_param
-
-    response = client.responses.create(**params)
-    output_text = _extract_output_text(response)
-    usage_log[key] = {
-      "provider": "azure_openai",
-      "budget": int(budget),
-      "status": _read_field(response, "status") or "completed",
-      "incomplete_reason": _extract_incomplete_reason(response),
-      "response_id": _read_field(response, "id"),
-      "usage": _extract_usage(response),
-      "elapsed_ms": int((time.time() - started_at) * 1000),
-      "output_text_chars": len(output_text),
-    }
-
-    if structure is not None:
-      return _parse_structured_output(output_text), ""
-    return output_text or "", ""
-
-  return hook
+  return _make_hook(client, "azure_openai", model_name, reasoning_effort,
+                    temperature, tools_param, budget, usage_log, prompt_log)
 
 
 def _build_openai_hook(config: dict, budget: int, usage_log: dict[tuple[int, int], dict],
@@ -340,55 +338,8 @@ def _build_openai_hook(config: dict, budget: int, usage_log: dict[tuple[int, int
   temperature = config.get("temperature")
   tools_param = _resolve_tools_param("openai", model_name, config.get("tools"))
 
-  def hook(prompt: str, structure: dict | None, test_index: int, subpass: int):
-    key = (test_index, subpass)
-    started_at = time.time()
-    effective_prompt = apply_budget_informed_prefix(prompt, budget)
-    prompt_log[key] = effective_prompt
-
-    params = {
-      "model": model_name,
-      "input": _build_openai_input(effective_prompt),
-      "max_output_tokens": int(budget),
-    }
-
-    if reasoning_effort:
-      params["reasoning"] = {"effort": reasoning_effort, "summary": "auto"}
-
-    if temperature is not None:
-      params["temperature"] = temperature
-
-    if structure is not None:
-      params["text"] = {
-        "format": {
-          "type": "json_schema",
-          "name": "structured_response",
-          "schema": structure,
-          "strict": True,
-        }
-      }
-
-    if tools_param:
-      params["tools"] = tools_param
-
-    response = client.responses.create(**params)
-    output_text = _extract_output_text(response)
-    usage_log[key] = {
-      "provider": "openai",
-      "budget": int(budget),
-      "status": _read_field(response, "status") or "completed",
-      "incomplete_reason": _extract_incomplete_reason(response),
-      "response_id": _read_field(response, "id"),
-      "usage": _extract_usage(response),
-      "elapsed_ms": int((time.time() - started_at) * 1000),
-      "output_text_chars": len(output_text),
-    }
-
-    if structure is not None:
-      return _parse_structured_output(output_text), ""
-    return output_text or "", ""
-
-  return hook
+  return _make_hook(client, "openai", model_name, reasoning_effort,
+                    temperature, tools_param, budget, usage_log, prompt_log)
 
 
 def _build_ai_hook(config: dict, budget: int, usage_log: dict[tuple[int, int], dict],
@@ -406,12 +357,6 @@ def _rate(count: int, total: int) -> float:
     return 0.0
   return count / total
 
-
-def _safe_float(value: Any, default: float = 0.0) -> float:
-  try:
-    return float(value)
-  except Exception:
-    return default
 
 
 def _update_diagnostics(diagnostics: dict[str, int], meta: dict | None, budget: int) -> None:
@@ -500,7 +445,7 @@ def _run_single_model_config(config: dict, test_ids: list[int]) -> Path:
       for subpass in subpass_results:
         subpass_idx = int(subpass.get("subpass", 0))
         key = (test_id, subpass_idx)
-        score_value = _safe_float(subpass.get("score"), default=0.0)
+        score_value = safe_float(subpass.get("score"), default=0.0)
 
         effective_prompt = prompt_log.get(key)
         if effective_prompt is not None:
@@ -533,7 +478,7 @@ def _run_single_model_config(config: dict, test_ids: list[int]) -> Path:
 
         subpasses_summary.append(subpass_entry)
 
-      test_score = _safe_float(test_result.get("total_score"), default=0.0)
+      test_score = safe_float(test_result.get("total_score"), default=0.0)
       max_score = int(test_result.get("subpass_count", len(subpass_results)))
       overall_total_score += test_score
       overall_max_score += max_score
@@ -586,7 +531,7 @@ def _run_single_model_config(config: dict, test_ids: list[int]) -> Path:
     "tests": tests_summary,
   }
 
-  summary_path = _model_run_summary_path(model_name)
+  summary_path = model_run_summary_path(model_name)
   _write_json(summary_path, run_summary)
   return summary_path
 
