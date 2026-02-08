@@ -1,0 +1,189 @@
+<html>
+<head>
+<style>
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333;
+    --text-secondary: #666;
+    --border-color: #ddd;
+    --header-bg: #4CAF50;
+    --header-text: white;
+    --test-header-bg: #45a049;
+    --prompt-bg: #f9f9f9;
+    --subpass-bg: #ffffff;
+    --img-border: #ccc;
+    --score-good: #228B22;
+    --score-bad: #dc3545;
+}
+@media screen and (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --text-secondary: #aaa;
+        --border-color: #444;
+        --header-bg: #2d5a2d;
+        --header-text: #e0e0e0;
+        --test-header-bg: #3d6a3d;
+        --prompt-bg: #2a2a2a;
+        --subpass-bg: #1f1f1f;
+        --img-border: #555;
+        --score-good: #4CAF50;
+        --score-bad: #ff6b6b;
+    }
+    a[href] { color: #55f}
+}
+body { background-color: var(--bg-color); color: var(--text-color); }
+table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; vertical-align: top; }
+th { background-color: var(--header-bg); color: var(--header-text); }
+.test-header { background-color: var(--test-header-bg); font-weight: bold; }
+.prompt-row { background-color: var(--prompt-bg); font-style: italic; }
+.subpass-row { background-color: var(--subpass-bg); }
+img { max-width: 100%; height: auto; border: 1px solid var(--img-border); }
+.score-good { color: var(--score-good); font-weight: bold; }
+.score-bad { color: var(--score-bad); font-weight: bold; }
+h1 { color: var(--text-color); }
+h2 { color: var(--text-secondary); margin-top: 30px; }
+</style>
+<meta charset='UTF-8'/>
+
+<script>
+// VizManager: Virtualizes WebGL contexts to prevent "Too many active WebGL contexts" errors
+// Only the visualization closest to the viewport center is active; all others are disposed
+window.VizManager = (function() {
+    const registeredViz = [];
+    let activeVizId = null;
+    let scrollTimeout = null;
+    
+    function getDistanceToViewportCenter(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+        const elementCenter = rect.top + rect.height / 2;
+        return Math.abs(elementCenter - viewportCenter);
+    }
+    
+    function updateActiveVisualization() {
+        let closestViz = null;
+        let closestDistance = Infinity;
+        
+        for (const viz of registeredViz) {
+            const container = document.getElementById(viz.containerId);
+            if (!container) continue;
+            
+            // Check if container is in an open <details> element
+            const details = container.closest('details');
+            if (details && !details.open) continue;
+            
+            const distance = getDistanceToViewportCenter(container);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestViz = viz;
+            }
+        }
+        
+        if (closestViz && closestViz.id !== activeVizId) {
+            // Deactivate current
+            if (activeVizId) {
+                const currentViz = registeredViz.find(v => v.id === activeVizId);
+                if (currentViz && currentViz.dispose) {
+                    try { currentViz.dispose(); } catch(e) { console.warn('Dispose error:', e); }
+                }
+            }
+            
+            // Activate new
+            activeVizId = closestViz.id;
+            if (closestViz.activate) {
+                try { closestViz.activate(); } catch(e) { console.warn('Activate error:', e); }
+            }
+        }
+    }
+    
+    function onScrollOrResize() {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateActiveVisualization, 100);
+    }
+    
+    // Listen for scroll and resize
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    
+    // Also listen for details toggle events
+    document.addEventListener('toggle', function(e) {
+        if (e.target.tagName === 'DETAILS') {
+            setTimeout(updateActiveVisualization, 50);
+        }
+    }, true);
+    
+    return {
+        register: function(vizConfig) {
+            // vizConfig: { id, containerId, activate, dispose }
+            registeredViz.push(vizConfig);
+            // Trigger update after a short delay to allow DOM to settle
+            setTimeout(updateActiveVisualization, 100);
+        },
+        
+        forceUpdate: function() {
+            updateActiveVisualization();
+        },
+        
+        getActiveId: function() {
+            return activeVizId;
+        }
+    };
+})();
+</script>
+</head>
+<body>
+<h1>Benchmark Results for qwen3-VL-235B-22B-Reasoning-Tools</h1>
+<table>
+  <tr class='test-header'>
+    <th colspan=3><a name='q2'>Test 2: Build a Lego(tm) hemispherical shell</a></th>
+    <th class='score-bad'>Score: 0.00 / 1</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm * 15.8mm * 11.4mm but when assembled they are <br>32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. <br><br>These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, <br>and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at <br>(centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at <br>[22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.<br><br>Assemble the bricks such that they resemble a 3D hemispherical shell, with inner radius 4 cm and outer radius 7 cm, <br>the centre of the hemisphere is at the origin (0,0,0).<br><br>Since it's impossible to create a perfect curve, the best score is one which is closer to the ideal curve, with<br>scoring being calculated based on the volume difference between the ideal curve and the actual brick structure. <br>The structure needs to be buildable in 3D, so bricks can not overlap or be floating in mid air. A great answer does not <br>contain any holes or missing bricks.<br><br>Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have<br>any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection<br>rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)<br><br>Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees). <br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Inner and outer radius parameters increase progressively across subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: 15cm inner, 17cm outer ~400 bricks<br><a href="prompts/qwen3-VL-235B-22B-Reasoning-Tools_2_2.txt">View exact prompt</a><br><a href="raw/qwen3-VL-235B-22B-Reasoning-Tools_2_2.txt">View raw AI output</a><br><a href="cot/qwen3-VL-235B-22B-Reasoning-Tools_2_2.txt">View chain of thought</a><br></td>
+<td colspan=2><div style='overflow-y: auto;max-height: 100px;'><strong>AI Reasoning: </strong>To construct a 3D hemispherical shell with an inner radius of 6 cm (60 mm) and outer radius of 9 cm (90 mm), centered at the origin (0,0,0), we must approximate the curved surface using Lego bricks. The bricks are 32mm x 16mm x 9.6mm when assembled, and must interlock legally without floating or overlapping. Since the hemisphere lies above the XY-plane (z ≥ 0), all bricks must rest on the ground or on other bricks with at least 2 interlocked studs (minimum stable connection). 
+
+Strategy:
+1. Layer by layer, starting from the bottom (z=0) and moving upward, place bricks such that their centroids lie as close as possible to the spherical shell surface.
+2. Each brick’s orientation (rotation) is adjusted so that its studs face upward or toward neighboring bricks for interlocking.
+3. The spherical shell is discretized into concentric rings at different z-heights, with each ring having bricks arranged circumferentially.
+4. At each z-level, compute the ideal radius: r(z) = sqrt(R² - z²), where R is 60mm (inner) and 90mm (outer). We aim to place bricks so their centers lie between these radii.
+5. Bricks are placed radially outward from the z-axis, rotated so their long side (32mm) is tangential to the circle at that height, minimizing gaps.
+6. Overhangs are limited to 75% (as per example: max 24mm overhang for 32mm brick), and each brick must have at least 2 studs interlocked with the layer below.
+7. We avoid floating bricks by ensuring every brick is supported from below or interlocked with adjacent bricks.
+
+Implementation:
+- Start at z = 0: bricks are placed in a ring with radius ~75mm (midway between 60 and 90), rotated to form a circle.
+- Increment z by 9.6mm (brick height) and place the next layer with reduced radius.
+- At each layer, calculate number of bricks needed to cover the circumference: N = ceil(2πr / 32mm), and rotate each brick by 360/N degrees from the previous.
+- Adjust brick positions so their centroids lie at the desired radius, and rotate each brick 90 degrees to align with the tangent.
+- Ensure interlocking: each brick in layer k must overlap at least 2 studs with a brick in layer k-1.
+- Near the top (z close to 90mm), fewer bricks are needed, and we may need to rotate bricks vertically (r=0 or 180) to maintain stability.
+
+Due to the complexity and need for precise interlocking, we generate a representative set of bricks for the lower and middle layers, ensuring no overlaps and full coverage. For brevity, we generate 5 layers (z=0, 9.6, 19.2, 28.8, 38.4mm) with decreasing radius and appropriate rotation. The top layers can be extrapolated similarly.
+
+Note: This is an approximation. The actual build may require fine-tuning, but the structure is buildable and minimizes volume error by following the spherical shell.</div></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: A brick {'Centroid': [0.0, 0.0, 4.8], 'RotationDegrees': 0.0} wholly inside the inner sphere is redundant</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+<h2>Overall Summary</h2>
+<table>
+  <tr class='test-header'>
+    <th>Total Tests</th>
+    <th>Overall Score</th>
+    <th>Percentage</th>
+  </tr>
+  <tr>
+    <td>57</td>
+    <td>0.00 / 1</td>
+    <td>0.0%</td>
+  </tr>
+</table>
+</body>
+</html>
