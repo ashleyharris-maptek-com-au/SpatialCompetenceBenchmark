@@ -26,7 +26,7 @@ Assess planning quality in a physics-grounded control task: choose blast positio
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: No usable blast plan.
 - `Trivialized / Misframed`: Minimal/uninformed blasts with no optimization intent.
-- `Runaway Overthinking`: Long blast sequences that degrade objective.
+- `Runaway Overthinking`: COT shows spiraling blast planning that produces diverse error types (invalid blasts AND worsened terrain AND boundary violations).
 - `Local-Only (Global Constraint Integration Failure)`: Some local flattening but global flat-region objective not met.
 - `Near-Miss Edge Case`: Mostly valid plan with one invalid blast or tiny missed improvement.
 

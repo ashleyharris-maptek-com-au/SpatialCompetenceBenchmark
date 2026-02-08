@@ -25,7 +25,7 @@ Judge whether the model can enumerate all deterministic edge connections for lab
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Empty/invalid edges payload.
 - `Trivialized / Misframed`: Wrong task interpretation (classification text instead of edge enumeration).
-- `Runaway Overthinking`: Long prose and/or large edge lists that still fail basic parse/format checks.
+- `Runaway Overthinking`: COT shows spiraling edge derivation that produces diverse error types (format AND count AND structural failures).
 - `Local-Only (Global Constraint Integration Failure)`: Broad mismatch in deterministic edge structure.
 - `Near-Miss Edge Case`: One-case mismatch with otherwise correct structure.
 

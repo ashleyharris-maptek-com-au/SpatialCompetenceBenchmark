@@ -28,7 +28,7 @@ Test high-dimensional path planning under strict local movement rules and global
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing path or placeholder output.
 - `Trivialized / Misframed`: Extremely short path that ignores target coverage/food.
-- `Runaway Overthinking`: Rare in this task; only use when long reasoning replaces valid artifact.
+- `Runaway Overthinking`: Rare in this task; only use when COT shows spiraling reasoning that replaces a valid artifact with diverse error types.
 - `Local-Only (Global Constraint Integration Failure)`: Local moves appear valid but global coverage/self-avoidance breaks.
 - `Near-Miss Edge Case`: One bad move or one repeat in otherwise coherent path.
 

@@ -29,7 +29,7 @@ Evaluate constrained geometric synthesis: produce a closed polyline with unit se
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing or invalid `points` structure.
 - `Trivialized / Misframed`: Simple loop that ignores preset-specific constraints.
-- `Runaway Overthinking`: Long path construction with widespread violations.
+- `Runaway Overthinking`: COT shows the model spiraling on an overcomplicated construction strategy (e.g. analytically deriving exact tiling, multi-loop designs) that produces diverse, coupled error types (wrong point count AND bad lengths AND crossings simultaneously).
 - `Local-Only (Global Constraint Integration Failure)`: Local step geometry works but global preset conditions fail.
 - `Near-Miss Edge Case`: One boundary/length/count/touching miss in otherwise valid loop.
 

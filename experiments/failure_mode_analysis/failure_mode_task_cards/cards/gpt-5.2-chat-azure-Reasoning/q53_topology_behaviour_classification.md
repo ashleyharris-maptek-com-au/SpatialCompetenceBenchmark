@@ -24,7 +24,7 @@ Assess symbolic classification of topology behavior classes (`known behaviour`, 
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing `labels` output.
 - `Trivialized / Misframed`: Uses labels outside allowed enum or wrong task form.
-- `Runaway Overthinking`: Long argumentation with invalid label artifact.
+- `Runaway Overthinking`: COT shows spiraling classification reasoning that produces diverse error types (invalid labels AND wrong format AND mismatched counts).
 - `Local-Only (Global Constraint Integration Failure)`: Multiple classification mismatches.
 - `Near-Miss Edge Case`: One label mismatch in otherwise correct sequence.
 

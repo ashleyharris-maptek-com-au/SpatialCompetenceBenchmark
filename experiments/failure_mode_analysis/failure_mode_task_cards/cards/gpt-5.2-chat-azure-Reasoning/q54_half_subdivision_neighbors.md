@@ -27,7 +27,7 @@ Test exact discrete neighbor inference in recursively subdivided spaces using bi
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing `neighbors` payload.
 - `Trivialized / Misframed`: Non-bitstring or unrelated output form.
-- `Runaway Overthinking`: Complex derivation with malformed neighbor identifiers.
+- `Runaway Overthinking`: COT shows spiraling tree-traversal reasoning that produces diverse error types (malformed identifiers AND wrong count AND format failures).
 - `Local-Only (Global Constraint Integration Failure)`: Broad neighbor-set mismatch.
 - `Near-Miss Edge Case`: Single neighbor missing/extra.
 

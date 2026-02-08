@@ -26,7 +26,7 @@ Evaluate exact combinatorial geometry output: recover Delaunay triangulation tri
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Missing or empty `triangles`.
 - `Trivialized / Misframed`: Output not triangulation indices.
-- `Runaway Overthinking`: Overspecified triangle sets with many extras.
+- `Runaway Overthinking`: COT shows spiraling triangulation reasoning that produces diverse error types (extra triangles AND invalid indices AND overlapping regions).
 - `Local-Only (Global Constraint Integration Failure)`: Several missing/extra triangles.
 - `Near-Miss Edge Case`: One triangle difference.
 

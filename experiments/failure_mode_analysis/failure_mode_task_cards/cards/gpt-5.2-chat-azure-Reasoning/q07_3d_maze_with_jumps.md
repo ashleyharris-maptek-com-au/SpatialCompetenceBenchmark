@@ -34,7 +34,7 @@ Measure structured generation under global path constraints: build a valid ASCII
 ## Failure-Mode Tie-Breaks (Task-Specific)
 - `Evasion / Forfeit`: Non-maze answer or empty output.
 - `Trivialized / Misframed`: Valid-looking maze that ignores jump/uniqueness requirements.
-- `Runaway Overthinking`: Complex pattern with many constraints broken.
+- `Runaway Overthinking`: COT shows spiraling maze design that produces diverse error types (connectivity AND uniqueness AND jump violations).
 - `Local-Only (Global Constraint Integration Failure)`: Local traversability present but global uniqueness/coverage fails.
 - `Near-Miss Edge Case`: Single dimensional or jump threshold miss.
 
