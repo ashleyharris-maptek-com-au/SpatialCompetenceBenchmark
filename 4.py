@@ -30,7 +30,7 @@ such that a shadow projected vertically (onto the Z=0 plane) fully covers PARAM,
 Use as many tetrahedra as you need, scoring is based on shadow coverage, not the number of tetrahedra used.
 
 Score will be deducted for:
-- any shadow outside of the square
+- any shadow outside of the shape
 - redundant tetrahedra
 - non-normalised quaternions
 - intersection tetrahedra
@@ -113,7 +113,7 @@ def prepareSubpassPrompt(index: int) -> str:
     "a trapezoid with sides parallel to Y=0 of length 4 (bottom) and 2 (top), and height 2",
     "a regular octagon with circumradius 2",
     "an arrow shape pointing right, 4 units long and 2 units tall",
-    "a chevron (V-shape) pointing right with span 4 and thickness 1"
+    "a chevron (V-shape) pointing right with span 2 and thickness 1"
   ]
   if index < len(params):
     return prompt.replace("PARAM", params[index])
@@ -250,7 +250,7 @@ module reference(){
     # 15: Parallelogram
     """
 module reference(){
-  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+  translate([-0.25,0,0.05]) linear_extrude(0.1, center=true)
     polygon(points=[[-2,-1], [2,-1], [3,1], [-1,1]]);
 }
 """,
@@ -279,7 +279,7 @@ module reference(){
     # 19: Chevron (V-shape)
     """
 module reference(){
-  translate([0,0,0.05]) linear_extrude(0.1, center=true)
+  translate([0.5,0,0.05]) linear_extrude(0.1, center=true)
     polygon(points=[
       [-2,-1], [-1,-1], [0,0], [-1,1], [-2,1], [-1,0]
     ]);
@@ -442,10 +442,17 @@ def validatePostVolume(result, score, resultVolume, referenceVolume, intersectio
 
 
 def postProcessScore(score, subPassIndex):
-  if subPassIndex in [1, 12, 13]:
+  if subPassIndex == 1:
     return min(1, score / 0.90)  # Circle and ellipse are impossible to cover.
-  if subPassIndex in [9, 11]:
-    return min(1, score / 0.80)  # Washer and star are too thin to perfectly cover.
+
+  # Adjust the following to match the best human-found solutions.
+
+  if subPassIndex == 11:
+    # Star is impossible as the points are narrower than the tetrahedral angle.
+    return min(1, score / 0.4)
+
+  if subPassIndex > 4:
+    return min(1, score / 0.6)
 
   return score
 
