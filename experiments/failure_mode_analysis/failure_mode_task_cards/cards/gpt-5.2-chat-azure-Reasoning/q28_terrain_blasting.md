@@ -1,0 +1,46 @@
+# Task q28: AI controlling explosives, what could possibly go wrong?
+- Source file: `28.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Assess planning quality in a physics-grounded control task: choose blast positions/depths to improve the largest flat buildable region.
+
+## Output Contract
+- Return JSON with `blasts`.
+- Each blast entry has `x`, `y`, and `z` depth.
+
+## Hard Constraints (Verifier-Checked)
+- Blast coordinates must be inside grid bounds.
+- Drill depth cannot exceed local terrain height.
+- Final score depends on simulated change in largest flat connected region.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `Blast x, y out of bounds` | Invalid action domain | `Near-Miss`, `Trivialized` |
+| `drilled too deep` | Action infeasible given terrain | `Near-Miss`, `Local-Only` |
+| `Made no progress` | Objective not improved | `Trivialized`, `Local-Only` |
+| `Your work made it worse` | Plan is adversarial to objective | `Local-Only` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: No usable blast plan.
+- `Trivialized / Misframed`: Minimal/uninformed blasts with no optimization intent.
+- `Runaway Overthinking`: Long blast sequences that degrade objective.
+- `Local-Only (Global Constraint Integration Failure)`: Some local flattening but global flat-region objective not met.
+- `Near-Miss Edge Case`: Mostly valid plan with one invalid blast or tiny missed improvement.
+
+## Judge Input Bundle
+1. Prompt and terrain map.
+2. Raw output.
+3. Parsed blasts.
+4. Verifier progress/failure summary.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q28 with one failure mode.
+Treat objective delta (made progress/no progress/worse) as primary evidence.
+Return JSON: failure_mode, confidence, justification.
+```
+

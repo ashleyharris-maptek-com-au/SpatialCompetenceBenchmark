@@ -14,7 +14,7 @@ runTest() {
 
     sleep 300 # The model needs to download and run an empty inference to warm up.
 
-    python MeshBenchmark.py -m "$model"
+    python MeshBenchmark.py -m "$model" --api-timeout 14400
     
     kill $TaskId
 
@@ -25,7 +25,7 @@ runTest() {
 
     sleep 300 # The model needs to download and run an empty inference to warm up.
 
-    python MeshBenchmark.py -m "$model-HighReasoning"
+    python MeshBenchmark.py -m "$model-HighReasoning" --api-timeout 86400
     
     kill $TaskId
 }
@@ -36,7 +36,6 @@ runTest "LLaVA-1.5-7B" "mys/ggml_llava-v1.5-7b:Q4_K_M" 294912
 runTest "LLaVA-1.5-13B" "PsiPi/liuhaotian_llava-v1.5-13b-GGUF:Q5_K_M" 294912
 runTest "BakLLaVA-Mistral" "advanced-stack/bakllava-mistral-v1-gguf:Q4_K_M" 294912
 runTest "Moondream2" "moondream/moondream2-gguf:F16" 294912
-runTest "Phi-3.5-Vision" "abetlen/Phi-3.5-vision-instruct-gguf:Q4_K_M" 294912
 runTest "Llama3-LLaVA-Next-8B" "KBlueLeaf/llama3-llava-next-8b-gguf:Q4_K_M" 294912
 runTest "Qwen2-VL-72B" "bartowski/Qwen2-VL-72B-Instruct-GGUF:Q4_K_M" 294912
 runTest "Mistral-Large-3-675B" "bartowski/mistralai_Mistral-Large-3-675B-Instruct-2512-GGUF:Q4_K_M" 294912
