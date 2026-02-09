@@ -86,6 +86,9 @@ def resultToImage(result, subPass, aiEngineName: str, fromAbove: bool = False):
 
   openScadData = f"translate([0, 0, 5]) color([0,1,0,0.9]) cube([{buildingWidth}, {buildingWidth}, 10], center=true);\n"
 
+  if "people" not in result:
+    return "No people returned"
+
   for person in result["people"]:
     try:
       x, y = person["xy"]
