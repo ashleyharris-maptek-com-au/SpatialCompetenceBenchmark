@@ -1,0 +1,153 @@
+Let me break down this problem:
+
+1. Building: at origin (0,0,0), axis aligned, 10m wide, 10m deep, 10m tall
+   - This means the building occupies x ∈ [-5, 5], y ∈ [-5, 5], z ∈ [0, 10]
+
+2. Sniper: at (100, 100, 20) looking at the building
+
+3. People: 150 people, each represented by 0.5×0.5×2m bounding box on z=0
+   - So each person occupies 0.5×0.5 footprint on the ground
+   - Height from z=0 to z=2
+
+4. Constraints:
+   - Sniper cannot see any person (building blocks line of sight)
+   - People on ground (z=0)
+   - No overlap with building or each other
+   - Within 30m of building center (distance ≤ 30)
+
+To ensure the sniper cannot see the people, I need to place them in the "shadow" of the building from the sniper's perspective.
+
+The sniper is at (100, 100, 20). The building center is at (0, 0, 5) approximately (center of mass).
+
+For a person at position (x, y, 0) with height 2m, they are blocked by the building if any point of the person (from (x-0.25, y-0.25, 0) to (x+0.25, y+0.25, 2)) cannot be seen by the sniper due to the building.
+
+Since the sniper is at (100, 100, 20), they are in the positive x, positive y quadrant, and elevated.
+
+To be hidden from the sniper, people should be on the opposite side of the building - in the negative x, negative y region.
+
+Let me think about the shadow more carefully. 
+
+For a point P to be visible from the sniper's position S = (100, 100, 20), the line segment from S to P must not pass through the building interior. The shadow region extends in the direction away from the sniper, roughly toward negative x and negative y. I need to compute this shadow precisely by determining which ground positions are blocked by the building's silhouette from the sniper's viewpoint.
+
+A person at ground level (x, y, z) where z ∈ [0, 2] is hidden if the ray from (100, 100, 20) to (x, y, z) intersects the building box [-5, 5] × [-5, 5] × [0, 10]. I can parameterize this ray and check for intersection with the building's faces to determine visibility. the person must be blocked.
+
+Geometrically, the sniper at (100, 100, 20) sits in the positive quadrant, elevated above a building centered at the origin. Since the building occupies -5 to 5 in both x and y directions, placing people at positions where both coordinates are negative (like x < -5 and y < -5) should put them in the building's shadow. Testing a person at (-10, -10, 0) to (-9.5, -9.5, 2), the line from the sniper passes through the building's x-range when 95 ≤ 110t, which constrains the valid t values for intersection.
+
+Checking all three dimensions—the x and y coordinates both require 0.864 ≤ t ≤ 0.955, while the z-coordinate (height) allows 0.5 ≤ t ≤ 1.0. The overlap [0.864, 0.955] falls within the segment from sniper to person, confirming the line of sight is blocked. Now I need to fit 150 people with 0.5×0.5 footprints into this shadow zone while staying within 30m of the origin.
+
+The shadow region is bounded by the building's footprint—corners at (±5, ±5)—and extends outward from the sniper's perspective. The far corner at (-5, -5) casts the shadow in the direction away from the sniper at (100, 100), which is along the vector (-105, -105) or normalized to (-1/√2, -1/√2). The shadow spreads outward from this corner in that direction.
+
+Accounting for the 3D geometry: people are 2m tall (tops at z=2) while the sniper sits at z=20, so I need to verify line-of-sight isn't possible around the building's edges. For positions well behind the building—where both x < -5 and y < -5—people should remain hidden as long as they're within the 30m radius constraint.
+
+I'll place people in a grid pattern across the shadowed region with 0.5m spacing to maximize coverage. The usable area spans roughly x ∈ [-30, -5] and y ∈ [-30, -5], giving me a rectangular zone to fill with people. 0.25] × [y-0.25, y+0.25] × [0, 2].
+
+The key is checking whether the corners of a person's bounding box closest to the sniper are blocked by the building. For someone positioned at (x, y) where both coordinates are less than -5, the corner nearest the sniper would be at (x+0.25, y+0.25). If this point is blocked at both ground level and head height, the person should be fully shielded.
+
+I'll need a function to determine if a given point is blocked from the sniper's line of sight by the building structure.
+
+```python
+def is_blocked(point, sniper, building):
+    # Check if line from sniper to point intersects building
+    # Building is [-5, 5] × [-5, 5] × [0, 10]
+    # Line: P(t) = sniper + t * (point - sniper), t ∈ [0, 1]
+    
+    direction = (point[0] - sniper[0], point[1] - sniper[1], point[2] - sniper[2])
+    
+    # Check intersection with each pair of planes
+    t_min = 0.0
+    t_max = 1.0
+    
+    for i in range(3):
+        if abs(direction[i]) < 1e-9:
+            # Ray is parallel to the slab
+            if sniper[i] < building[i][0]
+```
+
+For each dimension, I need to compute where the ray enters and exits the building's bounding box. If the ray is parallel to a slab (direction component near zero), I check if the sniper is outside that dimension's bounds—if so, the ray never intersects. Otherwise, I calculate the t-values where the ray crosses each plane, swap them if needed, and update the overall intersection interval. If the intervals become disjoint, the ray misses entirely. Finally, I verify the intersection actually occurs within the segment from sniper to point.
+```
+
+python
+            t2 = (box_max[i] - p1[i]) / direction[i]
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+            if t_min >= t_max:
+                return False
+    
+    return t_min < t_max and t_max > 1e-6 and t_min < 1.0 - 1e-6
+```
+
+For each dimension, I'm computing where the ray intersects the box boundaries and updating the valid parameter range. If the ranges become invalid at any point, the segment misses the box entirely. The final check ensures the intersection occurs within the segment bounds with a small tolerance for numerical stability.
+
+```python
+def is_person_hidden(person_center, sniper_pos, building_min, building_max):
+    """
+    Check if a person is completely hidden from the sniper by the building.
+    Person is 0.5×0.5×2m box with center at person_center (
+```
+
+The person occupies a 0.5×0.5×2m bounding box centered at the given position. I need to check all corners of this box at both ground level and full height to determine if the building completely blocks the sniper's line of sight. The person is hidden only if every possible line from the sniper to any point on the person intersects the building.
+
+I'm setting up a test case with the sniper at (100, 100, 20) and a building occupying the space from (-5, -5, 0) to (5, 5, 10). Then I'm generating candidate hiding positions in the shadow region behind the building, specifically in the range where x and y are both less than -5.5, stepping through in 0.5-unit increments to find all viable spots.
+
+For each candidate position, I check if it's within a 30-unit radius from the origin and whether the person would actually be hidden from the sniper's line of sight. I collect positions that pass both checks, stopping once I've found 150 valid locations. The person's body extends 0.25 units in each direction from their center point, which affects the line-of-sight calculations.
+
+The key insight is that the building casts a shadow in the direction away from the sniper. Since the sniper is positioned at (100, 100, 20) and the building occupies the region [-5, 5] × [-5, 5] × [0, 10], the shadow extends toward negative x and y values. I need to verify which positions actually fall within this shadow region by checking if all corners of a person's bounding box are blocked from the sniper's view. 0.25] × [0, 2]. Building is [-5, 5] × [-5, 5] × [0, 10].
+
+The corner closest to the sniper is at (person_center_x + 0.25, person_center_y + 0.25, 2). Since the person is convex and the building is convex, if this top corner is blocked from the sniper's view, the entire person is hidden.
+
+I'll check whether the line of sight from the sniper at (100, 100, 20) to this corner intersects the building's bounding box.
+
+```python
+import numpy as np
+
+def line_intersects_box(p1, p2, box_min, box_max):
+    """
+    Check if line segment from p1 to p2 intersects the box.
+    Uses the slab method for ray-box intersection.
+    """
+    direction = np.array(p2) - np.array(p1)
+    p1 = np.array(p1)
+    box_min = np.array(box_
+
+min)
+    box_max = np.array(box_max)
+    
+    t_min = 0.0
+    t_max = 1.0
+    
+    for i in range(3):
+        if abs(direction[i]) < 1e-9:
+            if p1[i] < box_min[i] or p1[i] > box_max[i]:
+                return False
+        else:
+            t1 = (box_min[i] - p1[i]) / direction[i]
+            t2 = (box_max[i] - p1[i]) / direction[i]
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+```
+
+Now I'm using the slab method to check intersection along each axis. For each dimension, I calculate where the ray enters and exits the box's bounds, then track the overall intersection interval. If the intervals don't overlap, the line misses the box entirely.
+
+Finally, I verify the intersection actually occurs within the segment bounds—not just along an infinite line—by checking that t_min is less than t_max and both values fall within the valid range. Then I define a function to determine if a person at a given position is hidden from the sniper's view by checking line-of-sight against the building obstacle.
+
+For the person's position, I test two corners of their bounding box—one at the top and one at the bottom—both offset slightly toward the sniper. If either corner has a clear line of sight to the sniper (meaning the ray doesn't intersect the building), the person isn't fully hidden. I then generate candidate positions by sampling a grid in the region where x and y are both less than -5, filtering out any points beyond the 30-unit distance threshold from the origin.
+
+For each candidate, I verify the person's bounding box doesn't extend into the building's space by checking that both x + 0.25 and y + 0.25 stay below -5. Once I confirm the person is hidden using the line-of-sight test, I add the position to my list and stop once I've collected 150 valid positions.
+
+To determine if a person at (x, y) is actually hidden from the sniper's vantage point, I need to check whether the line of sight from the sniper to any exposed corner of the person intersects the building. The person occupies a 0.5 × 0.5 × 2 volume, so I should test all 8 corners of this bounding box to ensure complete coverage. The most vulnerable point—the corner closest to the sniper—would be at (x+0.25, y+0.25) at both ground level and at the person's full height.
+
+I'll iterate through each corner and verify that the direct line from the sniper's position to that corner passes through the building's rectangular volume. If any corner has a clear line of sight, the person is exposed.
+
+Since both the person and building are convex shapes, checking all 8 corners is sufficient—if every corner is blocked, then every point on the person must be blocked as well. Now I need to set up the actual implementation with the position data.
+
+The approach uses a line-box intersection test that applies the slab method for each dimension. For each axis, it calculates the parameter range where the ray intersects that axis's slab, then finds the overall intersection by taking the overlap of all three ranges. If the ray passes through the box interior within the segment bounds, it's blocked.
+
+The visibility check then applies this by testing whether the line of sight from the sniper to the person intersects the building's bounding box, examining all eight corners of the structure to determine if the person is occluded.
+
+The position generation starts from the building's perimeter and expands outward in concentric rings, sampling points at regular intervals to create a grid of candidate locations.
+
+For each candidate position, the code checks the distance constraint to ensure it stays within the 30-unit radius, verifies the position doesn't overlap with the building boundary, and confirms the person would be hidden from the sniper's line of sight. Valid positions get added to the list until reaching the target of 150 positions, with early termination at each loop level once the quota is met.

@@ -1,0 +1,111 @@
+Let me think about this step by step.
+
+The world is 48 x 48 x 8 voxels. Currently, it's flat with rock at z = [0, 1, 2], meaning z = 3 and above are all air.
+
+Rainfall occurs at the top centre of the world and follows gravity and flood-fill rules. Water that touches the edges falls off.
+
+I need to create a structure that captures exactly 100 voxels of water.
+
+The key insight is that I need to create a basin or container that:
+1. Has walls to prevent water from flowing to the edges
+2. Has exactly 100 voxels of capacity
+3. Is positioned such that the water (which falls at the center) will be captured
+
+Since rainfall is centered at the center of the world, I should build my structure around the center.
+
+The world is 48x48, so the center is around coordinates (24, 24) (using 0-indexing from 0 to 47).
+
+Strategy:
+1. Build walls around a central area to create a basin
+2. The basin should have exactly 100 voxels of volume
+3. The walls should be tall enough and connected to prevent water from escaping
+
+Let me design a simple square basin:
+- If I make a 10x10 basin with 1-voxel-thick walls, the interior would be 8x8 = 64 voxels per layer
+- If I need 100 voxels, I could have 100/64 ≈ 1.56 layers, but water fills in whole layers
+- Better approach: 10x10 interior = 100 voxels exactly in one layer!
+
+So I'll create a square basin:
+- Interior: 10x10 = 100 voxels
+- Walls: 1 voxel thick
+- Total outer dimension: 12x12 (interior 10x10 plus 1 voxel wall on each side)
+
+
+- Center this around (24, 24): interior spans x from 19 to 28 and y from 19 to 28, with walls at x=18, x=29, y=18, and y=29 forming a 12x12 perimeter.
+
+For a 48x48 world with indices 0-47, centering near (24, 24) works well. The interior needs to be 10x10 voxels, so I'll place walls at the boundaries and fill the space between them accordingly.
+
+Since the ground is already rock at z=0-2, water will settle at z=3. I should build the basin walls at that same level to contain it properly. The interior air space at z=3 sitting on the rock floor below will hold the water once I pour it in.
+
+For the walls surrounding a 10x10 interior basin centered at (24, 24), I'm creating a filled outer square from x ∈ [19, 30], y ∈ [19, 30] at z=3, then removing the inner 10x10 space at x ∈ [20, 29], y ∈ [20, 29] to leave just the perimeter walls. - Height: 1 layer (at z=3)
+
+The basin needs to contain water falling from above. Since rainfall concentrates near the world's center and my basin is positioned at (24, 24) with a 10x10 interior, water should land inside. However, with walls only 1 voxel high, water will accumulate and stack upward through z=4, z=5, and beyond. I need to check if taller walls are necessary by reviewing the water physics rules, particularly how water behaves when air exists below it. 4, and 3. Once it reaches z=3, it lands on the rock floor and pools. As more water arrives, it stacks upward in layers at z=4, z=5, and beyond.
+
+The issue is that 1-voxel walls can't contain much—only 100 voxels fit at z=3 before water spills over the top and escapes. Since thousands of voxels worth of rainfall are expected, I need taller walls to actually capture water rather than let it overflow immediately.
+
+But making walls too tall means capturing all the water instead of just 100 voxels. The real constraint is that exactly 100 voxels must remain after the rain stops, with the excess flowing away. I could design a basin with an overflow mechanism—perhaps a 10×10 interior space with walls that allow water to escape once it reaches a certain height. Or more directly, create a basin structure that's precisely 100 voxels in total capacity. is initially all rock at z=0,1,2, with air above at z=3 and beyond. When water falls, it stops when it hits rock or existing water, then spreads horizontally. To build a basin, I need to construct walls at z=3 that form a 10x10 perimeter, allowing water to fill that layer up to 100 voxels before overflowing at z=4. s horizontally when it encounters Rock or Water below it.
+
+Water occupies its own voxel rather than sitting on top of solid blocks. When water at position (x, y, z) checks below and finds Rock or Water, it spreads outward instead of continuing downward. In this setup, water falling from above passes through z=7 down to z=3, where it stops because Rock fills z=2 beneath it. Additional water then accumulates at z=4 on top of the initial water layer.
+
+To contain exactly 100 water voxels, I can construct a 10×10 enclosed basin at z=3 with Rock walls surrounding it. This creates 100 Air voxels that become Water voxels when filled. Once that layer saturates, incoming water will rise to z=4 and continue upward, spreading horizontally at each level if the voxels below are already occupied by Water. it finds a way down). The water spreads horizontally at its current level until locating an air voxel at the level below. So water at z=4 with water already filling z=3 will search outward at z=4 for any air gaps at z=3. If the basin is completely filled at z=3, the water continues spreading until it reaches the basin's edge where air exists below.
+
+This mechanism actually works well for the design. The 100-voxel basin at z=3 will become completely saturated, and any additional water landing at z=4 will overflow and escape through the sides. The layout has the interior air space from x ∈ [20, 29], y ∈ [20, 29] surrounded by rock walls. Once the interior fills entirely with water at z=3, incoming water at z=4 will spread outward at that level until finding air outside the basin walls, allowing it to descend and drain away. Outside the walls at z=3 is just Air, so water flowing there will spread toward the edges and drain away. The key insight is that walls only at z=3 allow water to overflow at z=4—if I added walls at z=4 too, the water would be trapped inside the basin rather than spilling over the top.
+
+The design is: a solid block at z=3 spanning x ∈ [19, 30], y ∈ [19, 30], with the interior removed at x ∈ [20, 29], y ∈ [20, 29] to create the 10×10 basin. When 100 water voxels fill the basin, the next drop falls through the empty space above and lands on top of the water surface inside.
+
+At z=4, the water encounters the filled basin below and spreads outward looking for air. When it reaches positions directly above the walls where z=3 is solid rock, it can continue spreading. Once it reaches the outer edge of the walls at z=4, it finds air at z=3 outside the basin and flows downward, effectively spilling over the top of the walls. This overflow mechanism allows water to escape once the basin reaches capacity. z=3 below. If z=3 there is Air, it moves down to z=3. At z=3 outside the walls, it can't fall further since z=2 is solid Rock everywhere. So it spreads horizontally at z=3 toward the edges of the world. Once it reaches the boundary (x=0, x=47, y=0, or y=47), it escapes and disappears. This allows the excess water to drain away completely, leaving only the 100 voxels trapped inside the basin. at z=3 from outside the walls toward the edges and disappear. As long as the water can reach the edges, it will escape. The problem statement indicates that rainfall runs off the map on flat ground, so I'm assuming water flowing toward the perimeter will drain away rather than accumulate indefinitely. This means my approach should work: the basin fills to z=3, then overflow spreads across the walls to z=3 outside, where it flows toward and off the edges.
+
+I'm concerned about the flow dynamics though. Some rainfall lands outside the basin initially, which drains away fine. Once the interior reaches capacity at z=3, additional water lands at z=4 and spreads outward. When this z=4 water spills down to z=3 outside the walls, could it potentially flow back into the basin from the perimeter?
+
+The walls form a Rock barrier at z=3 that prevents any lateral entry—water outside at z=3 can't breach them. Similarly, water at z=4 outside can't descend into the basin because the walls block downward movement at z=3. Water at z=4 outside will instead flow down to z=3 in the exterior region (which is Air), then continue spreading outward and escaping.
+
+I should verify the basin dimensions are correct: the 10×10 interior sits at z=3 within coordinates [20, 29] for both x and y, centered roughly at (24, 24) in the 48×48 world. The surrounding walls extend one block outward to [19, 30].
+
+The spacing works well—the basin walls are positioned 17-19 voxels from each world edge, giving overflow plenty of distance to spread and escape. I need to confirm that rainfall actually targets the center position as stated in the problem. "earthworks": [
+    {
+      "xyzMin": [19, 19, 3],
+      "xyzMax": [30, 30, 3],
+      "material": "Rock"
+    },
+    {
+      "xyzMin": [20, 20, 3],
+      "xyzMax": [29, 29, 3],
+      "material": "Air"
+    }
+  ]
+}
+```
+
+Let me double-check the math on the basin dimensions. The outer perimeter spans 12 units in each direction (19 to 30 inclusive), creating a 144-voxel footprint. The hollow interior runs 10 units per side (20 to 29 inclusive), giving exactly 100 voxels of space for water storage.
+
+Now I need to trace through the overflow sequence carefully. When water begins falling, it descends through the empty layers above and settles into the basin interior at z=3, where it encounters the Rock floor at z=2 and stops. The 100 Air voxels gradually convert to Water as precipitation accumulates. Once that interior fills completely, subsequent water drops will land on the Water surface at z=3 and stack upward, eventually spilling over the walls and flowing outward.
+
+At z=4, water spreads horizontally across the top of the filled basin and over the wall ring. When it reaches the outer edge of the walls, it drops down to z=3 where Air exists outside the basin perimeter. Since Rock lies below at z=2, the water can't fall further and instead spreads laterally at z=3 until it reaches the boundary and drains away. This leaves exactly 100 Water voxels trapped in the basin interior.
+
+The walls themselves are structurally sound—each Rock voxel at z=3 sits directly atop Rock at z=2, providing orthogonal support. The interior Air space at z=3 doesn't require support, and the underlying Rock foundation remains stable. The basin dimensions of 10×10 create exactly the 100-voxel capacity needed.
+
+Since rainfall provides thousands of voxels worth of water, the basin will fill completely and overflow. Excess water at z=4 spills over the walls, flows down to z=3 outside the structure, and escapes toward the lateral boundaries. This leaves precisely 100 voxels trapped in the interior basin.
+
+The earthworks create a 10×10 ring of rock at z=3 with a 10×10 air-filled center. Water falling at the center fills this enclosed space. Once full, overflow spreads outward and eventually drains away, ensuring the final state contains exactly 100 voxels of water.
+
+Now I need to verify the overflow mechanism. Water sitting above ground or other water will flood-fill downward, seeking the nearest air voxel at the level below. So water at (x, y, z) with rock or water directly beneath it at (x, y, z-1) will search horizontally across z=4 for any position where z=3 contains air, then move there.
+
+Starting from (24, 24, 4) where z=3 holds water, the flood-fill expands outward checking neighboring positions. Most nearby voxels at z=4 also have water below them at z=3, so the search continues expanding. Eventually it reaches the ring's edge where z=3 transitions to air, allowing water to drain outward and downward. ) is Air. Once it finds such a position, it moves down to (x2, y2, 3).
+
+The water at (24, 24, 4) spreads outward at z=4 until reaching a spot where the level below is air—say (18, 24, 4) where (18, 24, 3) is open. Then it drops down to (18, 24, 3) and continues from there. ) is Air. It then moves to (x2, y2, 3).
+
+Given the layout, the nearest Air at z=3 from the center (24, 24) would be just outside the walls. The walls are at x ∈ [19, 30], y ∈ [19, 30] (minus the interior). So just outside the walls, at x=18 or x=31 (or y=18 or y=31), there's Air at z=3.
+
+The distance from (24, 24) to (18, 24) is 6 voxels. The distance to (31, 24) is 7 voxels. So the nearest Air at z=3 would be at (18, 24) (or equivalently (30, 24) if we consider 19 as outside the walls... wait, let me recalculate).
+
+The wall structure forms a perimeter at x ∈ [19, 30] and y ∈ [19, 30], with the interior hollow from x ∈ [20, 29] and y ∈ [20, 29]. This means Air exists immediately beyond these boundaries—at x=18, x=31, y=18, and y=31. From the center point, the closest Air block would be 6 blocks away in the x-direction. 4), so it needs to flow downward through the walls to reach that air pocket. The water spreads horizontally across z=4 until it encounters a position directly above air at z=3, then flows down. From (24, 24, 4), moving toward x=30 reaches the wall, then continuing to (31, 24, 4) sits above the air at (31, 24, 3), allowing water to descend there.
+
+The rule clarifies that water checks the voxel directly below first—if it's blocked by rock or water, the water must search outward. It flood-fills across the current z-level to locate any air at z-1, then moves to whichever air pocket is nearest. The search explores reachable positions at the same height by spreading through connected spaces. and spreads outward until it reaches the edge. The simulation mechanics themselves don't need to be fully understood—what matters is that water at (24, 24, 4) will eventually locate Air below it outside the walls, flow there, and escape toward the boundaries. I'm confident the overflow mechanism functions as designed: the basin holds 100 voxels at z=3, and any additional water spills over the edges. "material": "Air"
+    }
+  ]
+}
+```
+
+I need to verify the wall height won't allow water to cascade back into the basin. If water reaches z=4 and overflows, what happens at higher levels? Water at z=5 would fall through the air at z=4 and land there, then continue spreading outward and downward until it escapes the structure entirely. Water landing outside the basin at z=3 will rest on the ground and spread toward the edges, escaping before it can enter—the walls prevent any inflow. Off-center rainfall that misses the basin will drain away, while centered rainfall fills it as intended. Since the basin is 10x10 and centered at (24, 24), most precipitation should land inside and accumulate, with any overflow or external water draining naturally.
+
+The design captures exactly 100 voxels: a 12x12 rock foundation at z=3 with a 10x10 interior cavity. Water fills this cavity completely, and any excess at z=4 spills over the 1-voxel walls, flows outward to z=3, and escapes toward the world edges.

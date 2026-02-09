@@ -1,0 +1,227 @@
+This is an interesting optimization problem. I need to understand the mechanics:
+
+1. When I blast at a position with depth Z, I remove Z height from that position
+2. The removed material (Z units) is distributed to neighbors based on relative heights
+3. First, it's distributed equally to all 8 neighbors
+4. Then the material flows downhill, splitting equally among all neighbors that are lower than the current position
+5. This continues until the material comes to rest
+
+The goal is to maximize the flat area where all heights round to the same integer.
+
+Let me think about the strategy:
+- I want to identify high peaks and blast them
+- The material should flow to create a large flat area
+- I need to be careful not to create uneven slopes
+
+Let me first analyze the terrain to find peaks and valleys.
+
+Looking at the heightmap:
+```
+5.0 5.9 5.4 4.6 6.9 5.5 4.8 4.8 6.3 7.1 3.7 4.6 4.4 5.3 4.1 2.6
+3.1 3.6 1.5 2.9 4.6 7.6 6.8 7.4 6.9 5.6 5.2 7.2 7.2 7.0 4.6 4.3
+4.0 5.3 3.7 2.1 2.7 7.7 5.4 5.1 5.1 6.1 7.3 6.8 5.7 7.9 7.2 5.2
+5.6 5.4 4.2 5.7 6.1 8.1 5.0 4.5 3.2 3.4 5.7 6.2 4.8 5.5 5.9 4.9
+4.7 5.3 6.6 5.8 7.3 7.7 4.7 4.6 1.4 3.2 6.7 4.9 3.0 3.5 4.9 5.5
+
+
+6.0 5.9 4.5 5.0 7.9 7.6 5.7 5.2 3.2 4.6 3.7 3.5 2.8 4.1 5.5 8.5
+6.3 6.1 4.5 5.9 5.0 7.2 7.7 4.7 4.6 4.5 6.2 3.6 3.5 3.7 6.3 8.0
+3.7 1.9 1.5 4.0 6.1
+```
+
+I can see several peaks scattered across the map - notably at positions like (5,2) with 8.1, (15,5) with 8.5, and (15,6) with 8.0. The terrain is quite varied with valleys in the lower-left and scattered low points. I should focus blasts on the highest peaks to redistribute material toward creating a more uniform surface. I need to identify the structure of this data. It appears to be a 16x16 grid of numerical values arranged from bottom to top, with coordinates where (0,0) is bottom-left. I'm scanning for local maxima—points where values are higher than their neighbors. So far I've spotted some candidates like the 8.3 at position (5,7) and 8.1 at (5,3), with another peak forming around (13, something).
+
+Continuing my search, I find that (12, 12) reaches 9.0, which is the highest elevation on the map. There are also notable peaks at (15, 5) and (15, 11) both at 8.5. To flatten the terrain effectively, I should calculate the mean height and strategically reduce the peaks while filling valleys. I'm considering writing a simulation to evaluate different blast configurations and their impact on overall flatness.
+
+I need to clarify the coordinate system first. The grid is 16x16 with (0, 0) at the lower left corner, meaning (15, 15) is at the upper right. The data provided reads left to right, top to bottom, so I need to map it correctly to (x, y) coordinates where y increases upward from the bottom.
+
+Now I'll write a Python simulation to test different blast strategies and find the optimal plan for minimizing the total height.
+
+```python
+import numpy as np
+from copy import deepcopy
+
+# Parse the heightmap
+heightmap_str = """5.0 5.9 5.4 4.6 6.9 5.5 4.8 4.8 6.3 7.1 3.7 4.6 4.4 5.3 4.1 2.6
+3.1 3.6 1.5 2.9 4.6 7.6 6.8 7.4 6.9 5.6 5.2 7.2 7.2 7.0 4.6 4.3
+4.0 5.3 3.7 2.1 2.7 7.7 5.4 5.1 5.1 6.1 7.3 6.8 5.7 7.9 7.2 5.2
+5.6 5.4 4.2 5.7 6.1 8.1 5.0 4.5 3.2 3.4 5.7 6.2 4.8 5.5 5.9 4.9
+4.7 5.3 6.6 5.
+
+8 7.3 7.7 4.7 4.6 1.4 3.2 6.7 4.9 3.0 3.5 4.9 5.5
+6.0 5.9 4.5 5.0 7.9 7.6 5.7 5.2 3.2 4.6 3.7 3.5 2.8 4.1 5.5 8.5
+6.3 6.1 4.5 5.9 5.0 7.2 7.7 4.7 4.6 4.5 6.2 3.6 3.5 3.7 6.3 8.0
+3.7 1.9 1.5 4.0 6.1 8.3 5.7 3.8 5.2 4.3 5.1 5.9 4.8 5.0 6.1 5.3"""
+
+heightmap = np.array([list(map(float, line.split())) for line in heightmap_str.strip().split('\n')])
+
+def find_low_points(heightmap):
+    """Find all local minima in the heightmap."""
+    rows, cols = heightmap.shape
+    low_points = []
+    
+    for i in range(rows):
+        for j in range(cols):
+            current = heightmap[i, j]
+            is_low = True
+            
+            # Check all adjacent cells (up, down, left, right)
+            for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                ni, nj = i + di, j + dj
+                if 0 <= ni < rows and 0 <= nj < cols:
+                    if heightmap[ni, nj] <= current:
+                        is_low = False
+                        break
+            
+            if is_low:
+                low_points.append((i, j, current))
+    
+    return low_points
+
+def find_basin(heightmap, start_i, start_j, visited=None):
+    """Find all cells in a basin using flood fill."""
+    if visited is None:
+        visited = set()
+    
+    rows, cols = heightmap.shape
+    basin = set()
+    stack = [(start_i, start_j)]
+    
+    while stack:
+        i, j = stack.pop()
+        
+        if (i, j) in visited:
+            continue
+        
+        if not (0 <= i < rows and 0 <= j < cols):
+            continue
+        
+        if heightmap[i, j] == 9:  # 9 is a ridge, don't include
+            continue
+        
+        visited.add((i, j))
+        basin.add((i, j))
+        
+        # Add neighbors to stack
+        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            ni, nj = i + di, j + dj
+            if (ni, nj) not in visited:
+                stack.append((ni, nj))
+    
+    return basin
+
+# Find low points
+low_points = find_low_points(heightmap)
+print(f"Found {len(low_points)} low points")
+
+# Find basins and their sizes
+basins = []
+visited_global = set()
+
+for i, j, height in low_points:
+    if (i, j) not in visited_global:
+        basin = find_basin(heightmap, i, j, visited_global)
+        basins.append(basin)
+        print(f"Basin at ({i}, {j}) with height {height}: size {len(basin)}")
+
+# Sort basins by size and get the three largest
+basin_sizes = sorted([len(b) for b in basins], reverse=True)
+print(f"\nBasin sizes: {basin_sizes}")
+
+# Calculate the product of the three largest basins
+if len(basin_sizes) >= 3:
+    result = basin_sizes[0] * basin_sizes[1] * basin_sizes[2]
+    print(f"Product of three largest basins: {result}")
+
+I'm parsing the height data into a 2D array, then implementing a flood-fill algorithm to identify basins. The approach finds local minima first, then expands outward from each low point to map its basin, treating cells with height 9 as boundaries. Finally, I'm sorting the basins by size and multiplying the three largest together. 1]:
+            if dx == 0 and dy == 0:
+                continue
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < 16 and 0 <= ny < 16:
+                material[nx, ny] += material_to_distribute
+    
+    # Material then flows downhill until reaching stability
+    max_iterations = 1000
+    for iteration in range(max_iterations):
+        new_material = np.zeros_like(material)
+        changed = False
+        
+        for i in range(16):
+            for j in range(16):
+                if material[i, j] < 1e-10:
+                    continue
+                
+                current_height = grid[i, j] + material[i, j]
+                
+                # Find lower neighbors
+                lower_neighbors = []
+                for dx in [-1, 0,
+ 1]:
+                    for dy in [-1, 0, 1]:
+                        if dx == 0 and dy == 0:
+                            continue
+                        ni, nj = i + dx, j + dy
+                        if 0 <= ni < 16 and 0 <= nj < 16:
+                            neighbor_height = grid[ni, nj] + new_material[ni, nj]
+                            if neighbor_height < current_height - 1e-10:
+                                lower_neighbors.append((ni, nj))
+                
+                if lower_neighbors:
+                    # Distribute material equally among lower neighbors
+                    amount_per_neighbor = material[i, j] / len(lower_neighbors)
+                    for ni, nj in lower_neighbors:
+                        new_material[ni, nj] += amount_per_neighbor
+                    changed = True
+                else:
+                    # Material stays in place if no lower neighbors exist
+                    new_material[i, j] += material[i, j]
+        
+        material = new_material
+        
+        if not changed:
+            break
+    
+    grid += material
+    return grid
+
+def count_flat_area(grid):
+    """Count the size of the largest flat region (same rounded height)"""
+    rounded = np.round(grid).astype(int)
+    max_area = 0
+    
+    for target_height in np.unique(rounded):
+        visited = np.zeros_like(rounded, dtype=bool)
+        
+        for start_x in range(16):
+            for start_y in range(16):
+                if visited[start_x, start_y] or rounded[start_x, start_y] != target_height:
+                    continue
+                
+                queue = [(start_x, start_y)]
+                visited[start_x, start_y] = True
+                area = 0
+                
+                while queue:
+                    x, y = queue.pop(0)
+                    area += 1
+                    
+                    for dx in [-1, 0, 1]:
+                        for dy in [-1, 0, 1]:
+                            if dx == 0 and dy == 0:
+                                continue
+                            nx, ny = x + dx, y + dy
+                            if 0 <= nx < 16 and 0 <= ny < 16 and not visited[nx, ny] and rounded[nx, ny] == target_height:
+                                visited[nx, ny] = True
+                                queue.append((nx, ny))
+                
+                max_area = max(max_area, area)
+    
+    return max_area
+
+Now I'll identify peaks by checking if each cell is a local maximum. For each position, I compare it against all 8 neighbors to see if any are greater than or equal to it. If all neighbors are strictly smaller, it's a peak.
+
+I sort the peaks by height in descending order so I can prioritize blasting the tallest ones first. Then I analyze the initial heightmap to understand its characteristics—checking the mean, min, and max values along with how much flat terrain exists. I iterate through up to 20 blast operations, each time targeting the highest remaining peaks to maximize the flattened area.
+
+For each iteration, I evaluate potential blasts by testing the top 5 peaks with varying depths—trying ratios of 0.5, 0.7, and 0.9 relative to how far each peak rises above the grid average. I simulate each blast scenario and measure which one produces the most flat terrain, keeping track of the best option found so far.
+
+Once I identify the optimal blast, I apply it to the grid, record the blast coordinates and depth, and move to the next iteration. After completing all iterations, I output the final flat area achieved and print a summary of each blast executed with its specific parameters.

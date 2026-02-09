@@ -405,7 +405,7 @@ def write_failure_mode_distribution_pie(rows: list[LabeledRow], output_dir: Path
     nz_labels, nz_counts, nz_colors = zip(*non_zero)
     total = sum(nz_counts)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
+    fig, ax = plt.subplots(figsize=(7.6, 5.8))
     wedges, _ = ax.pie(nz_counts,
                         startangle=90,
                         counterclock=False,
@@ -418,16 +418,30 @@ def write_failure_mode_distribution_pie(rows: list[LabeledRow], output_dir: Path
       angle = math.radians((wedge.theta2 + wedge.theta1) / 2)
       mid_r = 1.0 - 0.42 / 2
       pct = count * 100 / total
-      ax.text(mid_r * math.cos(angle), mid_r * math.sin(angle),
-              f"{pct:.0f}%", ha="center", va="center", fontsize=10, fontweight="bold", color="white")
+      # Keep labels readable: avoid clutter on small slices.
+      if pct >= 4:
+        ax.text(mid_r * math.cos(angle),
+                mid_r * math.sin(angle),
+                f"{pct:.0f}%",
+                ha="center",
+                va="center",
+                fontsize=8,
+                fontweight="semibold",
+                color="white")
 
     ax.text(0, 0, f"{total}", ha="center", va="center", fontsize=22, fontweight="bold", color="#333")
     ax.text(0, -0.12, "judged", ha="center", va="center", fontsize=9, color="#888")
 
     legend_labels = [f"{label}  ({count})"
                      for label, count in zip(nz_labels, nz_counts)]
-    ax.legend(wedges, legend_labels, loc="upper center", bbox_to_anchor=(0.5, -0.02),
-              fontsize=9, frameon=False, ncol=min(len(nz_labels), 3), title="Class Counts",
+    ax.legend(wedges,
+              legend_labels,
+              loc="center left",
+              bbox_to_anchor=(1.02, 0.5),
+              fontsize=9,
+              frameon=False,
+              ncol=1,
+              title="Class Counts",
               title_fontproperties={"weight": "bold", "size": 10})
 
     ax.set_title("Failure Mode Distribution", fontsize=13, fontweight="bold", pad=14)

@@ -262,10 +262,19 @@ subpassParamSummary = [
 
 
 def gradeAnswer(answer, subPass, aiEngineName):
+  if isinstance(answer, list):
+    answer = max(
+      [item for item in answer if isinstance(item, dict) and isinstance(item.get("boxes"), list)],
+      key=lambda item: len(item["boxes"]),
+      default={"boxes": []})
+
   # calcualte the expected volume from the prismList and subpass
   expectedVolume = sum([a * b * c * d for a, b, c, d in prismList[0:subPass + 1]])
 
   # See if any boxes do not have xyx coordinates, and if so instantly fail
+  if "boxes" not in answer or not isinstance(answer["boxes"], list):
+    return 0, "Invalid answer format: missing boxes list"
+
   for box in answer["boxes"]:
     if len(box["XyzMin"]) != 3 or len(box["XyzMax"]) != 3:
       return 0, "Invalid box coordinates"
@@ -334,6 +343,11 @@ def gradeAnswer(answer, subPass, aiEngineName):
 
 
 def resultToNiceReport(result, subPass, aiEngineName: str):
+  if isinstance(result, list):
+    result = max(
+      [item for item in result if isinstance(item, dict) and isinstance(item.get("boxes"), list)],
+      key=lambda item: len(item["boxes"]),
+      default={"boxes": []})
 
   openScadData = ""
 

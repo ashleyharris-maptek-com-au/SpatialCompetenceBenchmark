@@ -1,0 +1,176 @@
+I need to find all leaves that share a face with the target leaf "001101000".
+
+First, let me understand the structure:
+- The tree represents a binary space partition of the unit cube [0,1]³
+- Each node splits along axes in the cycle y → z → x (repeating)
+- A path like "001101000" means: at depth 0 split on y-axis taking the low half (0), at depth 1 split on z-axis taking the low half (0), at depth 2 split on x-axis taking the low half (0), etc.
+
+Let me trace the path "001101000":
+- Depth 0: "" - split on y-axis, take 0 (lower half: y ∈ [0, 0.5])
+- Depth 1: "0" - split on z-axis, take 0 (lower half: z ∈ [0, 0.5])
+- Depth 2: "00" - split on x-axis, take 1 (upper half: x ∈ [0.5, 1])
+- Depth 3: "001" - split on y-axis, take 1 (upper half: y ∈ [0.25, 0.5])
+- Depth 4: "0011" - split on z-axis, take 0 (lower half: z ∈ [0, 0.25])
+- Depth 5: "00110" - split on x-axis, take 1 (upper half: x ∈ [0.75, 1])
+- Depth 6: "001101" - split on y-axis, take 0 (lower half: y ∈ [0.25, 0.375])
+- Depth 7: "0011010" - split on z-axis, take 0 (lower half: z ∈ [0, 0.125])
+
+
+- Depth 8: "00110100" - split on x-axis, take 0 (lower half: x ∈ [0.75, 0.875])
+
+This gives me the bounding box for "001101000": x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]. The axis cycle repeats every 3 depths, so I can determine which axis gets split at each level based on depth modulo 3.
+
+Now I need to identify all face-adjacent neighbors. The voxel has six faces at its boundaries: x = 0.75 and x = 0.875, y = 0.25 and y = 0.375, z = 0 and z = 0.125. For each face, I'm looking for voxels that share that boundary. Starting with the x = 0.75 face (the minimum x side), I need voxels where x_max = 0.75 with matching y and z ranges.
+
+The parent node "00110100" splits along the x-axis at depth 8, placing "001101000" in the lower half. To find neighbors on the other side of x = 0.75, I need to examine different branches of the tree. Looking at "0011010" at depth 7, which splits on z-axis, and then tracing through the tree structure to find which voxels occupy the adjacent space.
+
+At depth 6, "001101" splits on y-axis, with "0011010" taking the lower half. Going deeper, "00110" at depth 5 splits on x-axis, where "001100" occupies x ∈ [0.5, 0.75] while "001101" occupies x ∈ [0.75, 1]. The neighbor across the x = 0.75 boundary should come from the "001100" subtree. Let me recalculate the bounds more systematically by tracking how each bit in the path string determines the spatial subdivision at each level.
+
+The encoding follows a pattern: level 0 splits on y (bit 0), level 1 on z (bit 1), level 2 on x (bit 2), then cycling through y, z, x again. For "001101000", I need to trace through each decision: level 0 takes y < 0.5, level 1 takes z < 0.5, level 2 takes x ≥ 0.5, level 3 takes y ≥ 0.5, level 4 takes z < 0.5, level 5 takes x ≥ 0.5, level 6 takes y < 0.5, level 7 takes z < 0.5, and level 8 takes x < 0.5.
+
+Applying these constraints sequentially narrows the bounding box: after the first three levels, x is bounded to [0.5, 1], y to [0, 0.5], and z to [0, 0.5]. The next three levels further refine this to x ∈ [0.75, 1], y ∈ [0.25, 0.5], z ∈ [0, 0.25]. The final levels continue subdividing, ultimately constraining y to [0.25, 0.375] and z to [0, 0.125].
+
+At level 8, splitting along x and taking the lower half gives the final voxel bounds: x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]. This corresponds to the path "001101000".
+
+Now I need to identify all leaf nodes adjacent to this voxel across its six faces. For the face at x = 0.75, I'm looking for leaves where x_max equals 0.75 and the y and z ranges overlap with [0.25, 0.375] and [0, 0.125] respectively. The challenge is determining which octree paths lead to x_max = 0.75—this requires understanding how the subdivision pattern at each level constrains the coordinate ranges. ], z ∈ [0, 0.25].
+
+"001100" isn't a leaf node—it has children "0011000" and "0011001". Tracing through "0011000": level 0 splits y and takes 0 (y ∈ [0, 0.5]), level 1 splits z and takes 0 (z ∈ [0, 0.5]), level 2 splits x and takes 1 (x ∈ [0.5, 1]), then level 3 continues splitting.
+
+Following the remaining bits: level 3 takes y = 1 giving y ∈ [0.25, 0.5], level 4 takes z = 0 giving z ∈ [0, 0.25], level 5 takes x = 0 giving x ∈ [0.5, 0.75], level 6 takes y = 0 giving y ∈ [0.25, 0.375], and level 7 takes z = 0 giving z ∈ [0, 0.125]. This means "0011000" occupies x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.125], which shares the x = 0.75 face with "001101000" as expected.
+
+For "0011001", the first six levels match "0011000", but level 7 takes z = 1 instead, placing it at z ∈ [0.125, 0.25]. The resulting region x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25] doesn't align with "001101000" on any face since their z ranges don't overlap. The sibling "001101001" should define the x = 0.875 boundary. Tracing through levels 0-7 identically to "001101000", then at level 8 taking x = 1 gives x ∈ [0.875, 1].
+
+"001101001" occupies x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0, 0.125], which shares the x = 0.875 face with "001101000". For the y = 0.25 boundary, I need to explore a different branch at level 3—the sibling "0" instead of "1" yields y ∈ [0, 0.25].
+
+Tracing the "0010" path: level 0 splits y and takes 0 (y ∈ [0, 0.5]), level 1 splits z and takes 0 (z ∈ [0, 0.5]), level 2 splits x and takes 1 (x ∈ [0.5, 1]), level 3 splits y and takes 0 (y ∈ [0, 0.25]). This gives "0010" the region x ∈ [0.5, 1], y ∈ [0, 0.25], z ∈ [0, 0.5].
+
+Now I need to find leaves under "0010" that satisfy the constraints: x overlap [0.75, 0.875], y_max = 0.25, z overlap [0, 0.125]. At level 4, z splits into "00100" (z ∈ [0, 0.25]) and "00101" (z ∈ [0.25, 0.5]), so I need "00100". At level 5, x splits into "001000" (x ∈ [0.5, 0.75]) and "001001" (x ∈ [0.75, 1]), so I need "001001". At level 6, y splits again.
+
+For y, "0010010" covers [0, 0.125] while "0010011" covers [0.125, 0.25], so I need "0010011" since y_max = 0.25. Then at level 7, z splits into "00100110" (z ∈ [0, 0.125]) and "00100111" (z ∈ [0.125, 0.25]), requiring "00100110" for the z constraint. The tree shows "00100110" has two children "001001100" and "001001101" which appear to be leaves, though I should verify whether further subdivisions exist.
+
+Actually, reconsidering the structure: "0010011" represents x ∈ [0.75, 1], y ∈ [0.125, 0.25], z ∈ [0, 0.25]. When split at level 7, "00100110" gives x ∈ [0.75, 1], y ∈ [0.125, 0.25], z ∈ [0, 0.125]. But this y range doesn't match y_max = 0.25 exactly—I need to reconsider what the constraint actually requires. "00100110" refines the z-coordinate to [0, 0.125]. This gives x ∈ [0.75, 1], y ∈ [0.125, 0.25], z ∈ [0, 0.125]. However, this region doesn't actually share a face with "001101000" since the y-ranges [0.125, 0.25] and [0.25, 0.375] are adjacent but don't overlap. For them to share the y = 0.25 face, I need a neighbor with y_max = 0.25 that overlaps in both x and z coordinates. The "00100..." branch with appropriate y refinements should be the right direction to explore. 0.25], z ∈ [0, 0.0625].
+
+And "001001101":
+Level 8: split x, take 1: x ∈ [0.875, 1]
+
+So "001001101" is: x ∈ [0.875, 1], y ∈ [0.125, 0.25], z ∈ [0.0625, 0.125].
+
+Now for "00100111":
+Level 8: split x, take 0: x ∈ [0.75, 0.875]
+
+So "00100111" is: x ∈ [0.75, 0.875], y ∈ [0.125, 0.25], z ∈ [0.125, 0.25].
+
+Let me verify which of these actually touch the y = 0.25 face. The face y = 0.25 is the upper boundary, so I need cells where y_max = 0.25. Looking at my calculations, all three leaves have y ∈ [0.125, 0.25], so they all have y_max = 0.25. But I should check if there are other leaves in the tree that also satisfy this condition. ∈ [0, 0.125]
+
+This shares the y = 0.375 face with "001101000". At level 8, splitting x gives "001101100" with x ∈ [0.75, 0.875] and "001101101" with x ∈ [0.875, 1], both on the y = 0.375 boundary. ✓
+
+"00110111" occupies x ∈ [0.75, 1], y ∈ [0.375, 0.5], z ∈ [0.125, 0.25], which doesn't touch y = 0.375 since its y range extends beyond that value. ∈ [0, 0.125]
+
+Both "001101100" and "001101101" also border the y = 0.375 face. ✓
+
+**Face 5: z = 0 (min z face)**
+The minimum z face sits at the domain boundary, so there's no adjacent neighbor in the negative z direction. Since the unit cube spans [0, 1]³, z = 0 marks the edge of the entire space.
+
+**Face 6: z = 0.125 (max z face)**
+At level 7, taking "0" gives z ∈ [0, 0.125]. The sibling "1" at level 7 would provide z ∈ [0.125, 0.25], making it a potential neighbor sharing the z = 0.125 boundary. I need to trace back through the parent nodes to find which leaf contains this sibling and verify the x and y coordinates overlap. 125, 0.25]. This shares the z = 0.125 face with "001101000". The sibling "001101011" spans x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25], also touching that same z boundary.
+
+I've identified the neighboring cells: those meeting at the x = 0.75 and x = 0.875 faces, the y = 0.25 and y = 0.375 faces, and the z = 0.125 face. The neighbors include "0011000", "001101001", "001001100", "001001101", "001101100", and "001101101".
+
+Now verifying each adjacency. "0011000" occupies x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.125], sharing the x = 0.75 boundary with my target cell. "001101001" starts at x ∈ [0
+
+.875, 1], confirming the x = 0.875 face alignment. "001001100" sits at y ∈ [0.125, 0.25], which meets the target's y = 0.25 boundary.
+
+"001001101" occupies x ∈ [0.875, 1], y ∈ [0.125, 0.25], z ∈ [0, 0.125]. While it touches the target at the edge where x = 0.875 and y = 0.25, this is only a one-dimensional intersection rather than a two-dimensional face. I need to focus on which neighbors actually share proper faces with the target region. [0.75, 0.875], y ∈ [0.125, 0.25], z ∈ [0, 0.125]
+Target: x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]
+
+They share:
+- x range [0.75, 0.875] (complete overlap)
+- y endpoint at 0.25
+- z range [0, 0.125] (complete overlap)
+
+This is a face! ✓
+
+"001101100": x ∈ [0.75, 0.875], y ∈ [0.375, 0.5], z ∈ [0, 0.125]
+Target: x ∈ [0.75,
+
+So "001001100" qualifies as a face neighbor since it has complete overlap in two dimensions and shares exactly one endpoint. Now checking "001101100" which has the same x and z ranges but extends into y ∈ [0.375, 0.5], meaning it only touches at the y = 0.25 boundary while maintaining full overlap elsewhere. .875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]
+
+They share complete x and y ranges but only touch at z = 0.125, making this another face. ✓
+
+"001101011": x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25]
+Target: x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]
+
+The x ranges only meet at their boundary (0.875), while y fully overlaps and z touches at 0.125—this is just an edge. ✗
+
+So I have five valid faces: the x = 0.75 and x = 0.875 boundaries, the y = 0.25 and y = 0.375 boundaries, and the z = 0.125 boundary. I should verify each one more carefully to make sure I'm identifying them correctly.
+
+For the x = 0.75 face, I need cells where x ends at 0.75 with y spanning [0.25, 0.375] and z spanning [0, 0.125]. The target cell has x starting at 0.75, so I'm looking for its sibling on the other side of that boundary. At level 5, the split creates "001100" (x ∈ [0.5, 0.75]) and "001101" (x ∈ [0.75, 1]), so I need leaves within "001100" that match the y and z ranges.
+
+"001100" splits on y at level 6, producing "0011000" (y ∈ [0.25, 0.375]) and "0011001" (y ∈ [0.375, 0.5]). The first one matches my y requirement. Checking the tree structure, "0011000" is actually a leaf node, which means it inherits the full z range from its parent. Recalculating its bounds: level 0 splits on y giving [0, 0.5], level 1 splits on z giving [0, 0.5], level 2 splits on x giving [0.5, 1].
+
+Continuing through levels 3-6: y narrows to [0.25, 0.5], then z to [0, 0.25], x to [0.5, 0.75], and finally y to [0.25, 0.375]. This gives "0011000" the region x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.25]. But this z range extends to 0.25, not 0.125 as needed. I need to verify whether this still shares a face with the target region at x ∈ [0.75, 0.875], y ∈ [0.25, 0.375].
+
+The two regions align perfectly in y across [0.25, 0.375] and meet at x = 0.75, but z only overlaps partially—the target has z ∈ [0, 0.125] while "0011000" has z ∈ [0, 0.25]. For a true face adjacency, I'd expect complete overlap in two dimensions and alignment in the third. Here I have complete y overlap and x alignment, but z is only partially shared. This suggests they don't form a full face, just a partial boundary. The question becomes whether the subdivision scheme requires exact dimensional matching for face adjacency or allows partial overlaps.
+
+In hierarchical spatial structures, two cells are considered face-adjacent if they're aligned along one axis and their cross-sections perpendicular to that axis overlap—even if only partially. By this definition, "0011000" and "001101000" do share a face at x = 0.75 with the region y ∈ [0.25, 0.375], z ∈ [0, 0.125]. The smaller cell's face sits entirely within the larger cell's face at that boundary.
+
+Checking the maximum x boundary at x = 0.875: "001101001" occupies x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0, 0.125], which creates a shared face with the target cell at that exact coordinate. For the minimum y boundary at y = 0.25, I need to identify cells where y_max equals 0.25 within the target's x and z ranges.
+
+Since the target reached y ∈ [0.25, 0.375] by taking "0" at level 6 within "001101", I should look at "0010" instead, which gives y ∈ [0, 0.25]. From there, selecting "001001" provides x ∈ [0.75, 1], and I need to verify the z-coordinate constraint at level 7 to ensure z ∈ [0, 0.125] aligns properly within "001001".
+
+At level 6, splitting y within "001001" produces "0010010" for y ∈ [0, 0.125] and "0010011" for y ∈ [0.125, 0.25]. The second option "0010011" is required to achieve y_max = 0.25. Then at level 7, splitting z within "0010011" yields "00100110" for z ∈ [0, 0.125] and "00100111" for z ∈ [0.125, 0.25], with "00100110" being the necessary choice.
+
+The code "00100110" subdivides further at level 8 by splitting x into "001001100" covering x ∈ [0.75, 0.875] and "001001101" covering x ∈ [0.875, 1]. Both candidates span the target y and z ranges, so I need to check which one aligns with the target x interval of [0.75, 0.875].
+
+The first candidate shares the boundary plane at y = 0.25 across the matching x and z ranges, making it a valid face neighbor. The second candidate only touches at the edge where x = 0.875, since its x range [0.875, 1] doesn't overlap with the target's [0.75, 0.875] beyond that single line.
+
+For the maximum y boundary, I need to find the sibling at y = 0.375. Within that region spanning x ∈ [0.75, 1], y ∈ [0.375, 0.5], z ∈ [0, 0.25], the z-coordinate splits into two halves. The relevant child occupies z ∈ [0, 0.125], which then subdivides further in the tree structure.
+
+At the next level, the x-coordinate splits this region. The first child "001101100" covers x ∈ [0.75, 0.875], y ∈ [0.375, 0.5], z ∈ [0, 0.125], which shares the boundary y = 0.375 with my target region. The second child "001101101" spans x ∈ [0.875, 1] in the same y and z ranges, but its x-range doesn't overlap with the target's x ∈ [0.75, 0.875].
+
+For the z = 0 boundary, that's the domain minimum, so there's no neighbor there. Moving to z = 0.125, I need to check the sibling "00110101" which occupies z ∈ [0.125, 0.25]. Within that region, the level 8 split in x produces "001101010" at x ∈ [0.75, 0.875] and "001101011" at x ∈ [0.875, 1].
+
+The first child "001101010" shares the face at z = 0.125 with the target region. For "001101011", I need to verify whether it also shares a boundary with the target.
+
+"001101011" has x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25], while the target occupies x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]. Their x ranges only touch at the single point x = 0.875, and z ranges only meet at z = 0.125, so they share only an edge rather than a face. This doesn't qualify as a neighbor.
+
+I should verify the face neighbors more carefully. For the boundary at x = 0.75, I need to find octants where x_max equals 0.75. Following the "001101..." path, at level 5 taking the 1 branch gives x ∈ [0.75, 1], which means the octant extends beyond 0.75 and isn't the neighbor on that face.
+
+The sibling path "001100..." takes the 0 branch at level 5, yielding x ∈ [0.5, 0.75]. This is the correct region to search. Within "001100" (which spans x ∈ [0.5, 0.75], y ∈ [0.25, 0.5], z ∈ [0, 0.25]), at level 6 the y-split produces "0011000" with y ∈ [0.25, 0.375], which matches the target's y range.
+
+Since "0011000" is a leaf with z ∈ [0, 0.25], and the target's z range [0, 0.125] falls within this, they share a face at x = 0.75 spanning y ∈ [0.25, 0.375] and z ∈ [0, 0.125]. I should verify "0011001" as well—it has y ∈ [0.375, 0.5], which doesn't overlap with the target's y range [0.25, 0.375], so it's not a neighbor.
+
+For the +x direction, "001101001" at level 8 covers x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0, 0.125], sharing the face at x = 0.875. I need to check if any other nodes could be neighbors along this face by examining what has x_min = 0.875. cousins that happen to share the same x_min.
+
+"001101001" is a leaf with no siblings below it. Cousins would descend from "00110100", but both leaves under that node are already accounted for. Other parts of the tree might reach x = 0.875 though—for instance, a higher-level split producing x ∈ [0.875, ...] could create adjacent leaves. Tracing the target "001101000" through its splits: level 2 gives x ∈ [0.5, 1], level 5 gives x ∈ [0.75,
+
+1], and level 8 gives x ∈ [0.75, 0.875]. The sibling "001101001" occupies x ∈ [0.875, 1]. For another branch to share the x = 0.875 boundary, it would need to come from a different initial split—but the first split is on y, placing the target in "0" with y ∈ [0, 0.5], so any neighbor sharing that face would need to be in the same y region.
+
+Since the target's y range [0.25, 0.375] is entirely within [0, 0.5], cells from the "1" branch (y ∈ [0.5, 1]) can't overlap in y. This means "001101001" is the only neighbor at x = 0.875.
+
+For the y = 0.25 boundary, I need to find cells where y_max = 0.25 with overlapping x and z coordinates. The target reaches y ∈ [0.25, 0.375] through level 3 taking 1 (y ∈ [0.25, 0.5]) and level 6 taking 0, which further constrains y.
+
+The sibling at level 3 is "0010" with y ∈ [0, 0.25]. Within this subtree, I'm looking for leaves with y_max = 0.25 that also overlap in x ∈ [0.75, 0.875] and z ∈ [0, 0.125]. This requires taking 1 at level 5 for x ∈ [0.75, 1], taking 1 at level 6 for y ∈ [0.125, 0.25], and taking 0 at level 7 for z ∈ [0, 0.125], yielding "00100110".
+
+At level 8, this splits into "001001100" with x ∈ [0.75, 0.875] and "001001101" with x ∈ [0.875, 1]. The first one completely overlaps in x, making it a face neighbor, while the second only touches at the boundary x = 0.875, so it doesn't qualify. For the y = 0.375 boundary, I need y_min = 0.375, which corresponds to the sibling "0011011" at level 6 with y ∈ [0.375, 0.5], then taking 0 at level 7 for z ∈ [0, 0.125], giving "00110110". When split at level 8, "001101100" has x ∈ [0.75, 0.875] as a face neighbor, while "001101101" is edge-only. For z = 0.125, the sibling "00110101" at level 7 has z ∈ [0.125, 0.25], and splitting x at level 8 yields "001101010" as a face neighbor and "001101011" as edge-only.
+
+The candidates are: 0011000 (face at x = 0.75), 001101001 (face at x = 0.875), 001001100 (face at y = 0.25), 001101100 (face at y = 0.375), and 001101010 (face at z = 0.125). I should verify these by checking their bounding boxes. Starting with "001101000": level 0 (y) gives [0, 0.5], level 1 (z) gives [0, 0.5], level 2 (x) gives [0.5, 1], level 3 (y) gives [0.25
+
+, 0.5], level 4 (z) gives [0, 0.25], level 5 (x) gives [0.75, 1], level 6 (y) gives [0.25, 0.375], level 7 (z) gives [0, 0.125], and level 8 (x) gives [0.75, 0.875], confirming x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]. Now checking "0011000": level 0 (y) gives [0, 0.5], level 1 (z) gives [0, 0.5]...
+
+For the second neighbor, the bit sequence "0011000" produces x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.25]. This shares a face with the first neighbor at x = 0.75 where y and z ranges overlap.
+
+The third neighbor "001101001" differs only at level 8, shifting x to [0.875, 1] while keeping y ∈ [0.25, 0.375] and z ∈ [0, 0.125]. This creates a face match at x = 0.875.
+
+For "001001100", the first two levels set y ∈ [0, 0.5] and z ∈ [0, 0.5], which I need to continue evaluating through the remaining levels. 0.25]
+- Level 5 (x): 1 → [0.75, 1]
+- Level 6 (y): 1 → [0.375, 0.5]
+- Level 7 (z): 0 → [0, 0.125]
+- Level 8 (x): 0 → [0.75, 0.875]
+Result: x ∈ [0.75, 0.875], y ∈ [0.375, 0.5], z ∈ [0, 0.125]
+
+This neighbor also shares a face at y = 0.375 with matching x and z bounds. Checking the next neighbor "001101010" with similar initial splits at y and z levels 0-1, then x at level 2 narrows to [0.5, 1].
+
+Continuing through levels 3-8 gives x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25]. This one shares a face at z = 0.125 with the same x and y ranges. All adjacency checks validate successfully.
+
+The five leaf nodes are "0011000", "001101001", "001001100", "001101100", and "001101010". I can confirm each one has no children in the tree structure, so they're all valid terminal nodes.
