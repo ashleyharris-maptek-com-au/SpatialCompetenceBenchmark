@@ -1,0 +1,181 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 0, 1
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q28: AI controlling explosives, what could possibly go wrong?
+- Source file: `28.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Assess planning quality in a physics-grounded control task: choose blast positions/depths to improve the largest flat buildable region.
+
+## Output Contract
+- Return JSON with `blasts`.
+- Each blast entry has `x`, `y`, and `z` depth.
+
+## Hard Constraints (Verifier-Checked)
+- Blast coordinates must be inside grid bounds.
+- Drill depth cannot exceed local terrain height.
+- Final score depends on simulated change in largest flat connected region.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `Blast x, y out of bounds` | Invalid action domain | `Near-Miss`, `Trivialized` |
+| `drilled too deep` | Action infeasible given terrain | `Near-Miss`, `Local-Only` |
+| `Made no progress` | Objective not improved | `Trivialized`, `Local-Only` |
+| `Your work made it worse` | Plan is adversarial to objective | `Local-Only` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: No usable blast plan.
+- `Trivialized / Misframed`: Minimal/uninformed blasts with no optimization intent.
+- `Runaway Overthinking`: COT shows spiraling blast planning that produces diverse error types (invalid blasts AND worsened terrain AND boundary violations).
+- `Local-Only (Global Constraint Integration Failure)`: Some local flattening but global flat-region objective not met.
+- `Near-Miss Edge Case`: Mostly valid plan with one invalid blast or tiny missed improvement.
+
+## Judge Input Bundle
+1. Prompt and terrain map.
+2. Raw output.
+3. Parsed blasts.
+4. Verifier progress/failure summary.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q28 with one failure mode.
+Treat objective delta (made progress/no progress/worse) as primary evidence.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+
+Attempts:
+### Subpass 0
+
+Attempt Metadata:
+- question_id: 28
+- subpass: 0
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 447
+
+Original Prompt:
+You are responsible for levelling terrain in preparation for the construction of a new city.
+
+You can place blasting charges to fracture the terrain, causing it to collapse and flow
+down hill. Fractured rock blasted at the top of a hill travels equally to all 8 neighbours.
+Fractured rock on a slope is distributed equally to all lower neighbours.
+
+E.g. a blast at the centre of this map of depth 1.6:
+
+1.0 2.0 1.0
+2.0 5.0 1.0
+1.0 3.0 2.0
+
+Initially produces this delta (the 1.6 is distributed over all 8 neighbours)
+
++0.2 +0.2 +0.2
++0.2 -1.6 +0.2
++0.2 +0.2 +0.2
+
+The rocks then keep rolling further downhill (splitting equally when offered) until coming to a stop:
+
++0.2 +0.2 +0.2
++0.2 -1.6 +0.2
++0.3   0 +0.3
+
++0.4   0  +0.3
+  0  -1.6 +0.5
++0.4   0   0
+
++0.4   0  +0.4
+  0  -1.6 +0.4
++0.4   0   0
+
+Giving a net result of:
+
+1.4  2.0  1.4
+2.0  3.4  1.4
+1.4  3.0  2.0
+
+Which is an improvement towards being flat, and better to build a city on than the original,
+but could still be further improved with more blasting.
+
+Care needs to be taken on where you place your charges - it's preferable to leave a steep
+mountain overlooking a giant flat plain, than to have a softer slope with no mountain.
+
+Here is the terrain you have to work with as modelled by a height map. It is 16 x 16.
+
+5.0 5.9 5.4 4.6 6.9 5.5 4.8 4.8 6.3 7.1 3.7 4.6 4.4 5.3 4.1 2.6
+3.1 3.6 1.5 2.9 4.6 7.6 6.8 7.4 6.9 5.6 5.2 7.2 7.2 7.0 4.6 4.3
+4.0 5.3 3.7 2.1 2.7 7.7 5.4 5.1 5.1 6.1 7.3 6.8 5.7 7.9 7.2 5.2
+5.6 5.4 4.2 5.7 6.1 8.1 5.0 4.5 3.2 3.4 5.7 6.2 4.8 5.5 5.9 4.9
+4.7 5.3 6.6 5.8 7.3 7.7 4.7 4.6 1.4 3.2 6.7 4.9 3.0 3.5 4.9 5.5
+6.0 5.9 4.5 5.0 7.9 7.6 5.7 5.2 3.2 4.6 3.7 3.5 2.8 4.1 5.5 8.5
+6.3 6.1 4.5 5.9 5.0 7.2 7.7 4.7 4.6 4.5 6.2 3.6 3.5 3.7 6.3 8.0
+3.7 1.9 1.5 4.0 6.1 8.3 5.7 3.7 3.4 2.8 3.3 5.2 4.6 6.0 7.2 5.9
+3.7 3.7 3.4 4.0 7.5 6.3 4.9 4.8 4.3 5.2 4.3 3.7 2.8 4.8 6.6 5.3
+5.2 7.0 5.6 4.8 6.9 6.0 4.0 7.0 3.7 5.2 7.3 4.4 1.5 3.0 7.4 6.7
+4.2 5.1 4.3 4.4 3.7 4.0 3.3 5.5 5.6 2.9 4.2 5.6 5.0 7.2 7.5 4.9
+5.3 5.6 6.8 6.3 6.2 6.4 5.4 5.6 3.2 2.0 3.3 5.9 7.0 7.4 7.3 8.5
+6.2 6.6 7.3 7.4 6.3 7.3 7.3 5.7 1.7 2.2 4.1 8.0 9.0 7.7 6.2 7.0
+4.8 5.2 4.4 4.1 4.3 6.9 5.4 3.2 2.4 4.4 6.1 7.5 6.0 4.1 4.2 4.5
+4.4 2.4 1.5 2.4 1.4 4.1 3.7 2.2 4.1 5.7 6.6 6.1 5.1 4.3 4.2 7.3
+3.5 3.5 2.7 4.5 3.2 3.0 5.6 4.7 4.5 5.0 3.6 5.2 5.2 5.3 5.0 7.0
+
+Prepare a blast plan specifying 
+- Where to place the charges (X/Y) in grid coordinates, lower left is 0.
+- How deep to drill down (Z)
+- Order of the blasts.
+
+Such that the terrain collapses into the largest flat area as possible to build the largest possible city.
+
+A region of terrain is considered "flat" if, when rounded to the nearest integer, all heights are the same.
+
+Verifier Signal:
+Your work made it worse! Largest flat area after blasting was 4 cells, before blasting it was 5 cells
+
+Raw Output:
+{'blasts': [{'x': 12, 'y': 3, 'z': 4.0}, {'x': 15, 'y': 4, 'z': 3.5}, {'x': 15, 'y': 10, 'z': 3.5}, {'x': 5, 'y': 8, 'z': 3.3}, {'x': 5, 'y': 12, 'z': 3.1}, {'x': 15, 'y': 9, 'z': 3.0}, {'x': 11, 'y': 3, 'z': 3.0}, {'x': 13, 'y': 13, 'z': 2.9}, {'x': 4, 'y': 10, 'z': 2.9}, {'x': 6, 'y': 13, 'z': 2.7}, {'x': 6, 'y': 11, 'z': 2.7}, {'x': 6, 'y': 9, 'z': 2.7}, {'x': 13, 'y': 2, 'z': 2.7}, {'x': 5, 'y': 14, 'z': 2.6}, {'x': 5, 'y': 10, 'z': 2.6}]}
+
+Chain of Thought:
+(none)
+
+### Subpass 1
+
+Attempt Metadata:
+- question_id: 28
+- subpass: 1
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 0
+
+Original Prompt:
+(none)
+
+Verifier Signal:
+Skipped due to earlyFail (first subpass scored under 0%)
+
+Raw Output:
+(none)
+
+Chain of Thought:
+(none)

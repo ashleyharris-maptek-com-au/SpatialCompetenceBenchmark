@@ -1,0 +1,408 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 0, 1
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q07: 3D maze - solution requires jumping over gaps
+- Source file: `7.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Measure structured generation under global path constraints: build a valid ASCII maze with a unique solution requiring jumps and sufficient path complexity.
+
+## Output Contract
+- Return plain maze text only.
+- Exactly `size` rows and `size` columns.
+- Allowed characters: digits `0-9`, `A`, `B`.
+
+## Hard Constraints (Verifier-Checked)
+- Exactly one `A` and one `B`.
+- Valid grid shape and characters.
+- Elevation usage distribution cap.
+- Exactly one valid path from A to B.
+- Path coverage minimum and jump-count minimum.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `Maze must have exactly one A and one B` | Core format invalid | `Evasion`, `Trivialized` |
+| `Maze must have exactly {size} rows` / `Maze must have exactly {size} columns` | Dimensional contract failure | `Near-Miss`, `Trivialized` |
+| `Maze must have all rows the same width` | Non-rectangular grid (ragged rows) | `Near-Miss`, `Trivialized` |
+| `Invalid character in maze: X` | Output contains characters outside `0-9`, `A`, `B` | `Trivialized`, `Near-Miss` |
+| `Elevation H occupies more than 30% of the grid` | Elevation distribution cap violated | `Near-Miss`, `Local-Only` |
+| `No valid path from A to B` | Maze is unsolvable under walk/jump rules | `Local-Only`, `Near-Miss` |
+| `Multiple paths exist` | Global uniqueness failed | `Local-Only` |
+| `Path visits only ... of cells (required: 20%)` | Path coverage minimum not achieved | `Near-Miss`, `Local-Only` |
+| `Path has N jumps, but at least M required` | Complexity objective failed | `Near-Miss`, `Local-Only` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Non-maze answer or empty output.
+- `Trivialized / Misframed`: Valid-looking maze that ignores jump/uniqueness requirements.
+- `Runaway Overthinking`: COT shows spiraling maze design that produces diverse error types (connectivity AND uniqueness AND jump violations).
+- `Local-Only (Global Constraint Integration Failure)`: Local traversability present but global uniqueness/coverage fails.
+- `Near-Miss Edge Case`: Single dimensional or jump threshold miss.
+
+## Judge Input Bundle
+1. Prompt with size and jump requirement.
+2. Raw maze output.
+3. Parsed maze and path diagnostics.
+4. Verifier explanation.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q07 with one failure mode.
+Use uniqueness/jump/path-coverage checks as primary signal.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+Attempts:
+### Subpass 0
+
+Attempt Metadata:
+- question_id: 7
+- subpass: 0
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 29
+
+Original Prompt:
+Here is a heightmap platform maze, in which A is located at height 5, and B is located at height 0. 
+The maze represents a 3D space where movement is constrained by height differences. 
+Characters can only move to adjacent cells if the height difference is at most 1, or jump over gaps.
+
+A555
+2B20
+3015
+4555
+
+The character can move:
+- 1 cell horizontally or vertically, so long as the height is within 1 unit.
+- Can jump 2 cells horizontally or vertically, so long as:
+  - source and destination heights are the same
+  - the height of the cell between the source and destination is lower than the source height (jump over gaps, not through walls!)
+
+In this case, the character:
+- starts at A, which is at level 5
+- walks flat for a bit, 
+- jumps over a gap of height 0 to another level 5 block.
+- walks flat for a bit
+- descends until level 2, then jumps over B to level 2,
+- and then continues down to level 0, reaching B.
+
+The maze must use only 0-9, A & B to represent height, and must only have one solution.
+A & B must appear in the grid once each.
+The path must visit at least 20% of all cells.
+No single elevation can occupy more than 30% of the grid.
+Create a maze of size 5x5 that has A at level 5 and B at level 0, and at least 2 jumps.
+Your output must be ONLY the maze's heightmap, nothing else.
+Your output must be 5 rows long, and every row must be 5 characters long.
+The maze must be your only output - Extra text above or below the maze itself corrupt your work.
+
+Verifier Signal:
+No valid path from A to B (showing longest reachable path from A)
+
+Raw Output:
+A5055
+55445
+03092
+12021
+2201B
+
+Chain of Thought:
+Let me work through this step by step.
+
+I need to create a 5x5 heightmap maze where:
+- A is at height 5
+- B is at height 0
+- There's only one solution
+- The path visits at least 20% of all cells (so at least 5 cells out of 25)
+- No single elevation can occupy more than 30% of the grid (so max 7 cells per height)
+- At least 2 jumps are required
+- Characters can move to adjacent cells if height difference ≤ 1
+- Characters can jump 2 cells if source and destination are same height and the middle cell is lower
+
+Let me design a maze:
+
+First, let me think about what makes a good maze:
+- I need to create a path from A (height 5) to B (height 0)
+- The path should require at least 2 jumps
+- The path should be unique (only one solution)
+
+Let me try:
+
+A5555
+32105
+32B05
+32105
+45555
+
+Let me check this:
+- A is at position (0,0) at height 5
+- B is at position (2,2) at height 0
+
+Path from A to B:
+- Start at A (0,0) height 5
+- Move to (0,1) height 5
+- Move to (0,2) height 5
+- Move to (0,3) height 5
+- Move to (0,4) height 5
+- Move to (1,4) height 5
+- Move to (2,4) height 5
+- Move to (3,4) height 5
+- Move to (4,4) height 5
+- Move to (4,3) height 5
+- Move to (4,2) height 5
+- Move to (4,1) height 5
+- Move to (4,0) height 4 (can move down 1)
+
+
+- Move to (3,0) height 3 (can move down 1)
+- Move to (2,0) height 3
+- Move to (1,0) height 3
+- Move to (1,1) height 2 (can move down 1)
+- Move to (1,2) height 1 (can move down 1)
+- Move to (2,2) height 0 (B)
+
+This path has no jumps at all. I need to redesign the maze to force jumps. The key constraint is that jumps require the source and destination to be at the same height with a lower cell in between, so I should strategically place heights to block normal movement and require these special jumps.
+
+Let me try a configuration like A5055 / 32105 / 32B05 / 32105 / 45555. From A at (0,0) with height 5, I can only reach adjacent cells with heights 4, 5, or 6. The cell at (0,1) has height 5 which works, but (1,0) has height 3—a drop of 2, which exceeds the movement limit.
+
+I'll adjust to: A5055 / 42105 / 42B05 / 42105 / 45555. Now from A at (0,0) with height 5, both (0,1) and (1,0) are reachable since they're height 5 and 4 respectively. I can also jump over the middle cell—from (0,0) to (0,3) since the source and destination are both height 5 and the middle cell at (0,2) is height 0. Following this path: A moves right along the top row of 5s, then down the right edge through 5s to (4,4), then left along the bottom to (4,0) which is height 4, then continues left through the 4s to reach B. ,1) height 2
+- (2,2) height 2
+- (3,2) height 2
+- (3,1) height 1
+- (3,3) height 2
+- (2,3) height 1 - can't descend from 2 to 1
+
+Let me try another configuration:
+
+A5055
+43305
+43B25
+43315
+45555
+
+From A, I can move to (0,1) at height 5, then jump over (0,2) to reach (0,3) also at height 5. Continuing along the perimeter at height 5 through (0,4), (1,4), (2,4), (3,4), (4,4), then down the right side through (4,3), (4,2), (4,1) to (4,0) at height 4. Moving left along the bottom: (3,0), (2,0), (1,0) all at height 4, then (1,1) at height 3. The issue is getting from (1,1) to reach B while respecting the height constraints—I need intermediate steps that allow valid transitions. 5
+- (0,1) height 5
+- Jump to (0,3) over (0,2) height 0 - Jump 1
+- (0,3) height 5
+- (0,4) height 5
+- (1,4) height 5
+- (2,4) height 5
+- (3,4) height 5
+- (4,4) height 5
+- (4,3) height 5
+- (4,2) height 5
+- (4,1) height 5
+- (4,0) height 4
+- (3,0) height 4
+- (2,0) height 4
+- (1,0) height 4
+- (1,1) height 3
+- (1,2) height 2
+- (2,2)? That's B at height 0, can't jump directly from 2. Need to go through (2,3) at height 1 first, then reach B.
+
+Let me verify the grid layout using [row][col] indexing:
+```
+A5055
+43205
+43B15
+43211
+45555
+```
+
+This gives me [0][0]=A(5), [0][1]=5, [0][2]=0, [0][3]=5, [0][4]=5 for the top row, [1][0]=4, [1][1]=3, [1][2]=2, [1][3]=0, [1][4]=5 for the second row, and [2][0]=4, [2][1]=3, [2][2]=B(0), [2][3]=1, [2][4]=5 for the third row.
+
+Now tracing a path from A: starting at [0][0] with height 5, I can move to [0][1] (height 5), then jump over [0][2] (height 0) to reach [0][3] (height 5) since the middle cell is lower. From [0][3] I continue to [0][4] and down to [1][4] and [2][4], both height 5. Moving down to [3][4] would require dropping 4 units from height 5 to height 1, which exceeds the limit. Checking [2][3] instead shows height 1, also too steep a descent.
+
+I need to redesign the grid to allow a proper descent path. Restructuring with a gradual height progression: the new layout has heights decreasing from 5 down through 4, 3, 2, and 1 in a way that creates valid moves where each step doesn't exceed a 1-unit drop.
+
+Placing B at position [3][4] creates an issue—jumping from height 5 directly to height 0 isn't allowed. Instead, I should plan the path first before constructing the walls, ensuring each transition follows the movement rules.
+
+I'll map out a descent: start at A with height 5, move through several 5s, jump over a gap, then gradually descend through 4, 3, 2, and 1 before reaching B at 0. This requires strategic placement of walls and gaps. Testing the layout with A at [0][0] and B at [4][4], I can create a path that jumps over height 0 sections at height 2, then continues descending to the endpoint. ][4] height 5
+- [1][4] height 5
+- [1][3] height 2 - can't reach
+
+Trying a different grid layout:
+
+A5455
+44325
+44321
+44211
+4555B
+
+This path works better: starting at A, moving right through heights 5→5→4, then descending diagonally through 3→3→2→1, and finally reaching B at [4][4].
+
+However, this only covers 9 cells (36% of the grid) with no jumps required. I need to reconsider the grid to force some elevation changes that create mandatory jumps between cells.
+
+Let me adjust the heights to create actual jumps. With A5055 / 54425 / 54321 / 54211 / 5555B, I can trace: starting at [0][0] height 5, move to [0][1] height 5, then jump over [0][2] height 0 to reach [0][3] height 5, continue to [0][4] height 5, down to [1][4] height 5, but [1][3] height 2 becomes unreachable from the adjacent 5s. The grid still needs refinement to maintain connectivity while forcing jumps.
+
+Trying A5055 / 54445 / 54321 / 54211 / 5555B instead: this keeps me at height 5 through [0][4], then [1][4], and now [1][3] becomes height 4 instead of 2, making it reachable. The middle row extends the height-4 plateau across [1][1] and [1][2] as well, creating a more gradual descent toward the goal.
+
+Testing variations with height 3 at [2][2] and [2][3] doesn't help—[2][4] stays too low to continue. Adjusting to height 2 at [2][4] and height 1 at [3][4] still leaves me stuck, unable to reach the final position.
+
+I've traced a complete path from A to B: starting at [0][0], jumping over [0][2] to [0][3], then moving through [0][4], [1][4], [1][3], [1][2], [2][2], [2][3], [2][4], [3][4], and finally [4][4] B. That covers 13 cells—52% of the grid. The problem is I've only used one jump so far, but I need at least two. I should explore alternative routes that incorporate additional jumps.
+
+Testing different height configurations to enable more jumps. When I try placing height 0 at [2][2], it becomes unreachable from [1][2] which has height 4. Adjusting the grid to have height 3 at [2][2] instead creates a valid path from [1][2], but then [2][4] with height 2 becomes unreachable from [2][3] with height 4. I'm working through these constraints to find a configuration that allows multiple jumps while maintaining connectivity across the grid. - [2][4] height 2 - can't reach from 4
+- [3][3] height 1 - can't reach from 4
+- Can jump from [2][3] to [2][1]? No, that's backwards
+- Can jump from [2][3] to [4][3]? [2][3]=4, [4][3]=5, not same
+
+Trying different configurations. [2][2] needs to be reachable from the starting position, and I need a path down to B. Testing if [2][4] at height 2 works with [3][4] also at height 2, but moving backwards isn't an option and [4][4] at height 2 doesn't create a valid jump either.
+
+Adjusting the grid further: [3][4] at height 2 can't reach [3][3] at height 0, and B at [4][4] is unreachable. Trying [2][3] at height 2 with [3][4] at height 2, but [3][4] to [3][2] still doesn't work with the current heights.
+
+After repositioning B to [4][3], I can see that [3][3] at height 1 can reach B at height 0 directly.
+
+Tracing the full path from A to B: starting at [0][0] height 5, moving through [0][1], jumping over [0][2] to reach [0][3], then progressing through [0][4], [1][4], [1][3], [1][2], [2][2], [2][3], [2][4], [3][4], [3][3], and finally to B at [4][3]. This covers 14 cells total—56% of the grid—but only uses 1 jump. I need to find a configuration that forces at least 2 jumps to make the puzzle more interesting.
+
+Attempting a second jump by modifying the grid: from [3][4] at height 2, I can jump over [3][3] at height 0 to land on [3][2] also at height 2. This creates the second jump. From [3][2], I can reach [3][1] at height 3, but [3][0] at height 5 is unreachable, and [4][2] at height 5 is also out of range.
+
+After adjusting [3][1] to height 2, I can make a third jump from [3][2] to [3][1]. But now I'm blocked—[3][0] at height 5 is too high, and all adjacent cells ([4][1] at height 5, [2][1] at height 4) are unreachable. I'm at an impasse with this configuration.
+
+Let me reconsider the grid layout. Moving B to [4][3] and adjusting the surrounding heights to create a path: [3][3] becomes height 1, [3][4] becomes height 1, and [4][4] becomes height 1. This opens up a sequence where I can jump from [0][0] at height 5 across [0][1] and over [0][2] to reach [0][3], then continue through [0][4], [1][4], and down to [1][3].
+
+From there, I descend through [1][2] (height 4), [2][2] (height 3), [2][3] (height 2), [2][4] (height 2), and finally reach either [3][4] or [4][4] (both height 1) before landing on B at [4][3]. However, this still only gives me one jump. To force additional jumps, I need to create more gaps in the grid—perhaps by setting [2][3] to height 0 so I can't reach it directly from [2][2], forcing a detour through [2][1] or [3][1] instead. [0][1] height 5
+- [0][2] height 0 - can jump over to [0][3]
+- [0][3] height 5
+- [0][4] height 5
+- [1][4] height 5
+- [1][3] height 4
+- [1][2] height 4
+- [2][2] height 3
+- [2][1] height 4
+- [3][1] height 4
+- [3][2] height 3
+- [3][3] height 2
+- [3][4] height 1
+- [4][4] height 1
+- [4][3] B height 0
+
+This covers 16 cells total, reaching 64% of the grid with just one jump across the gap. Now I'm exploring whether I can introduce additional jumps by placing same-height platforms strategically.
+
+Testing a configuration with matching heights at [1][2]=4 and [3][2]=3 doesn't work since they're different. Adjusting [3][3] to height 4 creates a reachable platform from [1][2], but [3][4] at height 1 becomes unreachable from there. I'm trying different arrangements like setting [2][3] to height 4 to extend the path, though [2][4] at height 2 still can't be reached from a height-4 platform.
+
+Exploring another grid where [0][0] starts at A with height 5, then [0][1] also at height 5 allows a jump over [0][2] to reach [0][3] at height 5, continuing to [0][4] and [1][4], but [1][3] at height 4 becomes inaccessible from the height-5 positions.
+
+I need to construct a path with two distinct jumps. Let me map this out: start at height 5, jump across a gap, maintain height 5, descend to some intermediate height X, then jump again across another gap while at height X, before descending further to 0. Testing a new configuration where [0][0] is A at height 5, [0][1] is 5, [0][2] is 0, [0][3] is 5, [0][4] is 5, with subsequent rows building in heights 5, 3, 3, 5 and lower values to create the necessary gaps and landing points. height 3, but [3][4] at height 1 is unreachable. Exploring [2][4] height 2 leads to [3][4] height 2, then [3][3] height 2. From [3][3], I can't jump to [3][1] since they're different heights, and [4][3] where B is located (height 0) isn't reachable from [3][3]. Looking for alternative paths with potential second jumps to reach the destination.
+
+Testing [2][2] height 2 and [2][3] height 3 - the latter is reachable but [2][4] height 2 cannot be reached from there. Adjusting the grid to [2][3] height 3 opens up multiple reachable positions: [2][4] height 2, [3][4] height 2, and [3][3] height 2. From [3][3], I'm checking if a jump to [3][1] is possible, though the heights need to match for this to work.
+
+With [3][1] now height 2, I can reach adjacent cells like [3][0] height 1 and several cells in row 4. More importantly, there's a jump opportunity from [3][1] to [3][3] since both have height 2 and the intermediate cell [3][2] height 1 is lower - this jump is valid. The path is forming: starting at [0][0] A height 5, moving to [0][1] height 5, then jumping over [0][2] to reach [0][3]. 3][3] height 2
+- [3][4] height 1 - reachable
+- [4][4] B height 0
+
+I should verify if going through [2][1] and [3][1] is actually necessary. From [2][2], I can reach [2][3] directly, and from there [2][4] or [3][3] are both accessible without needing the jump. This means [3][3] can be reached via the straightforward path, so I need to reconsider the grid to force a different route.
+
+Trying a modified layout where [3][4] becomes unreachable from [3][3], but this creates new issues—[3][4] at height 0 can't be reached from [2][4] at height 2. Adjusting again to keep [3][3] at height 2 and [3][4] at height 1 works, since [4][3] and [4][2] are now height 0, allowing a direct path from [3][4] to the goal at [4][4].
+
+Testing a forced jump sequence: starting from A at [0][0], I can jump over [0][2] to reach [0][3], then continue through [0][4], [1][4], [1][3], [1][2], [2][2], [2][3], [2][4], [3][4], and finally [4][4] to reach B—but this still only uses one jump. Blocking [2][3] by setting it to height 0 prevents that path, forcing the route through [2][1] and [3][1] instead.
+
+Adjusting heights systematically: when [3][1] is height 4, I can't reach [3][2] (height 1) or [3][0] (height 1) from there. Lowering [3][1] to height 3, then 2, still blocks access to [3][2]. The pattern continues as I test different height configurations to find a valid jumping sequence. The jump from [3][1] to [3][3] over the blocked [3][2] now works as a mandatory jump of distance 2. From [3][1], I can also reach [3][0] and [4][1], but the path through [3][3] becomes the critical route. Checking from [2][1], the only viable move is to [3][1], which then forces the jump sequence toward the goal. ] height 5
+- [1][3] height 4
+- [1][2] height 4
+- [2][2] height 3
+- [2][1] height 3
+- [3][1] height 2
+- Jump to [3][3] over [3][2] height 0 - Jump 2
+- [3][3] height 2
+- [3][4] height 1
+- [4][4] B height 0
+
+This gives 14 cells visited, which is 56% of the grid. The solution uses exactly 2 jumps to navigate around the obstacles. Checking against the requirements: A is at height 5, B is at height 0, the path covers more than 20% of cells, and there's only one valid route through the maze.
+
+Now I need to verify no single elevation dominates more than 30% of the grid. Looking at the distribution: height 0 appears in 5 cells (20%), height 2 in 6 cells (24%), with heights 1, 3, 4, and 5 each comprising 8% or less. All elevation levels stay within the 30% threshold.
+
+To confirm this is the only valid solution, I should check whether alternative paths exist from the starting point. From A at [0][0], I can branch to either [0][1] or [1][0], both at height 5. Following [1][0] leads through [1][1] and [1][2] before converging back to the main path. The key constraint is that once I reach certain cells like [2][2], the remaining path becomes determined, limiting how many truly distinct solutions are possible.
+
+However, I notice there's actually an alternate route: from [2][2], I could go directly to [2][3] instead of [2][1], then continue through [2][4] to [3][4] and reach B. This would bypass the second jump entirely, creating a second valid solution. To ensure uniqueness, I need to modify [2][3] to block this shortcut.
+
+Let me revise the grid:
+
+A5055
+55445
+03532
+12021
+2201B
+
+Now [2][3] has height 5, making it unreachable from [2][2] (height 3). This forces the path through [2][1], then [3][1], requiring the jump to [3][3], continuing to [3][4], and finally reaching B. The solution is now unique. height 5
+- [1][3] height 4
+- [1][2] height 4
+- [2][2] height 3
+- [2][1] height 3
+- [3][1] height 2
+- Jump to [3][3] over [3][2] height 0 - Jump 2
+- [3][3] height 2
+- [3][4] height 1
+- [4][4] B height 0
+
+This path covers 14 cells total, which is 56% of the grid. The height distribution shows 5 cells at height 0 (20%), 2 cells at height 1 (8%), and the remaining cells distributed across heights 2-5, keeping the lowest elevations well under the 30% threshold. [3][2] height 0 - can't reach
+
+From [2][3]:
+- [1][3] height 4 - can reach but already visited
+- [2][4] height 2 - can't reach (diff = 2)
+- [3][3] height 2 - can't reach (diff = 2)
+
+So [2][3] doesn't open any new paths. The distribution looks solid with no cell exceeding the 30% threshold.
+
+Now I'll verify the grid layout matches the coordinates. Row 0: A5055, Row 1: 55445, Row 2: 03432, Row 3: 12021, Row 4: 2201B. Checking the first few positions: [0][0]=A(5), [0][1]=5, [0][2]=0, [0][3]=5, [0][4]=5, [1][0]=5, [1][1]=5, [1][2]=4, [1][3]=4, [1][4]=5, [2][0]=0.
+
+I need to verify [2][2] and [2][3] are correct—they should be 4 and 3 respectively. Looking back at my original design, I had [2][3] as 0 initially, then updated it. Let me confirm the current version is accurate.
+
+From [2][3] at height 3, I can reach [3][3] at height 2 without jumping, which creates an unwanted path. I'll increase [2][3] to 5 to block this connection.
+
+But that creates too many cells at height 5 (32% of the grid). Instead, I'll try setting [2][3] to 9, which prevents the jump from [2][2] at height 3 while keeping the height distribution more balanced—height 0 occupies 20% of cells, and height 1 takes up the remaining portion needed. ][3] = 2 cells (8%)
+Height 5: [0][0]=A, [0][1], [0][3], [0][4], [1][0], [1][1], [1][4] = 7 cells (28%)
+Height 9: [2][3] = 1 cell (4%)
+
+All under 30%! Good!
+
+A5055
+55445
+03092
+12021
+2201B
+
+Now I need to trace through the path: starting at A with height 5, I move through [0][1] and [0][3] (jumping over the height 0 at [0][2]), then continue along [0][4], [1][4], and down through the remaining cells to reach B. The jump count is 1, which satisfies the constraint.
+
+Continuing from [1][3] down through [1][2], [2][2], [2][1], [3][1], I encounter another height 0 at [3][2] requiring a second jump to [3][3]. From there, the path proceeds through [3][4] to B at height 0. The total path covers 14 cells (56%) with exactly 2 jumps, meeting all requirements. I've checked alternate routes—going through [2][3] leads nowhere due to its extreme height, while other branches merge back into the main path.
+
+### Subpass 1
+
+Attempt Metadata:
+- question_id: 7
+- subpass: 1
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 0
+
+Original Prompt:
+(none)
+
+Verifier Signal:
+Skipped due to earlyFail (first subpass scored under 0%)
+
+Raw Output:
+(none)
+
+Chain of Thought:
+(none)

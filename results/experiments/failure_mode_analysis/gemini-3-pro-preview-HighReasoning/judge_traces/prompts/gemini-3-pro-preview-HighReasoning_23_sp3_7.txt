@@ -1,0 +1,193 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 3, 7
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q23: Fluid simulation
+- Source file: `23.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Evaluate simulator-aware terrain editing: craft earthworks that induce target water behavior after rainfall and voxel physics.
+
+## Output Contract
+- Return JSON with `reasoning` and `earthworks`.
+- `earthworks` is list of edits with `xyzMin`, `xyzMax`, and `material` (`Rock` or `Air`).
+- Invalid edits may be skipped by grader; overall plan is still judged by simulation outcomes.
+
+## Hard Constraints (Verifier-Checked)
+- `earthworks` list and edit schema.
+- Edit bounds within world dimensions.
+- Rock stability and post-edit simulation effects.
+- Subpass-specific water objectives (surface area, counts, depth, levels, visibility, exact totals, etc.).
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `earthworks must be a list` | Contract failure | `Evasion`, `Trivialized` |
+| `Found X water voxels ...` / `Found X bodies ...` | Objective metric summary | `Near-Miss`, `Local-Only` |
+| `No ring-shaped lake found` | Required morphology not achieved | `Local-Only` |
+| `Found N visible water voxels - must have NO visible water` | Hidden-water constraint failure | `Local-Only` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Missing/empty earthworks with no meaningful attempt.
+- `Trivialized / Misframed`: Edits ignore simulator objective (e.g., random/no-op plan).
+- `Runaway Overthinking`: COT shows spiraling edit planning that produces a complex program failing diverse objective dimensions simultaneously.
+- `Local-Only (Global Constraint Integration Failure)`: Some metrics improve but multi-condition objective fails globally.
+- `Near-Miss Edge Case`: Close on counts/depth/levels with one threshold miss.
+
+## Judge Input Bundle
+1. Prompt and subpass objective.
+2. Raw output.
+3. Parsed earthworks.
+4. Verifier simulation summary.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q23 with one failure mode.
+Focus on simulator metrics and objective thresholds over qualitative prose.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+
+Attempts:
+### Subpass 3
+
+Attempt Metadata:
+- question_id: 23
+- subpass: 3
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1779
+
+Original Prompt:
+You are given a 3D voxel world, of dimensions 40 * 40 * 8 voxels,
+currently filled with rock uniformly flat and solid at the layers z = [0,1,2]
+
+Rainfall occurs at the top centre of the world, and follows the following rules:
+- If air is below water, the water falls (z = z - 1)
+- If water has ground or water below it, it "flood fills" out looking for any air voxels 
+  at the z level below it, and moves to the nearest one.
+- If water touches the sides or bottom of the world, it falls off and is lost forever.
+- If water can't find a reachable air voxel to move to, it remains there as a pool of water.
+
+Since the world is currently flat, rainfall currently all runs off the edge of the map,
+meaning earthworks are required to achieve your goals. After your earthworks complete, 
+there will be 1000s of voxels worth of rainfall (mostly centred at the centre of the world)
+before your world is graded.
+
+You can specify earthworks using a simple json format:
+{
+  "earthworks" : [
+    {
+      "xyzMin": [2, 2, 3],
+      "xyzMax": [6, 6, 3],
+      "material": "Rock"
+    },
+    {
+      "xyzMin": [3, 3, 3],
+      "xyzMax": [5, 5, 3],
+      "material": "Air"
+    }
+  ]
+}
+This would add a 5x5 slab of rock at z = 3, and remove a 3x3 hole from it, leaving a
+ring of rock at z = 3. This would capture 9 voxels of water. 
+
+Rock connected (orthogonally) to other rock is rigid and supports itself, allowing caves, tunnels,
+bridges, overhangs, and promontories. Floating rock without any support structure will 
+obviously fall to the ground.
+
+Now you understand the format - here is the task I need help with:
+
+Add rock or air voxels to the world in order to ensure that after the rains end,
+there is an underground lake of at least 10 voxels in volume, but no water voxels are visible from above.
+
+Verifier Signal:
+Found 1 visible water voxels - must have NO visible water
+
+Raw Output:
+{'reasoning': "To create an underground lake of at least 10 voxels without it being visible from above, I will construct a covered reservoir system. \n\n1. **Chamber Construction**: I'll build a 11x11 rock box on top of the existing surface (z=3 walls, z=4 roof). This structure acts as the catchment and cover. The roof creates a large surface area to catch rain and funnel it to a single inlet hole at the center (20,20,4).\n\n2. **Offset Inlet**: Directly below the inlet hole, I place a 'Splasher' block at (20,20,3). When rain hits this block, it disperses laterally. This prevents a direct line of sight from the inlet hole to the water storage below, satisfying the 'not visible' condition.\n\n3. **The Pit (Reservoir)**: I will dig a pit into the existing floor (z=1,2) adjacent to the splasher (x=21..23, y=19..22). Water falling from the splasher will fill this pit. The bottom layer of the pit (z=1) provides 12 voxels of storage (3x4). This water is trapped by rock walls at z=1 and cannot drain.\n\n4. **Overflow & Drain**: To prevent the reservoir from overfilling and backing up into view, I create an overflow channel at z=2 leading to a vertical drain at x=25. Any water rising above the storage level (z=1) flows out and falls off the world, keeping the visible areas dry.", 'earthworks': [{'xyzMin': [15, 15, 3], 'xyzMax': [25, 25, 4], 'material': 'Rock'}, {'xyzMin': [16, 16, 3], 'xyzMax': [24, 24, 3], 'material': 'Air'}, {'xyzMin': [20, 20, 4], 'xyzMax': [20, 20, 4], 'material': 'Air'}, {'xyzMin': [20, 20, 3], 'xyzMax': [20, 20, 3], 'material': 'Rock'}, {'xyzMin': [21, 19, 1], 'xyzMax': [23, 22, 2], 'material': 'Air'}, {'xyzMin': [24, 20, 2], 'xyzMax': [24, 20, 2], 'material': 'Air'}, {'xyzMin': [25, 20, 0], 'xyzMax': [25, 20, 2], 'material': 'Air'}]}
+
+Chain of Thought:
+(none)
+
+### Subpass 7
+
+Attempt Metadata:
+- question_id: 23
+- subpass: 7
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1082
+
+Original Prompt:
+You are given a 3D voxel world, of dimensions 48 * 48 * 8 voxels,
+currently filled with rock uniformly flat and solid at the layers z = [0,1,2]
+
+Rainfall occurs at the top centre of the world, and follows the following rules:
+- If air is below water, the water falls (z = z - 1)
+- If water has ground or water below it, it "flood fills" out looking for any air voxels 
+  at the z level below it, and moves to the nearest one.
+- If water touches the sides or bottom of the world, it falls off and is lost forever.
+- If water can't find a reachable air voxel to move to, it remains there as a pool of water.
+
+Since the world is currently flat, rainfall currently all runs off the edge of the map,
+meaning earthworks are required to achieve your goals. After your earthworks complete, 
+there will be 1000s of voxels worth of rainfall (mostly centred at the centre of the world)
+before your world is graded.
+
+You can specify earthworks using a simple json format:
+{
+  "earthworks" : [
+    {
+      "xyzMin": [2, 2, 3],
+      "xyzMax": [6, 6, 3],
+      "material": "Rock"
+    },
+    {
+      "xyzMin": [3, 3, 3],
+      "xyzMax": [5, 5, 3],
+      "material": "Air"
+    }
+  ]
+}
+This would add a 5x5 slab of rock at z = 3, and remove a 3x3 hole from it, leaving a
+ring of rock at z = 3. This would capture 9 voxels of water. 
+
+Rock connected (orthogonally) to other rock is rigid and supports itself, allowing caves, tunnels,
+bridges, overhangs, and promontories. Floating rock without any support structure will 
+obviously fall to the ground.
+
+Now you understand the format - here is the task I need help with:
+
+Add rock or air voxels to the world in order to ensure that after the rains end,
+there is a ring-shaped lake (water surrounds a dry center of at least 3x3)
+
+Verifier Signal:
+No ring-shaped lake found surrounding a dry 3x3 center
+
+Raw Output:
+{'reasoning': "The world has a flat rock surface at z=0,1,2. Rain falls at the center (~24,24). To create a ring-shaped lake with a dry center, I will construct a structure at z=3. \n1. Build a large 28x28 square slab of Rock (z=3) centered on the map to act as the base container.\n2. Carve out a 26x26 square of Air (z=3) from the inside of that slab, leaving a 1-voxel thick outer retaining wall.\n3. Place a 4x4 square of Rock (z=3) back in the center of the hollowed area to act as the dry island.\n\nRain falling on the central island will flow off (seeking lower elevation or air) into the surrounding ring-shaped trough ('moat'). The outer wall prevents the water from draining off the edge of the map. Once the moat fills, excess water will spill over the outer wall, ensuring the central island remains a distinct dry rock feature surrounded by water.", 'earthworks': [{'xyzMin': [10, 10, 3], 'xyzMax': [37, 37, 3], 'material': 'Rock'}, {'xyzMin': [11, 11, 3], 'xyzMax': [36, 36, 3], 'material': 'Air'}, {'xyzMin': [22, 22, 3], 'xyzMax': [25, 25, 3], 'material': 'Rock'}]}
+
+Chain of Thought:
+(none)

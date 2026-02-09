@@ -1,0 +1,180 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 12, 14
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q04: Tetrahedron Shadow Coverage
+- Source file: `4.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Assess transformed-primitive composition: place tetrahedra so their projected shadow covers a target region while keeping transforms valid and solids non-intersecting. (Rotation is applied about the global origin *before* translation; the origin is not the tetrahedron centroid.)
+
+## Output Contract
+- Return JSON with `tetrahedrons`.
+- Each element has numeric `x,y,z,q0,q1,q2,q3`.
+- Quaternion is interpreted as orientation before translation.
+
+## Hard Constraints (Verifier-Checked)
+- Quaternion normalization tolerance.
+- Pairwise intersection checks between tetrahedra.
+- Coverage score against target projection (via volume-difference between projected shadow and a thin reference extrusion).
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `Quaternion is not normalised. 75% penalty.` | Transform validity failure | `Near-Miss`, `Local-Only` |
+| `Tetrahedrons i and j intersect. 50% penalty.` | Global assembly invalid | `Local-Only` |
+| `Result Volume:` / `Intersection Volume:` / `Difference Volume:` | Shadow coverage mismatch vs reference target | `Local-Only`, `Near-Miss` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Missing or malformed tetrahedron list.
+- `Trivialized / Misframed`: Tiny/simple placement that does not attempt target coverage.
+- `Runaway Overthinking`: COT shows the model spiraling on an overcomplicated approach (e.g. analytically deriving exact tiling) that produces diverse error types (malformed transforms AND runtime errors AND coverage failures).
+- `Local-Only (Global Constraint Integration Failure)`: Pieces locally placed but global coverage/intersection checks fail.
+- `Near-Miss Edge Case`: One normalization/intersection issue with otherwise close coverage.
+
+## Judge Input Bundle
+1. Prompt for current shape target.
+2. Raw model output.
+3. Parsed transform list.
+4. Verifier penalties/metrics.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q04 with one failure mode.
+Treat quaternion/intersection penalties as primary evidence, then coverage metrics.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+Attempts:
+### Subpass 12
+
+Attempt Metadata:
+- question_id: 4
+- subpass: 12
+- score: 0.2808953000325117
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1579
+
+Original Prompt:
+Here is the points and faces of a regular tetrahedron with all sides equal 1, resting on the Z=0 plane and with an edge along the X=0 plane:
+
+polyhedron(
+    points = [
+        [0, 0, 0],                               // 0
+        [1, 0, 0],                               // 1
+        [0.5, sqrt(3)/2, 0],                     // 2
+        [0.5, sqrt(3)/6, sqrt(2/3)]              // 3 (apex)
+    ],
+    faces = [
+        [0, 2, 1],   // base (oriented outward)
+        [0, 1, 3],
+        [1, 2, 3],
+        [2, 0, 3]
+    ],
+    convexity = 4
+);
+
+We define a 7-part rigid transform of (x,y,z,q0,q1,q2,q3), where q0,q1,q2,q3 is a normalised quaternion, and x, y, z are the translation.
+Rotation is defined around the 0,0,0 point (Which is NOT THE CENTRE), and is performed before translation.
+
+We create a scene with multiple tetrahedra, each with a different transform. Return the transforms of such a scene
+such that a shadow projected vertically (onto the Z=0 plane) fully covers an ellipse with semi-major axis 2 and semi-minor axis 1, centered at the origin.
+
+Use as many tetrahedra as you need, scoring is based on shadow coverage, not the number of tetrahedra used.
+
+Score will be deducted for:
+- any shadow outside of the square
+- redundant tetrahedra
+- non-normalised quaternions
+- intersection tetrahedra
+
+Verifier Signal:
+Result Volume:  0.95  
+      Reference Volume:  0.63  
+      Intersection Volume:  0.62  
+      Difference Volume:  0.30  
+     
+    Tetrahedrons 0 and 1 intersect. 50% penalty.Score was renormalised: 0.25 -> 0.28
+
+Raw Output:
+{'tetrahedrons': [{'x': -2, 'y': -0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': -1, 'y': -0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': 0, 'y': -0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': 1, 'y': -0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': -1.5, 'y': 0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': -0.5, 'y': 0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 0.5, 'y': 0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 1.5, 'y': 0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 2.5, 'y': 0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': -2.5, 'y': 0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': -1.5, 'y': 0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': -0.5, 'y': 0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': 0.5, 'y': 0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': 1.5, 'y': 0.433013, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': 0, 'y': 1.299038, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 1, 'y': 1.299038, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': -1, 'y': -0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 0, 'y': -0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 1, 'y': -0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': 2, 'y': -0.433013, 'z': 1, 'q0': 0, 'q1': 0, 'q2': 0, 'q3': 1}, {'x': -0.5, 'y': -1.299038, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}, {'x': 0.5, 'y': -1.299038, 'z': 0, 'q0': 1, 'q1': 0, 'q2': 0, 'q3': 0}]}
+
+Chain of Thought:
+(none)
+
+### Subpass 14
+
+Attempt Metadata:
+- question_id: 4
+- subpass: 14
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 2520
+
+Original Prompt:
+Here is the points and faces of a regular tetrahedron with all sides equal 1, resting on the Z=0 plane and with an edge along the X=0 plane:
+
+polyhedron(
+    points = [
+        [0, 0, 0],                               // 0
+        [1, 0, 0],                               // 1
+        [0.5, sqrt(3)/2, 0],                     // 2
+        [0.5, sqrt(3)/6, sqrt(2/3)]              // 3 (apex)
+    ],
+    faces = [
+        [0, 2, 1],   // base (oriented outward)
+        [0, 1, 3],
+        [1, 2, 3],
+        [2, 0, 3]
+    ],
+    convexity = 4
+);
+
+We define a 7-part rigid transform of (x,y,z,q0,q1,q2,q3), where q0,q1,q2,q3 is a normalised quaternion, and x, y, z are the translation.
+Rotation is defined around the 0,0,0 point (Which is NOT THE CENTRE), and is performed before translation.
+
+We create a scene with multiple tetrahedra, each with a different transform. Return the transforms of such a scene
+such that a shadow projected vertically (onto the Z=0 plane) fully covers a right triangle with legs of length 4 along the X and Y axes, centered at the origin.
+
+Use as many tetrahedra as you need, scoring is based on shadow coverage, not the number of tetrahedra used.
+
+Score will be deducted for:
+- any shadow outside of the square
+- redundant tetrahedra
+- non-normalised quaternions
+- intersection tetrahedra
+
+Verifier Signal:
+Result Volume:  1.16  
+      Reference Volume:  0.81  
+      Intersection Volume:  0.00  
+      Difference Volume:  1.96  
+     
+    Tetrahedrons 0 and 1 intersect. 50% penalty.
+
+Raw Output:
+{'tetrahedrons': [{'x': 0.0, 'y': 0.0, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.65, 'y': 0.0, 'z': 0.8, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.3, 'y': 0.0, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.95, 'y': 0.0, 'z': 0.8, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 2.6, 'y': 0.0, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 3.2929, 'y': 0.0, 'z': 0.8, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.0, 'y': 0.65, 'z': 1.6, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.65, 'y': 0.65, 'z': 2.4, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.3, 'y': 0.65, 'z': 1.6, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.95, 'y': 0.65, 'z': 2.4, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 2.6, 'y': 0.65, 'z': 1.6, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 3.2929, 'y': 0.65, 'z': 2.4, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.0, 'y': 1.3, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.65, 'y': 1.3, 'z': 0.8, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.3, 'y': 1.3, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.95, 'y': 1.3, 'z': 0.8, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 2.6, 'y': 1.3, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.0, 'y': 1.95, 'z': 1.6, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.65, 'y': 1.95, 'z': 2.4, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.3, 'y': 1.95, 'z': 1.6, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.95, 'y': 1.95, 'z': 2.4, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.0, 'y': 2.6, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.65, 'y': 2.6, 'z': 0.8, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 1.3, 'y': 2.6, 'z': 0.0, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.0, 'y': 3.2929, 'z': 1.6, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}, {'x': 0.65, 'y': 3.2929, 'z': 2.4, 'q0': 0.820473, 'q1': 0.424708, 'q2': 0.17592, 'q3': 0.339851}]}
+
+Chain of Thought:
+(none)

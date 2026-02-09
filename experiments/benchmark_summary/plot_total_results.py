@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Generate a grouped bar chart of benchmark scores per question across models."""
+"""Generate benchmark total-score bar charts across models.
+
+This script intentionally produces separate figures for:
+1) No-tools variants (main figure)
+2) Tools variants (appendix figure)
+"""
 from __future__ import annotations
 
 import json
 import re
 import sys
 from pathlib import Path
+from typing import Literal
 
 import matplotlib
 matplotlib.use("Agg")
@@ -24,6 +30,7 @@ _KNOWN_SUFFIXES = (
 _GROUP_LABELS = {
     "claude-sonnet-4-5": "Claude Sonnet 4.5",
     "gemini-3-pro-preview": "Gemini 3 Pro Preview",
+    "gpt-5.1": "GPT-5.1",
     "gpt-5.2": "GPT-5.2",
 }
 _FAMILY_SHADES = {
@@ -31,6 +38,21 @@ _FAMILY_SHADES = {
     "gemini": ("#8FB8DE", "#3A75B7"),
     "gpt": ("#8DC891", "#3F8B43"),
     "other": ("#B3B3B3", "#6E6E6E"),
+}
+
+# Paper-facing tweaks: allow suppressing numeric labels / placeholder annotations for
+# specific groups without changing the underlying results data.
+_HIDE_VALUE_LABEL_GROUPS = {
+    "base": {"gpt-5.1"},
+    "tools": set(),
+}
+_PLACEHOLDER_VALUE_LABELS = {
+    "base": {},
+    "tools": {},
+}
+_EXCLUDE_GROUPS_BY_VARIANT = {
+    "base": {"gpt-5.1"},
+    "tools": set(),
 }
 
 
@@ -48,6 +70,8 @@ def _canonical_group_name(model_name: str) -> str:
             if name.endswith(suffix):
                 name = name[: -len(suffix)]
                 changed = True
+    if name == "gpt-5.2-chat-azure":
+        name = "gpt-5.2"
     return name
 
 
@@ -65,7 +89,7 @@ def _display_label(group_name: str) -> str:
     return _GROUP_LABELS.get(group_name, group_name)
 
 
-def plot_benchmark_results(json_path: Path, output_path: Path) -> Path:
+def plot_benchmark_results(json_path: Path, output_path: Path, *, variant: Literal["base", "tools"]) -> Path:
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -104,28 +128,32 @@ def plot_benchmark_results(json_path: Path, output_path: Path) -> Path:
 
     rows = []
     for entry in grouped.values():
+        if entry["group_name"] in _EXCLUDE_GROUPS_BY_VARIANT[variant]:
+            continue
         base_variant = entry["base"]
         tools_variant = entry["tools"]
-        max_score = 0.0
-        if base_variant is not None:
-            max_score = max(max_score, float(base_variant["max"]))
-        if tools_variant is not None:
-            max_score = max(max_score, float(tools_variant["max"]))
-        base_score = float(base_variant["score"]) if base_variant is not None else 0.0
-        tools_score = float(tools_variant["score"]) if tools_variant is not None else None
-        final_score = tools_score if tools_score is not None else base_score
+        chosen = base_variant if variant == "base" else tools_variant
+        if chosen is None:
+            continue
+        max_score = float(chosen["max"])
+        raw_score = float(chosen["score"])
+        placeholder_label = _PLACEHOLDER_VALUE_LABELS[variant].get(entry["group_name"])
+        is_placeholder = placeholder_label is not None
+        final_score = 0.0 if is_placeholder else raw_score
         rows.append(
             {
+                "group_name": entry["group_name"],
                 "label": entry["label"],
                 "family": entry["family"],
-                "base_score": base_score,
-                "tools_score": tools_score,
                 "final_score": final_score,
+                "sort_score": raw_score,
                 "max_score": max_score,
+                "placeholder_label": placeholder_label,
             }
         )
 
-    rows.sort(key=lambda row: row["final_score"], reverse=True)
+    # Sort by the underlying score even if we are rendering a placeholder bar.
+    rows.sort(key=lambda row: row["sort_score"], reverse=True)
     labels = [row["label"] for row in rows]
     y = np.arange(len(rows))
     bar_height = 0.5
@@ -137,27 +165,23 @@ def plot_benchmark_results(json_path: Path, output_path: Path) -> Path:
 
     for index, row in enumerate(rows):
         base_color, tools_color = _FAMILY_SHADES.get(row["family"], _FAMILY_SHADES["other"])
-        base_score = row["base_score"]
-        tools_score = row["tools_score"]
+        color = base_color if variant == "base" else tools_color
         max_score = row["max_score"]
 
-        if base_score > 0:
-            ax.barh(index, base_score, bar_height, color=base_color, edgecolor="white", linewidth=0.5)
+        final_score = row["final_score"]
+        if final_score > 0:
+            ax.barh(index, final_score, bar_height, color=color, edgecolor="white", linewidth=0.5)
 
-        if tools_score is not None:
-            if base_score > 0:
-                low = min(base_score, tools_score)
-                high = max(base_score, tools_score)
-                ax.barh(index, high - low, bar_height, left=low, color=tools_color, edgecolor="white", linewidth=0.5)
-            else:
-                ax.barh(index, tools_score, bar_height, color=tools_color, edgecolor="white", linewidth=0.5)
+        group_name = row["group_name"]
+        placeholder = row["placeholder_label"]
+        if placeholder is not None:
+            ax.text(max_score * 0.02, index, f" {placeholder}", va="center", fontsize=9, fontweight="bold", color="#333")
+            continue
+        if group_name in _HIDE_VALUE_LABEL_GROUPS[variant]:
+            continue
 
-        final_score = tools_score if tools_score is not None else base_score
         final_pct = final_score / max_score * 100 if max_score > 0 else 0
-        if tools_score is not None and base_score > 0:
-            label = f" {base_score:.1f}->{tools_score:.1f}/{max_score:.0f}  ({final_pct:.1f}%)"
-        else:
-            label = f" {final_score:.1f}/{max_score:.0f}  ({final_pct:.1f}%)"
+        label = f" {final_score:.1f}/{max_score:.0f}  ({final_pct:.1f}%)"
         ax.text(final_score + max_score * 0.01, index, label, va="center", fontsize=9, fontweight="bold", color="#333")
 
     ax.set_yticks(y)
@@ -178,8 +202,12 @@ def plot_benchmark_results(json_path: Path, output_path: Path) -> Path:
 def main() -> None:
     json_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("results/results_by_question.json")
     output_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else Path("results/experiments/benchmark_summary")
-    out = plot_benchmark_results(json_path, output_dir / "benchmark_results.png")
-    print(f"Written to {out}")
+    out_main = plot_benchmark_results(json_path, output_dir / "benchmark_results.png", variant="base")
+    out_appendix = plot_benchmark_results(
+        json_path, output_dir / "benchmark_results_tools.png", variant="tools"
+    )
+    print(f"Written to {out_main}")
+    print(f"Written to {out_appendix}")
 
 
 if __name__ == "__main__":
