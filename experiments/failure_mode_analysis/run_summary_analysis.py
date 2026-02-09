@@ -444,7 +444,6 @@ def write_failure_mode_distribution_pie(rows: list[LabeledRow], output_dir: Path
               title="Class Counts",
               title_fontproperties={"weight": "bold", "size": 10})
 
-    ax.set_title("Failure Mode Distribution", fontsize=13, fontweight="bold", pad=14)
     ax.axis("equal")
 
   fig.savefig(path, dpi=150, bbox_inches="tight")

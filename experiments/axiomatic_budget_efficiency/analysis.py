@@ -156,7 +156,7 @@ def _write_metrics_csv(metrics: list[dict], output_dir: Path) -> Path:
   return path
 
 
-def _plot_metric(metrics: list[dict], *, y_key: str, y_label: str, title: str,
+def _plot_metric(metrics: list[dict], *, y_key: str, y_label: str,
                  output_path: Path) -> None:
   _LINE_COLOR = "#4E79A7"
   _MARKER_COLOR = "#4E79A7"
@@ -196,7 +196,6 @@ def _plot_metric(metrics: list[dict], *, y_key: str, y_label: str, title: str,
       ax.annotate(label, (x, y), textcoords="offset points", xytext=(ox, oy),
                   fontsize=9, fontweight="bold", color=_LABEL_COLOR, ha="center", va=va)
 
-  ax.set_title(title, fontsize=13, fontweight="bold", pad=14)
   ax.set_xlabel("Mean Realized Output Tokens", fontsize=10, labelpad=8)
   ax.set_ylabel(y_label, fontsize=10, labelpad=8)
   ax.grid(True, alpha=0.15, linewidth=0.8)
@@ -254,12 +253,10 @@ def analyze_budget_sweep(model_configs: Iterable[dict], output_dir: Path = RESUL
   _plot_metric(metrics,
                y_key="accuracy",
                y_label="Accuracy",
-               title="Axiomatic Accuracy vs Realized Output Tokens",
                output_path=acc_plot)
   _plot_metric(metrics,
                y_key="invalid_rate",
                y_label="Invalid Rate (1 - Accuracy)",
-               title="Axiomatic Invalid Rate vs Realized Output Tokens",
                output_path=invalid_plot)
   summary_md = _write_summary_md(metrics, output_dir)
 
