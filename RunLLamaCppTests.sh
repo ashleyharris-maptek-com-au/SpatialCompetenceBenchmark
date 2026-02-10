@@ -14,7 +14,7 @@ runTest() {
 
     sleep 300 # The model needs to download and run an empty inference to warm up.
 
-    python MeshBenchmark.py -m "$model" --api-timeout 14400
+    python MeshBenchmark.py -m "$model" --api-timeout 28800
     
     kill $TaskId
 
