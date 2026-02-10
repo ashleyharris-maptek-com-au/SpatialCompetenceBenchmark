@@ -144,6 +144,10 @@ export XAI_API_KEY="your-xai-grok-key"
 export AWS_ACCESS_KEY_ID="your-aws-access-key"
 export AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
 export AWS_DEFAULT_REGION="your-aws-region"
+
+# Self hosted models
+export LLAMACPP_BASE_URL=http://localhost:8080
+export LLAMACPP_MODEL_NAME="deepseek-v2.5"
 ```
 
 OpenAI and Gemini should be considered 'required' and all others 'optional'. The reason

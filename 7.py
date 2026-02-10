@@ -360,7 +360,7 @@ def resultToNiceReport(result, subPass, aiEngineName, path=None, alt_path=None):
 def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
   if not isinstance(answer, str):
     print("Wrong type: " + str(answer))
-    return 0, "Answer was not a string"
+    return 0, "Answer was missing or invalid"
 
   answer = answer.strip()
 
