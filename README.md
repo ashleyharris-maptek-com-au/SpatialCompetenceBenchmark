@@ -267,3 +267,4 @@ cases, or even non-regular cases, and links to a paper solving the even case.
 - Constraints solver - like what freeCAD can do in sketch mode. Eg point1 and point2
   must be on circle1, line 1 connects points 1 and 2. Point 3 must be 7m meters from point 1.
   What is the radius of circle 1? That sorta thing.
+- Trace the coastlines of (Australia?) using only these 3 operations. WalkNKm, TurnLeftNDegrees, TurnRightNDegrees
