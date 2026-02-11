@@ -1,0 +1,49 @@
+**Optimal File Format Design for Terrestrial LiDAR Point Clouds: A Technical Report**
+
+Given the scale (10⁸–10¹¹ points), hardware constraints (12-bit intensity, 16 GHz timestamp, 20-bit angles), and application domain (static and mobile infrastructure scanning), a purpose-built, immutable binary format—* называемый * **LiDAR-SF** (*Scan Format*)—is recommended. Below are key optimizations, categorized by viability.
+
+### ✅ Wise Optimizations (High Priority)
+
+1. **Lossy Quantization within Specified Tolerances**  
+   - *Timestamps*: 16 GHz ≈ 62.5 ps resolution. Storing full 64-bit integers is wasteful. Use *differential coding*: store first timestamp exactly (32 bits), then delta in 16–20 bits using a histogram-based predictor (e.g., median-of-3 neighbors). Typical deltas are < 100 μs, so 16 bits suffice with negligible error.
+   - *Angles*: 20-bit resolution = ~0.000095°. Round to 18 bits (≈0.38 μrad angular resolution), reducing per-point size by 25%. This matches mechanical jitter (±0.001° typical).
+   - *Intensity*: Quantize 12-bit to 10 bits (1024 levels) using a perceptually uniform mapping—retaining signal-to-noise fidelity while enabling better compression.
+
+2. **Grouped Multi-Return Encoding**  
+   - Pack all returns per laser shot as a *return block*. Store base azimuth/elevation (shared), then *relative offsets* (azim, elev, range) for subsequent returns. For glass/water, 2–3 returns are common; foliage yields 5–10. Use run-length encoding (RLE) for zero-return beams (atmospheric shots), which constitute ~5–15% of data.
+
+3. **Hierarchical Spatial Indexing**  
+   - Embed a *compressed voxel grid* (e.g., 10 cm³ cells) at file head. Each cell contains:  
+     - Point count  
+     - Bounding box (12-bit quantized)  
+     - Offset to compressed point block  
+   - Enables fast, O(1) spatial queries and enables region-of-interest (ROI) streaming.
+
+4. **JPEG XR for Co-registered Image Data**  
+   - Embed RGBA images as JPEG XR (lossy or lossless). Its 2×2 block alignment matches LiDAR beam geometry; offers superior compression over PNG for correlated RGB channels.
+
+5. **Delta+Entropy Compression Pipeline**  
+   - Apply *Predictive Delta Compression* (e.g., prediction via Delaunay triangulation on local neighbors) → *Zstandard* (zstd) with custom dictionary trained on typical scan distributions. This yields ~40–60% compression (typical raw: 24–32 B/point; compressed: ~12 B/point).
+
+### ⚠️ Moderately Advisable Optimizations (Context-Dependent)
+
+6. **Octree-Based Reordering**  
+   - Reorder points by Morton code (Z-order curve) to improve spatial locality. *Wise only if scans are static*; for mobile data, frequent GPS updates cause large spatial jumps—avoid reordering or use *dynamic spatial hashing* instead.
+
+7. **Plane-Fitting Compression for Planar Surfaces**  
+   - Detect planes (e.g., walls, roads) and store plane parameters + residuals. Saves ~30% for buildings, but adds CPU overhead. Acceptable only if target use case prioritizes reconstruction fidelity over decode speed.
+
+### ❌ Unwise Optimizations (Avoid)
+
+8. **Over-Aggressive Lossy Range Quantization**  
+   - Reducing range from 32-bit float to 16-bit *half-float* may cause cm-level errors at long range (>100 m). Unacceptable for infrastructure (e.g., bridge deflection monitoring). *Stick to 24-bit fixed-point* (range ±1 km, 1 mm resolution).
+
+9. **Lossy Intensity Interpolation Between Beams**  
+   - Interpolating intensity from neighboring beams to avoid storing some values destroys albedo fidelity. Signal strength is critical for material classification.
+
+10. **Storing Raw Point Cloud as Text (e.g., CSV, LAS 1.4 uncompressed)**  
+    - LAS 1.4 is verbose (~28 B/point for Class 1 points). While interoperable, it lacks *our* domain-specific optimizations. Use LAS only as an *export* target, not primary format.
+
+### Conclusion
+
+The optimal format prioritizes *compression ratio*, *fast decompression*, and *spatial locality* within hardware tolerances. **Adopt quantization, differential encoding, grouped returns, JPEG XR images, and zstd-based entropy coding**. Avoid over-engineering for rare cases (e.g., >10 returns per beam). With these, files can achieve **~8× compression over raw float32 arrays**, enabling efficient cloud storage and real-time streaming—key for infrastructure operators.

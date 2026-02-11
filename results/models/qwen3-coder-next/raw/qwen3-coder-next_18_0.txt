@@ -1,0 +1,153 @@
+// OpenSCAD file for the Pharaoh's Pyramid
+// Units: millimeters (mm)
+// Based on 100,000 workers, 20,000 large stones (50 cm = 500 mm cubes)
+// Each stone requires 10 men → max 10,000 stones movable concurrently
+// But total stones available = 20,000, and all must be used in the pyramid
+// Pyramid must be solid (no internal voids), each stone placed centered on four supporting stones below.
+
+// Strategy:
+// A solid pyramid with square cross-section layers.
+// Layer k (from base, k=0 at bottom) has side length n_k stones.
+// For a solid pyramid, n_k = n_0 - 2k (since each upper layer sits centered, reducing by 2 per side).
+// Total stones = sum_{k=0}^{h-1} (n_0 - 2k)^2, where h = number of layers (height in stones).
+// Maximize h such that total stones ≤ 20,000.
+
+// Compute maximum h:
+// Known: sum_{k=0}^{h-1} (n - 2k)^2 = h*n^2 - 2n*h*(h-1) + (4/6)*h*(h-1)*(2h-1)
+// But easier: try values.
+
+// Let's find max h with sum ≤ 20000:
+// h=25: base n=25 → 25²+23²+...+1² = sum of odd squares from 1 to 25 = (25)(26)(51)/6 - 4*sum_{i=1}^{12} i²? 
+// Instead compute iteratively:
+
+// Better: known formula for sum of squares of first m odd numbers (1²+3²+...+(2m-1)²) = m(4m²-1)/3
+// But here n_k = n_0 - 2k, starting at n_0 (odd or even).
+// Try n_0 = 45 (odd): layers 45,43,...,1 → m = 23 layers (since (45-1)/2 +1 = 23)
+// Sum = sum_{i=1}^{23} (2i-1)² = 23*(4*23² -1)/3 = 23*(4*529 -1)/3 = 23*(2116-1)/3 = 23*2115/3 = 23*705 = 16,215
+
+// Try n_0=47: layers 47,45,...,1 → m=24
+// Sum = 24*(4*24² -1)/3 = 24*(4*576 -1)/3 = 24*(2304-1)/3 = 24*2303/3 = 8*2303 = 18,424
+
+// Try n_0=49: m=25
+// Sum = 25*(4*625 -1)/3 = 25*(2500-1)/3 = 25*2499/3 = 25*833 = 20,825 > 20,000 → too many
+
+// So max n_0=47, h=24 layers, total stones = 18,424 (≤20,000). Wait — can we add more to base?
+
+// Actually, if n_0 is even: e.g., n_0=48 → layers 48,46,...,2 → m=24 layers
+// Sum = sum_{k=1}^{24} (2k)² = 4 * sum_{k=1}^{24} k² = 4 * 24*25*49/6 = 4 * (24/6)*25*49 = 4*4*25*49 = 16*1225 = 19,600
+
+// n_0=50: m=25 layers (50,48,...,2)
+// Sum = 4 * sum_{k=1}^{25} k² = 4 * 25*26*51/6 = 4 * (25*26*51)/6
+// 26/2=13, 6/2=3 → 4 * (25 * 13 * 51)/3 = 4 * (25*13*17) = 4 * 5525 = 22,100 > 20,000
+
+// So n_0=48 gives 19,600 stones → 400 stones remaining unused. But pharaoh has 20,000 stones, and we can only use ≤20,000.
+// Can we do better? Try n_0=49 but remove some stones? No — must be solid, no voids.
+
+// Alternative: n_0=49, but top layer may be incomplete? But problem says "no internal voids" and "each stone must have all 4 base corners sitting in the middle of another stone". So pyramid must be a perfect solid square pyramid — every layer fully filled.
+
+// Therefore maximum full solid pyramid uses 19,600 stones (n_0=48, h=24) or 18,424 (n_0=47). 19,600 > 18,424, so n_0=48 is better.
+
+// Check: 19,600 ≤ 20,000 → yes.
+
+// Height in stones: 24 layers.
+// Each stone height = 500 mm → total height = 24 * 500 = 12,000 mm = 12 meters.
+
+// But wait — can we add a 25th layer? With n_0=48, next layer would be 46, but we already have 24 layers (48→2), so 25th would be 0? No.
+
+// What if we build a pyramid with base 48 and then add a smaller cap? But then the cap would not be centered on the main pyramid unless aligned. Actually, the only way to use more stones is to increase base.
+
+// Try rectangular base? Problem says "pyramid" (implied square base), and "centred over the tomb", and stones placed with corners in middle of supporting stones — only square lattices support this.
+
+// So best is n_0 = 48 stones per side, h = 24 layers.
+
+// However: 20,000 - 19,600 = 400 stones left. Can we use them to reinforce? No — the constraint is strict: no internal voids, and each stone must be fully supported. So we cannot add partial layers or fill voids.
+
+// Therefore: use exactly 19,600 stones, forming a solid square pyramid with base 48×48 stones, height 24 stones.
+
+// Dimensions:
+// Stone size: 500 mm × 500 mm × 500 mm
+// Base side length = 48 × 500 = 24,000 mm
+// Total height = 24 × 500 = 12,000 mm
+
+// Coordinate system:
+// Origin at tomb center, ground level (z=0).
+// Pyramid centered at (0,0,0), extending in +y (north), +x and -x, +z (up).
+// So base corners at (±12,000, ±12,000, 0) — wait: 48 stones × 500 mm = 24,000 mm side → half is 12,000 mm.
+
+// However: note that in OpenSCAD, y is up in 2D view but we want +y = north = forward. We'll use:
+// x: east-west (±)
+// y: north-south (+north, -south)
+// z: up
+
+// So base: from y = -12,000 to +12,000, x = -12,000 to +12,000, z = 0 to 12,000.
+
+// But layer k (0-indexed from bottom) has side length 48 - 2k stones.
+// Position of layer k:
+// z = k * 500
+// Half side = (24 - k) * 500  (since 48/2 = 24, subtract k)
+// So layer k extends from:
+// x ∈ [ -(24 - k)*500, (24 - k)*500 ]
+// y ∈ [ -(24 - k)*500, (24 - k)*500 ]
+// z ∈ [ k*500, (k+1)*500 ]
+
+// Generate using for loop.
+
+// Important: OpenSCAD uses integer coordinates — we use mm.
+
+// To ensure precision: all dimensions in mm, integers.
+
+// Final note: The stonemason needs a smooth external surface — but the pyramid is made of discrete cubes, so facade is stepped.
+// However, problem says: "facade will be done with wedges of marble", so this model provides the *core* geometry for marble cutting.
+// The output is the solid union of all stone cubes — precise to 1 mm.
+
+// Optimization: Use `union()` with `for` loop — 19,600 cubes is too many for real-time preview, but OpenSCAD can compile to CSG for rendering (though slow).
+// We can use `hull()`? No — need exact stepped shape.
+// Alternative: generate a single polyhedron? Too complex for 24 layers.
+
+// Given constraints, we generate the union. For practicality, we may use `children()` or modules, but OpenSCAD requires explicit.
+
+// However, 19,600 cubes → too slow. We need optimization.
+
+// Insight: Each layer is a solid square prism (a single block per layer), not individual cubes.
+// Since the pyramid is solid and no voids, we can represent each layer as one `cube([side, side, height], center=true)` or offset.
+
+// Yes! This is crucial — the problem doesn't require modeling individual stones, only the final solid geometry. And the pharaoh's plan is for the *final solid pyramid* (the core), which will be clad with marble.
+
+// So: layer k is a solid cube of side s_k = (48 - 2k)*500 mm, height = 500 mm, centered at (0,0,z_k) where z_k = (k + 0.5)*500.
+
+// This reduces geometry to 24 blocks → fast and precise.
+
+// Let's verify:
+// Layer k (0 to 23):
+// side = (48 - 2k) * 500
+// height = 500
+// center at (0, 0, (k + 0.5)*500)
+
+// In OpenSCAD:
+// translate([0,0,(k+0.5)*500]) cube([side, side, 500], center=true);
+
+// But note: `center=true` centers the cube at origin; we want y aligned so that +y is north, and center of base at (0,0,0).
+
+// Base layer (k=0): side = 48*500 = 24,000, center at (0,0,250) → extends from y = -12,000 to +12,000, z = 0 to 500 — perfect.
+
+// So union of 24 such cubes.
+
+// Code:
+
+$fn = 64; // smooth enough for preview, but actual is polyhedral
+
+// Generate the solid pyramid
+union() {
+    for (k = [0 : 23]) {
+        side = (48 - 2 * k) * 500;
+        translate([0, 0, (k + 0.5) * 500])
+            cube([side, side, 500], center = true);
+    }
+}
+
+// Note: This is the exact solid geometry of the pyramid, built from 24 solid layers, total 19,600 stone volumes (each 500³ mm³),
+// total volume = 19,600 * 125,000,000 mm³ = 2,450,000,000,000 mm³ = 2,450 m³.
+
+// The model is precise to 1 mm (all dimensions integer mm), centered over origin, facing +y (north).
+
+// End of file.
