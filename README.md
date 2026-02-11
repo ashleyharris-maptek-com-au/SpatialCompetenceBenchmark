@@ -218,6 +218,30 @@ I'm not the smartest human there is - but I think I'm a decent contender.
 
 "Tools" include everything humanity has invented and made available to me, including special tools, the AIs, and whatever compute, memory, spare time, and other resources a 39yr old geek can spare.
 
+## Bill shock protections
+
+The benchmark framework has protections to save your wallet, which need to be acknowledged in any research drawn from these results. The following compromises are made:
+
+- Early fail:
+  - Assuming failure of hard tasks if easy tasks are failed. This is call EarlyFail, and can be configured per test.
+  - If you can't lay out 4 pipes in a square or 3 pipes in a triangle, you're not going to be able to lay out 400 pipes in the shape of a world map.
+  - Early fail can be configured to sample multiple early runs, or have adjustable thresholds per test.
+  - This only works when tests are configured that the early subpasses are easiest, so it's opt-in.
+  - This can be turned off with --no-early-fail
+- Propagation upwards:
+  - Assuming a model can ace a test without tools or reasoning, assume that it will also pass with tools or reasoning.
+  - If version 3 of the model can ace a test, assume that version 4 also can.
+  - This works by sorting models based on capability, and propagating results between models with the same prefix.
+- API instability lock out:
+  - If the API fails 9 times in a row, assume it will fail again for the rest of the run.
+  - This can stop a run wasting days retrying when you've hit a spend limit or the network goes down.
+- Double caching:
+  - Results are cached in your temp directory and in the git repo.
+  - This allows runs performed on one machine to be used by another machine to save costs.
+- Eternal caching:
+  - Original design was for results to only be cached for a month, however the realities of API costs got in the way.
+  - You can turn this off by disabling POOR_MODE in CacheLayer.py
+
 ## License
 
 MIT
