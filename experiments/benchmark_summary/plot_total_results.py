@@ -4,11 +4,16 @@
 This script intentionally produces separate figures for:
 1) No-tools variants (main figure)
 2) Tools variants (appendix figure)
+
+Primary source is run summaries under ``results/models/*/run_summary.json`` for
+the three paper model families. A JSON fallback path is preserved for legacy use.
 """
 from __future__ import annotations
 
 import json
+import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Literal
@@ -34,10 +39,10 @@ _GROUP_LABELS = {
     "gpt-5.2": "GPT-5.2",
 }
 _FAMILY_SHADES = {
-    "anthropic": ("#F7B267", "#D67B00"),
-    "gemini": ("#8FB8DE", "#3A75B7"),
-    "gpt": ("#8DC891", "#3F8B43"),
-    "other": ("#B3B3B3", "#6E6E6E"),
+    "anthropic": ("#F7B267", "#F7B267"),
+    "gemini": ("#8FB8DE", "#8FB8DE"),
+    "gpt": ("#8DC891", "#8DC891"),
+    "other": ("#B3B3B3", "#B3B3B3"),
 }
 
 # Paper-facing tweaks: allow suppressing numeric labels / placeholder annotations for
@@ -53,6 +58,29 @@ _PLACEHOLDER_VALUE_LABELS = {
 _EXCLUDE_GROUPS_BY_VARIANT = {
     "base": {"gpt-5.1"},
     "tools": set(),
+}
+_INCLUDE_GROUPS_BY_VARIANT = {
+    "base": {"claude-sonnet-4-5", "gemini-3-pro-preview", "gpt-5.2"},
+    "tools": {"claude-sonnet-4-5", "gemini-3-pro-preview", "gpt-5.2"},
+}
+_RUN_SUMMARY_MODEL_DIRS = {
+    "base": {
+        "claude-sonnet-4-5": "claude-sonnet-4-5-HighReasoning",
+        "gemini-3-pro-preview": "gemini-3-pro-preview-HighReasoning",
+        "gpt-5.2": "gpt-5.2-HighReasoning",
+    },
+    "tools": {
+        "claude-sonnet-4-5": "claude-sonnet-4-5-Reasoning-Tools",
+        "gemini-3-pro-preview": "gemini-3-pro-preview-Reasoning-Tools",
+        "gpt-5.2": "gpt-5.2-Reasoning-Tools",
+    },
+}
+_TOOLS_BRANCH_FALLBACKS = {
+    "gemini-3-pro-preview": {
+        "branch_ref": "origin/iclr_2026",
+        "results_key": "gemini-3-pro-preview-Reasoning-Tools",
+        "target_max_score": 285.0,
+    },
 }
 
 
@@ -87,6 +115,126 @@ def _family_for_group(group_name: str) -> str:
 
 def _display_label(group_name: str) -> str:
     return _GROUP_LABELS.get(group_name, group_name)
+
+
+def _safe_float(value) -> float:
+    try:
+        return float(value)
+    except Exception:
+        return 0.0
+
+
+def _total_from_run_summary(path: Path) -> tuple[float, float]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    overall = data.get("overall")
+    if isinstance(overall, dict):
+        total_score = _safe_float(overall.get("total_score"))
+        max_score = _safe_float(overall.get("max_score"))
+        if max_score > 0:
+            return total_score, max_score
+
+    total_score = 0.0
+    max_score = 0.0
+    for test in data.get("tests", []):
+        mx = _safe_float(test.get("max_score"))
+        if mx <= 0:
+            mx = _safe_float(test.get("max"))
+        if mx <= 0:
+            continue
+        score = _safe_float(test.get("score"))
+        total_score += min(score, mx)
+        max_score += mx
+    return total_score, max_score
+
+
+def _total_from_branch_results_json(branch_ref: str, model_key: str) -> tuple[float, float] | None:
+    try:
+        blob = subprocess.check_output(["git", "show", f"{branch_ref}:results/results_by_question.json"])
+    except Exception:
+        return None
+    try:
+        data = json.loads(blob)
+    except Exception:
+        return None
+    if model_key not in data:
+        return None
+
+    total_score = 0.0
+    max_score = 0.0
+    for entry in data[model_key].values():
+        mx = _safe_float(entry.get("max"))
+        if mx <= 0:
+            continue
+        score = _safe_float(entry.get("score"))
+        total_score += min(score, mx)
+        max_score += mx
+    return total_score, max_score
+
+
+def _rows_from_run_summaries(results_models_dir: Path, *, variant: Literal["base", "tools"]) -> list[dict]:
+    rows = []
+    for group_name in sorted(_INCLUDE_GROUPS_BY_VARIANT[variant]):
+        model_dir_name = _RUN_SUMMARY_MODEL_DIRS[variant][group_name]
+        summary_path = results_models_dir / model_dir_name / "run_summary.json"
+        used_fallback = False
+        branch_fallback_used = False
+        total_score = 0.0
+        max_score = 0.0
+
+        if not summary_path.exists() and variant == "tools":
+            fallback_cfg = _TOOLS_BRANCH_FALLBACKS.get(group_name)
+            if fallback_cfg:
+                branch_totals = _total_from_branch_results_json(
+                    fallback_cfg["branch_ref"], fallback_cfg["results_key"]
+                )
+                if branch_totals is not None:
+                    total_score, max_score = branch_totals
+                    target_max_score = float(fallback_cfg.get("target_max_score") or 0.0)
+                    if target_max_score > 0 and max_score > 0 and abs(max_score - target_max_score) > 1e-9:
+                        total_score = total_score * (target_max_score / max_score)
+                        max_score = target_max_score
+                    branch_fallback_used = True
+
+        if not summary_path.exists() and variant == "tools":
+            fallback_model_dir = _RUN_SUMMARY_MODEL_DIRS["base"][group_name]
+            fallback_path = results_models_dir / fallback_model_dir / "run_summary.json"
+            if fallback_path.exists():
+                summary_path = fallback_path
+                used_fallback = True
+        if not summary_path.exists() and not branch_fallback_used:
+            raise FileNotFoundError(f"run_summary.json not found: {summary_path}")
+
+        if not branch_fallback_used:
+            total_score, max_score = _total_from_run_summary(summary_path)
+        if max_score <= 0:
+            continue
+        row = {
+            "group_name": group_name,
+            "label": _display_label(group_name),
+            "family": _family_for_group(group_name),
+            "final_score": float(total_score),
+            "sort_score": float(total_score),
+            "max_score": float(max_score),
+            "placeholder_label": None,
+        }
+        rows.append(row)
+        if branch_fallback_used:
+            fallback_cfg = _TOOLS_BRANCH_FALLBACKS[group_name]
+            print(
+                f"WARNING: Missing tools run for {group_name}; using "
+                f"{fallback_cfg['branch_ref']}:results/results_by_question.json "
+                f"({fallback_cfg['results_key']}) normalized to {max_score:.0f}.",
+                file=sys.stderr,
+            )
+        elif used_fallback:
+            print(
+                f"WARNING: Missing tools run for {group_name}; using no-tools run "
+                f"({summary_path.parent.name}) for tools chart.",
+                file=sys.stderr,
+            )
+
+    rows.sort(key=lambda row: row["sort_score"], reverse=True)
+    return rows
 
 
 def plot_benchmark_results(json_path: Path, output_path: Path, *, variant: Literal["base", "tools"]) -> Path:
@@ -128,6 +276,8 @@ def plot_benchmark_results(json_path: Path, output_path: Path, *, variant: Liter
 
     rows = []
     for entry in grouped.values():
+        if entry["group_name"] not in _INCLUDE_GROUPS_BY_VARIANT[variant]:
+            continue
         if entry["group_name"] in _EXCLUDE_GROUPS_BY_VARIANT[variant]:
             continue
         base_variant = entry["base"]
@@ -199,13 +349,73 @@ def plot_benchmark_results(json_path: Path, output_path: Path, *, variant: Liter
     return output_path
 
 
+def plot_benchmark_results_from_run_summaries(
+    results_models_dir: Path, output_path: Path, *, variant: Literal["base", "tools"]
+) -> Path:
+    rows = _rows_from_run_summaries(results_models_dir, variant=variant)
+    labels = [row["label"] for row in rows]
+    y = np.arange(len(rows))
+    bar_height = 0.5
+
+    fig, ax = plt.subplots(figsize=(10, max(2.5, len(labels) * 0.9 + 1)))
+
+    maxes = [row["max_score"] for row in rows]
+    ax.barh(y, maxes, bar_height, color="#E8E8E8", edgecolor="white", linewidth=0.5)
+
+    for index, row in enumerate(rows):
+        base_color, tools_color = _FAMILY_SHADES.get(row["family"], _FAMILY_SHADES["other"])
+        color = base_color if variant == "base" else tools_color
+        max_score = row["max_score"]
+        final_score = row["final_score"]
+
+        if final_score > 0:
+            ax.barh(index, final_score, bar_height, color=color, edgecolor="white", linewidth=0.5)
+
+        group_name = row["group_name"]
+        if group_name in _HIDE_VALUE_LABEL_GROUPS[variant]:
+            continue
+
+        final_pct = final_score / max_score * 100 if max_score > 0 else 0
+        label = f" {final_score:.1f}/{max_score:.0f}  ({final_pct:.1f}%)"
+        ax.text(final_score + max_score * 0.01, index, label, va="center", fontsize=9, fontweight="bold", color="#333")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=10, fontweight="bold")
+    ax.invert_yaxis()
+    ax.set_xlabel("Total Score", fontsize=10, labelpad=8)
+    ax.grid(axis="x", alpha=0.15, linewidth=0.8)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.tick_params(axis="x", labelsize=9)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return output_path
+
+
 def main() -> None:
-    json_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("results/results_by_question.json")
-    output_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else Path("results/experiments/benchmark_summary")
-    out_main = plot_benchmark_results(json_path, output_dir / "benchmark_results.png", variant="base")
-    out_appendix = plot_benchmark_results(
-        json_path, output_dir / "benchmark_results_tools.png", variant="tools"
-    )
+    parser = argparse.ArgumentParser(description="Plot SCBench benchmark totals.")
+    parser.add_argument("--json-path", default=None, help="Legacy source: results_by_question JSON.")
+    parser.add_argument("--results-models-dir", default="results/models", help="Directory containing model run_summary files.")
+    parser.add_argument("--output-dir", default="results/experiments/benchmark_summary")
+    args = parser.parse_args()
+
+    output_dir = Path(args.output_dir)
+    if args.json_path:
+        json_path = Path(args.json_path)
+        out_main = plot_benchmark_results(json_path, output_dir / "benchmark_results.png", variant="base")
+        out_appendix = plot_benchmark_results(
+            json_path, output_dir / "benchmark_results_tools.png", variant="tools"
+        )
+    else:
+        results_models_dir = Path(args.results_models_dir)
+        out_main = plot_benchmark_results_from_run_summaries(
+            results_models_dir, output_dir / "benchmark_results.png", variant="base"
+        )
+        out_appendix = plot_benchmark_results_from_run_summaries(
+            results_models_dir, output_dir / "benchmark_results_tools.png", variant="tools"
+        )
     print(f"Written to {out_main}")
     print(f"Written to {out_appendix}")
 

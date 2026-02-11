@@ -1,0 +1,76 @@
+**Exploring axis splitting**
+
+I’m looking at how we can compute extents from labels using a splitting axes cycle. Since the splitting is axis-aligned, each level should halve along the specified axis based on a cycle. Starting at the root with the cube [0,1]^3 (x,y,z), I notice that for level 1, the axis is z. The bit indicates whether it’s the lower or upper half, which we typically assume to be 0 for lower and 1 for upper. This bit sequence defines the intervals, and I’m mapping out how the cycle repeats after six steps with z returning again.
+**Calculating intervals from bits**
+
+I'm working with a target label represented as 0 1 1 1 1 1 0 0 in 8 bits. I’ll compute the intervals starting with x=[0,1], y=[0,1], z=[0,1]. 
+
+For each bit, I reassess the intervals: 
+
+- For the first bit (axis z, bit 0), I have the lower z interval as [0,0.5]. 
+- The second bit (also z, bit 1) splits this into [0.25,0.5]. 
+- Then, for each subsequent bit, I continue defining the upper halves for x and y where applicable, refining z further with each split. It feels like a bit of a puzzle, but it’s straightforward!
+**Finalizing interval calculations**
+
+I've got my final intervals mapped out: x is [0.75,1], y is [0.5,1], and z is [0.375,0.40625], giving z a width of 0.03125. I also notice that we’ve split more along z than x or y, which makes the cell elongated.
+
+Now, for neighbor checks in six directions: 
+
+- The x- neighbor has its face at x=0.75 with the same y and z ranges.
+- At x=1, being on the cube boundary means there's no x+ neighbor. 
+- The y- neighbor is at y=0.5, while y=1 has no y+ neighbor.
+- The z- neighbor's face is at z=0.375.
+**Identifying neighboring cells**
+
+I need to find an adjacent cell below with a z interval ending at 0.375, while keeping the same x and y ranges. For the z+ neighbor, its face is at z=0.40625, above my current cell, also sharing the same x and y ranges.
+
+Since this is an adaptive structure, there might be multiple leaf neighbors covering the face. The neighbor side could be subdivided further along other axes. I need to identify all leaves sharing any part of that face. Given the full tree listing, I can focus on those adjacent to 01111100 and perform neighbor-finding according to the tree structure, leveraging deterministic splits based on depth.
+**Finding neighbors in an adaptive tree**
+
+I'm exploring how to compute neighbors in this adaptive tree by examining adjacent regions and identifying leaves that intersect. We can calculate coordinates of each leaf for comparison, but a neighbor-finding algorithm based on binary strings might be more efficient. It’s like a k-d tree with cyclic axes, where splitting sequences depend on depth rather than region. By analyzing the depth and splitting axes, I can identify all leaves whose ranges intersect with the neighbor region, focusing specifically on those adjacent to our target cell. We'll have to ensure we map those intervals correctly to find neighboring cells that share a face.
+**Assessing adjacency of neighbor cells**
+
+I need to examine how neighbor cells may interact with my cell's intervals. If a neighbor has a maximum x of 0.75, it can only have an x interval of [0.5, 0.75]. For this to happen, the neighbor cell must have at least two splits along the x-axis, allowing a boundary at 0.75. Similarly, for the y boundaries, a neighbor must fall within [0, 0.5] adjacent to my cell’s maximum of 0.5. For z values, both depth and splits matter, ensuring boundaries align. The neighbor’s z-range must match the critical boundaries of my cell to ensure proper adjacency.
+**Examining neighbor boundary conditions**
+
+I’m looking into the boundaries of leaves in this partitioning system. The partitions align at specific dyadic coordinates, but for adjacency, neighboring leaves must share boundaries. In particular, a neighboring leaf can't have an interval that includes my cell without making it a subset, contradicting the requirement for disjoint leaves. 
+
+When considering z boundaries, each leaf must correspond to specific splits that ensure they remain distinct. For my cell at certain z values, I can trace boundaries back to their ancestral nodes, assessing how splits might define their neighbors while ensuring all intervals align properly along shared axes.
+**Identifying neighboring leaves**
+
+I'm trying to find all the leaves within node 01110 that share boundaries with my cell along the z-axis at 0.375. These leaves need to have overlapping x and y extents with my cell, which is defined as x [0.75,1] and y [0.5,1]. Since 01110’s z interval is [0.25,0.375], only leaves in 01110 that are in the upper portion can have a z-max of 0.375. 
+
+I’ll be checking the child nodes 011100 and 011101 at different depths to identify which ones are relevant and ensure they meet the requirements for adjacency.
+**Identifying neighbor leaves**
+
+I'm checking the y extents of the leaves within node 01110, which are confirmed as [0.5,1]. Next, for x extents, node 01110 at depth 5 has x intervals [0.5,1]. It's split at depth 6 into children 011100 and 011101, where 011101 corresponds to the upper half x [0.75,1] and 011100 corresponds to [0.5,0.75]. Our target overlaps with 011101, as 011100 only touches at a point. 
+
+Therefore, 011101 is the candidate for sharing the z- boundary with a z-max of 0.375. I'll analyze the z intervals for the leaves in 011101 next!
+**Finding z overlaps**
+
+All leaves with an x-max of 0.75 touch the plane at x=0.75 along the entire yz face, and they fully overlap in y at [0.5,1]. However, for z, it’s crucial that their z intervals intersect with [0.375,0.40625] to share a positive area. 
+
+I need to compute the z ranges for the leaves in node 011110. The z interval for 011110 is [0.375,0.5]. After the splits, the relevant ranges appear. The leaf 01111000 exactly overlaps with our target z range. So, only 01111000 shares an area, while others don’t!
+**Analyzing y-neighbors**
+
+I need to find the y-neighbors below y=0.5 that have a y-max of 0.5, overlapping the ranges of x [0.75,1] and z [0.375,0.40625]. Our cell sits in the upper y half, while the neighbor is in the lower half of an ancestor at depth 4, possibly under node 0110. 
+
+The subtree structure under node 0110 is complex, with leaves potentially reaching depth 8. I'll focus on identifying leaves that meet the criteria for x and z intervals as I compute their ranges. Let's find those relevant leaves!
+**Identifying neighbors based on coordinates**
+
+At depth 6, I determine the x-range based on the sixth bit of the labels. I find candidates for overlap in x [0.75,1], focusing on leaves like 011001, 01101100, and 0110111. I need to compute their z-intervals.
+
+Examining 01101100, I find it has a matching z range of [0.375,0.40625]. This overlaps my target coordinates perfectly. I confirm it as a neighbor that shares a face along the y plane. No other candidates meet the criteria for current overlaps. I will also check for any neighbors across cube boundaries.
+**Summarizing neighbor verification**
+
+I’ve identified four potential neighbors based on their positions: 01111000, 01101100, 01110111, and 01111101. To verify, I assess their overlaps along different axes. I confirm that these are indeed leaves in the tree structure and not subdivided nodes that would affect adjacency. I also determine that there’s only one neighbor across the z-face. However, I need to provide a summary within a <thinking> tag, stating that I can’t share the detailed chain but will summarize my rationale.
+**Evaluating potential neighbors**
+
+I'm considering neighbors for a cell with different depths and coordinate boundaries. I check for possible leaves at various depths and how they overlap. For the y-neighbor, I evaluate boundaries and whether a coarser neighbor could exist. I confirm that there are no leaves at certain depths and deduce that only specific leaves are valid neighbors. I then review axis patterns and splits during the computation process, ensuring that everything aligns correctly with the tree structure. Finally, I reassess neighbor adjacency across different axes.
+I'm processing the requirement for neighbors in a binary tree. I find that there is a single neighbor for each axis plane, confirming adjacency. The final list includes four labels, which I realize need to be formatted according to system instructions in JSON. Although the user requested a comma-separated list, I must prioritize the required JSON format and structure my output accordingly. Thus, I'll prepare the final output as a JSON object containing the list of neighbors as specified, ensuring compliance with the system's guidelines.
+I'm working on identifying all leaf nodes that share a face with the target voxel. It’s essential to ensure I only include true leaf nodes, not just siblings at the same depth. While I've found potential neighbors, I need to confirm they aren't larger internal cells. 
+
+Even though the user requests a comma-separated list, I ultimately need to deliver the output as JSON. I should opt for a sorted order like lexicographic for clarity and system compliance, even if the prompt doesn't specify. I’ll prepare the final labels accordingly.
+I'm examining the tree for neighbor queries and trying to determine the best way to organize my output. The target leaf is 01111100, and its identified neighbors are 01111000 (x-), 01101100 (y-), 01110111 (z-), and 01111101 (z+). I want to present these neighbors in a comma-separated list, preferably in lexicographic order.
+
+I'll structure my final response in JSON format with the key "neighbors" and ensure everything is accurate, keeping in mind that the order might not be crucial, but it’s best to choose lexicographic for clarity.
