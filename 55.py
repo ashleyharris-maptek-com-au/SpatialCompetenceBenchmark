@@ -140,7 +140,7 @@ def _build_subpass_summary():
 subpassParamSummary = _build_subpass_summary()
 promptChangeSummary = "Point sets vary per record (count/seed); triangulations must match the dataset ordering of indices."
 highLevelSummary = (
-  "Black dots show input points. Ground truth triangulation edges are green; model answers are blue. Points are labeled by index; "
+  "Black dots show input points. Ground truth triangulation edges are green; model answers are blue. Points are labelled by index; "
   "plots include both ground truth and model panels when available.")
 
 
