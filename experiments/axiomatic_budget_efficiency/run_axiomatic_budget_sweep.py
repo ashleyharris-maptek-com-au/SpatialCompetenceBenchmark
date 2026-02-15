@@ -16,6 +16,12 @@ def _parse_budgets(value: str) -> list[int]:
   return [int(part.strip()) for part in value.split(",") if part.strip()]
 
 
+def _parse_tests(value: str | None) -> list[int] | None:
+  if value is None or not value.strip():
+    return None
+  return [int(part.strip()) for part in value.split(",") if part.strip()]
+
+
 def main() -> None:
   parser = argparse.ArgumentParser(
     description="Run axiomatic spatial reasoning benchmark under output-token budgets.")
@@ -33,6 +39,17 @@ def main() -> None:
                       choices=("all", "tools", "no-tools"),
                       default="all",
                       help="Which model variants to run.")
+  parser.add_argument("--tests",
+                      default=None,
+                      help="Optional comma-separated test IDs (e.g. 54,57).")
+  parser.add_argument("--anthropic-thinking-budget",
+                      type=int,
+                      default=None,
+                      help=("Optional override for Anthropic thinking budget_tokens. "
+                            "Applied as-is (no local clamping/adjustment)."))
+  parser.add_argument("--reuse-cache",
+                      action="store_true",
+                      help="Use cached responses instead of forcing fresh API calls.")
   parser.add_argument("--dry-run",
                       action="store_true",
                       help="Write manifest and print planned configs without running models")
@@ -43,9 +60,12 @@ def main() -> None:
 
   result = run_axiomatic_budget_sweep(model_config_name=args.model_config_name,
                                       budgets=_parse_budgets(args.budgets),
+                                      test_ids=_parse_tests(args.tests),
                                       temperature=args.temperature,
                                       include_tools=include_tools,
                                       include_no_tools=include_no_tools,
+                                      anthropic_thinking_budget=args.anthropic_thinking_budget,
+                                      force=not args.reuse_cache,
                                       dry_run=args.dry_run)
 
   print(f"Manifest: {result['manifest']}")

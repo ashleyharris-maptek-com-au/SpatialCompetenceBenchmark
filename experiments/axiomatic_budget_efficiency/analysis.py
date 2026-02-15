@@ -211,6 +211,50 @@ def _plot_metric(metrics: list[dict], *, y_key: str, y_label: str,
   plt.close(fig)
 
 
+def _model_series(model_name: str) -> tuple[str, str] | None:
+  if model_name.startswith("gpt-5.2"):
+    return "GPT-5.2", "#4D9A67"
+  if model_name.startswith("claude-sonnet-4-5"):
+    return "Claude Sonnet 4.5", "#E39435"
+  return None
+
+
+def _plot_accuracy_two_model_lines(metrics: list[dict], output_path: Path) -> None:
+  series: dict[str, dict] = {}
+  for row in metrics:
+    model_name = row.get("model_name") or ""
+    resolved = _model_series(model_name)
+    if resolved is None:
+      continue
+    label, color = resolved
+    x = row.get("mean_output_tokens")
+    y = row.get("accuracy")
+    if x is None or y is None:
+      continue
+    if label not in series:
+      series[label] = {"x": [], "y": [], "color": color}
+    series[label]["x"].append(float(x))
+    series[label]["y"].append(float(y))
+
+  fig, ax = plt.subplots(figsize=(6.3, 4.8))
+  for label, payload in series.items():
+    points = sorted(zip(payload["x"], payload["y"]), key=lambda item: item[0])
+    xs = [item[0] for item in points]
+    ys = [item[1] for item in points]
+    ax.plot(xs, ys, marker="o", markersize=7, linewidth=2, label=label, color=payload["color"])
+
+  ax.set_xlabel("Mean Realized Output Tokens", fontsize=10, labelpad=8)
+  ax.set_ylabel("Accuracy", fontsize=10, labelpad=8)
+  ax.grid(True, alpha=0.15, linewidth=0.8)
+  ax.spines["top"].set_visible(False)
+  ax.spines["right"].set_visible(False)
+  ax.tick_params(labelsize=9)
+  ax.legend(frameon=False, fontsize=9)
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+  fig.savefig(output_path, dpi=150, bbox_inches="tight")
+  plt.close(fig)
+
+
 def _write_summary_md(metrics: list[dict], output_dir: Path) -> Path:
   path = output_dir / "summary.md"
   lines = [
@@ -218,6 +262,7 @@ def _write_summary_md(metrics: list[dict], output_dir: Path) -> Path:
     "",
     "Accuracy and invalid-rate are reported against mean realized output tokens.",
     "Invalid-rate is defined as `1 - accuracy`.",
+    "Anthropic runs do not expose reasoning-token counts in usage metadata; this field is recorded as NA.",
     "",
     "| Budget | Accuracy | Invalid Rate | Mean Output Tokens | Cap-Hit Rate | Empty Rate | API Error Rate | Token Obs |",
     "|---:|---:|---:|---:|---:|---:|---:|---:|",
@@ -258,11 +303,14 @@ def analyze_budget_sweep(model_configs: Iterable[dict], output_dir: Path = RESUL
                y_key="invalid_rate",
                y_label="Invalid Rate (1 - Accuracy)",
                output_path=invalid_plot)
+  model_line_plot = output_dir / "accuracy_two_model_lines.png"
+  _plot_accuracy_two_model_lines(metrics, model_line_plot)
   summary_md = _write_summary_md(metrics, output_dir)
 
   return {
     "metrics_csv": metrics_csv,
     "accuracy_plot": acc_plot,
     "invalid_plot": invalid_plot,
+    "accuracy_two_model_lines_plot": model_line_plot,
     "summary_md": summary_md,
   }
