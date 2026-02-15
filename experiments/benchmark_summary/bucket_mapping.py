@@ -10,10 +10,10 @@ BUCKET_ORDER: tuple[str, ...] = ("Axiomatic", "Constructive", "Planning")
 
 # Bucket mapping and paper display names.
 #
-# Mapping per notes.tex:
-# - VGB1..VGB6 are axiomatic (Q51,52,53,54,57,55).
-# - VGB7 is constructive (Q56).
-# - MB16 is treated as constructive (static placement set; no action sequence).
+# Mapping per paper appendix bucket table (285 subtasks total):
+# - Axiomatic: Q51, Q52, Q53, Q54, Q57 (N=75).
+# - Constructive: includes Delaunay (Q55) alongside mesh/CSG/packing tasks (N=171).
+# - Planning: Q7, Q11, Q23, Q28 (N=39).
 #
 # Order is paper-facing (kept stable) rather than numeric test_index order.
 PAPER_TASKS_BY_BUCKET: dict[str, list[tuple[int, str]]] = {
@@ -22,7 +22,6 @@ PAPER_TASKS_BY_BUCKET: dict[str, list[tuple[int, str]]] = {
     (52, "Enumerate Edges"),
     (53, "Classify Behaviour"),
     (54, "Half-Subdivision Neighbours"),
-    (55, "Delaunay Triangulation"),
     (57, "Two Segments"),
   ],
   "Constructive": [
@@ -31,6 +30,7 @@ PAPER_TASKS_BY_BUCKET: dict[str, list[tuple[int, str]]] = {
     (4, "Tetrahedra Shadow Projection"),
     (6, "Voxel Grid Projection"),
     (8, "Polynomial Curve Fitting"),
+    (55, "Delaunay Triangulation"),
     (9, "Hamiltonian Loop"),
     (12, "Pipe Loop Fitting"),
     (13, "Hide and Seek"),
