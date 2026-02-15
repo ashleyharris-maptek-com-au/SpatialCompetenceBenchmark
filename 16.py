@@ -381,7 +381,7 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
   return "<img src=\"" + report_relpath(output_path, aiEngineName) + "\" />" + perfectText
 
 
-earlyFail = True
+earlyFail = False
 
 highLevelSummary = """
 Packing prisms into the smallest possible volume 

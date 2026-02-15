@@ -2,7 +2,7 @@ title = "Hyper-snake Challenge"
 
 promptChangeSummary = "Dimensions increase from 3D to 10D"
 
-earlyFail = True
+earlyFail = False
 
 problems = [{
   "dim": 2,

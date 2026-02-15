@@ -100,7 +100,7 @@ subpassParamSummary = [
   "there are 4 separate underground lakes, each at least 5 voxels, none visible from above"
 ]
 
-earlyFail = True
+earlyFail = False
 
 structure = {
   "type": "object",

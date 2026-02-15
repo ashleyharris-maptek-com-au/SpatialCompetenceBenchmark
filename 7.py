@@ -68,7 +68,7 @@ Your output must be PARAM_A rows long, and every row must be PARAM_A characters 
 The maze must be your only output - Extra text above or below the maze itself corrupt your work.
 """
 
-earlyFail = True
+earlyFail = False
 
 testParams = [
   {
