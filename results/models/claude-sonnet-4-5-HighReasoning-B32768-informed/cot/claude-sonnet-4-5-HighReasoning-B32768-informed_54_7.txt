@@ -1,0 +1,204 @@
+Let me understand this problem step by step.
+
+We have a binary tree that represents an axis-aligned subdivision of the unit cube. The subdivision follows a repeating pattern: z → x → z → y → x → y.
+
+Let me trace through what this means:
+- Level 0 (root ""): The entire unit cube [0,1]³
+- Level 1: Split along z-axis (first in cycle)
+  - "0": z ∈ [0, 0.5]
+  - "1": z ∈ [0.5, 1]
+- Level 2: Split along x-axis (second in cycle)
+  - "00": z ∈ [0, 0.5], x ∈ [0, 0.5]
+  - "01": z ∈ [0, 0.5], x ∈ [0.5, 1]
+  - "10": z ∈ [0.5, 1], x ∈ [0, 0.5]
+  - "11": z ∈ [0.5, 1], x ∈ [0.5, 1]
+- Level 3: Split along z-axis (third in cycle, wraps around)
+- Level 4: Split along y-axis (fourth in cycle)
+- Level 5: Split along x-axis (fifth in cycle)
+- Level 6: Split along y-axis (sixth in cycle, completes one cycle)
+- Level 7: Split along z-axis (starts next cycle)
+- etc.
+
+The cycle is: z, x, z, y, x, y (length 6)
+
+So at depth d (0-indexed), the split axis is:
+- d % 6 == 0: z
+- d % 6 == 1: x
+- d % 6 == 2: z
+- d % 6 == 3: y
+
+
+- d % 6 == 4: x
+- d % 6 == 5: y
+
+The pattern repeats every 6 levels. At each depth, I split along the corresponding axis in the cycle, dividing that dimension's range in half at each node.
+
+For the target leaf "0111111101", I need to trace through the tree following this splitting pattern. At depth 1, I split on z (taking the 0 branch). At depth 2, I split on x (taking the 1 branch). Continuing this way through all 10 bits, each split narrows down which half of the current dimension's range the leaf occupies. .5], x ∈ [0.75, 0.875], y ∈ [0.75, 1]
+Depth 9, split along y (0 → lower half): z ∈ [0.375, 0.5], x ∈ [0.75, 0.875], y ∈ [0.75, 0.875]
+Depth 10, split along z (0 → lower half): z ∈ [0.375, 0.4375], x ∈ [0.75, 0.875], y ∈ [0.75, 0.875]
+
+Continuing through the remaining splits, I narrow the bounds further with each level. At depth 8, taking the lower half along x constrains it to [0.75, 0.875]. Then at depth 9, the lower half along y gives [0.75, 0.875]. Finally at depth 10, splitting along z and taking the lower half yields the final range [0.375, 0.4375] for z. [0, 1]
+
+Position 1 (bit '0'): Axis (1-1) % 6 = 0 corresponds to z, so '0' selects the lower half: z ∈ [0, 0.5]
+
+Position 2 (bit '1'): Axis (2-1) % 6 = 1 is x, and '1' takes the upper half: x ∈ [0.5, 1]
+
+Position 3 (bit '1'): Axis (3-1) % 6 = 2 is z again, '1' means upper half: z ∈ [0.25, 0.5]
+
+Continuing this pattern through positions 4-9, each bit determines which half of the current axis range to keep. Position 10 would normally split along y, but since "0111111101" is marked as a leaf node, the bounds at depth 10 are final and no further subdivision occurs. 1], y ∈ [0.75, 1], z ∈ [0.25, 0.5]
+
+Continuing through the remaining bit positions, each split alternates through the axes in sequence. At depth 7, the z-axis split with bit '1' narrows z to [0.375, 0.5]. At depth 8, an x-axis split with bit '1' further constrains x to [0.875, 1].
+
+The next two splits refine the bounds further: a z-axis split at depth 9 with bit '0' tightens z to [0.375, 0.4375], and a y-axis split at depth 10 with bit '1' narrows y to [0.875, 1]. This gives the final bounding box for the leaf node "0111111101" with x ∈ [0.875, 1], y ∈ [0.875, 1], and z ∈ [0.375, 0.4375].
+
+To find adjacent voxels, I need to identify which leaves share a face with this target voxel. Two voxels are face-adjacent when they're neighbors along one axis while completely overlapping on the other two. The target voxel's faces are defined by its boundaries: the -x face at x = 7/8, the +x face at x = 1, and similarly for y and z, each with full overlap on the perpendicular axes. ∈ [7/8, 1], z ∈ [3/8, 7/16]
+   This is at the boundary, no neighbor
+
+5. Face in -z direction: z = 3/8, x ∈ [7/8, 1], y ∈ [7/8, 1]
+   Neighbor should have z ∈ [?, 3/8], x ∈ [7/8, 1], y ∈ [7/8, 1]
+
+6. Face in +z direction: z = 7/16, x ∈ [7/8, 1], y ∈ [7/8, 1]
+   Neighbor should have z ∈ [7/16, ?], x ∈ [7/8, 1], y ∈ [7/8, 1]
+
+Now I need to search the tree for leaves matching these neighbor specifications. For the -x face, I'm looking for a leaf with x-max at 7/8 and y, z ranges overlapping [7/8, 1] and [3/8, 7/16] respectively. Similar logic applies to the other faces: -y needs y-max = 7/8, -z needs z-max = 3/8, and +z needs z-min = 7/16, all with appropriate x and y constraints.
+
+To find these neighbors, I'll trace back through the tree structure. The target leaf "0111111101" has parent "011111110", which branches into "0111111100" and "0111111101". For the -x neighbor, the relevant x-split occurs at position 8 in the path—the sibling "01111110" (with bit 8 as '0') would have x ∈ [0.75, 0.875], but this isn't a leaf itself since it has children. I need to examine which actual leaves in the tree satisfy the neighbor conditions by checking their coordinate ranges against the required boundaries. The sibling "0111111100" occupies x ∈ [0.875, 1], y ∈ [0.75, 0.875], z ∈ [0.375, 0.4375], sharing the lower y boundary with the target.
+
+Looking at the parent's siblings, "011111111" branches into two children rather than being a leaf itself. The tree structure shows "0111111110" and "0111111111" as cousins to the target. Computing their bounds requires examining where they diverge from the target's path. 0.75, 0.875]
+- z ∈ [0.375, 0.4375]
+
+At position 10, the bit '0' splits along the y-axis, narrowing it to the lower half. Continuing this pattern, "0111111111" would take the upper y half at position 10, giving y ∈ [0.875, 1], while maintaining the other bounds from earlier splits.
+
+Checking against the target region where x ∈ [0.875, 1], y ∈ [0.875, 1], and z ∈ [0.375, 0.4375], this string matches on the +z face since both share that z range.
+
+Now I need to locate the -x and -z neighbors. For the -x neighbor, I need a region with x-max at 0.875, y spanning [0.875, 1], and z in [0.375, 0.4375]. The x-split at position 8 in the target's path means "01111111" gives x ∈ [0.875, 1], while its sibling "01111110" gives x ∈ [0.75, 0.875]. I should check what "01111110" produces at the leaf level to see if any match the requirements.
+
+"01111110" branches into "011111100" and "011111101". For "011111100", the bounds through position 8 are x ∈ [0.75, 0.875], y ∈ [0.75, 1], z ∈ [0.375, 0.5]. Position 9's '0' bit (z-split) narrows z to [0.375, 0.4375], and position 10's '0' bit (y-split) narrows y to [0.75, 0.875], giving this node x ∈ [0.75, 0.875], y ∈ [0.75, 0.875], z ∈ [0.375, 0.4375].
+
+This can't contain the target since the target's y-range is [0.875, 1]. For "011111101", the same initial bounds apply through position 8, with position 9's '0' bit again setting z ∈ [0.375, 0.4375], but position 10's '1' bit (y-split) gives y ∈ [0.875, 1], which matches the target's y-range.
+
+The x-ranges align at their boundary: this octant's x-max equals the target's x-min at 0.875, so they share the -x face. To find the -z neighbor, I need z-max = 0.375 with x ∈ [0.875, 1] and y ∈ [0.875, 1]. The target's z-split history shows position 9 produced z ∈ [0.375, 0.4375] with a '0' bit, and position 7 had a '1' bit yielding z ∈ [0.375, 0.5].
+
+At position 7, z was split from [0.25, 0.5] into [0.375, 0.5]. The sibling octant "0111110" would have z ∈ [0.25, 0.375] instead. Tracing this code through position 7 shows the bit sequence '0' at position 1 gives z ∈ [0, 0.5], '1' at position 2 sets x ∈ [0.5, 1], and '1' at position 3 further constrains z.
+
+Continuing through positions 4-7: position 4 ('1') sets y ∈ [0.5, 1], position 5 ('1') narrows x to [0.75, 1], position 6 ('1') narrows y to [0.75, 1], and position 7 ('0') gives z ∈ [0.25, 0.375]. This octant ends up with x ∈ [0.75, 1], y ∈ [0.75, 1], z ∈ [0.25, 0.375], but the target requires x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.375, 0.5], so this isn't the right path.
+
+For a -z neighbor, I need z-max = 0.375 with x and y both in [0.875, 1]. The octant "0111110" has the correct z-max but its x and y ranges are too broad. I need to look at descendants of "0111110" that further subdivide to achieve the tighter x and y bounds.
+
+Looking at the tree structure more carefully, I realize I may have misread the node labels. Let me trace through the actual tree provided to identify which descendants have the required constraints. ├── 0111111111
+```
+
+The target "0111111101" sits at depth 10, with parent "011111110" at depth 9. Looking at the broader structure, "01111111" is at depth 8 and has a sibling "01111110" also at depth 8. The sibling branch contains different nodes like "011111100" and "011111101" at depth 9, which differ from the target's parent path.
+
+For "01111110", the first 7 bits match the target's prefix, placing it in x ∈ [0.75, 1], y ∈ [0.75, 1], z ∈ [0.375, 0.5]. The 8th bit is '0', which applies the x-axis split at depth 8, constraining x to [0.75, 0.875]. Its children "011111100" and "011111101" then split further along the z-axis at depth 9.
+
+"011111100" narrows z to [0.375, 0.4375] with the '0' bit, then uses the y-axis split at depth 10 to get y ∈ [0.75, 0.875]. "011111101" keeps the same z bounds but the '1' bit at depth 10 shifts y to [0.875, 1]. The second child "011111101" has x ∈ [0.75, 0.875], y ∈ [0.875, 1], z ∈ [0.375, 0.4375].
+
+For the -z neighbor, I need to backtrack further. At position 7 in the target path, the bit is '1', which splits z from [0.25, 0.5] to [0.375, 0.5]. The sibling with bit '0' at that position gives "0111110". Looking at the tree structure, "0111110" branches into "01111100" and "01111101".
+
+The bounds for "0111110" follow the same x and y ranges as "0111111" (x ∈ [0.75, 1], y ∈ [0.75, 1]), but with z ∈ [0.25, 0.375] due to the '0' bit at position 7.
+
+To find descendants matching x ∈ [0.875, 1] and y ∈ [0.875, 1], I need to examine the children. The bit '0' at position 8 gives x ∈ [0.75, 0.875], which doesn't satisfy the constraint, but the bit '1' at position 8 produces x ∈ [0.875, 1], so I should follow "01111101" and its descendants.
+
+At position 9, the z-coordinate splits into [0.25, 0.3125] and [0.3125, 0.375]. For "011111010", the y-range is still [0.75, 1], which needs further refinement. At position 10, the y-coordinate splits along the midpoint, with bit '0' giving y ∈ [0.75, 0.875] and bit '1' giving y ∈ [0.875, 1].
+
+The child "0111110101" achieves the target y-range [0.875, 1] with x ∈ [0.875, 1], but its z-range [0.25, 0.3125] doesn't overlap with the target z-range, so this path doesn't work. For "011111011", which has z ∈ [0.3125, 0.375], the y-coordinate also splits at position 10, with the bit '0' child covering y ∈ [0.75, 0.875].
+
+When bit '1' is selected at position 10, y extends to [0.875, 1], giving "0111110111" the ranges x ∈ [0.875, 1], y ∈ [0.875, 1], and z ∈ [0.3125, 0.375]. Initially this seems incompatible with the target since the z-ranges appear disjoint, but they actually share a boundary face at z = 0.375, making this a valid adjacent cube.
+
+Now I need to identify all cells meeting the criteria: z-max = 0.375, x ∈ [0.875, 1], y ∈ [0.875, 1]. The descendants of "0111110" branch on x at position 8, with only "01111101" satisfying x ∈ [0.875, 1]. Further subdivision occurs along z, so I should trace which descendants of "01111101" have the required z-range.
+
+Following the z-split at position 9, "011111011" has z ∈ [0.3125, 0.375], which matches the z-max requirement. Then the y-split at position 10 gives "0111110111" with y ∈ [0.875, 1], making this the only -z neighbor at this granularity. I should also check whether "011111011" itself could be a leaf node rather than further subdividing. and x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.3125, 0.375]. This matches the target's x and y ranges perfectly. Since "011111011" is subdivided into two children, I need to verify which leaf actually covers the target region. The parent spans y ∈ [0.75, 1], but its children split this: one covers y ∈ [0.75, 0.875] and the other covers y ∈ [0.875, 1], so "0111110111" is the correct leaf for the target's y-range. So "0111110111" is the only leaf covering x ∈ [0.875, 1], y ∈ [0.875, 1], z = 0.375. Looking at the tree structure, this node appears as a child of "011111011" with no further subdivisions.
+
+For the -z face neighbor, that's settled. Now checking the +z side: cells sharing the z = 0.4375 boundary would need z-min at that value. I've identified "0111111111" as a candidate, but I should verify there aren't other children of "011111011" or siblings that could also qualify. The tree shows only two children under that node, both leaves, so the neighbor set appears complete. " (-x neighbor)
+4. "0111110111" (-z neighbor)
+
+Now I need to verify these are actual neighbors. For "0111111100", the y ranges touch at 0.875 where the target's y-min meets this node's y-max, confirming the -y adjacency. "0111111111" shares the same x and z bounds with the target, and their y ranges are adjacent at 0.875. "011111101" should be the -x neighbor with matching y and z coordinates but x ∈ [0.75, 0.875]. Finally, "0111110111" serves as the -z neighbor with z ∈ [0.3125, 0.375], touching the target's z-min. ✓
+   - x and y ranges match ✓
+   - This is a -z neighbor ✓
+
+All four neighbors are confirmed. Since the target cell sits at the +x and +y boundaries (x-max = 1, y-max = 1), there can't be neighbors extending beyond those limits. I should also verify whether multiple smaller cells could combine to form a single face neighbor, but checking the tree structure shows "0111111100" is the only -y neighbor, with "0111111101" as its sibling under the parent "011111110".
+
+The other three neighbors—"0111111111" for +z, "011111101" for -x, and "0111110111" for -z—are all leaf nodes with no subdivisions. This gives me the complete set of face neighbors: ["0111111100", "0111111111", "011111101", "0111110111"] structure. Let me verify "0111111101" is actually in the tree by searching for it.
+
+Found it under the branch:
+```
+├── 011111110
+│   ├── 0111111100
+│   └── 0111111101
+└── 011111111
+```
+
+Now checking each neighbor: "0111111100" is a leaf under 011111110. "0111111111" is a leaf under 011111111. I should verify the remaining two candidates are also present and are leaves.
+
+Looking at "011111101" - it appears as a leaf under 01111110. And "0111110111" is a leaf under 011111011. All four neighbors check out as valid leaves in the tree.
+
+So the neighbors are: ["0111111100", "0111111111", "011111101", "0111110111"]
+
+Let me make sure I haven't overlooked any other potential neighbors by checking if there are any other single-bit differences I might have missed. sibling "01111110" has the same y range but x ∈ [0.75, 0.875], which doesn't overlap with the target's x ∈ [0.875, 1]. Going further up, "0111110" also spans y ∈ [0.75, 1] but has z ∈ [0.25, 0.375] instead of the target's z ∈ [0.375, 0.4375], so they only touch at edges or points rather than sharing a face. This confirms no larger neighbors exist along the -y direction.
+
+For the +z direction, I need to check what neighbors exist there.
+
+The target's z range is [0.375, 0.4375], so a +z neighbor must have z-min = 0.4375. Its grandparent "01111111" spans z ∈ [0.375, 0.5] and splits into two children: "011111110" (the target's parent with z ∈ [0.375, 0.4375]) and "011111111" (z ∈ [0.4375, 0.5]). The latter subdivides further into "0111111110" and "0111111111", where "0111111111" is a leaf that qualifies as a neighbor. "011111111" itself cannot be a neighbor since it's not a leaf.
+
+Looking at larger cells, the great-grandparent "0111111" has z ∈ [0.375, 0.5], but its sibling "0111110" covers z ∈ [0.25, 0.375], which doesn't provide a +z neighbor. For the -x direction, the target spans x ∈ [0.875, 1], requiring a -x neighbor with x-max = 0.875. The great-great-grandparent "0111111" splits along x into "01111110" (x ∈ [0.75, 0.875]) and "01111111" (x ∈ [0.875, 1]), and "01111110" further subdivides with one child having y ∈ [0.75, 0.875].
+
+"011111101" has y ∈ [0.875, 1] and z ∈ [0.375, 0.4375], which matches the target. Checking for larger cells in the -x direction would yield ranges like x ∈ [0.5, 1] or x ∈ [0, 1], both too broad to be exact neighbors. For the -z direction, the target's z ∈ [0.375, 0.4375] requires a -z neighbor with z-max = 0.375. The great-great-grandparent "0111111" has z ∈ [0.375, 0.5], and its sibling "0111110" has z ∈ [
+
+0.25, 0.375]. Expanding "0111110" through "01111101" and "011111011" to "0111110111" gives y ∈ [0.875, 1], which is a valid match. While "011111011" has z ∈ [0.3125, 0.375] and y ∈ [0.75, 1], the y-range doesn't fully overlap with the target's y ∈ [0.875, 1], so it doesn't qualify.
+
+For two boxes to share a face, they must be adjacent along one axis with identical projections on the perpendicular plane. This means the ranges in the non-adjacent dimensions must match exactly, not just overlap. So only the fully expanded child "0111110111" shares a face with the target, not its parent.
+
+I should consider whether multiple cells could collectively cover the target's footprint while sharing the face.
+
+When "011111011" is subdivided, it splits into two cells: one with y ∈ [0.75, 0.875] and another with y ∈ [0.875, 1]. Only the second subdivision matches the target's y-range of [0.875, 1], confirming that "0111110111" is the sole cell sharing the -z face. The three neighbors I identified are correct.
+
+Now I need to verify "0111110111" isn't already in my list. Checking the target "0111111101" by tracing through each bit: starting with z ∈ [0, 0.5], then x ∈ [0.5, 1], then z ∈ [0.25, 0.5], then y ∈ [0.5, 1], then x ∈ [0.75, 1]...
+
+continuing through depths 6-8 with successive refinements to y ∈ [0.75, 1], z ∈ [0.375, 0.5], and x ∈ [0.875, 1].
+
+At depth 9, taking bit 0 narrows z to [0.375, 0.4375], then bit 1 at depth 10 further constrains y to [0.875, 1]. This matches the target bounds of x ∈ [7/8, 1], y ∈ [7/8, 1], z ∈ [3/8, 7/16]. The alternative path "0111111100" follows the same trajectory through depth 9 but diverges at depth 10 by taking bit 0 instead, which would split y differently.
+
+Taking bit 1 at depth 9 instead shifts z upward to [0.4375, 0.5], and the subsequent bit 1 at depth 10 still lands on y ∈ [0.875, 1]. This gives a slightly different z range. Earlier divergences like "011111101" branch off at depth 8 with different x constraints. .75, 1], z ∈ [0.25, 0.375]
+- Depth 8, bit 1, split x: x ∈ [0.875, 1], y ∈ [0.75, 1], z ∈ [0.25, 0.375]
+- Depth 9, bit 1, split z: x ∈ [0.875, 1], y ∈ [0.75, 1], z ∈ [0.3125, 0.375]
+- Depth 10, bit 1, split y: x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.3125, 0.375]
+
+The second code follows the same path through depth 6, then diverges with a z-split that keeps the lower half. Subsequent splits on x, z, and y progressively narrow the bounds, converging toward x ∈ [7/8, 1], y ∈ [7/8, 1], z ∈ [5/16, 3/8].
+
+Several other codes map to nearby regions: one lands on the -y face with y ∈ [3/4, 7/8], another reaches the +z face at z ∈ [7/16, 1/2], and a third hits the -x face with x ∈ [3/4, 7/8].
+
+The final code "0111110111" corresponds to x ∈ [7/8, 1], y ∈ [7/8, 1], z ∈ [5/16, 3/8], which touches the -z face.
+
+All four codes are confirmed as leaf nodes in the octree structure, making the answer: ["0111111100", "0111111111", "011111101", "0111110111"] 9, matching x and y coordinates. That would be "0111111111".
+
+Checking the four neighbors against the tree: "0111111100" exists as a leaf, "011111101" is verified, "0111110111" is a leaf, and "0111111111" is a leaf. All four neighbors are accounted for in the structure. split): need bit 1 to get y ∈ [0.875, 1]
+
+This gives "0111110111". ✓
+
+So the final answer is: ["0111111100", "0111111111", "011111101", "0111110111"]
+
+To verify "0111110111", I'm tracing through the z-coordinate splits: starting with z ∈ [0, 0.5], then narrowing to [0.25, 0.5], then [0.375, 0.5], and finally [0.375, 0.4375]. For the -z neighbor with z-max = 0.375, I flip position 7 to bit 0, which gives z ∈ [0.25, 0.375]. Then positions 8, 9, and 10 are set to bit 1 to achieve x ∈ [0.875, 1], z ∈ [0.3125, 0.375], and y ∈ [0.875, 1] respectively. : z ∈ [0.25, 0.375]
+- Position 8, bit 1: x ∈ [0.875, 1]
+- Position 9, bit 1: z ∈ [0.3125, 0.375]
+- Position 10, bit 1: y ∈ [0.875, 1]
+
+The final bounds are x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.3125, 0.375], which satisfies the target constraints with z-max aligning perfectly at 0.375. The complete set of paths is: 0111111100, 0111111111, 011111101, 0111110111.
+
+I should verify whether other cells at different subdivision levels could also expose this -z face. For the face to exist at z-max = 0.375 with x ∈ [0.875, 1] and y ∈ [0.875, 1], any candidate cell must have a z-boundary at exactly 0.375. The subdivision tree shows z splits at 0.5 (position 1) and then at 0.375 within the [0.25, 0.5] interval (position 3), so this is the only configuration that produces the required boundary. With "0" at position 1, "1" at position 3, "0" at position 7, I need to trace the x and y constraints. For x to reach [0.875, 1], I require bit 1 at position 2 (giving [0.5, 1]), bit 1 at position 5 (giving [0.75, 1]), and bit 1 at position 8 (giving [0.875, 1]). Similarly, y needs bit 1 at position 4 to reach [0.5, 1], bit 1 at position 6 to reach [0.75, 1], and bit 1 at position 9 to reach [0.875, 1].
+
+This gives the path "0111110111". At position 9, I'm splitting z, which currently lies in [0.25, 0.375] from the earlier split at position 7. Choosing bit 0 keeps z in [0.25, 0.3125], while bit 1 would place it in [0.3125, 0.375].
+
+Since I need z-max = 0.375 to reach the boundary, bit 1 is required at position 9, confirming the complete path as "0111110111" for the -z neighbor.
+
+Now checking the -x face: I need x-max = 0.875, y ∈ [0.875, 1], and z ∈ [0.375, 0.4375]. The x-coordinate reaches 0.875 through bit 1 at position 2 (giving x ∈ [0.5, 1]), bit 1 at position 5 (narrowing to x ∈ [0.75, 1]), and then a split at position 8 where 0.875 falls as a boundary.
+
+To achieve x-max = 0.875, position 8 needs bit 0. With the prefix "01111110" locked in, I then need bit 0 at position 9 to constrain z to [0.375, 0.4375], and bit 1 at position 10 to get y ∈ [0.875, 1], yielding the path "011111101" for the -x neighbor.
+
+For the +z face, the constraint is z-min = 0.4375 with x ∈ [0.875, 1] and y ∈ [0.875, 1].
+
+The z-coordinate reaches 0.4375 as a boundary after successive refinements: bit 0 at position 1 gives z ∈ [0, 0.5], bit 1 at position 3 narrows to [0.25, 0.5], bit 1 at position 7 further constrains to [0.375, 0.5], and position 9 determines the final split. To get z-min = 0.4375, position 9 requires bit 1, establishing the prefix "01111111". Then position 10 needs bit 1 to achieve y ∈ [0.875, 1], and position 11 needs bit 1 for x ∈ [0.875, 1].
+
+For the -y face, y-max = 0.875 emerges as a boundary through: bit 1 at position 4 gives y ∈ [0.5, 1], bit 1 at position 6 refines to [0.75, 1], and position 10 splits at 0.875. To achieve y-max = 0.875, position 10 must be bit 0, yielding "0111111100" at positions 1-10. This differs from the +z face only at position 10, confirming the neighbor relationship. All four adjacent faces have now been verified.
+
+Now I need to confirm these are all leaves. Checking against the tree structure: "0111111100" appears as a leaf under "011111110", "0111111111" is a leaf under "011111111", and "011111101" is a leaf under "01111110". For "0111110111", I need to verify its leaf status in the tree.

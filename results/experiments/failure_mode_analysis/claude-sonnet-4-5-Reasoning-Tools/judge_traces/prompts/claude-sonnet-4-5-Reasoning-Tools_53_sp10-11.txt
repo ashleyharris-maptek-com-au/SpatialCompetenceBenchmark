@@ -1,0 +1,355 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 10, 11
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q53: VGB3 - Topology Edge Tasks: Classify Behaviour
+- Source file: `53.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Assess symbolic classification of topology behavior classes (`known behaviour`, `three domains meeting`, `ambiguous`) across ordering variants.
+
+## Output Contract
+- Return object with `labels`.
+- `labels` is list of allowed enum strings only.
+
+## Hard Constraints (Verifier-Checked)
+- Enum membership for every label.
+- Exact comparison with curated expected labels.
+- Record-wise ordering alignment.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `missing: [...]` | Indices of cases where predicted labels do not match ground truth | `Local-Only`, `Near-Miss` |
+| `errors: [...]` | Parse/validation errors (e.g. `parse_failure`, `length_mismatch`, invalid label string) | `Trivialized`, `Evasion` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Missing `labels` output.
+- `Trivialized / Misframed`: Uses labels outside allowed enum or wrong task form.
+- `Runaway Overthinking`: COT shows spiraling classification reasoning that produces diverse error types (invalid labels AND wrong format AND mismatched counts).
+- `Local-Only (Global Constraint Integration Failure)`: Multiple classification mismatches.
+- `Near-Miss Edge Case`: One label mismatch in otherwise correct sequence.
+
+## Judge Input Bundle
+1. Prompt with cases and label definitions.
+2. Raw output.
+3. Parsed `labels`.
+4. Verifier diff object.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q53 with one failure mode.
+Use enum validity and diff mismatch count as key evidence.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+Attempts:
+### Subpass 10
+
+Attempt Metadata:
+- question_id: 53
+- subpass: 10
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 113
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(1, 1, 3, 2)
+(2, 1, 1, 2)
+(3, 1, 1, 2)
+(3, 1, 3, 2)
+(2, 1, 1, 1)
+
+You are given unit squares with corners labelled in ('top-right', 'bottom-left', 'top-left', 'bottom-right') order.
+
+Classify each square's topological behaviour (in the same order) as one of: 'known behaviour', 'three domains meeting', or 'ambiguous'.
+Definitions: 'known behaviour' = deterministic edge connections can be made; 'three domains meeting' = deterministic edge connections where three distinct classes meet at a point; 'ambiguous' = multiple valid topologies could exist.
+Return a list of exact label strings.
+
+Verifier Signal:
+passed:  False  missing:  [0]  errors:  []
+
+Raw Output:
+{'labels': ['ambiguous', 'known behaviour', 'three domains meeting', 'three domains meeting', 'known behaviour']}
+
+Chain of Thought:
+I need to analyze each square to determine its topological behavior. Let me understand what we're dealing with:
+
+- Each square has 4 corners labeled with class integers
+- The order is: (top-right, bottom-left, top-left, bottom-right)
+- I need to classify the topological behavior of edges/connections
+
+For marching squares or similar algorithms, the topology depends on how edges connect based on corner values.
+
+Let me think about each square:
+
+1. **(1, 1, 3, 2)** - corners: TR=1, BL=1, TL=3, BR=2
+   - Three distinct classes: 1, 2, 3
+   - Top-right and bottom-left both have class 1
+   - This creates a diagonal connection potentially
+   - We have three different classes, so this could be "three domains meeting"
+
+2. **(2, 1, 1, 2)** - corners: TR=2, BL=1, TL=1, BR=2
+   - Two distinct classes: 1, 2
+   - Opposite corners have same values: TR=BR=2, TL=BL=1
+   - This is the "saddle" configuration which is typically ambiguous
+
+3. **(3, 1, 1, 2)** - corners: TR=3, BL=1, TL=1, BR=2
+   - Three distinct classes: 1, 2, 3
+   - Bottom-left and top-left both have class 1
+   - This could be "three domains meeting"
+
+4. **(3, 1, 3, 2)** - corners: TR=3, BL=1, TL=3, BR=2
+   - Three distinct classes: 1, 2, 3
+   - Top-right and top-left both have class 3
+   - This could be "three domains meeting" or "known behaviour"
+
+5. **(2, 1, 1, 1)** - corners: TR=2, BL=1, TL=1, BR=1
+   - Two distinct classes: 1, 2
+   - Only one corner is class 2 (top-right), rest are 1
+   - This is a simple case with "known behaviour"
+
+The key distinction is between configurations with deterministic edge patterns versus ambiguous ones. When opposite corners share the same class values, like in the saddle case, the topology becomes ambiguous. Three domains meeting at a point represents a specific topological scenario, while single-class dominance creates straightforward, unambiguous connections.
+
+Looking at specific configurations: (1, 1, 3, 2) has three distinct classes with the top-right and bottom-left both being class 1 on a diagonal, suggesting three regions converging. In contrast, (2, 1, 1, 2) creates a different pattern where opposite corners alternate between classes 1 and 2, which is the classic ambiguous saddle configuration. - TR=3, BL=1, TL=3, BR=2
+   ```
+   TL=3 ---- TR=3
+    |         |
+    |         |
+   BL=1 ---- BR=2
+   ```
+   - Classes: 1, 2, 3 (three distinct)
+   - TL and TR are both 3 (top edge)
+   - This is "three domains meeting"
+
+5. **(2, 1, 1, 1)** - TR=2, BL=1, TL=1, BR=1
+   ```
+   TL=1 ---- TR=2
+    |         |
+    |         |
+   BL=1 ---- BR=1
+   ```
+   - Classes: 1, 2 (two distinct)
+   - Only TR is different
+
+This is a straightforward corner configuration with predictable behavior. But I should reconsider what happens when three distinct classes converge at a point—whether that occurs at a corner or interior location, and whether it introduces ambiguity. The saddle case (opposite corners matching) is clearly ambiguous with multiple connection paths. For configurations with three distinct classes where no opposite corners align, I need to determine if they remain deterministic or fall into a separate category. Looking at case 1: (1, 1, 3,
+
+2)—the top-right and bottom-left corners both have class 1, while top-left is 3 and bottom-right is 2. This creates a diagonal pairing, which resembles a saddle configuration, though typically saddles involve only two classes total across the four corners.
+
+Looking at the second case (2, 1, 1, 2): the top-right and bottom-right are both 2, while top-left and bottom-left are both 1. I need to verify which corners are actually diagonal opposites—top-right pairs with bottom-left, and top-left pairs with bottom-right. So here, one diagonal has different values (2 and 1) while the other also has different values (1 and 2). This creates a checkerboard pattern rather than a true saddle. 1, 1, 2): TR=3, BL=1, TL=1, BR=2. Both diagonals have mismatched values, and the left side shares a value (TL=BL=1), creating three distinct classes with domains converging at a point.
+
+For square 4: (3, 1, 3, 2) has TR=3, BL=1, TL=3, BR=2. Again both diagonals differ, but now the top edge aligns (TL=TR=3), yielding three distinct classes in another three-domain configuration.
+
+Square 5 is simpler: (2, 1, 1, 1) where only TR differs from the others. This gives two classes and represents a straightforward corner case.
+
+Going back to square 1 with (1, 1, 3, 2): TR=1, BL=1, TL=3, BR=2. The TR-BL diagonal matches while TL-BR doesn't, creating three distinct classes. Having one diagonal with matching opposite corners while the other diagonal mismatches suggests this might be ambiguous rather than a clear three-domain meeting.
+
+In the standard marching squares framework, opposite corners matching typically signals ambiguity in binary systems. With three classes present here, the topology becomes more complex. Looking at the actual layout—TL=3 at top-left, TR=1 at top-right, BL=1 at bottom-left, BR=2 at bottom-right—boundaries form between 1 and 3 along the top and left edges, between 1 and 2 along the bottom and right edges, and between 2 and 3 somewhere in the middle. This configuration could allow three regions to converge at a central point, though the exact resolution depends on how we handle the ambiguity.
+
+The key distinction seems to be that true ambiguity occurs when opposite diagonal corners match in a binary (two-class) scenario, creating genuine uncertainty about the boundary path. When three distinct classes are present, the case becomes more deterministic—three domains meeting at a point—even if it's a special configuration. Other cases with clear separation between classes represent standard, unambiguous behavior. For instance, a simple vertical split like (1, 2, 1, 2) where the left side is one class and the right side is another is straightforward and deterministic. simple configuration → "known behaviour"
+
+Case 3 has three classes with no matching diagonals, so it's another "three domains meeting" scenario. Case 4 also shows three classes but again fails both diagonal checks. Case 5 appears to be starting but is cut off.
+
+Looking at (2, 1, 1, 1), the top-right and bottom-left don't align, though the top-left and bottom-right both equal 1. With only two distinct classes present despite one diagonal matching, this falls into the "known behaviour" category. Reviewing the patterns across all five cases: cases 1, 3, and 4 represent situations where three domains converge, while cases 2 and 5 are simpler corner configurations. I should double-check whether this classification holds or if there's something I'm missing about the structure.
+
+The key distinction for ambiguity in multi-class marching squares appears to be when opposite corners share the same value while the topology remains unclear. With four corners all different, multiple domains definitely meet at a point. When three corners match and one differs, it's straightforward. The truly ambiguous scenario emerges when opposite diagonal pairs both match and only two classes are involved—like (a, a) on one diagonal and (b, b) on the other.
+
+Looking at the specific cases: Case 2 has TR=2, BL=1, TL=1, BR=2, which doesn't create the matching diagonal pattern needed for ambiguity. The standard marching squares saddle point occurs with configurations like (1,0,0,1) where diagonal opposites match, creating uncertainty about contour connectivity. For the multi-class version, I need to identify whether a similar pattern exists where opposite corners share values while only two distinct classes are present—like (a, a) paired with (b, b) across diagonals. dle pattern (a, b, b, a). Let me reconsider what "ambiguous" means here. It seems to require diagonal opposites matching with exactly 2 classes total, creating topological ambiguity. Checking the cases: (1, 1, 3, 2) has three classes with one diagonal match, (2, 1, 1, 2) has two classes but no diagonal matches, and the remaining cases similarly fail to satisfy both conditions simultaneously.
+
+Looking at this differently, I can categorize by the number of distinct classes present. Cases with three distinct classes—like (1, 1, 3, 2), (3, 1, 1, 2), and (3, 1, 3, 2)—represent three domains meeting at a point. The two-class cases like (2, 1, 1, 2) and (2, 1, 1, 1) show known behavior without the saddle ambiguity.
+
+But case 1 warrants closer inspection. With corners labeled 3, 1, 1, 2 (top-left to bottom-right), the matching diagonal values create potential ambiguity in how the three regions actually connect—there could be multiple valid configurations depending on how I resolve the topology.
+
+The key distinction seems to be that "three domains meeting" describes a deterministic arrangement where exactly three classes converge at a point, whereas ambiguous cases allow for multiple valid topological solutions. Case 1 with its diagonal match might fall into this ambiguous category rather than the straightforward three-domain scenario.
+
+Looking at the cases more carefully: configurations with two classes and clear boundaries follow known, predictable patterns. Cases involving three classes need further differentiation—some have deterministic edge-sharing arrangements while others create the multi-class saddle problem with multiple possible solutions. The systematic approach would be to identify which configurations are truly unambiguous versus those where topology remains undetermined. L=1, BR=2
+   - Left and right sides form distinct regions
+   - Unambiguous topology
+   
+3. (3, 1, 1, 2): TR=3, BL=1, TL=1, BR=2
+   - Left edge has matching values
+   - Three classes present
+   - Three domains converge at center
+   
+4. (3, 1, 3, 2): TR=3, BL=1, TL=3, BR=2
+   - Top edge shares a value
+   - Three distinct classes
+   - Three domains meet
+   
+5. (2, 1, 1, 1): TR=2, BL=1, TL=1, BR=1
+   - One corner differs from the other three
+   - Two classes total
+   - Standard corner configuration
+
+For case 1, the diagonal opposites matching with three total classes creates genuine ambiguity—the matching pair could either connect internally or all three domains could meet at a point. Without additional information, I can't determine which topology applies.
+
+My classifications:
+1. ambiguous
+2. known behaviour
+3. three domains meeting
+4. three domains meeting
+5. known behaviour
+
+### Subpass 11
+
+Attempt Metadata:
+- question_id: 53
+- subpass: 11
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 175
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(1, 2, 1, 1)
+(1, 3, 1, 2)
+(2, 1, 1, 1)
+(2, 3, 1, 2)
+(2, 2, 1, 3)
+(2, 3, 1, 3)
+(2, 4, 1, 3)
+
+You are given unit squares with corners labelled in ('bottom-right', 'top-left', 'bottom-left', 'top-right') order.
+
+Classify each square's topological behaviour (in the same order) as one of: 'known behaviour', 'three domains meeting', or 'ambiguous'.
+Definitions: 'known behaviour' = deterministic edge connections can be made; 'three domains meeting' = deterministic edge connections where three distinct classes meet at a point; 'ambiguous' = multiple valid topologies could exist.
+Return a list of exact label strings.
+
+Verifier Signal:
+passed:  False  missing:  [4, 6]  errors:  []
+
+Raw Output:
+{'labels': ['known behaviour', 'three domains meeting', 'known behaviour', 'three domains meeting', 'three domains meeting', 'three domains meeting', 'three domains meeting']}
+
+Chain of Thought:
+Let me analyze each square to understand the topological behavior. Each square has four corners labeled in the order: (bottom-right, top-left, bottom-left, top-right).
+
+For each square, I need to determine how the domains (classes) connect across the square. The key is to figure out how edges should connect corners with the same class label.
+
+Let me visualize each square. The corners are:
+- bottom-left (BL)
+- bottom-right (BR)
+- top-left (TL)
+- top-right (TR)
+
+Given in order: (BR, TL, BL, TR)
+
+Let me redraw this for each square:
+
+Square 1: (1, 2, 1, 1)
+- BR = 1
+- TL = 2
+- BL = 1
+- TR = 1
+
+```
+TL(2) --- TR(1)
+ |         |
+ |         |
+BL(1) --- BR(1)
+```
+
+Three corners have class 1 (BL, BR, TR) and one corner has class 2 (TL). 
+For class 1: We need to connect BL, BR, and TR. This means class 1 forms a connected region.
+For class 2: Only TL has class 2, so it's isolated in a corner.
+
+This is a case where three corners of the same class meet at a point - specifically, the three corners with class 1 would meet if we draw the boundary appropriately. But wait, let me think more carefully...
+
+Actually, I need to think about marching squares or contour tracing. In marching squares, we determine how contour lines pass through the square based on the corner values.
+
+Let me reconsider: The question is about edge connections and topological behavior. 
+
+For a square with corners labeled with class values, we need to determine how the boundaries between different classes are drawn.
+
+Let's use marching squares logic:
+- If all four corners are the same class: trivial case, entire square is one class
+
+
+- When three corners share one class and one differs: the minority class gets isolated in its corner
+- When corners split evenly between two classes: could be adjacent pairs (unambiguous) or opposite corners (ambiguous)
+- When three or more distinct classes appear: multiple domains meet within the square
+
+Square 1: (1, 2, 1, 1) has a 3-1 distribution with class 2 isolated at TL. This is deterministic behavior.
+
+Square 2: (1, 3, 1, 2
+
+) contains three different classes—1 occupies the bottom edge (BL and BR adjacent), while 3 and 2 each claim a single corner. This represents three domains converging.
+
+Square 3: (2, 1, 1, 1) shows class 2 as the sole outlier at BR, with class 1 dominating the other three corners. The 3-1 split again produces deterministic behavior.
+
+Square 4: (2, 3, 1, 2) has class 2 appearing twice along the right side (TR and BR touching), class 3 isolated at TL, and class 1 at BL. Another instance of three distinct classes meeting at a single point.
+
+Square 5: (2, 2, 1, 3) begins with class 2 at both BR and TL diagonally opposite, class 1 at BL, and class 3 at TR. Again, three distinct classes are present.
+
+Square 6: (2, 3, 1, 3) shows class 3 occupying the top edge (TL and TR adjacent), class 2 at BR, and class 1 isolated at BL.
+
+Square 7: (2, 4, 1, 3) presents all four corners with different values. This creates four distinct classes rather than three. The category definition seems to allow for three or more domains converging at a single point, though this case with all different corners might represent something beyond the typical three-domain intersection.
+
+Looking at the pattern across squares, the distinction appears to hinge on whether edge connections follow a deterministic path or allow multiple valid interpretations. In marching squares, the classic ambiguity arises in saddle configurations where diagonally opposite corners share the same value. Reconsidering the earlier squares: Square 1 with three corners of class 1 and one isolated class 2 at the top-left follows a clear, unambiguous path—the isolated corner determines the topology. Square 2 with corners (1, 3, 1, 2) needs similar analysis to determine if its edge connections are deterministic or if multiple valid configurations could apply. BL(1) --- BR(2)
+```
+The right edge connects two class 2 corners, while the left side has distinct classes. Three classes present overall.
+
+Square 5: (2, 2, 1, 3)
+```
+TL(2) --- TR(3)
+ |         |
+BL(1) --- BR(2)
+```
+Here the matching corners form a diagonal—TL and BR are both class 2, but BL and TR differ. This creates the ambiguous saddle configuration in marching squares, where the diagonal arrangement of one class against two others on the opposite diagonal introduces uncertainty about how boundaries should be drawn.
+
+With three distinct classes needing separation, boundaries must form between each pair: 1-2, 2-3, and 1-3. The diagonal positioning of class 2 means these boundaries likely converge at the center point where all three domains meet.
+
+Looking at Square 6 with classes (2, 3, 1, 3): the top corners share class 3 while bottom corners differ, creating three distinct domains that meet at a point. Square 7 with (2, 4, 1, 3) has all four corners as different classes—four distinct domains meeting at the center. This raises a question about whether four domains meeting should be categorized separately or grouped with the three domains meeting case.
+
+For the ambiguous configuration, I should focus on the specific saddle point pattern where opposite diagonal corners match—like (1, 2, 2, 1) where TL and BR are one class while TR and BL are another. This creates two equally valid interpretations for how the domains connect through the square's center.
+
+Looking at my actual squares, none match this exact diagonal pattern. Square 1 has (1, 2, 1, 1) and Square 2 starts with (1, 3, 1, 2...), so neither exhibits the classic ambiguity that would require choosing between two topologically distinct solutions.
+
+Checking the rest: Square 3 is (2, 1, 1, 1), Squares 4-7 all have three or more classes. Since the problematic saddle case only occurs with exactly 2 classes in a specific diagonal arrangement, and my squares don't have this configuration, I can proceed with standard topology rules. The 2-class squares follow predictable behavior with their 3-1 corner distributions, while those with multiple classes show three domains converging at a point. to be ambiguous, there would need to be multiple valid interpolations with no deterministic rule. Looking at the squares, even when three or four classes are present, the geometric constraint of meeting at a point provides a deterministic solution. None of the cases show a checkerboard pattern or other configuration that would create genuine ambiguity. So my classification holds: squares 1 and 3 are known behavior (simple 3-1 splits), while squares 2, 4, 5, 6, and 7 all involve three or more classes converging at a central point, making them deterministic cases of multiple domains meeting. ambiguous. Looking at (2, 2, 1, 3), even though class 2 appears diagonally, having three distinct classes means there's no ambiguity in how to separate them. The same applies to (2, 3, 1, 3) and (2, 4, 1, 3)—with three or four classes present, the topology is determined by which classes need separation.
+
+I'm reconsidering whether three-class configurations could create ambiguity in a different way. When a specific class appears diagonally opposite to itself, does that introduce multiple valid ways to connect the regions?
+
+For (2, 2, 1, 3), class 2 occupies opposite corners while classes 1 and 3 occupy the other two. The question becomes whether class 2's two regions must connect through a single center point, or if there's flexibility in how the boundaries between all three classes are drawn. I should examine whether different topologies are actually possible given the constraint that we're partitioning the square into regions for each class.
+
+Looking at the edges systematically: the bottom and left edges both separate class 1 from class 2, the right and top edges both separate class 2 from class 3. This creates four boundary segments that need to connect—two on opposite sides for the 1-2 boundary and two on opposite sides for the 2-3 boundary. The arrangement forces these segments to meet somewhere in the interior, and the question is whether there's a unique way to do this or multiple valid configurations. - Class 2 could form a diagonal band stretching from top-left to bottom-right, with Class 1 occupying the bottom-left corner and Class 3 at the top-right corner, all converging at an interior point. Alternatively, Class 2 might be split into separate regions near the top-left and bottom-right, forcing Classes 1 and 3 to connect through the middle, though this arrangement raises topological questions about whether it's feasible within a single square.
+
+This ambiguity might actually be the crux of the problem. In binary marching squares, the diagonal configuration is inherently ambiguous—the class on opposite corners could form either a single connected region or two disconnected ones. However, with three or more classes present, the standard approach is to enforce that all boundaries meet at a central point, which removes the ambiguity and makes the configuration deterministic, even if it's unconventional.
+
+Given this, I'm settling on classifying square 5 as three domains meeting, since the multi-class convention resolves what would otherwise be an ambiguous saddle case. The other squares follow similar patterns: squares 1, 3, and 4 have deterministic edge behavior, while squares 2, 6, and 7 also involve three domains converging at a point.
+
+Now I need to reconsider what distinguishes these categories. "Known behavior" applies to deterministic cases with straightforward edge connections, while "three domains meeting" specifically describes when three distinct classes converge at a single point. "Ambiguous" covers non-deterministic scenarios like saddle points with only two classes. This means "three domains meeting" is a specialized subset of deterministic behavior rather than a separate category entirely. So squares with three-class convergence should be labeled as such, while simpler two-class deterministic cases fall under "known behavior," and only genuinely ambiguous configurations get that label. more than two domains converging) → **three domains meeting**
+
+For the fourth square with four classes, I'm treating it as part of the same category since there's no distinct classification for four domains meeting. Checking the final list: squares 1 and 3 show known behavior with their 2-class, 3-1 splits, while squares 2, 4, 5, 6, and 7 all involve three or more domains intersecting. I should also verify whether any squares have a 2-2 diagonal split that would create ambiguity—this would require exactly two classes with matching diagonal corners.
+
+Testing each square: square 1 has diagonals that don't both match the same pattern, square 2 has three classes so it can't be ambiguous, square 3 similarly fails the diagonal test, square 4 has three classes, and square 5 has three classes. Squares 6 and 7 also involve three or four distinct classes respectively, so none qualify as ambiguous by the definition requiring exactly two classes. This means most patterns represent either known behavior or three domains converging, with no true ambiguous cases emerging from this analysis.Let me run the analysis script to verify my logic.Perfect! My analysis confirms:
+1. known behaviour
+2. three domains meeting
+3. known behaviour
+4. three domains meeting
+5. three domains meeting
+6. three domains meeting
+7. three domains meeting
+
+Now I need to return this as a JSON response with the exact label strings in the list format.

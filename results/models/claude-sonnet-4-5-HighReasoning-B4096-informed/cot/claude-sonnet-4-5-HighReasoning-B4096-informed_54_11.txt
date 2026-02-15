@@ -1,0 +1,62 @@
+Let me understand the subdivision scheme first. We start with the unit cube [0,1]³, and each node splits along axes in the cycle: x → z → y → z (repeating).
+
+So:
+- Level 0 (root ""): split along x
+- Level 1: split along z
+- Level 2: split along y
+- Level 3: split along z
+- Level 4: split along x
+- Level 5: split along z
+- Level 6: split along y
+- Level 7: split along z
+- Level 8: split along x
+- ...
+
+The pattern is: x, z, y, z, x, z, y, z, ...
+
+For a path like "110101011":
+- Position 0 (bit '1'): split along x, take right half [0.5, 1] × [0, 1] × [0, 1]
+- Position 1 (bit '1'): split along z, take right half [0.5, 1] × [0, 1] × [0.5, 1]
+- Position 2 (bit '0'): split along y, take left half [0.5, 1] × [0, 0.5] × [0.5, 1]
+- Position 3 (bit '1'): split along z, take right half [0.5, 1] × [0, 0.5] × [0.75, 1]
+- Position 4 (bit '0'): split along x, take left half [0.5, 0.75] × [0, 0.5] × [0.75, 1]
+- Position 5 (bit '1'): split along z, take right half [0.5, 0.75] × [0, 0.5] × [0.875, 1]
+- Position 6 (bit '0'): split along y, take left half [0.5, 0.75] × [0, 0.25] × [0.875, 1]
+
+
+- Position 7 (bit '1'): split along z, take right half [0.5, 0.75] × [0, 0.25] × [0.9375, 1]
+- Position 8 (bit '1'): split along x, take right half [0.625, 0.75] × [0, 0.25] × [0.9375, 1]
+
+This gives the final bounds for voxel "110101011": x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1].
+
+Now I need to identify which leaf voxels share a face with this one. Two voxels are face-adjacent when they're next to each other along one axis while their ranges overlap in the other two. I should check for neighbors along each dimension: x-neighbors at [0.5, 0.625] or [0.75, 1], y-neighbors at the boundaries of [0, 0.25], and z-neighbors at [0, 0.9375] or beyond 1 (though z is capped). To find the exact neighbors, I need to trace through the tree more systematically to determine which leaf voxels exist at these boundary locations.
+
+The target voxel "110101011" has a sibling "110101010" that's also a leaf—this one shares a face since they differ only in the final bit representing an x-split. I should continue checking for other adjacent voxels by moving up the tree to find cousins and other relatives that might be positioned next to this voxel. Let me recalculate the spatial bounds more precisely to identify all potential face-sharing neighbors. 0.25]
+Level 7: "1101010" → split z → "11010101" means z ∈ [0.9375, 1]
+Level 8: "11010101" → split x → "110101011" means x ∈ [0.625, 0.75]
+
+The final bounds narrow to x ∈ [0.625, 0.75], y ∈ [0, 0.25], and z ∈ [0.9375, 1]. For adjacency, I need to identify which faces require neighbors: the x_min face at 0.625 needs a cell with x_max at that boundary, the x_max face at 0.75 needs x_min there, and similarly for the y and z faces.
+
+Checking the left neighbor at x=0.625, the "110101010" leaf occupies x ∈ [0.5, 0.625] with matching y and z ranges. For the right neighbor at x=0.75, I need to find a cell with x ∈ [0.75, ...] and the same y ∈ [0, 0.25] bounds.
+
+The "11011" subtree spans x ∈ [0.75, 1], y ∈ [0, 0.5], z ∈ [0.75, 1], so it contains candidates. I need to narrow down to cells matching y ∈ [0, 0.25] and z ∈ [0.9375, 1]. Examining its children "110110" and "110111" to find the exact leaf that satisfies these constraints.
+
+"110110" has z ∈ [0.75, 0.875], which doesn't reach the required z ∈ [0.9375, 1]. But "110111" spans z ∈ [0.875, 1], so it overlaps. Splitting "110111" further along y at the next level gives "1101110" with y ∈ [0, 0.25] and z ∈ [0.875, 1], which matches the target region.
+
+However, I need to reconsider what "shared face" means—the voxels must be exactly adjacent with a precise 2D boundary, not just overlapping regions. For the target voxel "110101011" at x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1], I should check which neighboring voxels have matching boundaries along each axis.
+
+At the x_max face (x=0.75), a neighbor must have x_min = 0.75 and matching y and z ranges. The candidate "1101110" has x ∈ [0.75, 1], y ∈ [0, 0.25], z ∈ [0.875, 1], which covers the required region but extends beyond it in the z-direction.
+
+For the y=0 boundary, there's no neighbor since the cell already starts there. At y=0.25, I need a cell with y_min = 0.25 spanning x ∈ [0.625, 0.75] and z ∈ [0.9375, 1]. The parent "11010101" has y ∈ [0, 0.25], and its sibling "1101011" at level 6 has y ∈ [0.25, 0.5].
+
+"1101011" occupies x ∈ [0.5, 0.75], y ∈ [0.25, 0.5], z ∈ [0.9375, 1]. Its children "11010110" and "11010111" split along z at level 7, with the latter reaching z ∈ [0.96875, 1]. Further subdivision at level 8 along x produces "110101100" with x ∈ [0.5, 0.625], which still doesn't match the required x range.
+
+"110101101" is a leaf node covering x ∈ [0.625, 0.75], y ∈ [0.25, 0.5], z ∈ [0.9375, 0.96875]. It shares a boundary at z=0.9375 with the target region, but this isn't the correct shared face. I need to reconsider the structure—"110101" at level 5 has z ∈ [0.875, 1], and "1101011" results from a y-split at level 6, so its y-range needs verification.
+
+Looking at the split pattern: "110101" divides into "1101010" (y ∈ [0, 0.25]) and "1101011" (y ∈ [0.25, 0.5]). The second option gives the correct y-range for a y_max neighbor. At level 7, "1101011" splits along z into "11010110" (z ∈ [0.875, 0.9375]) and "11010111" (z ∈ [0.9375, 1]).
+
+"11010111" matches the target region with x ∈ [0.5, 0.75], y ∈ [0.25, 0.5], and z ∈ [0.9375, 1]. The next level performs an x-split: "110101110" covers x ∈ [0.5, 0.625] while "110101111" covers x ∈ [0.625, 0.75]. The latter is a leaf node spanning x ∈ [0.625, 0.75], y ∈ [0.25, 0.5], and z ∈ [0.9375, 1].
+
+This cell shares the y=0.25 boundary with the target. For the back face neighbor at z=0.9375, I need a cell with z_max = 0.9375, x ∈ [0.625, 0.75], and y ∈ [0, 0.25]. Looking at level 7, "11010101" has z ∈ [0.9375, 1], and its sibling "11010100" has z ∈ [0.875, 0.9375] with x ∈ [0.5, 0.75] and y ∈ [0, 0.25].
+
+At the next level, "11010100" splits on x into "110101000" (x ∈ [0.5, 0.625]) and "110101001" (x ∈ [0.625, 0.75]). The second one is a leaf that matches the required bounds exactly, sharing the z=0.9375 face with the target.

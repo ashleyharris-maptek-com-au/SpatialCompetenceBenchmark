@@ -1,19 +1,19 @@
 # Failure-Mode Analysis
 
 - Total subpasses: 285
-- Candidate rows (failed + low-score pass): 132
-- Judged rows: 132
+- Candidate rows (failed + low-score pass): 123
+- Judged rows: 123
 - Judge errors: 0
 
 ## Mode Distribution (Judged Rows)
 
 | Mode | Count | Share |
 |---|---:|---:|
-| Evasion / Forfeit | 38 | 28.79% |
-| Trivialized / Misframed | 10 | 7.58% |
+| Evasion / Forfeit | 27 | 21.95% |
+| Trivialized / Misframed | 11 | 8.94% |
 | Runaway Overthinking | 0 | 0.00% |
-| Local-Only (Global Constraint Integration Failure) | 67 | 50.76% |
-| Near-Miss Edge Case | 17 | 12.88% |
+| Local-Only (Global Constraint Integration Failure) | 63 | 51.22% |
+| Near-Miss Edge Case | 22 | 17.89% |
 
 ## Task Hotspots
 
@@ -21,7 +21,6 @@
 |---|---:|---:|---:|---:|
 | Q55 - VGB6 — Delaunay Triangulation | 24 | 24 | 0 | 100.00% |
 | Q4 - Tetrahedron Shadow Coverage | 15 | 15 | 0 | 100.00% |
-| Q57 - VGB5 — Two Segments | 12 | 12 | 0 | 100.00% |
 | Q11 - Hyper-snake Challenge | 9 | 9 | 0 | 100.00% |
 | Q28 - AI controlling explosives, what could possibly go wrong? | 9 | 9 | 0 | 100.00% |
 | Q29 - Cage match. Can LLMs design interlocking parts for 3D printing? | 9 | 9 | 0 | 100.00% |
@@ -34,6 +33,7 @@
 | Q7 - 3D maze - solution requires jumping over gaps | 3 | 3 | 0 | 100.00% |
 | Q8 - Fit a curve to partition 2D ascii patterns via cubic polynomials | 3 | 3 | 0 | 100.00% |
 | Q9 - Hamiltonian Loop on Grid | 3 | 3 | 0 | 100.00% |
+| Q57 - VGB5 — Two Segments | 3 | 3 | 0 | 100.00% |
 
 ## Evidence Samples
 
@@ -42,25 +42,25 @@
 - Score: 0.0
 - Confidence: 0.95
 - Verifier signal: Skipped due to earlyFail (first subpass scored under 0%)
-- Judge justification: No output or bricks were provided for this subpass, and it was skipped due to early failure. This constitutes a forfeit with no usable assembly to evaluate.
+- Judge justification: No output was produced and the verifier skipped evaluation due to early failure, leaving no usable bricks list or structured response.
 
 ### Trivialized / Misframed
 - Task: Q11 - Hyper-snake Challenge (subpass 1)
 - Score: 0.4851120776179324
-- Confidence: 0.62
+- Confidence: 0.78
 - Verifier signal: Visited 29/61 cells (48.5%)
-- Judge justification: The path is syntactically valid and reaches the food, but it stops early with only ~48% coverage despite ample remaining free space and no verifier-reported constraint violations. This reflects under-optimization of t...
+- Judge justification: The path is syntactically valid and obeys movement rules, but stops after limited coverage (29/61 cells) despite the instruction to go for as long as possible. No verifier errors indicate constraint violations; the fa...
 
 ### Local-Only (Global Constraint Integration Failure)
 - Task: Q2 - Build a Lego(tm) hemispherical shell (subpass 0)
-- Score: 0.019653927890399034
-- Confidence: 0.79
+- Score: 0.019653927890399204
+- Confidence: 0.74
 - Verifier signal: Result Volume: 189264.08 Reference Volume: 547897.63 Intersection Volume: 187118.66 Difference Volume: 360238.47 Score was renormalised: 0.01 -> 0.02
-- Judge justification: A nontrivial multi-layer assembly was produced with valid schema and layering, but the verifier shows a very low intersection/reference volume ratio and large difference volume, indicating major missing regions or poo...
+- Judge justification: The attempt provides a well-formed schema with many locally plausible placements and correct layer heights, but the verifier reports an extremely low score driven by large volume difference versus the ideal shell. Thi...
 
 ### Near-Miss Edge Case
-- Task: Q3 - CSG Union of Polyhedra (subpass 20)
+- Task: Q3 - CSG Union of Polyhedra (subpass 14)
 - Score: 0.0
-- Confidence: 0.69
-- Verifier signal: Result Volume: 1252.60 Reference Volume: 1252.60 Intersection Volume: 0.00 Difference Volume: 0.00 OpenSCAD render timed out after 1200 seconds OpenSCAD render timed out after 1200 seconds
-- Judge justification: Verifier volume metrics exactly match the reference (zero difference and zero intersection), indicating the global CSG union geometry is essentially correct. No explicit topology errors (non-manifold, open edges, wind...
+- Confidence: 0.72
+- Verifier signal: Early failure: Face 1 is non-planar: vertex 1 is 1.0000 from plane
+- Judge justification: Verifier flags a single non-planar face while the rest of the construction appears structurally coherent, suggesting a small geometric defect rather than systemic topology failure.

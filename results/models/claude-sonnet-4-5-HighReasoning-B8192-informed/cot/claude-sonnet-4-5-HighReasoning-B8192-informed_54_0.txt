@@ -1,0 +1,98 @@
+I need to find all leaf nodes that share a face with the target leaf "1110110".
+
+First, let me understand the subdivision scheme:
+- The root "" is the unit cube [0,1] × [0,1] × [0,1]
+- Each node splits along axes in the repeating cycle: y → y → x → y → z (repeating)
+- So the pattern is: y, y, x, y, z, y, y, x, y, z, ...
+
+Let me trace the position of "1110110":
+- Level 0 (root ""): full cube [0,1] × [0,1] × [0,1], split along y
+- Level 1 ("1"): split along y, taking upper half y ∈ [0.5, 1]
+- Level 2 ("11"): split along x, taking upper half x ∈ [0.5, 1]
+- Level 3 ("111"): split along y, taking upper half y ∈ [0.75, 1]
+- Level 4 ("1110"): split along z, taking lower half z ∈ [0, 0.5]
+- Level 5 ("11101"): split along y, taking upper half y ∈ [0.875, 1]
+- Level 6 ("111011"): split along y, taking upper half y ∈ [0.9375, 1]
+- Level 7 ("1110110"): split along x, taking lower half x ∈ [0.5, 0.75]
+
+Wait, let me recalculate more carefully. The cycle is y, y, x, y, z with period 5.
+
+Level 0: "" - axis index 0 mod 5 = 0 → y
+Level 1: "1" or "0" - axis index 1 mod 5 = 1 → y
+
+
+Level 2: "11" or "10", etc - axis index 2 mod 5 = 2 → x
+Level 3: "111" etc - axis index 3 mod 5 = 3 → y
+Level 4: "1110" etc - axis index 4 mod 5 = 4 → z
+Level 5: "11101" etc - axis index 5 mod 5 = 0 → y
+Level 6: "111011" etc - axis index 6 mod 5 = 1 → y
+Level 7: "1110110" etc - axis index 7 mod 5 = 2 → x
+
+For "1110110", I can trace how the bounds evolve: starting with x, y, z all in [0, 1], the first bit splits y to [0.5, 1], the second bit further constrains y to [0.75, 1], then x gets split to [0.5, 1], followed by z being narrowed to [0.5, 1] after y is refined to [0.75, 0.875], and finally y is adjusted again based on the fifth bit.
+
+Continuing through the remaining bits, y ends up in [0.8125, 0.84375] after the sixth bit, which gives the final bounding box of x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]. But wait—I need to reconsider the tree structure here. "111011" actually has two children, "1110110" and "1110111", meaning it's an internal node at level 6, not a leaf. Let me retrace the path more carefully, starting from the root and working down through each level. half → y ∈ [0.75, 0.875]
+Level 4 (split along z): "1" means upper half → z ∈ [0.5, 1]
+Level 5 (split along y): "0" means lower half → y ∈ [0.75, 0.8125]
+Level 6 (split along y): "1" means upper half → y ∈ [0.78125, 0.8125]
+
+So the final bounds for "1110110" are:
+- x ∈ [0.5, 1]
+- y ∈ [0.78125, 0.8125]
+- z ∈ [0.5, 1]
+
+Now I need to check if the point (0.6, 0.8, 0.7) falls within these bounds. Let me verify each coordinate:
+- x = 0.6: Is 0.5 ≤ 0.6 ≤ 1? Yes ✓
+- y = 0.8: Is 0.78125 ≤ 0.8 ≤ 0.8125? Yes ✓
+- z = 0.7: Is 0.5 ≤ 0.7 ≤ 1? Yes ✓
+
+All coordinates are within the bounds, so the point (0.6, 0.8, 0.7) is indeed contained in the leaf node "1110110".
+
+Now I need to verify this is correct by checking the octree structure. The path "1110110" represents a specific sequence of octant selections. Let me double-check the split axes pattern to make sure I have them right. Looking at standard octree implementations, the split order is typically x, y, z, x, y, z, ... but this one seems to follow y, y, x, y, z, y, y pattern based on my analysis.
+
+Actually, let me reconsider the split axis pattern. In a standard octree, the split axes usually follow a specific pattern. Let me verify by working through the octree structure more carefully to ensure the bounds I calculated are accurate.
+
+Tracing through the octree path with the bounds I calculated, the point (0.6, 0.8, 0.7) should land in the leaf "1110110" if my analysis is correct.
+
+Now I need to verify this is the correct leaf by checking if there are any other paths that could also contain this point, or if "1110110" is indeed the unique leaf containing (0.6, 0.8, 0.7).
+
+Completing the bounds calculation: at level 5, splitting along y with "0" gives y ∈ [0.75, 0.8125], and at level 6, splitting along y with "1" gives y ∈ [0.78125, 0.8125]. Checking the point against these final bounds confirms x ∈ [0.5, 1], y ∈ [0.78125, 0.8125], and z ∈ [0.5, 1] all contain the coordinates 0.6, 0.8, and 0.7 respectively. The octree path "1110110" is the correct leaf node for this point. z can't exceed 1, so there are no neighbors on that boundary.
+
+The sibling node "1110111" differs only in the final bit, placing it in the upper y range [0.84375, 0.875] while sharing x ∈ [0.5, 1] and z ∈ [0.5, 1]. This creates a shared face at y = 0.84375.
+
+For the x = 0.5 boundary, I need to identify leaves whose x coordinate terminates at 0.5. Looking at the path structure, the first three bits determine the x-range, with "111" indicating the upper half.  To find neighbors on this face, I should trace paths starting with "110" instead, which gives x ∈ [0, 0.5]. These candidates must overlap in y with [0.8125, 0.84375] and z with [0.5, 1]. The "110" prefix establishes y ∈ [0.75, 1], so I need to continue subdividing at level 3 to narrow the y-range further.
+
+At the next split, "1101" gives y ∈ [0.875, 1], which overlaps the target y-range. Checking the tree structure, "1101" branches into "11010" and "11011", both of which maintain z ∈ [0.5, 1].
+
+"11010" is a leaf with z ∈ [0, 0.5] after its level 4 split, so it doesn't intersect the target z-range. "11011" continues further down the tree with children "1101110" and "1101111", so I need to trace through those branches to see if either overlaps the target region. y ∈ [0.875, 0.9375] doesn't overlap with y ∈ [0.8125, 0.84375] since 0.875 exceeds the upper bound. Continuing with "110111", which branches into "1101110" and "1101111". For "1101110", the y-range becomes [0.9375, 0.96875] at level 6, which also doesn't intersect with [0.8125, 0.84375]. The search hasn't found any neighboring cells yet.
+
+Checking the "1100" branch reveals a different situation. At level 3, this path yields y ∈ [0.75, 0.875], which actually contains both 0.8125 and 0.84375. At level 4, "11001" gives z ∈ [0.5, 1], matching the target z-range. This branch looks promising, so I need to verify whether the y-coordinates align properly.
+
+Splitting further at level 5, "110011" produces y ∈ [0.8125, 0.875], which overlaps with the target [0.8125, 0.84375]. At level 6, "1100110" narrows to exactly y ∈ [0.8125, 0.84375], providing a perfect match for the y-range.
+
+The leaf "1100110" spans x ∈ [0, 0.5], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]—this is a face neighbor since it shares the y and z boundaries. Meanwhile, "1100111" with y ∈ [0.84375, 0.875] only touches at an edge. Now checking the bottom face where y = 0.8125, I need leaves with that upper bound and matching x and z ranges.
+
+For the target "1110110", the y-coordinate 0.8125 emerges from the subdivision sequence: the initial split creates [0, 0.5] and [0.5, 1], then taking the upper half gives [0.5, 0.75], then [0.75, 1], then [0.75, 0.875], and finally the refinement at level 5 narrows this further.
+
+To find a neighbor with a lower y-value, I should examine the sibling path "111010" (which diverges at level 5 by taking 0 instead of 1). This alternative path maintains the same bounds through levels 0-3, keeping x ∈ [0.5, 1] and y ∈ [0.75, 0.875], but then follows a different trajectory through the remaining subdivisions.
+
+At level 5, taking 0 narrows y to [0.75, 0.8125], and at level 6 this splits further into two leaves: "1110100" with y ∈ [0.75, 0.78125] and "1110101" with y ∈ [0.78125, 0.8125]. The second leaf "1110101" has its upper y-bound exactly matching the lower bound of my current region, making it a direct neighbor below.
+
+For the back face where z = 0.5, I need leaves with z's upper limit at 0.5 that cover x ∈ [0.5, 1] and y ∈ [0.8125, 0.84375]. Since z splits at level 4 and my current path has 1 at that position (giving z ∈ [0.5, 1]), I need to instead take 0 at level 4 to get z ∈ [0, 0.5]. This means following the path "11100..." where the first three levels establish x ∈ [0.5, 1] and y coordinates need to be determined.
+
+The "11100" node gives y ∈ [0.75, 0.875], which properly contains my target range. At level 5, the y-coordinate splits: "111000" yields y ∈ [0.75, 0.8125] while "111001" gives y ∈ [0.8125, 0.875]. Since I need y ∈ [0.8125, 0.84375], the "111001" child is the one that starts at the right boundary, and further refinement at level 6 will narrow it down to exactly what I need. "11100" has y ∈ [0.75, 0.875], which overlaps with the target's y ∈ [0.8125, 0.84375] at [0.8125, 0.84375]. The z boundaries also meet at z = 0.5, confirming this is a face neighbor. For the x = 1 boundary, there's nothing beyond since x is constrained to [0, 1]. Now checking the z = 1 face of the target region.
+
+I've identified four face neighbors so far: "1110111" at the y = 0.84375 boundary, "1100110" at x = 0.5, "1110101" at y = 0.8125, and "11100" at z = 0.5. Let me verify these by tracing through the target "1110110" path again: the first bit selects y ≥ 0.5, the second selects y ≥ 0.75, the third selects x ≥ 0.5, the fourth selects y < 0.875, the fifth selects z ≥ 0.5, and the sixth selects y ≥ 0.8
+
+125, giving the region x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]. The "1110111" code follows the same path but with the final bit selecting y ≥ 0.84375, which places it in x ∈ [0.5, 1], y ∈ [0.84375, 0.875], z ∈ [0.5, 1]—confirming they share the y = 0.84375 face.
+
+For "1100110", the third decision branches to x < 0.5, creating a region at x ∈ [0, 0.5], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1], which meets the previous region along the x = 0.5 boundary. The "1110101" path begins similarly but diverges at the fifth decision with z < 0.5.
+
+For "1110101", continuing from z ≥ 0.5, the subsequent decisions narrow y to [0.78125, 0.8125] while keeping x ∈ [0.5, 1] and z ∈ [0.5, 1], sharing the y = 0.8125 interface with the prior region. The "11100" sequence follows the same initial splits but terminates at z < 0.5, defining a region spanning x ∈ [0.5, 1], y ∈ [0.75, 0.875], z ∈ [0, 0.5].
+
+Checking adjacency between "11100" and "1110101": their x-ranges fully overlap at [0.5, 1], y-ranges intersect at [0.8125, 0.84375], and they meet along the z = 0.5 boundary. The four sequences—"1110111", "1100110", "1110101", and "11100"—collectively cover the target region where x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0, 1]. "1110111" ✓
+- y = 0.8125 face: "1110101" ✓
+- z = 0.5 face: "11100" ✓
+
+The answer is: "1110111", "1100110", "1110101", "11100"
+
+Verifying these are all leaves in the tree: "1110111" appears under "111011" with no children, "1100110" appears under "110011" with no children, "1110101" appears under "111010" with no children, and "11100" has no children listed.

@@ -1,0 +1,54 @@
+Let me understand the problem first. We have a binary tree that subdivides the unit cube using axis-aligned splits. The splitting pattern cycles through axes in the order: x → x → x → y → z (repeating).
+
+Let me trace through what each level means:
+- Level 0 (root ""): The whole unit cube [0,1]³
+- Level 1: Split along x-axis (first x)
+  - 0: [0, 0.5] × [0, 1] × [0, 1]
+  - 1: [0.5, 1] × [0, 1] × [0, 1]
+- Level 2: Split along x-axis (second x)
+  - 00: [0, 0.25] × [0, 1] × [0, 1]
+  - 01: [0.25, 0.5] × [0, 1] × [0, 1]
+  - 10: [0.5, 0.75] × [0, 1] × [0, 1]
+  - 11: [0.75, 1] × [0, 1] × [0, 1]
+- Level 3: Split along x-axis (third x)
+  - 000: [0, 0.125] × [0, 1] × [0, 1]
+  - 001: [0.125, 0.25] × [0, 1] × [0, 1]
+  - etc.
+- Level 4: Split along y-axis
+- Level 5: Split along z-axis
+- Level 6: Split along x-axis (cycle repeats)
+- Level 7: Split along x-axis
+- Level 8: Split along x-axis
+- Level 9: Split along y-axis
+- Level 10: Split along z-axis
+
+The target leaf is "1000110", which has 7 digits, so it's at level 7.
+
+
+Now I'll trace the bounding box for "1000110" by following each digit through the subdivision sequence. Starting from [0,1]³, the first digit 1 splits on x and takes the right half, giving [0.5, 1] × [0, 1] × [0, 1]. The next three 0s all split on x-axis (levels 2-3), progressively narrowing the x-range to [0.5, 0.625]. At level 4, the digit 0 splits on y-axis and takes the lower half.
+
+Continuing from there, digit 1 at level 5 splits on z and takes the back half → [0.5, 0.625] × [0, 0.5] × [0.5, 1]. The final digit 1 at level 6 splits on x and takes the right → [0.5625, 0.625] × [0, 0.5] × [0.5, 1]. The last digit 0 splits on x and takes the left → [0.5625, 0.59375] × [0, 0.5] × [0.5, 1]. This gives the final voxel bounds for "1000110".
+
+Now I need to identify all leaf cells sharing a face with this voxel. The six faces are at x = 0.5625 and x = 0.59375, y = 0 and y = 0.5, z = 0.5 and z = 1. For the left face at x = 0.5625, I'm looking for cells with x-range ending at that boundary. The sibling "1000111" occupies [0.59375, 0.625] × [0, 0.5] × [0.5, 1], which doesn't share this face.
+
+Let me trace back systematically through the octree structure. The parent "100011" spans [0.5625, 0.625] × [0, 0.5] × [0.5, 1], and going further back, "10001" covers [0.5, 0.625] × [0, 0.5] × [0.5, 1]. To find left neighbors, I need to explore the "10000" subtree, though I should recalculate the exact bounds since "10000" is [0.5, 0.625] × [0, 0.5] × [0, 0.5]. Let me trace "100011" more carefully through each level: starting from the root [0,1]³, the first digit 1 indicates an x-split moving right to [0.5, 1] × [0, 1]³.
+
+Continuing through the remaining digits—0 for x-left, 0 for x-left, 0 for y-bottom, 1 for z-back, 1 for x-right—I get the final bounds [0.5625, 0.625] × [0, 0.5] × [0.5, 1].
+
+The children of this region split along the x-axis: "1000110" occupies [0.5625, 0.59375] × [0, 0.5] × [0.5, 1] on the left, while "1000111" takes [0.59375, 0.625] × [0, 0.5] × [0.5, 1] on the right. To find what borders "1000110" at x = 0.5625, I need to trace back through "10001" and examine its sibling regions.
+
+"10001" spans [0.5, 0.625] × [0, 0.5] × [0.5, 1] and splits into "100010" and "100011". The left child "100010" covers [0.5, 0.5625] × [0, 0.5] × [0.5, 1], making it the adjacent region to "1000110". However, "100010" isn't a leaf—it has further subdivisions at level 7 with an x-split creating "1000100" and "1000101".
+
+Computing their bounds: "1000100" occupies [0.5, 0.53125] × [0, 0.5] × [0.5, 1] while "1000101" takes [0.53125, 0.5625] × [0, 0.5] × [0.5, 1]. Both are leaves, so "1000101" shares the x = 0.5625 boundary with "1000110". The right neighbor at x = 0.59375 is "1000111", which is also a leaf. Now I need to identify cells along the y = 0 face with y-coordinates in the appropriate range. 1]. Its sibling "1001" has y ∈ [0.5, 1]. Tracing back: "1000" occupies [0.5, 0.625] × [0, 0.5] × [0, 1] after the y-split at level 4, while "1001" takes [0.5, 0.625] × [0.5, 1] × [0, 1]. So the neighbors sharing the y = 0.5 face must come from the "1001" subtree, specifically cells matching [0.5625, 0.59375] × [0.5, ?] × [0.5, 1]. I need to descend through "1001" to find which cells at the appropriate depth align with this region.
+
+At level 5, a z-split creates "10010" for [0, 0.5] and "10011" for [0.5, 1] in the z-direction—I need "10011" which spans [0.5, 0.625] × [0.5, 1] × [0.5, 1]. Then at level 6, an x-split divides this into "100110" at [0.5, 0.5625] and "100111" at [0.5625, 0.625], so "100111" is the matching cell with bounds [0.5625, 0.625] × [0.5, 1] × [0.5, 1].
+
+Checking the tree structure, "100111" appears to be a leaf with no children. I'm looking for a neighbor on the y = 0.5 face, but comparing "100111" at [0.5625, 0.625] × [0.5, 1] × [0.5, 1] with "1000110" at [0.5625, 0.59375] × [0, 0.5] × [0.5, 1], they don't actually share that boundary since their y-ranges don't meet at y = 0.5.
+
+For two cells to be face neighbors, one coordinate must be adjacent (meeting at a single value) while the other two must have overlapping ranges. On the y = 0.5 boundary, I need cells where the y-range starts at 0.5, the x-range overlaps [0.5625, 0.59375], and the z-range overlaps [0.5, 1]. "100111" satisfies this—its x-range [0.5625, 0.625] contains the required interval, so they do share a face.
+
+Now checking the z = 0.5 and z = 1 boundaries. For the z = 0.5 face, I need cells with z-range ending at 0.5, x-range overlapping [0.5625, 0.59375], and y-range overlapping [0, 0.5]. The sibling "10000" at level 5 covers [0.5, 0.625] × [0, 0.5] × [0, 0.5], which overlaps in both x and y, but it's not a leaf—it has children. I need to find which leaf descendants of "10000" actually share the z = 0.5 face, specifically those with x ∈ [0.5625, 0.59375].
+
+Tracing through "10000": it splits into "100000" and "100001" at level 6 along the x-axis. Since "100001" covers [0.5625, 0.625] × [0, 0.5] × [0, 0.5], it has the correct x-range, but it's also not a leaf and continues subdividing.
+
+At level 7, "100001" branches into "1000010" and "1000011". The first child "1000010" with bounds [0.5625, 0.59375] × [0, 0.5] × [0, 0.5] matches both the x and y ranges needed, yet it too has children "10000100" and "10000101" at level 8, indicating another x-split in the subdivision pattern.

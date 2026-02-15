@@ -1,0 +1,87 @@
+Let me understand the problem first. We have a binary tree that represents an axis-aligned subdivision of a unit cube. Each node splits its parent cell into two children by bisecting along axes in the repeating cycle x → x → y → z.
+
+Let me trace through how this works:
+- Level 0 (root ""): represents the whole unit cube [0,1]³
+- Level 1: splits along x-axis
+  - "0": x ∈ [0, 0.5]
+  - "1": x ∈ [0.5, 1]
+- Level 2: splits along x-axis again
+  - "00": x ∈ [0, 0.25]
+  - "01": x ∈ [0.25, 0.5]
+  - "10": x ∈ [0.5, 0.75]
+  - "11": x ∈ [0.75, 1]
+- Level 3: splits along y-axis
+  - "000": x ∈ [0, 0.25], y ∈ [0, 0.5]
+  - "001": x ∈ [0, 0.25], y ∈ [0.5, 1]
+  - etc.
+- Level 4: splits along z-axis
+  - "0000": x ∈ [0, 0.25], y ∈ [0, 0.5], z ∈ [0, 0.5]
+  - "0001": x ∈ [0, 0.25], y ∈ [0, 0.5], z ∈ [0.5, 1]
+  - etc.
+- Level 5: splits along x-axis (cycle repeats)
+- Level 6: splits along x-axis
+- And so on...
+
+The cycle is: x, x, y, z, x, x, y, z, ...
+
+
+Now I'll trace the bounds for the target leaf "000111". Starting from the root and following each bit: at level 1 the x-split gives [0,0.5], level 2 another x-split narrows to [0,0.25], level 3 the y-split gives [0,0.5], level 4 the z-split gives [0,0.5], level 5 the x-split gives [0.25,0.375], and level 6 the x-split gives [0.3125,0.375]. The final cell is [0.3125,0.375] × [0.5,1] × [0.5,1]. (x): "0" means left half → x ∈ [0, 0.5]
+- Level 2 (x): "0" narrows to x ∈ [0, 0.25]
+- Level 3 (y): "0" gives y ∈ [0, 0.5]
+- Level 4 (z): "1" places z in [0.5, 1]
+- Level 5 (x): "1" refines to x ∈ [0.125, 0.25]
+- Level 6 (x): "1" further constrains x ∈ [0.1875, 0.25]
+
+This gives the final region "000111" = [0.1875, 0.25] × [0, 0.5] × [0.5, 1].
+
+To identify adjacent voxels, I need to check which leaves share a face with this one. Two cells are face-adjacent when they differ in exactly one coordinate range and touch along that boundary. The six faces have neighbors at: x = 0.1875 (left), x = 0.25 (right), y = 0 (bottom), y = 0.5 (top), z = 0.5 (front), and z = 1 (back).
+
+For the x_min face at x = 0.1875, I'm looking for cells with x-ranges ending at 0.1875 and matching y and z bounds. Tracing back through the octree, the sibling "000110" occupies x ∈ [0.125, 0.1875], which is adjacent. Its parent "00011" spans [0.125, 0.25] × [0, 0.5] × [0.5, 1], confirming the spatial relationship.
+
+For the x_max face at x = 0.25, I need cells extending beyond that boundary with the same y and z ranges. The tree shows "00" splits into "000" and "001", where "000" covers [0, 0.25] × [0, 0.5] × [0, 1] and "001" begins at [0, 0.25] × [0.5, 1] × [0, ...], but neither extends past x = 0.25 in the required region.
+
+I should examine nodes prefixed with "01" instead, since those occupy x ∈ [0.25, 0.5]. Looking specifically at cells with matching y ∈ [0, 0.5] and z ∈ [0.5, 1] ranges.
+
+The "01" prefix spans [0.25, 0.5] × [0, 1] × [0, 1]. After the y-split at level 3, "010" gives [0.25, 0.5] × [0, 0.5] × [0, 1], and "011" gives [0.25, 0.5] × [0.5, 1] × [0, 1]. Then at level 4 with the z-split, "0100" becomes [0.25, 0.5] × [0, 0.5] × [0, 0.5] and "0101" becomes [0.25, 0.5] × [0, 0.5] × [0.5, 1], which matches what I'm looking for.
+
+"0101" continues subdividing through x-splits at levels 5 and 6, producing "01010" = [0.25, 0.375] × [0, 0.5] × [0.5, 1] and "01011" = [0.375, 0.5] × [0, 0.5] × [0.5, 1], then further refining to "010100" = [0.25, 0.3125] × [0, 0.5] × [0.5, 1] and "010101" = [0.3125, 0.375] × [0, 0.5] × [0.5, 1].
+
+The next level produces "010110" = [0.375, 0.4375] × [0, 0.5] × [0.5, 1] and "010111" = [0.4375, 0.5] × [0, 0.5] × [0.5, 1]. "010100" shares its x_max boundary at x = 0.25 with "000111". The y_min face at y = 0 is on the cube boundary with no internal neighbors, while the y_max face at y = 0.5 requires finding cells with y-ranges extending above 0.5 and x-ranges overlapping [0.1875, 0.25], z-ranges in [0.5, 1].
+
+Checking the base cells: "00" spans [0, 0.25] × [0, 1] × [0, 1], and "001" at level 3 gives [0, 0.25] × [0.5, 1] × [0, 1]. At level 4, the z-split produces "0010" = [0, 0.25] × [0.5, 1] × [0, 0.5] and "0011" = [0, 0.25] × [0.5, 1] × [0.5, 1], where "0011" has the matching y-range.
+
+Since I need x ∈ [0.1875, 0.25], I continue subdividing. At level 5, the x-split gives "00111" = [0.125, 0.25] × [0.5, 1] × [0.5, 1], which is closer. Level 6 refines this further: "001111" = [0.1875, 0.25] × [0.5, 1] × [0.5, 1], and this cell shares the y_max face with "000111".
+
+For the z_min face at z = 0.5, I need cells where z ∈ [z', 0.5] with z' < 0.5, x ∈ [0.1875, 0.25], and y ∈ [0, 0.5]. Starting from "000" = [0, 0.25] × [0, 0.5] × [0, 1], the level 4 z-split gives "0000" = [0, 0.25] × [0, 0.5] × [0, 0.5]. At level 5, the x-split produces "00000" = [0, 0.125] × [0, 0.5] × [0, 0.5] and "00
+
+001" = [0.125, 0.25] × [0, 0.5] × [0, 0.5]. The level 6 x-split then yields "000010" = [0.125, 0.1875] × [0, 0.5] × [0, 0.5] and "000011" = [0.1875, 0.25] × [0, 0.5] × [0, 0.5], where "000011" shares the z_min face with "000111" at z = 0.5.
+
+The z_max face at z = 1 is on the cube boundary, so there are no internal neighbors there. The complete neighbor list includes "000110" across the x_min face, "010100" across the x_max face, and "001111" as another neighbor.
+
+Let me verify these by checking the bounds. "000111" should map to [0.1875, 0.25] × [0, 0.5] × [0.5, 1]. For "000110", the first level gives [0, 0.5], second level [0, 0.25], third level [0, 0.5], fourth level [0.5, 1], fifth level [0.125, 0.25], and sixth level [0.125, 0.1...
+
+875]
+Result: [0.125, 0.1875] × [0, 0.5] × [0.5, 1] ✓
+
+For "010100", the sequence progresses through [0, 0.5], then [0.25, 0.5], [0, 0.5], [0.5, 1], [0.25, 0.375], and finally [0.25, 0.3125], yielding [0.25, 0.3125] × [0, 0.5] × [0.
+
+5, 1]. The next code "001111" follows a similar refinement pattern: starting with [0, 0.5] and [0, 0.25] for x, then [0.5, 1] for y and z, before narrowing to [0.1875, 0.25] × [0.5, 1] × [0.5, 1]. For "000011", the initial subdivisions begin with [0, 0.5] and [0, 0.25] as expected.
+
+The remaining levels narrow the x-range to [0.1875, 0.25] while keeping y and z in [0, 0.5], yielding [0.1875, 0.25] × [0, 0.5] × [0, 0.5]. All four neighbor codes produce valid results. Now I should verify these are actually leaves in the tree structure—checking whether "000110" and the others appear as leaf nodes. x = 0.1875 ✓
+
+Face at x = 0.25 (x_max):
+- "010100" = [0.25, 0.3125] × [0, 0.5] × [0.5, 1]
+- Yes, they share the face at x = 0.25 ✓
+
+Face at y = 0 (y_min):
+- This is at the boundary, no neighbor
+
+Face at y = 0.5 (y_max):
+- "001111" = [0.1875, 0.25] × [0.5, 1] × [0.5, 1]
+- Yes, they share the face at y = 0.5 ✓
+
+Face at z = 0.5 (z_min):
+- "000011" = [0.1875, 0.25] × [0, 0.5] × [0.25, 0.5]
+- Yes, they share the face at z = 0.5 ✓
+
+All four neighbors check out correctly. The answer is confirmed: 000110, 010100, 001111, 000011.

@@ -1,0 +1,104 @@
+I need to find all leaf nodes that share a face with the target leaf "0111111101".
+
+First, let me understand the subdivision scheme. The splits follow the cycle: z → x → z → y → x → y (repeating).
+
+Let me trace the path to "0111111101":
+- Level 0 (root ""): splits along z
+  - "0" is z ∈ [0, 0.5]
+  - "1" is z ∈ [0.5, 1]
+- Level 1 ("0"): splits along x
+  - "00" is x ∈ [0, 0.5], z ∈ [0, 0.5]
+  - "01" is x ∈ [0.5, 1], z ∈ [0, 0.5]
+- Level 2 ("01"): splits along z
+  - "010" is x ∈ [0.5, 1], z ∈ [0, 0.25]
+  - "011" is x ∈ [0.5, 1], z ∈ [0.25, 0.5]
+- Level 3 ("011"): splits along y
+  - "0110" is x ∈ [0.5, 1], y ∈ [0, 0.5], z ∈ [0.25, 0.5]
+  - "0111" is x ∈ [0.5, 1], y ∈ [0.5, 1], z ∈ [0.25, 0.5]
+- Level 4 ("0111"): splits along x
+  - "01110" is x ∈ [0.5, 0.75], y ∈ [0.5, 1], z ∈ [0.25, 0.5]
+  - "01111" is x ∈ [0.75, 1], y ∈ [0.5, 1], z ∈ [0.25, 0.5]
+- Level 5 ("01111"): splits along y
+  - "011110" is x ∈ [0.75, 1], y ∈ [0.5, 0.75], z ∈ [0.25, 0.5]
+  - "011111" is x ∈ [0.75, 1], y ∈ [0.75, 1], z ∈ [0.25, 0.5]
+- Level 6 ("011111"): splits along x
+  - "0111110" is x ∈ [0.75, 0.875], y ∈ [0.75, 1], z ∈ [0.25, 0.5]
+  - "0111111" is x ∈ [0.875, 1], y ∈ [0.75, 1], z ∈ [0.25, 0.5]
+- Level 7 ("0111111"): splits along y
+  - "01111110" is x ∈ [0.875, 1], y ∈ [0.75, 0.875], z ∈ [0.25, 0.5]
+  - "01111111" is x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.25, 0.5]
+- Level 8 ("01111111"): splits along z
+  - "011111110" is x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.25, 0.375]
+  - "011111111" is x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.375, 0.5]
+- Level 9 ("011111111"): splits along x
+  - "0111111110" is x ∈ [0.875, 0.9375], y ∈ [0.875, 1], z ∈ [0.375, 0.5]
+  - "0111111111" is x ∈ [0.9375, 1], y ∈ [0.875, 1], z ∈ [0.375, 0.5]
+
+The target leaf "0111111101" is x ∈ [0.875, 0.9375], y ∈ [0.875, 1], z ∈ [0.375, 0.5]. 375, 0.5]. At level 9, "011111111" splits along y into "0111111110" covering x ∈ [0.875, 1], y ∈ [0.75, 0.875], z ∈ [0.4375, 0.5] and "0111111111" covering x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.4375, 0.5].
+
+I need to verify this is correct. The target code "0111111101" has 10 bits, so I should trace through the octree more carefully, checking which axis gets split at each level following the cycling pattern.
+
+Starting fresh: level 0 splits on z, level 1 on x, level 2 on z, level 3 on y, level 4 on x, level 5 on y, level 6 on z (since 6 mod 3 = 0), level 7 on x, level 8 on z, and level 9 on y. Following this pattern through the code "0111111101" means at level 9 I'm taking the "0" child from the y-split of "011111110", which determines the final region.
+
+Computing the spatial bounds: the root spans [0,1]³. At level 1, taking child "0" restricts z to [0, 0.5]. At level 2, child "1" restricts x to [0.5, 1]. At level 3, child "1" restricts z to [0.25, 0.5]. At level 4, child "1" restricts y to [0.5, 1]. Continuing this process through each subsequent split narrows down the bounding box further. .875, 1], so the box becomes [0.875,1] × [0.75,1] × [0.375,0.5]. At level 9, the z-coordinate narrows to [0.375, 0.4375], giving [0.875,1] × [0.75,1] × [0.375,0.4375]. Finally, at level 10, y is constrained to [0.8125, 0.875], which means the leaf "0111111101" is contained in [0.875,1] × [0.8125,0.875] × [0.375,0.4375].
+
+Now I need to identify all neighboring leaves that share a face with this voxel. Each of the six faces has potential neighbors: the left face at x = 0.875 connects to leaves with x ∈ [?, 0.875], the right face at x = 1 is at the boundary, the bottom face at y = 0.8125 connects to leaves with y ∈ [?, 0.8125], the top face at y = 0.875 connects to leaves with y ∈ [0.875, ?], the front face at z = 0.375 connects to leaves with z ∈ [?, 0.375], and the back face at z = 0.4375 connects to leaves with z ∈ [0.4375, ?].
+
+For the left face, I'm checking the sibling "01111110" which spans x ∈ [0.75, 0.875] to see if it's a leaf or further subdivided. The tree structure shows this node has children, so I need to traverse down to find the actual leaves that would touch this boundary.
+
+The subdivision pattern shows "01111110" splits into two branches that further divide along the y-axis. "0111111001" and "0111111011" both fall within the required y-range [0.8125, 0.875] and share the same z-bounds, making them candidates for the neighboring face.
+
+Now I need to verify the bounds for "01111110" itself. Tracing back through the octree structure, "01111110" is the result of taking child 0 at the z-split level, which constrains z to [0.375, 0.4375]. The parent "0111111" establishes the x and y ranges as [0.75, 1] × [0.75, 1], so "01111110" should have bounds [0.75, 1] × [0.75, 1] × [0.375, 0.4375].
+
+At level 7, the split is along x, dividing "0111111" into two children with x-ranges [0.75, 0.875] and [0.875, 1]. At level 8, the split is along z, creating the z-ranges [0.375, 0.4375] and [0.4375, 0.5]. This means "011111110" and "011111111" share the same z-boundaries as their parent's z-split, while "01111110" and "01111111" are distinguished by their x-coordinates from the level 7 split.
+
+For "01111110" with bounds [0.75, 0.875] × [0.75, 1] × [0.375, 0.5], the level 8 z-split creates two children with z ∈ [0.375, 0.4375] and [0.4375, 0.5]. At level 9, both children split along y, producing four nodes with y-ranges [0.75, 0.875] and [0.875, 1]. .5]
+
+The target cube is "0111111101": [0.875, 1] × [0.8125, 0.875] × [0.375, 0.4375]. Checking "0111111001" with range [0.75, 0.875] × [0.875, 1] × [0.375, 0.4375], I see they share the boundary at x = 0.875 and have matching z-ranges, but their y-intervals only touch at a single point (y = 0.875), which means they're not face neighbors—they'd need overlapping 2D regions to qualify.
+
+Now looking at "0111111000": [0.75, 0.875] × [0.75, 0.875] × [0.375, 0.4375]. The target's y-interval [0.8125, 0.875] overlaps with this cube's y-interval [0.75, 0.875] in the region [0.8125,
+
+0.875], and both share the same z-range [0.375, 0.4375]. They meet along a face at x = 0.875, making "0111111000" a face neighbor in the negative x direction.
+
+The positive x face at x = 1 is a boundary with no neighbor. For the negative y face at y = 0.8125, I need to find leaves with y-ranges ending at or below 0.8125 that overlap in x and z. The parent "011111110" spans y ∈ [0.75, 1], and its child 1 at the next level would give the target "0111111101".  Its sibling "0111111100" has y ∈ [0.75, 0.8125], x ∈ [0.875, 1], and z ∈ [0.375, 0.4375]—this matches perfectly as a face neighbor in the negative y direction. For the positive y face at y = 0.875, I'm checking leaves with y-ranges starting at or above 0.875.
+
+The parent "011111110" spans y ∈ [0.75, 1], so its sibling "011111111" at level 8 has bounds [0.875, 1] × [0.75, 1] × [0.4375, 0.5]. Let me verify this calculation more carefully.
+
+When "011111111" splits at level 9 along y, it produces "0111111110" with y ∈ [0.75, 0.875] and "0111111111" with y ∈ [0.875, 1]. This means "0111111111" occupies [0.875, 1] × [0.875, 1] × [0.4375, 0.5].
+
+Comparing this to the target "0111111101" at [0.875, 1] × [0.8125, 0.875] × [0.375, 0.4375], the x-ranges align perfectly, but the y-ranges only touch at y = 0.875 and the z-ranges only meet at z = 0.4375—they share just a boundary, not an interior overlap.
+
+For a neighbor in the +y direction, I need a node with y starting at 0.875 while maintaining x and z overlap with the target. Rather than checking individual candidates, I should trace up the tree to find the first ancestor that has a sibling containing the desired region, then work back down to the leaf level.
+
+Starting from "0111111101" and moving up through the hierarchy: at level 6, the node "011111" is child 1 of a y-split, meaning its sibling "011110" occupies the +y range. From there, I can descend through the tree following the path that keeps x and z aligned with the target while moving into the +y region. z-split at level 8. "01111111" divides along z into child 0 ("011111110") and child 1 ("011111111"). The target is in child 0, so I check the sibling "011111111" with bounds [0.875, 1] × [0.75, 1] × [0.4375, 0.5]. At level 9, this splits along y into two children: "0111111110" covering [0.875, 1] × [0.75, 0.875] × [0.4375, 0.5] and "0111111111" covering [0.875, 1] × [0.875, 1] × [0.4375, 0.5]. Neither overlaps with the target's z-range, so neither contains the +y neighbor.
+
+Moving back up the tree, at level 7 there's an x-split where "0111111" divides into "01111110" and "01111111". The target is in "01111111", so the sibling "01111110" with x ∈ [0.75, 0.875] is to the left. At level 6, a z-split divides "011111" into "0111110" and "0111111", with the target in "0111111" having z ∈ [0.375
+
+, 0.5], while the sibling extends in the -z direction. At level 5, a y-split separates "01111" into two halves with y ∈ [0.5, 0.75] and y ∈ [0.75, 1], and since the target is in the upper half, there's no +y neighbor from this split. At level 4, an x-split divides "0111" into regions with x ∈ [0.5, 0.75] and x ∈ [0.75, 1], with the target in the latter.
+
+At level 3, another y-split creates "0110" and "0111" with y ranges [0, 0.5] and [0.5, 1]. The target falls in the upper child, so again no +y neighbor. The target's y-coordinate [0.8125, 0.875] sits within the upper portion of [0.5, 1], but this doesn't extend to a boundary that would create a neighbor in the +y direction.
+
+Looking deeper at the tree structure: "01111" maintains y ∈ [0.75, 1] through levels 5-9. At level 6, the z-split keeps the same y bounds. By level 9, "011111110" results from taking child 0 at a z-split, which affects the z-coordinate but preserves the y range from its parent.
+
+At level 9, the y-split divides this into two children: one with y ∈ [0.75, 0.875] and another with y ∈ [0.875, 1]. The target "0111111101" should correspond to the upper half, but my earlier calculation showed y ∈ [0.8125, 0.875], which contradicts this. I need to trace through the full path from the root more carefully, tracking how each split affects the coordinate ranges.
+
+Starting fresh: the root splits along z into "0" (z ∈ [0, 0.5]) and "1" (z ∈ [0.5, 1]). From "0", the next split is along x, giving "00" (x ∈ [0, 0.5]) and "01" (x ∈ [0.5, 1]). Then "01" splits along z into "010" (z ∈ [0, 0.25]) and "011" (z ∈ [0.25, 0.5]). Continuing this pattern through level 3 with "011"...
+
+5, 1] × [0, 1] × [0.25, 0.5], splits along y.
+  - "0110": y ∈ [0, 0.5]
+  - "0111": y ∈ [0.5, 1]
+
+- Level 4 ("0111"): box is [0.5, 1] × [0.5, 1] × [0.25, 0.5], splits along x.
+  - "01110": x ∈ [0.5, 0.75]
+  - "01111": x ∈ [0.75, 1]
+
+- Level 5 ("01111"): box is [0.75, 1] × [0.5, 1] × [0.25, 0.5], splits along y.
+  - "
+
+The octree continues subdividing by alternating through the three axes. At level 4, "0111" narrows the x-range to [0.5, 1] and y-range to [0.5, 1], then splits along x again. Level 5 further refines by splitting along y, progressively narrowing the bounding box. 75, 1] × [0.375, 0.5], splits along z.
+  - "011111110": z ∈ [0.375, 0.4375]
+  - "011111111": z ∈ [0.4375, 0.5]
+
+At level 9, "011111110" corresponds to [0.875, 1] × [0.75, 1] × [0.375, 0.4375] and divides along the y-axis into two children: one covering [0.75, 0.875] and the other [0.875, 1]. The path "0111111101" terminates at the box [0.875, 1] × [0.875, 1] × [0.375, 0.4375].
+
+Now I need to identify the neighbors. The face at x = 0.875 borders the sibling "01111110" with bounds [0.75, 0.875] × [0.75, 1] × [0.375, 0.5]. Its child "011111100" covers [0.75, 0.875] × [0.75, 1] × [0.375, 0.4375] and further subdivides along y, with "0111111000" being one of the resulting children. The target occupies x ∈ [0.875, 1], y ∈ [0.875, 1], z ∈ [0.375, 0.4375]. A face neighbor sharing the x = 0.875 boundary needs x ∈ [?, 0.875] with matching y and z ranges. "0111111001" has exactly x ∈ [0.75, 0.875], y ∈ [0.875, 1], z ∈ [0.375, 0.4375], so it qualifies as a neighbor.

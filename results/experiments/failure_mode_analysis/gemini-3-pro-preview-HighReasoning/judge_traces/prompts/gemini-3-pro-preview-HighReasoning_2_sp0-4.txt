@@ -1,0 +1,256 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 0, 1, 2, 3, 4
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q02: Build a Lego(tm) hemispherical shell
+- Source file: `2.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Test whether the model can construct a discrete, physically plausible 3D brick assembly that approximates a target hemispherical shell while respecting hard buildability constraints. Scoring is driven by volume-difference vs the ideal shell, so large holes/missing regions are typically fatal even if local placements look “reasonable”.
+
+## Output Contract
+- Return JSON object with `reasoning` and `bricks`.
+- `bricks` is a list of brick objects with `Centroid` and `RotationDegrees`.
+- Missing `bricks` or malformed brick entries is invalid.
+
+## Hard Constraints (Verifier-Checked)
+- Schema validity for required keys and value types.
+- Brick Z layer alignment: `Centroid[2]` must match `4.8 + n*9.6` within tolerance.
+- No brick below ground; no brick wholly inside inner sphere; no brick wholly outside outer sphere.
+- Duplicate brick rejection on rounded centroid/rotation key.
+- Stud-grid compatibility in connected components.
+- Stability check: center of mass must lie inside support polygon of ground bricks.
+- Support check: every brick must be grounded, supported from below, or held from above.
+- Post-volume consistency check may apply overlap-like volume penalty.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `No bricks provided` | Empty or missing usable assembly | `Evasion / Forfeit`, `Trivialized / Misframed` |
+| `Brick ... Z=... not at valid layer height (should be 4.8 + n*9.6)` | Illegal brick layering | `Local-Only (Global Constraint Integration Failure)` |
+| `A brick ... below ground is invalid` | Ground intersection violation | `Local-Only (Global Constraint Integration Failure)` |
+| `A brick ... wholly inside the inner sphere is redundant` | Ignored shell hollow-region constraint | `Trivialized / Misframed`, `Local-Only (Global Constraint Integration Failure)` |
+| `Duplicate brick at ...` | Duplicate placement key after rounding centroid/rotation | `Near-Miss Edge Case`, `Local-Only (Global Constraint Integration Failure)` |
+| `Stud grid misalignment: bricks at same center but ... relative rotation` | Same-center bricks have illegal relative rotation (not near a 90° multiple) | `Local-Only (Global Constraint Integration Failure)` |
+| `Stud grid misalignment in connected component: ...` | Connected bricks’ stud grids do not align | `Local-Only (Global Constraint Integration Failure)` |
+| `Structure unstable: center of mass ... is outside support polygon ...` | Physically unstable stack | `Local-Only (Global Constraint Integration Failure)` |
+| `Brick ... is floating (not supported from below or held from above)` | Unsupported geometry in final assembly | `Local-Only (Global Constraint Integration Failure)` |
+| `A brick ... wholly outside the outer sphere is a waste` | Brick placed beyond valid shell region | `Local-Only (Global Constraint Integration Failure)` |
+| Low `intersectionVolume / referenceVolume` ratio | Post-volume comparison shows poor geometric match to target shell | `Near-Miss Edge Case`, `Local-Only (Global Constraint Integration Failure)` |
+| `50% penalty due to bricks overlapping: Volume error of ...` | Post-volume consistency penalty (typically indicates overlaps or severe packing inconsistency) | `Near-Miss Edge Case`, `Local-Only (Global Constraint Integration Failure)` |
+| Schema parse failure | Output not in expected structured format | `Evasion / Forfeit`, `Trivialized / Misframed` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: No usable `bricks` list or placeholder output.
+- `Trivialized / Misframed`: Very small/simple assembly that ignores hemispherical shell target.
+- `Runaway Overthinking`: COT shows spiraling reasoning producing a bloated brick plan that fails diverse constraint types simultaneously.
+- `Local-Only (Global Constraint Integration Failure)`: Locally plausible placements but global volume/buildability invalid.
+- `Near-Miss Edge Case`: Structure is broadly right with limited overlap/volume deviations.
+
+## Judge Input Bundle
+1. Full prompt with radius/brick context.
+2. Raw model output text.
+3. Parsed JSON object.
+4. Verifier score explanation and penalty messages.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify this q02 attempt with exactly one failure mode from FAILURE_TAXONOMY.md.
+Ground your choice in schema validity plus structural (layer/support/stability/stud) and volume signals.
+Return JSON with: failure_mode, confidence, justification.
+```
+
+
+Attempts:
+### Subpass 0
+
+Attempt Metadata:
+- question_id: 2
+- subpass: 0
+- score: 0.019653927890399204
+- status: None
+- incomplete_reason: None
+- output_text_chars: 2606
+
+Original Prompt:
+You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm * 15.8mm * 11.4mm but when assembled they are 
+32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. 
+
+These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, 
+and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at 
+(centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at 
+[22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.
+
+Assemble the bricks such that they resemble a 3D hemispherical shell, with inner radius 4 cm and outer radius 7 cm, 
+the centre of the hemisphere is at the origin (0,0,0).
+
+Since it's impossible to create a perfect curve, the best score is one which is closer to the ideal curve, with
+scoring being calculated based on the volume difference between the ideal curve and the actual brick structure. 
+The structure needs to be buildable in 3D, so bricks can not overlap or be floating in mid air. A great answer does not 
+contain any holes or missing bricks.
+
+Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have
+any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection
+rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)
+
+Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees).
+
+Verifier Signal:
+Result Volume:  189264.08  
+      Reference Volume:  547897.63  
+      Intersection Volume:  187118.66  
+      Difference Volume:  360238.47  
+     
+    Score was renormalised: 0.01 -> 0.02
+
+Raw Output:
+{'reasoning': 'The structure is built layer by layer starting from z=4.8mm. The bricks are arranged in a grid based on 8mm increments (standard stud pitch). Each layer reduces in radius to approximate the hemispherical curvature (Radius ~70mm shrinking to 0). Bricks are alternated in orientation (0 vs 90 degrees) and offset in X/Y coordinates between layers to create interlocking bonds (masonry style) for stability. Layer 6 uses only two parallel bricks to avoid corner collisions while providing a bridge support for the final capstone brick at Layer 7.', 'bricks': [{'Centroid': [0, 56, 4.8], 'RotationDegrees': 0}, {'Centroid': [0, -56, 4.8], 'RotationDegrees': 0}, {'Centroid': [56, 0, 4.8], 'RotationDegrees': 90}, {'Centroid': [-56, 0, 4.8], 'RotationDegrees': 90}, {'Centroid': [40, 40, 4.8], 'RotationDegrees': 0}, {'Centroid': [40, -40, 4.8], 'RotationDegrees': 0}, {'Centroid': [-40, 40, 4.8], 'RotationDegrees': 0}, {'Centroid': [-40, -40, 4.8], 'RotationDegrees': 0}, {'Centroid': [16, 48, 14.4], 'RotationDegrees': 0}, {'Centroid': [-16, 48, 14.4], 'RotationDegrees': 0}, {'Centroid': [16, -48, 14.4], 'RotationDegrees': 0}, {'Centroid': [-16, -48, 14.4], 'RotationDegrees': 0}, {'Centroid': [48, 16, 14.4], 'RotationDegrees': 90}, {'Centroid': [48, -16, 14.4], 'RotationDegrees': 90}, {'Centroid': [-48, 16, 14.4], 'RotationDegrees': 90}, {'Centroid': [-48, -16, 14.4], 'RotationDegrees': 90}, {'Centroid': [0, 40, 24], 'RotationDegrees': 0}, {'Centroid': [0, -40, 24], 'RotationDegrees': 0}, {'Centroid': [40, 0, 24], 'RotationDegrees': 90}, {'Centroid': [-40, 0, 24], 'RotationDegrees': 90}, {'Centroid': [32, 32, 24], 'RotationDegrees': 0}, {'Centroid': [32, -32, 24], 'RotationDegrees': 0}, {'Centroid': [-32, 32, 24], 'RotationDegrees': 0}, {'Centroid': [-32, -32, 24], 'RotationDegrees': 0}, {'Centroid': [16, 32, 33.6], 'RotationDegrees': 0}, {'Centroid': [-16, 32, 33.6], 'RotationDegrees': 0}, {'Centroid': [16, -32, 33.6], 'RotationDegrees': 0}, {'Centroid': [-16, -32, 33.6], 'RotationDegrees': 0}, {'Centroid': [32, 16, 33.6], 'RotationDegrees': 90}, {'Centroid': [32, -16, 33.6], 'RotationDegrees': 90}, {'Centroid': [-32, 16, 33.6], 'RotationDegrees': 90}, {'Centroid': [-32, -16, 33.6], 'RotationDegrees': 90}, {'Centroid': [0, 24, 43.2], 'RotationDegrees': 0}, {'Centroid': [0, -24, 43.2], 'RotationDegrees': 0}, {'Centroid': [24, 0, 43.2], 'RotationDegrees': 90}, {'Centroid': [-24, 0, 43.2], 'RotationDegrees': 90}, {'Centroid': [0, 16, 52.8], 'RotationDegrees': 0}, {'Centroid': [0, -16, 52.8], 'RotationDegrees': 0}, {'Centroid': [0, 0, 62.4], 'RotationDegrees': 90}]}
+
+Chain of Thought:
+(none)
+
+### Subpass 1
+
+Attempt Metadata:
+- question_id: 2
+- subpass: 1
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 4907
+
+Original Prompt:
+You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm * 15.8mm * 11.4mm but when assembled they are 
+32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. 
+
+These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, 
+and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at 
+(centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at 
+[22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.
+
+Assemble the bricks such that they resemble a 3D hemispherical shell, with inner radius 5 cm and outer radius 8 cm, 
+the centre of the hemisphere is at the origin (0,0,0).
+
+Since it's impossible to create a perfect curve, the best score is one which is closer to the ideal curve, with
+scoring being calculated based on the volume difference between the ideal curve and the actual brick structure. 
+The structure needs to be buildable in 3D, so bricks can not overlap or be floating in mid air. A great answer does not 
+contain any holes or missing bricks.
+
+Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have
+any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection
+rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)
+
+Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees).
+
+Verifier Signal:
+Stud grid misalignment in connected component: brick {'Centroid': [64, 0, 4.8], 'RotationDegrees': 90} grid (4.0, 4.0) vs brick {'Centroid': [60, 16, 14.4], 'RotationDegrees': 90} grid (0.0, 4.0)
+
+Raw Output:
+{'reasoning': "The hemispherical shell is discretized into 8 horizontal layers (Z=0 to Z~76.8mm) based on the brick height of 9.6mm. To approximate the curve (Inner R=50, Outer R=80), the radial distance of bricks from the center decreases with height. A 'running bond' pattern is used where bricks in layer N+1 are offset from layer N to bridge gaps and ensure structural stability (interlocking studs). 4-fold rotational symmetry is applied to maintain the spherical shape. Coordinates are aligned to an 8mm grid to ensure valid stud connections.", 'bricks': [{'Centroid': [64, 0, 4.8], 'RotationDegrees': 90}, {'Centroid': [-64, 0, 4.8], 'RotationDegrees': 90}, {'Centroid': [0, 64, 4.8], 'RotationDegrees': 0}, {'Centroid': [0, -64, 4.8], 'RotationDegrees': 0}, {'Centroid': [56, 32, 4.8], 'RotationDegrees': 90}, {'Centroid': [-56, 32, 4.8], 'RotationDegrees': 90}, {'Centroid': [56, -32, 4.8], 'RotationDegrees': 90}, {'Centroid': [-56, -32, 4.8], 'RotationDegrees': 90}, {'Centroid': [32, 56, 4.8], 'RotationDegrees': 0}, {'Centroid': [-32, 56, 4.8], 'RotationDegrees': 0}, {'Centroid': [32, -56, 4.8], 'RotationDegrees': 0}, {'Centroid': [-32, -56, 4.8], 'RotationDegrees': 0}, {'Centroid': [60, 16, 14.4], 'RotationDegrees': 90}, {'Centroid': [-60, 16, 14.4], 'RotationDegrees': 90}, {'Centroid': [60, -16, 14.4], 'RotationDegrees': 90}, {'Centroid': [-60, -16, 14.4], 'RotationDegrees': 90}, {'Centroid': [16, 60, 14.4], 'RotationDegrees': 0}, {'Centroid': [-16, 60, 14.4], 'RotationDegrees': 0}, {'Centroid': [16, -60, 14.4], 'RotationDegrees': 0}, {'Centroid': [-16, -60, 14.4], 'RotationDegrees': 0}, {'Centroid': [48, 48, 14.4], 'RotationDegrees': 0}, {'Centroid': [-48, 48, 14.4], 'RotationDegrees': 0}, {'Centroid': [48, -48, 14.4], 'RotationDegrees': 0}, {'Centroid': [-48, -48, 14.4], 'RotationDegrees': 0}, {'Centroid': [52, 16, 24.0], 'RotationDegrees': 90}, {'Centroid': [-52, 16, 24.0], 'RotationDegrees': 90}, {'Centroid': [52, -16, 24.0], 'RotationDegrees': 90}, {'Centroid': [-52, -16, 24.0], 'RotationDegrees': 90}, {'Centroid': [16, 52, 24.0], 'RotationDegrees': 0}, {'Centroid': [-16, 52, 24.0], 'RotationDegrees': 0}, {'Centroid': [16, -52, 24.0], 'RotationDegrees': 0}, {'Centroid': [-16, -52, 24.0], 'RotationDegrees': 0}, {'Centroid': [44, 44, 24.0], 'RotationDegrees': 0}, {'Centroid': [-44, 44, 24.0], 'RotationDegrees': 0}, {'Centroid': [44, -44, 24.0], 'RotationDegrees': 0}, {'Centroid': [-44, -44, 24.0], 'RotationDegrees': 0}, {'Centroid': [44, 16, 33.6], 'RotationDegrees': 90}, {'Centroid': [-44, 16, 33.6], 'RotationDegrees': 90}, {'Centroid': [44, -16, 33.6], 'RotationDegrees': 90}, {'Centroid': [-44, -16, 33.6], 'RotationDegrees': 90}, {'Centroid': [16, 44, 33.6], 'RotationDegrees': 0}, {'Centroid': [-16, 44, 33.6], 'RotationDegrees': 0}, {'Centroid': [16, -44, 33.6], 'RotationDegrees': 0}, {'Centroid': [-16, -44, 33.6], 'RotationDegrees': 0}, {'Centroid': [36, 36, 33.6], 'RotationDegrees': 0}, {'Centroid': [-36, 36, 33.6], 'RotationDegrees': 0}, {'Centroid': [36, -36, 33.6], 'RotationDegrees': 0}, {'Centroid': [-36, -36, 33.6], 'RotationDegrees': 0}, {'Centroid': [36, 16, 43.2], 'RotationDegrees': 90}, {'Centroid': [-36, 16, 43.2], 'RotationDegrees': 90}, {'Centroid': [36, -16, 43.2], 'RotationDegrees': 90}, {'Centroid': [-36, -16, 43.2], 'RotationDegrees': 90}, {'Centroid': [16, 36, 43.2], 'RotationDegrees': 0}, {'Centroid': [-16, 36, 43.2], 'RotationDegrees': 0}, {'Centroid': [16, -36, 43.2], 'RotationDegrees': 0}, {'Centroid': [-16, -36, 43.2], 'RotationDegrees': 0}, {'Centroid': [28, 28, 43.2], 'RotationDegrees': 0}, {'Centroid': [-28, 28, 43.2], 'RotationDegrees': 0}, {'Centroid': [28, -28, 43.2], 'RotationDegrees': 0}, {'Centroid': [-28, -28, 43.2], 'RotationDegrees': 0}, {'Centroid': [28, 16, 52.8], 'RotationDegrees': 90}, {'Centroid': [-28, 16, 52.8], 'RotationDegrees': 90}, {'Centroid': [28, -16, 52.8], 'RotationDegrees': 90}, {'Centroid': [-28, -16, 52.8], 'RotationDegrees': 90}, {'Centroid': [16, 28, 52.8], 'RotationDegrees': 0}, {'Centroid': [-16, 28, 52.8], 'RotationDegrees': 0}, {'Centroid': [16, -28, 52.8], 'RotationDegrees': 0}, {'Centroid': [-16, -28, 52.8], 'RotationDegrees': 0}, {'Centroid': [20, 20, 52.8], 'RotationDegrees': 0}, {'Centroid': [-20, 20, 52.8], 'RotationDegrees': 0}, {'Centroid': [20, -20, 52.8], 'RotationDegrees': 0}, {'Centroid': [-20, -20, 52.8], 'RotationDegrees': 0}, {'Centroid': [20, 0, 62.4], 'RotationDegrees': 90}, {'Centroid': [-20, 0, 62.4], 'RotationDegrees': 90}, {'Centroid': [0, 20, 62.4], 'RotationDegrees': 0}, {'Centroid': [0, -20, 62.4], 'RotationDegrees': 0}, {'Centroid': [16, 16, 62.4], 'RotationDegrees': 0}, {'Centroid': [-16, 16, 62.4], 'RotationDegrees': 0}, {'Centroid': [16, -16, 62.4], 'RotationDegrees': 0}, {'Centroid': [-16, -16, 62.4], 'RotationDegrees': 0}, {'Centroid': [0, 8, 72.0], 'RotationDegrees': 0}, {'Centroid': [0, -8, 72.0], 'RotationDegrees': 0}]}
+
+Chain of Thought:
+(none)
+
+### Subpass 2
+
+Attempt Metadata:
+- question_id: 2
+- subpass: 2
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 3811
+
+Original Prompt:
+You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm * 15.8mm * 11.4mm but when assembled they are 
+32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. 
+
+These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, 
+and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at 
+(centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at 
+[22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.
+
+Assemble the bricks such that they resemble a 3D hemispherical shell, with inner radius 6 cm and outer radius 9 cm, 
+the centre of the hemisphere is at the origin (0,0,0).
+
+Since it's impossible to create a perfect curve, the best score is one which is closer to the ideal curve, with
+scoring being calculated based on the volume difference between the ideal curve and the actual brick structure. 
+The structure needs to be buildable in 3D, so bricks can not overlap or be floating in mid air. A great answer does not 
+contain any holes or missing bricks.
+
+Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have
+any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection
+rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)
+
+Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees).
+
+Verifier Signal:
+Brick {'Centroid': [0, 0, 62.4], 'RotationDegrees': 0} is floating (not supported from below or held from above)
+
+Raw Output:
+{'reasoning': 'The structure is built as a discretized approximation of a hemispherical shell (R_in=60mm, R_out=90mm) using a voxelization approach aligned to the LEGO system. 1. Vertical Slicing: The hemisphere is sliced into layers of 9.6mm (brick height). 2. Grid Alignment: Bricks are placed on an 8mm grid (stud spacing) to ensure valid connectivity. 3. Geometric Constraints: For each layer height Z, bricks are only placed if their volume lies substantially within the annulus sqrt(R_in^2 - Z^2) < r < sqrt(R_out^2 - Z^2). Layers above Z=60mm (Layers 6-8) form solid caps as the inner radius closes. 4. Interlocking: Orientation (0 vs 90 degrees) alternates or shifts between layers to bridge gaps (brick bonding), ensuring the structure is stable and connected without relying on single-column stacks.', 'bricks': [{'Centroid': [0, 80, 4.8], 'RotationDegrees': 0}, {'Centroid': [0, -80, 4.8], 'RotationDegrees': 0}, {'Centroid': [80, 0, 4.8], 'RotationDegrees': 90}, {'Centroid': [-80, 0, 4.8], 'RotationDegrees': 90}, {'Centroid': [56, 56, 4.8], 'RotationDegrees': 0}, {'Centroid': [-56, 56, 4.8], 'RotationDegrees': 0}, {'Centroid': [56, -56, 4.8], 'RotationDegrees': 0}, {'Centroid': [-56, -56, 4.8], 'RotationDegrees': 0}, {'Centroid': [0, 80, 14.4], 'RotationDegrees': 90}, {'Centroid': [0, -80, 14.4], 'RotationDegrees': 90}, {'Centroid': [80, 0, 14.4], 'RotationDegrees': 0}, {'Centroid': [-80, 0, 14.4], 'RotationDegrees': 0}, {'Centroid': [56, 56, 14.4], 'RotationDegrees': 90}, {'Centroid': [-56, 56, 14.4], 'RotationDegrees': 90}, {'Centroid': [56, -56, 14.4], 'RotationDegrees': 90}, {'Centroid': [-56, -56, 14.4], 'RotationDegrees': 90}, {'Centroid': [0, 72, 24.0], 'RotationDegrees': 0}, {'Centroid': [0, -72, 24.0], 'RotationDegrees': 0}, {'Centroid': [72, 0, 24.0], 'RotationDegrees': 90}, {'Centroid': [-72, 0, 24.0], 'RotationDegrees': 90}, {'Centroid': [48, 48, 24.0], 'RotationDegrees': 0}, {'Centroid': [-48, 48, 24.0], 'RotationDegrees': 0}, {'Centroid': [48, -48, 24.0], 'RotationDegrees': 0}, {'Centroid': [-48, -48, 24.0], 'RotationDegrees': 0}, {'Centroid': [0, 72, 33.6], 'RotationDegrees': 90}, {'Centroid': [0, -72, 33.6], 'RotationDegrees': 90}, {'Centroid': [72, 0, 33.6], 'RotationDegrees': 0}, {'Centroid': [-72, 0, 33.6], 'RotationDegrees': 0}, {'Centroid': [48, 48, 33.6], 'RotationDegrees': 90}, {'Centroid': [-48, 48, 33.6], 'RotationDegrees': 90}, {'Centroid': [48, -48, 33.6], 'RotationDegrees': 90}, {'Centroid': [-48, -48, 33.6], 'RotationDegrees': 90}, {'Centroid': [0, 64, 43.2], 'RotationDegrees': 0}, {'Centroid': [0, -64, 43.2], 'RotationDegrees': 0}, {'Centroid': [64, 0, 43.2], 'RotationDegrees': 90}, {'Centroid': [-64, 0, 43.2], 'RotationDegrees': 90}, {'Centroid': [40, 48, 43.2], 'RotationDegrees': 0}, {'Centroid': [-40, 48, 43.2], 'RotationDegrees': 0}, {'Centroid': [40, -48, 43.2], 'RotationDegrees': 0}, {'Centroid': [-40, -48, 43.2], 'RotationDegrees': 0}, {'Centroid': [0, 64, 52.8], 'RotationDegrees': 90}, {'Centroid': [0, -64, 52.8], 'RotationDegrees': 90}, {'Centroid': [64, 0, 52.8], 'RotationDegrees': 0}, {'Centroid': [-64, 0, 52.8], 'RotationDegrees': 0}, {'Centroid': [40, 40, 52.8], 'RotationDegrees': 90}, {'Centroid': [-40, 40, 52.8], 'RotationDegrees': 90}, {'Centroid': [40, -40, 52.8], 'RotationDegrees': 90}, {'Centroid': [-40, -40, 52.8], 'RotationDegrees': 90}, {'Centroid': [0, 0, 62.4], 'RotationDegrees': 0}, {'Centroid': [0, 32, 62.4], 'RotationDegrees': 0}, {'Centroid': [0, -32, 62.4], 'RotationDegrees': 0}, {'Centroid': [32, 0, 62.4], 'RotationDegrees': 90}, {'Centroid': [-32, 0, 62.4], 'RotationDegrees': 90}, {'Centroid': [0, 0, 72.0], 'RotationDegrees': 90}, {'Centroid': [0, 24, 72.0], 'RotationDegrees': 90}, {'Centroid': [0, -24, 72.0], 'RotationDegrees': 90}, {'Centroid': [0, 0, 81.6], 'RotationDegrees': 0}]}
+
+Chain of Thought:
+(none)
+
+### Subpass 3
+
+Attempt Metadata:
+- question_id: 2
+- subpass: 3
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 0
+
+Original Prompt:
+(none)
+
+Verifier Signal:
+Skipped due to earlyFail (first subpass scored under 0%)
+
+Raw Output:
+(none)
+
+Chain of Thought:
+(none)
+
+### Subpass 4
+
+Attempt Metadata:
+- question_id: 2
+- subpass: 4
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 0
+
+Original Prompt:
+(none)
+
+Verifier Signal:
+Skipped due to earlyFail (first subpass scored under 0%)
+
+Raw Output:
+(none)
+
+Chain of Thought:
+(none)

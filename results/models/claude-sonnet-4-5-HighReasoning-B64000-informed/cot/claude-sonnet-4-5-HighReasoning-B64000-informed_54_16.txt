@@ -1,0 +1,303 @@
+Let me understand the problem first. We have a binary tree describing an axis-aligned subdivision of a unit cube. Each node splits its parent cell into two children by bisecting along axes in the repeating cycle: x → y → z → z → y → x → z (repeating).
+
+The target leaf is "1101010000".
+
+First, I need to understand how the subdivision works:
+- Level 0 (root ""): splits along x
+- Level 1: splits along y
+- Level 2: splits along z
+- Level 3: splits along z
+- Level 4: splits along y
+- Level 5: splits along x
+- Level 6: splits along z
+- Level 7: splits along x (the cycle repeats)
+- Level 8: splits along y
+- Level 9: splits along z
+- Level 10: splits along z
+
+The target "1101010000" has 10 digits, so it's at level 10.
+
+Let me trace the path and dimensions:
+- "": [0,1] × [0,1] × [0,1], splits along x
+- "1": [0.5,1] × [0,1] × [0,1], splits along y
+- "11": [0.5,1] × [0.5,1] × [0,1], splits along z
+- "110": [0.5,1] × [0.5,1] × [0,0.5], splits along z
+- "1101": [0.5,1] × [0.5,1] × [0,0.25], splits along y
+- "11010": [0.5,1] × [0.5,0.75] × [0,0.25], splits along x
+- "110101": [0.75,1] × [0.5,0.75] × [0,0.25], splits along z
+- "1101010": [0.75,1] × [0.5,0.75] × [0,0.125], splits along x
+
+
+- "11010100": [0.75,0.875] × [0.5,0.75] × [0,0.125], splits along y
+- "110101000": [0.75,0.875] × [0.5,0.625] × [0,0.125], splits along z
+- "1101010000": [0.75,0.875] × [0.5,0.625] × [0,0.0625]
+
+The voxel occupies x ∈ [0.75, 0.875], y ∈ [0.5, 0.625], and z ∈ [0, 0.0625].
+
+To find adjacent leaves sharing a face, I need to identify voxels that differ in exactly one dimension and are adjacent. The six faces are: x = 0.75 and x = 0.875 in the x-direction, y = 0.5 and y = 0.625 in the y-direction, and z = 0 and z = 0.0625 in the z-direction. Each face connects to neighbors with matching boundaries in the perpendicular dimensions.
+
+For the left face at x = 0.75, I'm looking for voxels with x_max = 0.75 while maintaining y ∈ [0.5, 0.625] and z ∈ [0, 0.0625]. The octree structure means I need to trace back through parent nodes to find siblings and their descendants that occupy the adjacent space. At level 7, the parent node "1101010" spans [0.75, 1] × [0.5, 0.75] × [0, 0.125], and its sibling "1101011" would occupy [0.875, 1] × [0.5, 0.75] × [0, 0.125], but I need to work through the tree structure systematically to identify which leaves actually border this voxel. 0.5,0.625] × [0,0.03125], splits along x (level 11)
+- "110100000000": [0.5,0.5625] × [0.5,0.625] × [0,0.03125]
+- "110100000001": [0.5625,0.625] × [0.5,0.625] × [0,0.03125]
+
+The leaf "110100000000" has x_max = 0.5625, which doesn't match x_max = 0.75. The leaf "110100000001" has x_max = 0.625, also doesn't match.
+
+Wait, I think I made an error. Let me reconsider what "left neighbor" means in this context. The left neighbor should share a face with the original region, specifically the face at x = 0.75. So I need a region that:
+- Has x_max = 0.75
+- Shares the face x = 0.75 with the original region
+- Is to the left (smaller x values)
+
+So the left neighbor region should be [0.5, 0.75] × [0.5, 0.625] × [0, 0.0625].
+
+Let me find which leaf this is. I need to trace through the tree to find a leaf with these exact bounds.
+
+Starting from "110100":
+- "110100": [0.5,0.75] × [0.5,0.75] × [0,0.25]
+- "1101000": [0.5,0.75] × [0.5,0.75] × [0,0.125]
+- "11010000": [0.5,0.75] × [0.5,0.75] × [0,0.0625]
+
+Wait, "11010000" already has z ∈ [0, 0.0625], which matches. Now I need to check if it splits further along x or y to get [0.5, 0.75] × [0.5, 0.625].
+
+"11010000" splits along x (level 8):
+- "110100000": [0.5,0.625] × [0.5,0.75] × [0,0.0625]
+- "110100001": [0.625,0.75] × [0.5,0.75] × [0,0.0625]
+
+"110100001" has x ∈ [0.625, 0.75], but I need x ∈ [0.5, 0.75]. So the left neighbor must be the union of "110100000" and "110100001", but that's not a single leaf.
+
+Hmm, let me reconsider. Maybe the left neighbor at this level is "110100000" ∪ "110100001" = [0.5, 0.75] × [0.5, 0.75] × [0, 0.0625]. But I need to narrow down to y ∈ [0.5, 0.625].
+
+"110100000" splits along y (level 9):
+- "1101000000": [0.5,0.625] × [0.5,0.625] × [0,0.0625]
+- "1101000001": [0.5,0.625] × [0.625,0.75] × [0,0.0625]
+
+"110100001" splits along y (level 9):
+- "1101000010": [0.625,0.75] × [0.5,0.625] × [0,0.0625]
+- "1101000011": [0.625,0.75] × [0.625,0.75] × [0,0.0625]
+
+So the left neighbor leaf is "1101000010": [0.625, 0.75] × [0.5, 0.625] × [0, 0.0625].
+
+Wait, that's not right either. The left neighbor should have x_max = 0.75 and x_min ≤ 0.75. Let me reconsider what "left neighbor" means.
+
+Actually, I think the left neighbor should be the region that shares the face x = 0.75 with the original region and is to the left. So it should have x_max = 0.75. The original region "1101010000" has x ∈ [0.75, 0.875], so the left neighbor should have x ∈ [something, 0.75].
+
+Looking at the leaves I found:
+- "1101000010": [0.625, 0.75] × [0.5, 0.625] × [0, 0.0625]
+
+This has x_max = 0.75, which matches. And it shares the face x = 0.75 with the original region. So "1101000010" is the left neighbor in the x direction.
+
+I need to find all face neighbors systematically. Let me think about the structure of the octree and how to navigate it efficiently.
+
+I realize I need to recalculate the splitting pattern more carefully. Let me restart with the correct cycle.
+
+The splitting cycle is: x → y → z → z → y → x → z (repeats every 7 levels)
+
+Level 0: x
+Level 1: y
+Level 2: z
+Level 3: z
+Level 4: y
+Level 5: x
+Level 6: z
+Level 7: x (cycle repeats)
+Level 8: y
+Level 9: z
+Level 10: z
+
+Let me retrace "1101010000" with this corrected cycle:
+- Level 0 ("", splits x): full cube [0,1]³
+- Level 1 ("1", splits y): x=[0.5,1], chose right half in x
+- Level 2 ("11", splits z): y=[0.5,1], chose right half in y
+- Level 3 ("110", splits z): z=[0,0.5], chose left half in z
+- Level 4 ("1101", splits y): z=[0,0.25], chose left half in z
+- Level 5 ("11010", splits x): y=[0.5,0.75], chose left half in y
+- Level 6 ("110101", splits z): x=[0.75,1], chose right half in x
+- Level 7 ("1101010", splits x): z=[0,0.125], chose left half in z
+- Level 8 ("11010100", splits y): x=[0.75,0.875], chose left half in x
+- Level 9 ("110101000", splits z): y=[0.5,0.625], chose left half in y
+- Level 10 ("1101010000", splits z): z=[0,0.0625], chose left half in z
+
+So "1101010000" is: x=[0.75,0.875], y=[0.5,0.625], z=[0,0.0625]
+
+Now I need to find face neighbors. For the left face (x=0.75), I need a region that shares this face and has x < 0.75.
+
+I need to find which leaf has bounds [something, 0.75] × [0.5, 0.625] × [0, 0.0625].
+
+Let me trace through the tree to find this region. I'll start from the root and follow the path that leads to x ∈ [0.5, 0.75].
+
+Actually, I realize I should think about this differently. The left neighbor should be found by:
+1. Going up the tree until I find an ancestor that has a sibling to the left
+2. Then going down that sibling to find the appropriate leaf
+
+Let me implement this algorithm for "1101010000":
+- "1101010000" has x ∈ [0.75, 0.875]
+- The ancestor "110101" has x ∈ [0.75, 1] (splits along z)
+- The parent "11010" has x ∈ [0.75, 1] (splits along x)
+- Wait, "11010" splits along x, so it has two children: "110100" and "110101"
+- "110100" has x ∈ [0.5, 0.75]
+- "110101" has x ∈ [0.75, 1]
+
+So the left neighbor is in the subtree rooted at "110100". I need to find the leaf in this subtree that has y ∈ [0.5, 0.625] and z ∈ [0, 0.0625].
+
+Looking at the tree structure, "110100010" has bounds [0.625, 0.75] × [0.5, 0.625] × [0, 0.0625], which is exactly what I need.
+
+Now I need to identify which leaves under "110100" actually touch the x=0.75 boundary of "1101010000". Checking the level 10 leaves: "1101000000", "1101000001", "1101000010", "1101000011", "1101000100", "1101000101", "1101000110", "1101000111". For each leaf, I need to verify if its x-range includes 0.75. The leaves with x=[0.625, 0.75] will have the right face at x=0.75, which is the shared boundary. below them are the actual leaves.
+
+Looking at the tree structure, I need to identify which nodes in the "110100" branch are terminal nodes without children. Scanning through the hierarchy, nodes like "1101000000" and "1101000001" appear to be endpoints in the tree representation, meaning they don't have further subdivisions listed beneath them. I should verify this by checking which codes appear in the tree but lack child nodes indicated by the branching symbols. [0.5,0.75] × [0,0.125], level 7
+- "1101001": [0.5,0.75] × [0.5,0.75] × [0.125,0.25], level 7
+
+For "1101000", split y →
+- "11010000": [0.5,0.625] × [0.5,0.625] × [0,0.125], level 8
+- "11010001": [0.625,0.75] × [0.5,0.625] × [0,0.125], level 8
+
+Continuing this recursion down to level 10 gives me the eight leaf nodes with their spatial bounds. Each represents an 8-bit binary string corresponding to a specific region in the unit cube. Split z →
+      - "1101000010": [0.5,0.625] × [0.625,0.75] × [0,0.0625], leaf
+      - "1101000011": [0.5,0.625] × [0.625,0.75] × [0.0625,0.125], leaf
+  - "11010001": [0.625,0.75] × [0.5,0.75] × [0,0.125], level 8
+    Split y →
+    - "110100010": [0.625,0.75] × [0.5,0.625] × [0,0.125], level 9
+      Split z →
+      - "1101000100": [0.625,0.75] × [0.5,0.625] × [0
+
+,0.0625], leaf
+      - "1101000101": [0.625,0.75] × [0.5,0.625] × [0.0625,0.125], leaf
+    - "110100011": [0.625,0.75] × [0.625,0.75] × [0,0.125], level 9
+      Split z →
+      - "1101000110": [0.625,0.75] × [0.625,0.75] × [0,0.0625], leaf
+      - "1101000111": [0.625,0.75] × [0.625,0.75] × [0.0625,0.125], leaf
+
+Now moving to the target node "1101010000" at [0.75,0.875] × [0.5,0.625] × [0,0
+
+.0625]. For the left face at x=0.75, I need voxels where x_max equals 0.75 with overlapping y and z ranges. Checking the candidates, "1101000100" at [0.625,0.75] × [0.5,0.625] × [0,0.0625] satisfies all conditions. For the right face at x=0.875, I need voxels with x_min=0.875 and matching y and z overlaps.
+
+Looking at "11010100", its sibling "11010101" has bounds [0.75,0.875] × [0.625,0.75] × [0,0.125], which doesn't reach x=0.875. I need to backtrack to level 7 where the x-split occurred and examine the sibling at that level.
+
+The sibling "1101011" spans [0.875,1] × [0.5,0.75] × [0,0.125]. Within this region, I'm looking for leaves that overlap with y ∈ [0.5,0.625] and z ∈ [0,0.0625].
+
+Examining the tree structure, "1101011" has children "11010110" and "11010111". The node "11010110" contains "110101100" with leaves "1101011000" and "1101011001", both of which fall within the required y and z ranges. [0.875,1] × [0.5,0.625] × [0,0.03125], leaf
+    - "1101011001": [0.875,1] × [0.5,0.625] × [0.03125,0.0625], leaf
+  - "110101101": [0.875,1] × [0.5,0.625] × [0.0625,0.125], level 10 (split z)
+    - "1101011010": [0.875,1] × [0.5,0.625] × [0.0625,0.09375], leaf
+    - "1101011011": [0.875,1] × [0.5,0.625] × [0.09375,0.125], leaf
+- "11010111": [0.875,1] × [0.625
+
+,0.75] × [0,0.125], not a leaf in tree
+
+So neighbors on right face (x=0.875):
+- "1101011000": [0.875,1] × [0.5,0.625] × [0,0.03125] ✓
+- "1101011001": [0.875,1] × [0.5,0.625] × [0.03125,0.0625] ✓
+
+Now checking y-direction neighbors.
+
+For the front face at y=0.5, I need voxels where y_max equals 0.5 and their x and z ranges overlap with [0.75,0.875] and [0,0.0625] respectively.
+
+Looking at level 1 where y=0.5 was established, the split creates "0" with y=[0,0.5] and "1" with y=[0.5,1]. But "0" has x=[0,0.5], which doesn't overlap [0.75,0.875], so there are no neighbors on that face. I need to reconsider how the octree splits the space at each level.
+
+The root node splits along x first, creating "0" for x=[0,0.5] and "1" for x=[0.5,1]. Then at level 1, both children split along y, giving "10" and "11" with their respective y ranges. At level 2, these split along z.
+
+For finding neighbors on the front face at y=0.5, I need to look in the "10..." subtree since "11" has y=[0.5,1]. Tracing down "10" which spans [0.5,1] × [0,0.5] × [0,1], it splits into "100" at [0.5,1] × [0,0.5] × [0,0.5] and continues subdividing further with "1000" at [0.5,1] × [0,0.25] × [0,0.5], which then splits along y to create children like "10000" covering [0.5,1] × [0,0.25] × [0,0.25]. ],0.5] × [0,0.125], level 8 (split y). Continuing down this branch, the tree subdivides further with "100011000" and "100011001" at level 9 after splitting on z, and then "1000110010" and "1000110011" become leaves with z-bounds of [0,0.0625] and [0.0625,0.125] respectively. The leaf "1000110010" occupies the region [0.75,0.875] × [0.375,0.5] × [0,0.0625].
+
+Checking if this is actually a neighbor: the y_max value of 0.5 matches the query's y_min, and both x and z ranges align, confirming it qualifies. Let me verify this more carefully by retracing the subdivision path from "10001" at level 5 with bounds [0.5,1] × [0.25,0.5] × [0,0.25], which splits on x to give "100011" at [0.75,1] × [0.25,0.5] × [0,0.25], then splits on z to produce "1000110" at [0.75,1] × [0.25,0.5] × [0,0.125], and finally splits on x again at level 8 to yield "10001100" with x-bounds [0.75,0.875] and y-bounds [0.25,0.5]
+
+—but I need to recount the split sequence at levels 9 and 10 to confirm the exact subdivision pattern.
+
+Looking at "100011001": [0.75,0.875] × [0.375,0.5] × [0,0.125], this splits into "1000110010" and "1000110011" along the z-axis, making "1000110010" a neighbor sharing the y=0.5 boundary. Similarly, "100011000": [0.75,0.875] × [0.25,0.375] × [0,0.125] subdivides along z as well, creating child nodes at the next level.
+
+Checking "1000110000" reveals y_max=0.375, which doesn't reach y=0.5, so it's not adjacent. I need a more systematic approach—searching through all descendants of "10001" to identify which ones have y_max=0.5 and could be neighbors. The parent "10001" spans [0.5,1] × [0.25,0.5] × [0,0.25], and at level 4 the y-coordinate was already constrained to [0.25,0.5], so I should trace which refinements maintain that upper boundary.
+
+Following the subdivision sequence: at level 5 x splits, level 6 z splits, level 7 x splits again—all preserving the y range. At level 8 when y finally splits, the "1" child will have y closer to 0.5. Tracing "100011" at level 6 gives [0.75,1] × [0.25,0.5] × [0,0.25], and continuing through the refinements shows how the coordinates evolve toward identifying which leaf nodes actually touch the target boundary. 0.0625,0.125] ✓
+- "100011010": [0.875,1] × [0.25,0.375] × [0,0.125] ✗
+- "100011011": [0.875,1] × [0.375,0.5] × [0,0.125] ✓
+
+Three octants contain the boundary at y=0.5: two from the z-split at level 9 with x-range [0.75,0.875], and one from the second y-split with x-range [0.875,1].
+
+The target region is [0.75,0.875] × [0.5,0.625] × [0,0.0625]. For y=0.5 face neighbors, I need octants where y_max equals 0.5 and both x and z ranges overlap with the target. "1000110010" satisfies all three conditions: its y_max is 0.5, x-range [0.75,0.875] matches exactly, and z-range [0,0.0625] matches exactly.
+
+"1000110011" has the same y and x bounds but z extends to [0.0625,0.125], which doesn't intersect the target's z-range. The sibling octants under "10001101" have x-ranges starting at 0.875, so they don't overlap with the target's x-interval either.
+
+For the back face at y=0.625, I need to find voxels with y_min=0.625 that overlap in both x and z with the target. The sibling "11010101" at [0.75,0.875] × [0.625,0.75] × [0,0.125] is a candidate, though its z-range extends beyond what's needed.
+
+Looking at the tree structure, "11010101" appears to have children: "110101010" and "110101011", which would further subdivide the space. I should trace through these descendants to identify which specific leaf nodes actually intersect the back face region.
+
+For the z-direction neighbors, I need to find cells that share the z=0 boundary with the target region [0.75,0.875] × [0.5,0.625] × [0,0.0625]. This requires checking cells in the adjacent z-layer that have matching x and y coordinates.
+
+The bottom face at z=0 has no neighbors since it's the cube boundary. For the top face at z=0.0625, I'm looking for cells with z_min = 0.0625 that overlap in both x and y dimensions. The sibling cell "1101010001" occupies the same x-y space but extends into z=[0.0625,0.125], making it a direct neighbor across the z=0.0625 interface. I need to verify the coordinates for these leaf nodes. "110101000" is at level 9 and splits the z-axis, creating two children at level 10. The first child "1101010000" has z-range [0, 0.03125], while "1101010001" has z-range [0.03125, 0.0625]. Both share the same x and y ranges of [0.75, 0.875] × [0.5, 0.625].
+
+Let me trace through the full path systematically. The splitting cycle is x, y, z, z, y, x, z repeating, so at each level the active dimension is: level 0 splits x, level 1 splits y, level 2 splits z, level 3 splits z, level 4 splits y, level 5 splits x, level 6 splits z, level 7 splits x, level 8 splits y, level 9 splits z, level 10 splits z. For the code "1101010000", each bit indicates which half to take at that level—starting from the full cube [0,1]³, the first bit "1" means taking the right half in x.
+
+Continuing through each subsequent bit: after "11" I'm in [0.5,1] × [0.5,1] × [0,1], then "110" narrows z to [0,0.5], "1101" takes the upper half of z giving [0.25,0.5], "11010" takes the lower half of y to get [0.5,0.75], and "110101" takes the right half of x to reach [0.75,1] × [0.5,0.75] × [0.25,0.5]. The remaining bits "0000" continue subdividing within this region. The ranges I calculated don't align with what should happen. Let me reconsider how the splitting works at each level.
+
+At level 2, "11" splits z, so "110" gives z ∈ [0, 0.5] and "111" gives z ∈ [0.5, 1]. Then at level 3, "110" splits z again: "1100" yields z ∈ [0, 0.25] while "1101" should yield z ∈ [0.25, 0.5].
+
+Checking my work: "1101" maps to [0.5, 1] × [0.5, 1] × [0.25, 0.5], which confirms the z-coordinate range is correct.
+
+Continuing the subdivision, "1101" splits along y into "11010" and "11011", giving [0.5, 1] × [0.5, 0.75] × [0.25, 0.5] and [0.5, 1] × [0.75, 1] × [0.25, 0.5] respectively. Then "11010" splits on x into two regions, and "110101" further subdivides along z into [0.75, 1] × [0.5, 0.75] × [0.25, 0.375] and [0.75, 1] × [0.5, 0.75] × [0.375, 0.5].
+
+Continuing this pattern, "1101010" splits along x into [0.75, 0.875] × [0.5, 0.75] × [0.25, 0.375] and [0.875, 1] × [0.5, 0.75] × [0.25, 0.375]. The first of these then splits on y, creating two regions with y-ranges [0.5, 0.625] and [0.625, 0.75]. Finally, "110101000" subdivides along z, continuing the recursive partitioning process.
+
+The target cell "1101010000" occupies the region [0.75, 0.875] × [0.5, 0.625] × [0.25, 0.3125]. Now I need to identify its face neighbors by checking which cells share boundaries along each dimension.
+
+For the left face at x = 0.75, I'm looking for cells where x_max = 0.75 and y, z coordinates overlap with [0.5, 0.625] and [0.25, 0.3125] respectively. Tracing back through the subdivision tree, "110100" at [0.5, 0.75] × [0.5, 0.75] × [0.25, 0.5] is a candidate. Its child "11010000" at [0.5, 0.75] × [0.5, 0.75] × [0.25, 0.375] has the right x-range and overlaps in both y and z, making it a valid neighbor. 125], leaf
+        - "11010001001": [0.625,0.75] × [0.5,0.625] × [0.28125,0.3125], leaf
+      - "1101000101": [0.625,0.75] × [0.5,0.625] × [0.3125,0.375], splits z at level 10
+        - "11010001010": [0.625,0.75] × [0.5,0.625] × [0.3125,0.34375], leaf
+        - "11010001011": [0.625,0.75] × [0.5,0.625] × [0.34375,0.375], leaf
+
+Need to verify these nodes are actually leaves by checking the tree structure.
+
+Looking at the tree, "1101000100" and "1101000101" are indeed leaf nodes. "1101000100" maps to [0.625,0.75] × [0.5,0.625] × [0.
+
+25,0.3125], which has x_max = 0.75 matching the left boundary, y and z ranges both matching the target region—so it qualifies as a left neighbor.
+
+For the right face at x = 0.875, I need cells where x_min = 0.875 within the same y and z bounds. At level 7, "1101010" covers x ∈ [0.75,0.875], and its sibling "1101011" would span x ∈ [0.875,1], but that sibling was generated at a higher level in the tree.
+
+When "1101010" subdivides further at level 8, splitting the x-interval [0.75,0.875] produces "11010100" with x ∈ [0.75,0.8125] and "11010101" with x ∈ [0.8125,0.875]—neither reaches x = 0.875. Going back to "110101" at level 6, which spans [0.75,1] × [0.5,0.75] × [0.25,0.5] and splits z, the resulting "1101010" covers [0.75,1] × [0.5,0.75] × [0.25,0.375]. When this splits x at level 7, the interval [0.75,1] divides into [0.75,0.875] and [0.875,1].
+
+So "11010101" gives [0.875,1] × [0.5,0.75] × [0.25,0.375], which has the required x-range. At level 8 it splits y, and checking the tree structure shows it's a leaf node. Now I need to verify if it satisfies the criteria—specifically whether x_min ≥ 0.875.
+
+The x-coordinate is [0.875,1], so x_min = 0.875 ✓. The y-range [0.5,0.75] overlaps the target [0.5,0.625] ✓, and z-range [0.25,0.375] overlaps [0.25,0.3125] ✓. This confirms "11010101" is indeed a right neighbor.
+
+For the front face where y = 0.5, I need cells with y_max = 0.5, x ∈ [0.75,0.875], and z ∈ [0.25,0.3125]. Since "1" covers y ∈ [0.5,1] and "0" covers y ∈ [0,0.5] at level 1, the relevant cells must be in the "10..." subtree. Tracing through the tree structure to identify which cells could serve as neighbors in this region. 25,0.5]. Following the splits, "10011" divides x into two regions at level 5. The right branch "100111" at [0.75,1] × [0.25,0.5] × [0.25,0.5] then splits z, and continuing down through "1001110" and "10011100" narrows to exactly [0.75,0.875] × [0.25,0.5] × [0.25,0.375], which contains my target point.
+
+At level 8, this region splits on y, creating two children. The left child "100111000" stays at [0.75,0.875] × [0.25,0.375] × [0.25,0.375], while the right child "100111001" moves to [0.75,0.875] × [0.375,0.5] × [0.25,0.375]. Since my point has y ≈ 0.4, it falls in the right branch. From there, successive z-splits at levels 9 and 10 progressively narrow the z-interval from [0.25,0.375] down through [0.25,0.3125] to [0.25,0.28125], getting closer to the target z-coordinate. ically. Let me search for "100111":
+
+```
+│   │           └── 00001111
+│   │       └── 00011
+```
+
+I'm having difficulty locating the correct section. Let me trace through the tree systematically by following the "1" branch, then "10", "100", "1001", and finally "10011" to find where "100111" appears in the structure.
+
+Once I locate "100111", I can see it branches into "1001110", which then leads to "10011100". Under that node, there's a series of children: "100111000" and "1001110001" as direct descendants, followed by "100111001" which itself has "1001110010" and "1001110" as sub-branches.
+
+The leaf nodes at the end of this path are "1001110000", "1001110001", "1001110010", and "1001110011". Computing their spatial bounds: "10011100" occupies [0.75,0.875] × [0.25,0.5] × [0.25,0.375] with a y-axis split at level 8. Its child "100111000" narrows to [0.75,0.875] × [0.25,0.375] × [0.25,0.375] with a z-axis split at level 9, producing "1001110000" at [0.75,0.875] × [0.25,0.375] × [0.25,0.3125] and "1001110001" at [0.75,0.875] × [0.25,0.375] × [0.3125,0.375].
+
+The sibling "100111001" spans [0.75,0.875] × [0.375,0.5] × [0.25,0.375], also splitting z at level 9 to give "1001110010" at [0.75,0.875] × [0.375,0.5] × [0.25,0.3125] and "1001110011" at [0.75,0.875] × [0.375,0.5] × [0.3125,0.375].
+
+Checking which nodes touch the y=0.5 boundary: "1001110010" has y ∈ [0.375,0.5], so its maximum y-coordinate equals 0.5, and its x and z ranges match the query region. This makes "1001110010" a front neighbor. The node "1001110011"
+
+'s z-range [0.3125,0.375] only touches the query's z-range [0.25,0.3125] at a single point z=0.3125, which is just an edge contact rather than a 2D face overlap. For face neighbors, the overlapping dimensions must share an interval, not merely a boundary point, so "1001110011" doesn't qualify.
+
+That leaves "1001110010" as the sole y=0.5 face neighbor.
+
+Now checking the y=0.625 back face: I need cells where y_min = 0.625 within x ∈ [0.75,0.875] and z ∈ [0.25,0.3125]. At level 8, "11010100" subdivides the y-dimension, producing "110101000" with y ∈ [0.5,0.625] and "110101001" with y ∈ [0.625,0.75]. The latter has the required y_min = 0.625.
+
+When "110101001" splits z at level 9, it generates "1101010010" with z ∈ [0.25,0.3125] and "1101010011" with z ∈ [0.3125,0.375]. The first child satisfies all constraints—y_min = 0.625, x and z ranges match—making "1101010010" a back face neighbor.
+
+For the z=0.25 bottom face, I'm looking for cells with z_max = 0.25 where x ∈ [0.75,0.875] and y ∈ [0.5,0.625]. The level 6 code "110101" splits z into "1101010" with z ∈ [0,0.5] and "1101011" with z ∈ [0.5,1], so neither reaches z_max = 0.25 directly.
+
+Going back to level 3, "1100" has z ∈ [0,0.25], which means z_max = 0.25. I need to find leaf descendants of "1100" that fall within the x and y ranges specified.
+
+At level 4, "1100" splits on y, creating "11000" with y ∈ [0.5,0.75]. This node then splits on x at level 5, giving "110001" with x ∈ [0.75,1], which matches my target range. At level 6, "110001" splits on z into two children: "1100010" with z ∈ [0,0.125] and "1100011" with z ∈ [0.125,0.25]. Both have the correct z bounds, and "1100011" reaches exactly z_max = 0.25.
+
+Continuing down "1100011", at level 7 it splits on x, creating "11000110" with x ∈ [0.75,0.875]. At level 8, this splits on y into "110001100" with y ∈ [0.5,0.625]. Finally at level 9, "110001100" splits on z, producing "1100011000" with z ∈ [0.125,0.1875] and "1100011001" with z ∈ [0.1875,0.25]. Both children have z_min ≥ 0.125 and z_max ≤ 0.25, so they're valid leaves for my target region. Looking for "1100011" in the tree structure. I can see "1100" exists under the "11" branch, and from there "11000" branches further. Following "11000", there's "110001" as a child node, and under that "1100010" appears. Continuing down, "11000100" is present, but I need to trace further to find the complete "1100011" path.
+
+Searching for "1100011" specifically, it appears as a sibling to "1100010" under the "110001" node. Under "1100011", there's "11000110" as a child. From "11000110", the path continues to "110001100", which then branches into two children: "1100011000" and "1100011001".
+
+The leaf nodes "1100011000" and "1100011001" occupy the regions [0.75,0.875] × [0.5,0.625] × [0.125,0.1875] and [0.75,0.875] × [0.5,0.625] × [0.1875,0.25] respectively. Checking which one touches the z=0.25 boundary: "1100011001" has z_max = 0.25 and matches the x and y ranges, making it a bottom neighbor. For the top face at z = 0.3125, I need to identify cells where z_min = 0.3125 and x ∈ [0.75,0
+
+.875], y ∈ [0.5,0.625]. At level 9, the node "110101000" splits into "1101010000" covering [0.75,0.875] × [0.5,0.625] × [0.25,0.3125] and "1101010001" covering [0.75,0.875] × [0.5,0.625] × [0.3125,0.375]. Since "1101010001" is a leaf with z_min = 0.3125, it's the candidate for the top neighbor.
+
+Checking the coordinates: x and y ranges align with the target, and z_min matches. This confirms "1101010001" as a top neighbor. The six face neighbors are: "1101000100" (left), "11010101" (right), "1001110010" (front), "1101010010" (back), "1100011001" (bottom), and "1101010001" (top). Now I need to verify each one against the target region. .25,0.3125]
+   - Shares face at y=0.5 ✓
+
+The remaining octants all share faces with the reference cube: "1101010010" at y=0.625, "1100011001" at z=0.25, and "1101010001" at z=0.3125. All adjacencies check out.

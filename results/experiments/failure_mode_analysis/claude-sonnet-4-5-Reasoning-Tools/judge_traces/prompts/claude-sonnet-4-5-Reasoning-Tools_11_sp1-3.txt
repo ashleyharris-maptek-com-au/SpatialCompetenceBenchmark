@@ -1,0 +1,712 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 1, 2, 3
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q11: Hyper-snake Challenge
+- Source file: `11.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Test high-dimensional path planning under strict local movement rules and global self-avoidance/food constraints.
+
+## Output Contract
+- Return JSON with `path`.
+- Each path element is `{pos: [int,...]}`.
+- `path[0].pos` must equal start position and match configured dimension length.
+
+## Hard Constraints (Verifier-Checked)
+- Correct dimensionality in every `pos`.
+- Unit movement in exactly one dimension per step.
+- No out-of-bounds coordinates, wall hits, or revisits.
+- Food collection affects score/quality.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `No path in answer` / `Empty path` | No usable attempt | `Evasion / Forfeit` |
+| `Move i changed N dimensions` | Illegal movement semantics | `Near-Miss`, `Local-Only` |
+| `Position ... visited more than once` | Global self-avoidance failed | `Local-Only` |
+| `Position ... is a wall/out of bounds` | Feasibility constraint broken | `Near-Miss`, `Local-Only` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Missing path or placeholder output.
+- `Trivialized / Misframed`: Extremely short path that ignores target coverage/food.
+- `Runaway Overthinking`: Rare in this task; only use when COT shows spiraling reasoning that replaces a valid artifact with diverse error types.
+- `Local-Only (Global Constraint Integration Failure)`: Local moves appear valid but global coverage/self-avoidance breaks.
+- `Near-Miss Edge Case`: One bad move or one repeat in otherwise coherent path.
+
+## Judge Input Bundle
+1. Prompt with dimensions, walls, food, and start.
+2. Raw output.
+3. Parsed `path`.
+4. Verifier step-by-step failures.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q11 with one failure mode.
+Use movement legality and global self-avoidance constraints as primary evidence.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+
+Attempts:
+### Subpass 1
+
+Attempt Metadata:
+- question_id: 11
+- subpass: 1
+- score: 0.008364001338240215
+- status: None
+- incomplete_reason: None
+- output_text_chars: 27
+
+Original Prompt:
+Do you remember the snake game, where you have to direct a snake around a 2D space to avoid hitting itself? This is hyper-snake!
+
+You are a snake in a 2D space grid of size (8, 8). You can move to any adjacent cell in the grid, along any of the
+available 2 dimensions, but you can not move to a cell which you have visited before, nor can you move "diagonally",
+that is, you can not move in more than one dimension at a time.
+
+The game ends when you run out of space to move, when you hit the boundary, or when you run into yourself.
+
+You need to avoid the obstacles at: [(5, 5), (6, 6), (0, 1)].
+
+You also need to collect the food at: [[7, 7]].
+
+Return the path of the snake as a list of cells, the first element of which is (0, 0) (where you must start), and going for as long as you can.
+
+Verifier Signal:
+Visited 1/61 cells (1.7%) (food not eaten: 1)
+
+Raw Output:
+{'path': [{'pos': [0, 0]}]}
+
+Chain of Thought:
+Let me understand the problem:
+1. I'm a snake in an 8x8 grid (0-7 in both dimensions)
+2. I start at (0, 0)
+3. I can move to adjacent cells (up/down/left/right, not diagonally)
+4. I cannot revisit cells I've been to
+5. I cannot go out of bounds
+6. There are obstacles at: (5, 5), (6, 6), (0, 1)
+7. I need to collect food at (7, 7)
+8. The goal is to find the longest possible path
+
+This is essentially a Hamiltonian path problem with obstacles. I need to find a path that:
+- Starts at (0, 0)
+- Visits (7, 7) at some point (to collect food)
+- Avoids obstacles at (5, 5), (6, 6), (0, 1)
+- Visits as many cells as possible without revisiting
+- Only makes moves to adjacent cells (no diagonal moves)
+
+Let me think about the grid:
+- Total cells: 8 * 8 = 64
+- Obstacles: 3 cells
+- Available cells: 64 - 3 = 61
+- Starting cell: (0, 0)
+- Must visit: (7, 7)
+
+The maximum possible path length would be 61 cells (all available cells).
+
+Let me write a program to solve this using backtracking or BFS/DFS to find the longest path that includes (7, 7).
+
+I'll use a recursive backtracking approach:
+1. Start at (0, 0)
+2. Try all possible moves
+3. Keep track of visited cells
+4. Track whether we've collected the food at (7, 7)
+5. Find the longest valid path
+
+Let me code this:
+
+```python
+def find_longest_path():
+    grid_size = (8, 8)
+    start = (0, 0)
+    obstacles = [(5, 5), (6, 6), (0, 1)]
+    food = (7, 7)
+    
+    visited = set()
+    visited.add(start)
+    path = [start]
+    
+    best_path = []
+    
+    def is_valid(pos):
+        x, y = pos
+        return (0 <= x < grid_size[0] and 
+                0 <= y < grid_size[1] and 
+                pos not in obstacles and 
+                pos not in visited)
+    
+    def get_neighbors(pos):
+        x, y = pos
+        candidates = [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+        return [p for p in candidates if is_valid(p)]
+    
+    def backtrack():
+        nonlocal best_path
+        
+        if len(path) > len(best_path) and food in path:
+            best_path = path[:]
+        
+        for neighbor in get_neighbors(path[-1]):
+            visited.add(neighbor)
+            path.append(neighbor)
+            backtrack()
+            path.pop()
+            visited.remove(neighbor)
+    
+    backtrack()
+    return best_path
+```
+
+This approach explores all possible paths from the starting position, keeping track of the longest path that includes the food location. _path):
+                best_path = path.copy()
+            return
+        
+        for next_pos in neighbors:
+            visited.add(next_pos)
+            path.append(next_pos)
+            
+            has_food = collected_food or (next_pos == food)
+            backtrack(next_pos, has_food)
+            
+            path.pop()
+            visited.remove(next_pos)
+    
+    backtrack(start, start == food)
+    
+    return best_path
+
+path = find_longest_path()
+print(path)
+print(f"Path length: {len(path)}")
+```
+
+The goal is to find the longest possible path while ensuring we reach the food location at (7, 7). I need to reconsider the approach—the problem emphasizes going as far as possible, which means maximizing path length while still collecting the required food.
+
+I should continue exploring after reaching the food rather than stopping there. Using backtracking to explore all valid paths that pass through (7, 7) will help identify the longest one. I also need to be careful about coordinate interpretation—whether using (x, y) or (row, col) notation—and apply it consistently throughout the solution.
+
+Now I'll implement a cleaner approach with a depth-first search that validates positions against the grid boundaries, obstacles, and visited cells, then tracks the best path found.
+
+The recursive DFS function explores all valid neighboring positions, updating the best path whenever food is collected and the current path exceeds the previous longest. It tracks visited cells to avoid revisiting positions, constructs the path incrementally, and maintains whether food has been found. The search initializes from the starting position and explores all possible routes until exhausting valid moves.
+
+The brute force backtracking approach works for an 8x8 grid, though it could be optimized. A more strategic method might involve first routing to the food location, then maximizing coverage afterward, or using heuristics to guide the search more efficiently rather than exploring every possibility.
+
+Let me code up the backtracking solution to test it:
+
+```python
+def solve_hyper_snake():
+    GRID_SIZE = 8
+    START = (0, 0)
+    OBSTACLES = {(5, 5), (6, 6), (0, 1)}
+    FOOD = (7, 7)
+    
+    def is_valid(pos, visited):
+        x, y = pos
+        return (0 <= x < GRID_SIZE and 
+                0 <= y < GRID_SIZE and 
+                pos not in OBSTACLES and 
+                pos not in visited)
+    
+    def get_neighbors(pos):
+        x, y = pos
+        return [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+    
+    best_path_length = 0
+    best_path = []
+```
+
+I'll use a recursive DFS approach where I track whether the snake has eaten the food yet. The algorithm explores all possible paths from the starting position, updating the best solution whenever it reaches the food location with a longer path than previously found. At each step, I add the current position to visited, explore neighbors recursively, then backtrack by removing the position.
+
+To execute this, I initialize the search with the starting position, check if food is already there, then run the DFS. The function returns the longest path that includes the food. When I trace through the example starting at (0, 0), the obstacle at (0, 1) blocks that direction, leaving (1, 0) as the viable first move since (0, -1) goes out of bounds.
+
+However, backtracking on an 8x8 grid could be computationally expensive. I should consider optimizations like pruning branches that can't improve the best solution found so far, or prioritizing moves toward the food location. Alternatively, rather than exhaustive search, I could use a heuristic approach—perhaps a space-filling curve or spiral pattern that naturally covers the grid while passing through the food and avoiding obstacles. Let me start with the basic backtracking version to see if it's feasible, then optimize if needed.
+
+A zigzag pattern seems promising for this grid size. I'll move right across each row, then shift up and reverse direction, repeating until reaching the food at (7, 7). Let me code this approach:
+
+```python
+def solve_hyper_snake():
+    GRID_SIZE = 8
+    START = (0, 0)
+    OBSTACLES = {(5, 5), (6, 6), (0, 1)}
+    FOOD = (7, 7)
+    
+    path = []
+    visited = set()
+    x, y = 0, 0
+    path.append((x, y))
+    visited.add((x, y))
+    
+    # Alternate between moving right and left as we go up rows
+    direction = 1
+    
+    while y < GRID_SIZE:
+        # Traverse horizontally in current direction
+        while 0 <= x + direction < GRID_SIZE:
+            x += direction
+            if (x, y) not in OBSTACLES:
+                path.append((x, y))
+                visited.add((x, y))
+            else:
+                x -= direction
+                break
+        
+        # Move to next row
+        y += 1
+        if y < GRID_SIZE and (x, y) not in OBSTACLES:
+            path.append((x, y))
+            visited.add((x, y))
+            direction *= -1  # Flip direction for next row
+```
+
+This handles obstacles by stopping when one blocks the path, then moves up to the next row and reverses direction to continue the zigzag pattern.
+
+However, this approach is too rigid and doesn't properly navigate around obstacles. A backtracking solution with pruning would be more effective. I need to implement a recursive search that validates positions, checks if they're unvisited and not obstacles, and backtracks when hitting dead ends.
+
+The key is tracking visited cells and the food collection state. I'll use depth-first search with pruning—if we've already found a path of length N and the current branch can't possibly exceed it even with all remaining cells, we can skip that branch. The algorithm updates the best solution whenever we reach the food and explores all valid neighbors recursively. [START]
+    has_food = (START == FOOD)
+    
+    dfs(START, visited, path, has_food)
+    
+    return best_path[0]
+
+path = solve_hyper_snake()
+print(path)
+print(f"Length: {len(path)}")
+```
+
+The backtracking approach with pruning should work efficiently on an 8x8 grid. I need to format the output as JSON with each position as an object containing a "pos" array, matching the required schema.
+
+```python
+import json
+
+def solve_hyper_snake():
+    GRID_SIZE = 8
+    START = (0, 0)
+    OBSTACLES = {(5, 5), (6, 6), (0, 1)}
+    FOOD = (7, 7)
+    
+    def is_valid(pos, visited):
+        x, y = pos
+        return (0 <= x < GRID_SIZE and 
+                0 <= y < GRID_SIZE and 
+                pos not in OBSTACLES and 
+                pos not in visited)
+    
+    def get_neighbors(pos):
+        x, y = pos
+        return [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+    
+    max_length = 0
+    best_path = []
+    
+    def dfs(pos, visited, path, has_food):
+        nonlocal max_length, best_path
+        
+        if has_food and len(path) > max_length:
+            max_length = len(path)
+            best_path = path[:]
+        
+        for next_pos in get_neighbors(pos):
+            if is_valid(next_pos, visited):
+                visited.add(next_pos)
+                path.append(next_pos)
+                new_has_food = has_food or (next_pos == FOOD)
+                dfs(next_pos, visited, path, new_has_food)
+                path.pop()
+                visited.remove(next_pos)
+    
+    visited = {START}
+```
+
+Initialize the starting state with the visited set containing the starting position, path beginning at START, and check if food is already at the starting location. Call the DFS function to explore all possible paths. The algorithm will track the longest valid path that reaches the food position and return it in the required JSON format with position coordinates.
+
+However, this exhaustive search could be inefficient for larger grids. Consider using BFS for a faster solution, or manually construct a path by analyzing the grid structure—starting from (0, 0) and accounting for obstacles like the one at (0, 1) that restrict initial movement options.
+
+For this specific grid, a practical approach would be to move right along the bottom row to (7, 0), then ascend to (7, 7) where the food is located, while avoiding obstacles at (5, 5) and (6, 6). This creates a simple traversal pattern that covers the necessary cells to reach the goal.
+
+I'll use a depth-limited backtracking search to explore possible paths. The algorithm checks if positions are valid (within bounds, not obstacles, not already visited), generates neighboring moves in four directions, and tracks the best path found so far. The search uses a depth limit to keep computation manageable while still finding viable solutions.
+
+When food hasn't been collected yet, neighbors are sorted by Manhattan distance to prioritize moving toward the food location. As the search explores each valid neighbor, it marks it as visited, adds it to the current path, and recursively continues the search, updating the food collection status when the food position is reached.
+
+After the recursive call returns, the position is removed from the visited set and path to backtrack and explore other branches. The initial search starts from the starting position with an empty visited set and path, then returns the longest path found that includes the food.
+
+### Subpass 2
+
+Attempt Metadata:
+- question_id: 11
+- subpass: 2
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1270
+
+Original Prompt:
+Do you remember the snake game, where you have to direct a snake around a 2D space to avoid hitting itself? This is hyper-snake!
+
+You are a snake in a 3D space grid of size [4, 4, 4]. You can move to any adjacent cell in the grid, along any of the
+available 3 dimensions, but you can not move to a cell which you have visited before, nor can you move "diagonally",
+that is, you can not move in more than one dimension at a time.
+
+The game ends when you run out of space to move, when you hit the boundary, or when you run into yourself.
+
+You need to avoid the obstacles at: [[1, 1, 1]].
+
+You also need to collect the food at: [[1, 2, 1]].
+
+Return the path of the snake as a list of cells, the first element of which is [1, 0, 1] (where you must start), and going for as long as you can.
+
+Verifier Signal:
+Move 3 moved 2 cells (must be 1) from [0, 0, 0] to [0, 0, 2]
+
+Raw Output:
+{'path': [{'pos': [1, 0, 1]}, {'pos': [0, 0, 1]}, {'pos': [0, 0, 0]}, {'pos': [0, 0, 2]}, {'pos': [0, 0, 3]}, {'pos': [0, 1, 3]}, {'pos': [0, 1, 2]}, {'pos': [0, 1, 1]}, {'pos': [0, 1, 0]}, {'pos': [0, 2, 0]}, {'pos': [0, 2, 1]}, {'pos': [0, 2, 2]}, {'pos': [0, 2, 3]}, {'pos': [0, 3, 3]}, {'pos': [0, 3, 2]}, {'pos': [0, 3, 1]}, {'pos': [0, 3, 0]}, {'pos': [1, 3, 0]}, {'pos': [1, 3, 1]}, {'pos': [1, 3, 2]}, {'pos': [1, 3, 3]}, {'pos': [1, 2, 3]}, {'pos': [1, 2, 2]}, {'pos': [1, 2, 1]}, {'pos': [1, 2, 0]}, {'pos': [1, 1, 0]}, {'pos': [1, 0, 0]}, {'pos': [1, 0, 2]}, {'pos': [1, 0, 3]}, {'pos': [1, 1, 3]}, {'pos': [1, 1, 2]}, {'pos': [2, 1, 2]}, {'pos': [2, 1, 3]}, {'pos': [2, 1, 1]}, {'pos': [2, 1, 0]}, {'pos': [2, 0, 0]}, {'pos': [2, 0, 1]}, {'pos': [2, 0, 2]}, {'pos': [2, 0, 3]}, {'pos': [2, 2, 3]}, {'pos': [2, 2, 2]}, {'pos': [2, 2, 1]}, {'pos': [2, 2, 0]}, {'pos': [2, 3, 0]}, {'pos': [2, 3, 1]}, {'pos': [2, 3, 2]}, {'pos': [2, 3, 3]}, {'pos': [3, 3, 3]}, {'pos': [3, 3, 2]}, {'pos': [3, 3, 1]}, {'pos': [3, 3, 0]}, {'pos': [3, 2, 0]}, {'pos': [3, 2, 1]}, {'pos': [3, 2, 2]}, {'pos': [3, 2, 3]}, {'pos': [3, 1, 3]}, {'pos': [3, 1, 2]}, {'pos': [3, 1, 1]}, {'pos': [3, 1, 0]}, {'pos': [3, 0, 0]}, {'pos': [3, 0, 1]}, {'pos': [3, 0, 2]}, {'pos': [3, 0, 3]}]}
+
+Chain of Thought:
+This is an interesting problem! Let me break down the constraints:
+
+1. 3D grid of size [4, 4, 4], so coordinates range from [0,0,0] to [3,3,3]
+2. Starting position: [1, 0, 1]
+3. Obstacles at: [[1, 1, 1]]
+4. Food at: [[1, 2, 1]]
+5. Can only move to adjacent cells (one dimension at a time, not diagonally)
+6. Cannot revisit cells
+7. Goal: Make the path as long as possible, must collect the food
+
+Since we can't revisit cells and there are 4×4×4 = 64 cells total, minus 1 obstacle = 63 available cells, the theoretical maximum path length is 63.
+
+Let me think about this systematically. I need to:
+1. Start at [1, 0, 1]
+2. Eventually reach [1, 2, 1] to collect food
+3. Visit as many cells as possible
+4. Avoid [1, 1, 1]
+
+This is essentially a Hamiltonian path problem in a 3D grid with obstacles, which is NP-complete. However, with a small grid (64 cells), we can try to find a good solution.
+
+Let me think about the adjacency. From any cell [x, y, z], we can move to:
+- [x+1, y, z], [x-1, y, z]
+- [x, y+1, z], [x, y-1, z]
+- [x, z, z+1], [x, y, z-1]
+
+As long as the new position is within bounds [0,3] for all dimensions, not an obstacle, and not visited.
+
+Given the complexity, let me try to write a solution using backtracking/DFS to find the longest path that:
+1. Starts at [1, 0, 1]
+
+
+2. Includes [1, 2, 1] (the food)
+
+I'll implement this with a recursive approach that explores all possible paths, tracking visited cells and ensuring the food location is reached. The algorithm will generate neighbors for each position, filter out invalid moves (out of bounds, obstacles, already visited), and recursively explore each valid neighbor while maintaining the path history. neighbors if n not in visited and n not in obstacles]
+        
+        if not valid_neighbors:
+            if found_food:
+                return path[:]
+            else:
+                return None
+        
+        best_path = path[:] if found_food else None
+        
+        for next_pos in valid_neighbors:
+            visited.add(next_pos)
+            path.append(next_pos)
+            result = dfs(next_pos, visited, path, found_food)
+            if result and (best_path is None or len(result) > len(best_path)):
+                best_path = result[:]
+            path.pop()
+            visited.remove(next_pos)
+        
+        return best_path
+    
+    visited = {start}
+    path = [start]
+    found
+
+I filter out neighbors that are already visited or blocked by obstacles. When there are no valid moves available, I return the current path only if food was found. I track the best path discovered so far, exploring each valid neighbor recursively while maintaining the visited set and path list, backtracking after each exploration.
+
+The search initializes with the starting position and checks if it coincides with the food location. The DFS explores all possible paths and returns the longest one that reaches the food. Since the grid is small (64 cells), the exponential search space is manageable with backtracking, though I should consider adding heuristics to prioritize paths that visit the food and maximize length.
+
+For the implementation, I'm converting the grid dimensions, start position, obstacles, and food location to tuples for efficient set operations. The neighbor generation explores all six directions in 3D space (moving along x, y, and z axes), filtering out positions that exceed grid boundaries or hit obstacles.
+
+The DFS approach tracks visited cells and maintains the current path. When the snake reaches the food position, it marks that the food has been found. The algorithm then compares path lengths and updates the best path whenever a longer valid route is discovered. Each neighbor is validated to ensure it hasn't been visited and doesn't contain an obstacle before being explored.
+
+After the recursive exploration completes, the function returns the longest path found. I'm considering whether a different strategy might be more efficient—perhaps using BFS or DFS to systematically explore all reachable paths while prioritizing length, since the goal is to maximize the distance traveled after collecting the food.
+
+To handle the potential combinatorial explosion, I could implement pruning: if the current path length plus the maximum possible remaining cells is less than the best path found so far, I can skip that branch. The implementation converts coordinates to tuples for set operations, calculates the total available cells (accounting for obstacles), and defines a helper to find valid neighboring positions.
+
+The DFS explores each position, tracking visited cells and whether food has been encountered. When the current position matches the food location, it sets a flag. The algorithm continues searching and will prune branches where the theoretical maximum remaining path can't beat the current best. the recursive call returns true, we propagate that success back up. Otherwise, we backtrack by removing the position from our path and visited set. Once we've exhausted all neighbors, the function returns false.
+
+After the recursion completes, I convert the best path found back to a list format and return it. Then I print out the path length and each cell in the sequence to verify the solution. For the test case with start at [1, 0, 1], food at [1, 2, 1], and an obstacle at [1, 1, 1], I need to trace through what positions are reachable and how the algorithm navigates around the blocked cell. obstacles at [1, 1, 1], I need to navigate carefully around it.
+
+Let me implement the search algorithm with some safeguards. I should add iteration limits to prevent infinite loops, and consider a greedy approach as a starting point before attempting more exhaustive methods. I could try both strategies—a greedy solution for a quick result, then a limited depth-first search to potentially find longer paths. Let me start coding a basic version that searches for extended paths:
+
+```python
+import random
+
+def find_longest_path():
+    grid_size = [4, 4, 4]
+    start = [1, 0, 1]
+    obstacles = [[1, 1, 1]]
+    food = [1, 2, 1]
+    
+    start = tuple(start)
+    obstacles = set(tuple(obs) for obs in obstacles)
+    food = tuple(food)
+    
+    def get_neighbors(pos):
+        x, y, z = pos
+        neighbors = []
+        for dx, dy, dz in [(1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1)]:
+            nx, ny, nz = x + dx, y + dy, z + dz
+            if 0 <= nx < 4 and 0 <= ny < 4 and 0 <= nz < 4:
+                neighbors.append((nx, ny, nz))
+        return neighbors
+    
+    best_path = []
+    max_iterations = 100000
+    iteration = [0]
+    
+    def dfs(pos, visited, path, found_food, depth=0):
+        nonlocal best_path
+        iteration[0] += 1
+        if iteration[0] > max_iterations:
+            return False
+        
+        if pos == food:
+            found_food = True
+        
+        if found_food and len(path) > len(best_path):
+            best_path = path[:]
+        
+        neighbors = get_neighbors(pos)
+        valid_neighbors = [n for n in neighbors if n not in visited and n not in obstacles]
+        
+        if not valid_neighbors:
+            return False
+        
+        for next_pos in valid_neighbors:
+            visited.add(next_pos)
+            path.append(next_pos)
+            dfs(next_pos, visited, path, found_food, depth+1)
+            path.pop()
+            visited.remove(next_pos)
+        
+        return False
+    
+    visited = {start}
+    path = [start]
+    found_food = (start == food)
+    
+    dfs(start, visited, path, found_food)
+    
+    return [list(p) for p in best_path]
+
+I'll implement this directly and test it. The backtracking approach should work fine given the problem size. Starting from the initial position, I'll explore all valid neighbors recursively, tracking visited cells and the current path. When food is found, I'll compare path lengths to keep the longest one. After exploring all branches, I return the best path found.
+
+```python
+def solve():
+    start = (1, 0, 1)
+    obstacles = {(1, 1, 1)}
+    food = (1, 2, 1)
+    
+    def get_neighbors(pos):
+        x, y, z = pos
+        neighbors = []
+        for dx, dy, dz in [(1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1)]:
+            nx, ny, nz = x + dx, y + dy, z + dz
+            if 0 <= nx < 4 and 0 <= ny < 4 and 0 <= nz < 4:
+                if (nx, ny, nz) not in obstacles:
+                    neighbors.append((nx, ny, nz))
+        return neighbors
+    
+    best = []
+    
+    def dfs(pos, visited, path, has_food):
+        nonlocal best
+        
+        if pos == food:
+            has_food = True
+        
+        if has_food and len(path) > len(best):
+            best = path[:]
+        
+        for next_pos in get_neighbors(pos):
+            if next_pos not in visited:
+                visited.add(next_pos)
+                path.append(next_pos)
+                dfs(next_pos, visited, path, has_food)
+                path.pop()
+                visited.remove(next_pos)
+    
+    visited = {start}
+    path = [start]
+    dfs(start, visited, path, start == food)
+    
+    return [list(p) for p in best]
+
+result = solve()
+print("
+
+Path:")
+for p in result:
+    print(p)
+```
+
+The DFS approach might be slow, so I'm considering a more systematic strategy. I could construct a path by snaking through the 4x4x4 grid layer by layer—filling each z-plane in a back-and-forth pattern, then moving to the next layer. This would maximize coverage while ensuring the food location gets visited, though I need to account for the obstacle at [1, 1, 1].
+
+Since the food is at [1, 2, 1] and the start is at [1, 0, 1], they're on the same z-layer but separated by the blocked cell. I can navigate around this by dropping to z=0, traversing that plane completely, then moving back up to z=1 to reach the food location. Let me implement the DFS with some optimizations to find the longest valid path.
+
+```python
+def solve():
+    start = (1, 0, 1)
+    obstacles = {(1, 1, 1)}
+    food = (1, 2, 1)
+    
+    def get_neighbors(pos):
+        x, y, z = pos
+        neighbors = []
+        for dx, dy, dz in [(1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1)]:
+            nx, ny, nz = x + dx, y + dy, z + dz
+            if 0 <= nx < 4 and 0 <= ny < 4 and 0 <= nz < 4:
+                if (nx, ny, nz) not in obstacles:
+                    neighbors.append((nx, ny, nz))
+        return neighbors
+    
+    best = []
+    count = [0]
+    max_count = 1000000
+    
+    def dfs(pos, visited, path, has_food):
+        nonlocal best
+        count[0] += 1
+        if count[0] > max_count:
+            return
+        
+        if pos == food:
+            has_food = True
+        
+        if has_food and len(path) > len(best):
+            best = path[:]
+            if len(best) == 63:
+                return
+        
+        neighbors = get_neighbors(pos)
+        
+        for next_pos in neighbors:
+            if next_pos not in visited:
+                visited.add(next_pos)
+                path.append(next_pos)
+                dfs(next_pos, visited, path, has_food)
+                if count[0] > max_count:
+                    return
+                path.pop()
+                visited.remove(next_pos)
+    
+    visited = {start}
+    dfs(start, visited, [start], False)
+    return best
+```
+
+I'm using depth-first search to explore all possible paths from the starting position. The algorithm tracks whether the food has been collected and only counts paths that reach the food as valid candidates. I maintain a counter to prevent excessive exploration and stop early if a maximum-length path of 63 cells is found (since the grid has 64 cells total and one is blocked). The best path found is stored and updated whenever a longer valid path is discovered.
+
+However, the search space is quite large. I should consider iterative deepening or constructing paths using known patterns for Hamiltonian paths in a 4x4x4 cube, since one obstacle shouldn't prevent finding a very long path.
+
+A snake pattern could work—moving through each z-plane in a boustrophedon pattern (alternating direction per row), then transitioning between planes. This would systematically visit cells while avoiding backtracking, though implementing it requires careful coordinate management.
+
+Rather than manually trace the path, I'll use a depth-first search to find the longest possible route. The algorithm needs to check valid neighbors (within bounds, not obstacles, not already visited), recursively explore from each unvisited cell, and track the maximum path length found. inal path length: {len(path)}")
+print(f"Path: {path}")
+
+The search explores neighbors recursively, tracking visited positions to avoid cycles. When food is found, it continues searching to maximize path length, stopping early if an optimal 63-step path is discovered or iteration limits are exceeded. The algorithm backtracks through unvisited neighbors, maintaining the current path and visited set. Once complete, it returns the best path found as a list of coordinate pairs.
+
+### Subpass 3
+
+Attempt Metadata:
+- question_id: 11
+- subpass: 3
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 1270
+
+Original Prompt:
+Do you remember the snake game, where you have to direct a snake around a 2D space to avoid hitting itself? This is hyper-snake!
+
+You are a snake in a 3D space grid of size [4, 4, 4]. You can move to any adjacent cell in the grid, along any of the
+available 3 dimensions, but you can not move to a cell which you have visited before, nor can you move "diagonally",
+that is, you can not move in more than one dimension at a time.
+
+The game ends when you run out of space to move, when you hit the boundary, or when you run into yourself.
+
+You need to avoid the obstacles at: [(0, 0, 1)].
+
+You also need to collect the food at: [(0, 0, 0)].
+
+Return the path of the snake as a list of cells, the first element of which is [1, 1, 1] (where you must start), and going for as long as you can.
+
+Verifier Signal:
+Position (0, 0, 1) is a wall
+
+Raw Output:
+{'path': [{'pos': [1, 1, 1]}, {'pos': [0, 1, 1]}, {'pos': [0, 0, 1]}, {'pos': [0, 0, 0]}, {'pos': [0, 1, 0]}, {'pos': [0, 2, 0]}, {'pos': [0, 3, 0]}, {'pos': [0, 3, 1]}, {'pos': [0, 2, 1]}, {'pos': [0, 1, 1]}, {'pos': [0, 1, 2]}, {'pos': [0, 0, 2]}, {'pos': [0, 0, 3]}, {'pos': [0, 1, 3]}, {'pos': [0, 2, 3]}, {'pos': [0, 3, 3]}, {'pos': [0, 3, 2]}, {'pos': [0, 2, 2]}, {'pos': [1, 2, 2]}, {'pos': [1, 1, 2]}, {'pos': [1, 0, 2]}, {'pos': [1, 0, 1]}, {'pos': [1, 0, 0]}, {'pos': [1, 1, 0]}, {'pos': [1, 2, 0]}, {'pos': [1, 3, 0]}, {'pos': [1, 3, 1]}, {'pos': [1, 2, 1]}, {'pos': [2, 2, 1]}, {'pos': [2, 1, 1]}, {'pos': [2, 0, 1]}, {'pos': [2, 0, 0]}, {'pos': [2, 1, 0]}, {'pos': [2, 2, 0]}, {'pos': [2, 3, 0]}, {'pos': [2, 3, 1]}, {'pos': [3, 3, 1]}, {'pos': [3, 2, 1]}, {'pos': [3, 1, 1]}, {'pos': [3, 0, 1]}, {'pos': [3, 0, 0]}, {'pos': [3, 1, 0]}, {'pos': [3, 2, 0]}, {'pos': [3, 3, 0]}, {'pos': [3, 3, 2]}, {'pos': [3, 2, 2]}, {'pos': [3, 1, 2]}, {'pos': [3, 0, 2]}, {'pos': [3, 0, 3]}, {'pos': [3, 1, 3]}, {'pos': [3, 2, 3]}, {'pos': [3, 3, 3]}, {'pos': [2, 3, 3]}, {'pos': [2, 2, 3]}, {'pos': [2, 1, 3]}, {'pos': [2, 0, 3]}, {'pos': [2, 0, 2]}, {'pos': [2, 1, 2]}, {'pos': [2, 2, 2]}, {'pos': [2, 3, 2]}, {'pos': [1, 3, 2]}, {'pos': [1, 3, 3]}, {'pos': [1, 2, 3]}]}
+
+Chain of Thought:
+Let me understand the problem:
+- I'm a snake in a 3D grid of size [4, 4, 4]
+- I can move to any adjacent cell (in one dimension at a time, not diagonally)
+- I cannot visit a cell twice
+- I cannot move out of bounds
+- I need to avoid obstacles at [(0, 0, 1)]
+- I need to collect food at [(0, 0, 0)]
+- I start at [1, 1, 1]
+- I need to find the longest path possible
+
+The grid is 4x4x4, so there are 64 cells total. There's 1 obstacle, so 63 available cells. I need to find a Hamiltonian path (or as close as possible) that:
+1. Starts at [1, 1, 1]
+2. Passes through [0, 0, 0] (food)
+3. Avoids [0, 0, 1] (obstacle)
+4. Maximizes the number of cells visited
+
+This is a challenging problem. Let me think about a strategy:
+
+From [1, 1, 1], I can move to:
+- [0, 1, 1], [2, 1, 1] (x dimension)
+- [1, 0, 1], [1, 2, 1] (y dimension)
+- [1, 1, 0], [1, 1, 2] (z dimension)
+
+I need to eventually reach [0, 0, 0] to collect the food.
+
+Let me try to find a path using a systematic approach. I'll write a program to search for the longest path.
+
+Actually, let me think about this more carefully. The snake game usually involves the snake growing when it eats food, but this problem says "collect the food" and asks for "as long as you can", which suggests I should just find the longest path that passes through the food location.
+
+
+I'll implement a DFS-based search to explore all possible paths from the starting position. The algorithm will track visited cells, try moving in all six directions (up, down, left, right, forward, backward in 3D space), and keep track of the longest path found that includes the food location. I need to implement a DFS approach to explore paths through the grid. The function will track the longest path found so far, and for cases where certain cells must be visited (like food locations), it will only update the longest path when those constraints are satisfied. For each position, I'll recursively explore all valid unvisited neighbors, adding them to the current path and marking them as visited, then backtracking to try other routes.
+
+After the initial search completes, I'll check whether the longest path includes the required food cell. If not, I'll run the search again without that constraint to find the best path available.
+
+However, this brute-force DFS could be computationally expensive on a 4x4x4 grid given the exponential number of possible paths to explore.
+
+The key insight is that I must pass through (0, 0, 0) while starting from (1, 1, 1) and avoiding (0, 0, 1). I should find the longest path that satisfies this constraint by exploring all possible routes through the grid systematically.
+
+I'll use depth-first search with backtracking to explore different paths. For each position, I try moving in all six directions (up, down, left, right, forward, backward in 3D space), marking cells as visited and unmarking them when backtracking to explore alternative routes. The algorithm tracks the longest path found so far that includes the food cell. exploring neighbors that haven't been visited yet, recursively calling dfs on each one while tracking the path. After exploring all branches, backtrack by removing the neighbor from the visited set and path. The search starts from the initial position with just the start in the visited set and path, then returns the longest path found that includes the food location.
+
+I need to format the output as JSON with the path represented as a list of position objects. Let me write and execute the code to find the solution.
