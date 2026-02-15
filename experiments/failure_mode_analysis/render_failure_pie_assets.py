@@ -106,6 +106,82 @@ def _plot_pie_no_legend(mode_counts: dict[str, int], output_path: Path) -> None:
   plt.close(fig)
 
 
+def _render_stacked_bar(
+    labeled_counts: list[tuple[str, dict[str, int]]], output_path: Path
+) -> None:
+  """Render a 100% stacked horizontal bar chart for failure-mode distributions.
+
+  Parameters
+  ----------
+  labeled_counts : list of (display_label, mode_counts) tuples, one per bar.
+  output_path : where to save the PNG.
+  """
+  import numpy as np
+
+  n_bars = len(labeled_counts)
+  labels = [lbl for lbl, _ in labeled_counts]
+  totals = [sum(mc.values()) for _, mc in labeled_counts]
+
+  # Convert counts to percentages per bar.
+  pct_data = {}  # mode -> list of pct values per bar
+  for mode in _VISUAL_MODES:
+    pct_data[mode] = []
+    for _, mc in labeled_counts:
+      total = sum(mc.values())
+      pct_data[mode].append(mc.get(mode, 0) / total * 100 if total > 0 else 0)
+
+  # Use only the 5 core failure modes (exclude Infra/Engine).
+  bar_modes = FAILURE_MODES
+
+  fig, ax = plt.subplots(figsize=(5.5, max(2.4, n_bars * 0.48 + 0.9)))
+  y = np.arange(n_bars)
+  bar_height = 0.55
+
+  lefts = np.zeros(n_bars)
+  for mode in bar_modes:
+    widths = np.array(pct_data[mode])
+    ax.barh(y, widths, bar_height, left=lefts,
+            color=_PALETTE[mode], edgecolor="white", linewidth=0.5, zorder=2)
+    # Label segments >= 8%.
+    for i, (w, l) in enumerate(zip(widths, lefts)):
+      if w >= 8:
+        ax.text(l + w / 2, i, f"{w:.0f}%",
+                ha="center", va="center", fontsize=7,
+                fontweight="medium", color="white")
+    lefts += widths
+
+  # N-judged at bar end.
+  for i, total in enumerate(totals):
+    ax.text(101.5, i, f"n={total}", ha="left", va="center",
+            fontsize=7, color="#555555")
+
+  ax.set_yticks(y)
+  ax.set_yticklabels(labels, fontsize=8, color="#2B2B2B")
+  ax.invert_yaxis()
+  ax.set_xlim(0, 115)
+  ax.set_xlabel("Failure-mode share (%)", fontsize=8, color="#2B2B2B", labelpad=6)
+  ax.tick_params(axis="x", labelsize=7)
+  ax.spines["top"].set_visible(False)
+  ax.spines["right"].set_visible(False)
+  ax.spines["left"].set_linewidth(0.6)
+  ax.spines["bottom"].set_linewidth(0.6)
+  ax.tick_params(axis="both", which="both", length=3, width=0.6)
+  ax.set_axisbelow(True)
+
+  # Legend.
+  legend_handles = [
+    Patch(facecolor=_PALETTE[mode], edgecolor="none", label=_SHORT_LABELS[mode])
+    for mode in bar_modes
+  ]
+  ax.legend(handles=legend_handles, loc="upper center",
+            bbox_to_anchor=(0.45, -0.18), ncol=5, frameon=False,
+            fontsize=7, handlelength=1.0, handletextpad=0.3, columnspacing=0.8)
+
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+  fig.savefig(output_path, dpi=300, bbox_inches="tight", facecolor="white")
+  plt.close(fig)
+
+
 def _plot_standalone_legend(output_path: Path) -> None:
   handles = [
     Patch(facecolor=_PALETTE[mode], edgecolor="none", label=_SHORT_LABELS[mode])
@@ -131,6 +207,9 @@ def main() -> None:
   parser.add_argument("--claude-jsonl", required=True, type=Path)
   parser.add_argument("--gemini-jsonl", required=True, type=Path)
   parser.add_argument("--gpt-jsonl", required=False, type=Path)
+  parser.add_argument("--claude-tools-jsonl", required=False, type=Path)
+  parser.add_argument("--gemini-tools-jsonl", required=False, type=Path)
+  parser.add_argument("--gpt-tools-jsonl", required=False, type=Path)
   parser.add_argument("--out-dir", required=True, type=Path)
   args = parser.parse_args()
 
@@ -143,6 +222,26 @@ def main() -> None:
   if gpt_counts is not None:
     _plot_pie_no_legend(gpt_counts, args.out_dir / "failure_mode_distribution_pie_gpt52.png")
   _plot_standalone_legend(args.out_dir / "failure_mode_distribution_legend.png")
+
+  # Stacked bar chart (requires all 6 JSONL files).
+  claude_tools = _load_mode_counts(args.claude_tools_jsonl) if args.claude_tools_jsonl else None
+  gemini_tools = _load_mode_counts(args.gemini_tools_jsonl) if args.gemini_tools_jsonl else None
+  gpt_tools = _load_mode_counts(args.gpt_tools_jsonl) if args.gpt_tools_jsonl else None
+
+  bar_rows: list[tuple[str, dict[str, int]]] = []
+  if gpt_counts is not None:
+    bar_rows.append(("GPT-5.2 (No tools)", gpt_counts))
+  if gpt_tools is not None:
+    bar_rows.append(("GPT-5.2 (Tools)", gpt_tools))
+  bar_rows.append(("Gemini 3 Pro (No tools)", gemini_counts))
+  if gemini_tools is not None:
+    bar_rows.append(("Gemini 3 Pro (Tools)", gemini_tools))
+  bar_rows.append(("Claude Sonnet 4.5 (No tools)", claude_counts))
+  if claude_tools is not None:
+    bar_rows.append(("Claude Sonnet 4.5 (Tools)", claude_tools))
+
+  if len(bar_rows) >= 4:
+    _render_stacked_bar(bar_rows, args.out_dir / "failure_mode_stacked_bar.png")
 
 
 if __name__ == "__main__":
