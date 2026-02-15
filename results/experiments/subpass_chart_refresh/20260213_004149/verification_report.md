@@ -41,5 +41,5 @@
 
 ## TeX patch
 
-- Target file: `/Users/jashvira/Desktop/Writing/VGBench/iclr2026/scbench/appendix_content.tex`
+- Target file: `/Users/REDACTED/Desktop/Writing/VGBench/iclr2026/scbench/appendix_content.tex`
 - Replacements applied in this run: 6
