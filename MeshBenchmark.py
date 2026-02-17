@@ -12,6 +12,7 @@ This extends the abstract TestRunner framework with spatial-specific:
 """
 
 # IMPORTANT: Set up sys.path BEFORE any other imports so submodules can be found
+import atexit
 import sys
 from pathlib import Path
 
@@ -27,6 +28,46 @@ from typing import Dict, Any
 from LLMBenchCore import BenchmarkRunner, run_benchmark_main
 from LLMBenchCore.AiEnginePlacebo import set_placebo_data_provider
 import placebo_data
+
+_RUNTIME_TASK_SHIM_PREFIX = "# Auto-generated runtime task shim. Do not commit."
+
+
+def _resolve_task_source(task_index: int) -> Path:
+  task_name = f"{task_index}.py"
+  primary = REPO_ROOT / "tasks" / task_name
+  if primary.exists():
+    return primary
+  deprecated = REPO_ROOT / "tasks" / "deprecated" / task_name
+  if deprecated.exists():
+    return deprecated
+  raise FileNotFoundError(f"Missing task implementation for {task_name}")
+
+
+def _ensure_runtime_task_shims() -> list[Path]:
+  created: list[Path] = []
+  for task_index in range(1, 58):
+    _resolve_task_source(task_index)  # fail fast if task layout is incomplete
+    shim_path = REPO_ROOT / f"{task_index}.py"
+    if shim_path.exists():
+      continue
+    shim_path.write_text(
+      _RUNTIME_TASK_SHIM_PREFIX + "\n"
+      "from _task_loader import load_task\n\n"
+      f'load_task("{task_index}.py", globals())\n',
+      encoding="utf-8",
+    )
+    created.append(shim_path)
+  return created
+
+
+def _cleanup_runtime_task_shims(paths: list[Path]) -> None:
+  for path in paths:
+    try:
+      if path.exists():
+        path.unlink()
+    except Exception:
+      # Best effort cleanup only.
+      pass
 
 
 class MeshBenchmarkRunner(BenchmarkRunner):
@@ -85,6 +126,9 @@ class MeshBenchmarkRunner(BenchmarkRunner):
 
 
 if __name__ == "__main__":
+  generated_shims = _ensure_runtime_task_shims()
+  if generated_shims:
+    atexit.register(_cleanup_runtime_task_shims, generated_shims)
   set_placebo_data_provider(["always-wrong", "human-with-tools", "guessing"],
                             placebo_data.get_response)
   runner = MeshBenchmarkRunner()
