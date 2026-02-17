@@ -32,21 +32,9 @@ import placebo_data
 _RUNTIME_TASK_SHIM_PREFIX = "# Auto-generated runtime task shim. Do not commit."
 
 
-def _resolve_task_source(task_index: int) -> Path:
-  task_name = f"{task_index}.py"
-  primary = REPO_ROOT / "tasks" / task_name
-  if primary.exists():
-    return primary
-  deprecated = REPO_ROOT / "tasks" / "deprecated" / task_name
-  if deprecated.exists():
-    return deprecated
-  raise FileNotFoundError(f"Missing task implementation for {task_name}")
-
-
 def _ensure_runtime_task_shims() -> list[Path]:
   created: list[Path] = []
   for task_index in range(1, 58):
-    _resolve_task_source(task_index)  # fail fast if task layout is incomplete
     shim_path = REPO_ROOT / f"{task_index}.py"
     if shim_path.exists():
       continue
@@ -62,12 +50,7 @@ def _ensure_runtime_task_shims() -> list[Path]:
 
 def _cleanup_runtime_task_shims(paths: list[Path]) -> None:
   for path in paths:
-    try:
-      if path.exists():
-        path.unlink()
-    except Exception:
-      # Best effort cleanup only.
-      pass
+    path.unlink(missing_ok=True)
 
 
 class MeshBenchmarkRunner(BenchmarkRunner):
@@ -127,8 +110,7 @@ class MeshBenchmarkRunner(BenchmarkRunner):
 
 if __name__ == "__main__":
   generated_shims = _ensure_runtime_task_shims()
-  if generated_shims:
-    atexit.register(_cleanup_runtime_task_shims, generated_shims)
+  atexit.register(_cleanup_runtime_task_shims, generated_shims)
   set_placebo_data_provider(["always-wrong", "human-with-tools", "guessing"],
                             placebo_data.get_response)
   runner = MeshBenchmarkRunner()
