@@ -82,98 +82,88 @@ GENERATOR_VERSION = "v2"
 GRID_IMAGE_THRESHOLD = 40
 GRID_IMAGE_TARGET = 320
 
-SUBPASS_CONFIG = [
-  {
-    "size": 8,
-    "seed": 11,
-    "fill_ratio": 0.45,
-    "freq_limit": 2,
-    "blob_count": 3,
-    "wave_count": 1,
-    "smooth_passes": 2,
-    "label": "Small blob cluster"
-  },
-  {
-    "size": 12,
-    "seed": 23,
-    "fill_ratio": 0.5,
-    "freq_limit": 2,
-    "blob_count": 4,
-    "wave_count": 2,
-    "smooth_passes": 2,
-    "label": "Smooth corner"
-  },
-  {
-    "size": 24,
-    "seed": 37,
-    "fill_ratio": 0.38,
-    "freq_limit": 2,
-    "blob_count": 5,
-    "wave_count": 2,
-    "smooth_passes": 3,
-    "label": "Island just off centre"
-  },
-  {
-    "size": 24,
-    "seed": 49,
-    "fill_ratio": 0.55,
-    "freq_limit": 2,
-    "blob_count": 2,
-    "wave_count": 1,
-    "smooth_passes": 2,
-    "label": "Twin islands"
-  },
-  {
-    "size": 48,
-    "seed": 61,
-    "fill_ratio": 0.42,
-    "freq_limit": 3,
-    "blob_count": 7,
-    "wave_count": 3,
-    "smooth_passes": 4,
-    "label": "Low-frequency Thumb"
-  },
-  {
-    "size": 64,
-    "seed": 73,
-    "fill_ratio": 0.45,
-    "freq_limit": 3,
-    "blob_count": 8,
-    "wave_count": 3,
-    "smooth_passes": 4,
-    "label": "Peanut shape"
-  },
-  {
-    "size": 96,
-    "seed": 85,
-    "fill_ratio": 0.45,
-    "freq_limit": 3,
-    "blob_count": 8,
-    "wave_count": 3,
-    "smooth_passes": 4,
-    "label": "Ellipse"
-  },
-  {
-    "size": 50,
-    "seed": 86,
-    "fill_ratio": 0.3,
-    "freq_limit": 8,
-    "blob_count": 12,
-    "wave_count": 2,
-    "smooth_passes": 1,
-    "label": "Asteroid"
-  },
-  {
-    "size": 128,
-    "seed": 97,
-    "fill_ratio": 0.45,
-    "freq_limit": 3,
-    "blob_count": 8,
-    "wave_count": 3,
-    "smooth_passes": 4,
-    "label": "Hallowean Decoration"
-  }
-]
+SUBPASS_CONFIG = [{
+  "size": 8,
+  "seed": 11,
+  "fill_ratio": 0.45,
+  "freq_limit": 2,
+  "blob_count": 3,
+  "wave_count": 1,
+  "smooth_passes": 2,
+  "label": "Small blob cluster"
+}, {
+  "size": 12,
+  "seed": 23,
+  "fill_ratio": 0.5,
+  "freq_limit": 2,
+  "blob_count": 4,
+  "wave_count": 2,
+  "smooth_passes": 2,
+  "label": "Smooth corner"
+}, {
+  "size": 24,
+  "seed": 37,
+  "fill_ratio": 0.38,
+  "freq_limit": 2,
+  "blob_count": 5,
+  "wave_count": 2,
+  "smooth_passes": 3,
+  "label": "Island just off centre"
+}, {
+  "size": 24,
+  "seed": 49,
+  "fill_ratio": 0.55,
+  "freq_limit": 2,
+  "blob_count": 2,
+  "wave_count": 1,
+  "smooth_passes": 2,
+  "label": "Twin islands"
+}, {
+  "size": 48,
+  "seed": 61,
+  "fill_ratio": 0.42,
+  "freq_limit": 3,
+  "blob_count": 7,
+  "wave_count": 3,
+  "smooth_passes": 4,
+  "label": "Low-frequency Thumb"
+}, {
+  "size": 64,
+  "seed": 73,
+  "fill_ratio": 0.45,
+  "freq_limit": 3,
+  "blob_count": 8,
+  "wave_count": 3,
+  "smooth_passes": 4,
+  "label": "Peanut shape"
+}, {
+  "size": 96,
+  "seed": 85,
+  "fill_ratio": 0.45,
+  "freq_limit": 3,
+  "blob_count": 8,
+  "wave_count": 3,
+  "smooth_passes": 4,
+  "label": "Ellipse"
+}, {
+  "size": 50,
+  "seed": 86,
+  "fill_ratio": 0.3,
+  "freq_limit": 8,
+  "blob_count": 12,
+  "wave_count": 2,
+  "smooth_passes": 1,
+  "label": "Asteroid"
+}, {
+  "size": 128,
+  "seed": 97,
+  "fill_ratio": 0.45,
+  "freq_limit": 3,
+  "blob_count": 8,
+  "wave_count": 3,
+  "smooth_passes": 4,
+  "label": "Hallowean Decoration"
+}]
 
 
 def _safe_name(value):
@@ -349,6 +339,7 @@ def _build_subpass_summary(subpass, config, grid_lines):
   grid_text = "\n".join(grid_lines)
   return f"{header}<br><pre>{grid_text}</pre>"
 
+
 structure = {
   "type": "object",
   "properties": {
@@ -404,6 +395,8 @@ def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
 
 
 def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
+  if "function" not in answer:
+    return 0, "No function provided"
   answer = answer["function"]
   validPass = answer
   validPass = validPass.replace("def", "").strip()
@@ -468,7 +461,6 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
           if grid[y][x] == ".":
             score += 1
 
-      
       except Exception as e:
         errors.append(f"Error evaluating f({x}, {y}): {e}")
         continue
@@ -479,7 +471,6 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
   getGridTime = time.time() - t
   if (getGridTime > 1):
     print(f"Function calling took {getGridTime:.2f}s")
-
 
   if generatedHashes == 0 or generatedHashes == gridSize * gridSize:
     return 0.0, f"Output was uniformly valued"

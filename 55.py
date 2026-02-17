@@ -1,8 +1,85 @@
+import hashlib
 import json
+import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 from LLMBenchCore.ResultPaths import model_artifact_dir, report_relpath
+
+_cache_dir = os.path.join(tempfile.gettempdir(), "55_delaunay_cache")
+os.makedirs(_cache_dir, exist_ok=True)
+
+
+def _get_cache_key(answer: dict, subPass: int, aiEngineName: str) -> str:
+  """Generate a cache key from the answer, subPass, and engine name."""
+  data = json.dumps(answer, sort_keys=True) + str(subPass) + aiEngineName + "v1"
+  return hashlib.sha256(data.encode()).hexdigest()
+
+
+def _load_from_cache(cache_key: str):
+  """Load result from cache if available. Thread/process safe."""
+  cache_file = os.path.join(_cache_dir, f"grade_{cache_key}.json")
+  if os.path.exists(cache_file):
+    try:
+      with open(cache_file, 'r', encoding='utf-8') as f:
+        return json.load(f)
+    except (json.JSONDecodeError, IOError, OSError):
+      pass
+  return None
+
+
+def _save_to_cache(cache_key: str, result):
+  """Save result to cache. Thread/process safe using atomic write."""
+  cache_file = os.path.join(_cache_dir, f"grade_{cache_key}.json")
+  tmp_file = cache_file + f".{os.getpid()}.tmp"
+  try:
+    with open(tmp_file, 'w', encoding='utf-8') as f:
+      json.dump(result, f)
+    os.replace(tmp_file, cache_file)
+  except (IOError, OSError):
+    try:
+      os.remove(tmp_file)
+    except OSError:
+      pass
+
+
+def _load_vis_from_cache(cache_key: str):
+  """Load cached visualization HTML if available and underlying files still exist."""
+  cache_file = os.path.join(_cache_dir, f"vis_{cache_key}.json")
+  if not os.path.exists(cache_file):
+    return None
+  try:
+    with open(cache_file, 'r', encoding='utf-8') as f:
+      data = json.load(f)
+    html = data.get("html")
+    files = data.get("files", [])
+    if not html:
+      return None
+    # Ensure all referenced files still exist
+    for p in files:
+      if not os.path.exists(p):
+        return None
+    return html
+  except (json.JSONDecodeError, IOError, OSError):
+    return None
+
+
+def _save_vis_to_cache(cache_key: str, html: str, files):
+  """Save visualization HTML and file list to cache with atomic write."""
+  cache_file = os.path.join(_cache_dir, f"vis_{cache_key}.json")
+  tmp_file = cache_file + f".{os.getpid()}.tmp"
+  payload = {"html": html, "files": [str(p) for p in files]}
+  try:
+    with open(tmp_file, 'w', encoding='utf-8') as f:
+      json.dump(payload, f)
+    os.replace(tmp_file, cache_file)
+  except (IOError, OSError):
+    try:
+      os.remove(tmp_file)
+    except OSError:
+      pass
+
 
 REPO_ROOT = Path(".").resolve()
 VGB_ROOT = REPO_ROOT / "VisGeomBench"
@@ -29,7 +106,10 @@ structure = {
         "type": "array",
         "minItems": 3,
         "maxItems": 3,
-        "items": {"type": "integer", "minimum": 0},
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
       },
     },
   },
@@ -97,6 +177,13 @@ def prepareSubpassPrompt(index):
 
 
 def gradeAnswer(result, subPass, aiEngineName):
+  cache_key = _get_cache_key(result if isinstance(result, dict) else {"raw": repr(result)}, subPass,
+                             aiEngineName)
+  cached = _load_from_cache(cache_key)
+  if cached is not None:
+    print(f"Cache hit grading 55 - {cache_key}")
+    return tuple(cached)
+
   data = _get_data()
   extracted = None
   if isinstance(result, dict) and "triangles" in result:
@@ -108,13 +195,22 @@ def gradeAnswer(result, subPass, aiEngineName):
     extracted = PARSER.parse_answer(raw) or raw
   diff = verify_delaunay_triangulation(extracted, data[subPass], return_diff=True)
   pretty = _format_diff(diff)
-  return (1 if diff.get("passed") else 0), pretty
+  score = 1 if diff.get("passed") else 0
+
+  _save_to_cache(cache_key, [score, pretty])
+  return score, pretty
 
 
 def resultToNiceReport(result, subPass, aiEngineName: str):
   data = _get_data()
   if subPass >= len(data):
     raise StopIteration
+
+  cache_key = _get_cache_key(result if isinstance(result, dict) else {"raw": repr(result)}, subPass,
+                             aiEngineName)
+  cached_html = _load_vis_from_cache(cache_key)
+  if cached_html is not None:
+    return cached_html
 
   record = data[subPass]
   if isinstance(result, dict) and "triangles" in result:
@@ -148,7 +244,9 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
     f'<img src="{report_relpath(str(path), aiEngineName)}" alt="Delaunay triangulation visualization" style="max-width: 100%;">'
     for path in file_paths
   ]
-  return "".join(img_tags)
+  html = "".join(img_tags)
+  _save_vis_to_cache(cache_key, html, file_paths)
+  return html
 
 
 def setup():

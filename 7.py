@@ -312,8 +312,9 @@ def resultToNiceReport(result, subPass, aiEngineName, path=None, alt_path=None):
   viewer_id = f"maze-viewer-{hashlib.md5(base_name.encode()).hexdigest()}"
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="maze-view view-{idx}" '
-                      f'style="max-width: 100%;">')
+    image_tags.append(
+      f'<img src="{report_relpath(path, aiEngineName)}" class="maze-view view-{idx}" '
+      f'style="max-width: 100%;">')
 
   radio_name = f"{viewer_id}-view"
   radio_ids = [f"{viewer_id}-view-{idx}" for idx in range(len(image_paths))]
@@ -357,6 +358,10 @@ def resultToNiceReport(result, subPass, aiEngineName, path=None, alt_path=None):
 
 
 def gradeAnswer(answer: str, subPass: int, aiEngineName: str):
+  if not isinstance(answer, str):
+    print("Wrong type: " + str(answer))
+    return 0, "Answer was not a string"
+
   answer = answer.strip()
 
   # Check cache first
