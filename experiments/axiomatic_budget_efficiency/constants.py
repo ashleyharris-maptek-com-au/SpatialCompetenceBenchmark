@@ -3,7 +3,6 @@ from pathlib import Path
 EXPERIMENT_NAME = "axiomatic_budget_sweep"
 EXPERIMENT_TAG = "axiomatic-budget-efficiency"
 
-# Axiomatic bucket from notes.tex (VGB1..VGB6)
 AXIOMATIC_TEST_IDS = (51, 52, 53, 54, 57)
 
 # Output-token budgets to sweep, ending with a large "effectively unlimited" proxy cap.
