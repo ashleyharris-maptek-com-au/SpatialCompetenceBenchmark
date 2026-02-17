@@ -259,6 +259,8 @@ def gradeAnswer(answer, subPass, aiEngineName):
 
   # See if any boxes do not have xyx coordinates, and if so instantly fail
   for box in answer["boxes"]:
+    if not isinstance(box, dict):
+      return 0, "Coordinate dictionary expected, got: " + str(box)
     if len(box["XyzMin"]) != 3 or len(box["XyzMax"]) != 3:
       return 0, "Invalid box coordinates"
 
@@ -330,6 +332,7 @@ def resultToNiceReport(result, subPass, aiEngineName: str):
   openScadData = ""
 
   for box in result["boxes"]:
+    if not isinstance(box, dict): continue
     if len(box["XyzMin"]) != 3 or len(box["XyzMax"]) != 3:
       return "Invalid box coordinates: " + str(box)
 

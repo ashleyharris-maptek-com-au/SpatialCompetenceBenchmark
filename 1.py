@@ -1,7 +1,6 @@
 import math
 
 title = "Lay out pipe to make letter shapes."
-skip = True
 
 promptTemplate = """
 You are given PIPE_COUNT rigid lengths of pipe, each 5 meters long and 10cm in diameter. 
@@ -21,90 +20,62 @@ Return a PIPE_COUNT element array of where each of the pipes are located:
 
 # (pipe_count, shape_description, reference_scad_body, summary)
 testParams = [
-  (2,
-   "the pipes resemble a \"T\" shape 5m tall when viewed from above. "
+  (2, "the pipes resemble a \"T\" shape 5m tall when viewed from above. "
    "The given horizontal pipe is the top bar of the T, and a single vertical pipe "
-   "descends from the center of that bar.",
-   """
+   "descends from the center of that bar.", """
    color("red") cube([5,0.1,.1], center=true);
    translate([0,-2.55,0]) cube([0.1,5,.1], center=true);
-   """,
-   "T shape (2 pipes)"),
-
-  (2,
-   "the pipes resemble an \"L\" shape when viewed from above. "
+   """, "T shape (2 pipes)"),
+  (2, "the pipes resemble an \"L\" shape when viewed from above. "
    "The given horizontal pipe is the entire bottom of the L. A vertical pipe "
-   "rises upward from the left end of that bar, making the corner of the L at the left.",
-   """
+   "rises upward from the left end of that bar, making the corner of the L at the left.", """
    color("red") cube([5,0.1,.1], center=true);
    translate([-2.45,2.55,0]) cube([0.1,5,.1], center=true);
-   """,
-   "L shape (2 pipes)"),
-
-  (3,
-   "the pipes resemble a \"U\" shape when viewed from above. "
+   """, "L shape (2 pipes)"),
+  (3, "the pipes resemble a \"U\" shape when viewed from above. "
    "The given horizontal pipe is the entire bottom of the U. Two vertical pipes rise upward "
-   "from each end of the bottom bar, one on the left and one on the right.",
-   """
+   "from each end of the bottom bar, one on the left and one on the right.", """
    color("red") cube([5,0.1,.1], center=true);
    translate([2.45,2.55,0]) cube([0.1,5,.1], center=true);
    translate([-2.45,2.55,0]) cube([0.1,5,.1], center=true);
-   """,
-   "U shape (3 pipes)"),
-
-  (4,
-   "the pipes resemble a capital \"F\" shape when viewed from above. "
+   """, "U shape (3 pipes)"),
+  (4, "the pipes resemble a capital \"F\" shape when viewed from above. "
    "The given horizontal pipe is the middle bar of the F. A vertical pipe forms the left "
    "upright, touching the left end of the given pipe and extending upward. "
    "A second horizontal pipe at the top connects to the top of the vertical upright, "
-   "extending to the right.",
-   """
-   color("red") cube([5,0.1,.1], center=true);
-   translate([-2.55,2.5,0]) cube([0.1,5,.1], center=true);
-   translate([0,5.1,0]) cube([5,0.1,.1], center=true);
-   translate([-2.55,-2.5,0]) cube([0.1,5,.1], center=true);
-   
-   """,
-   "F shape (4 pipes)"),
-
-  (5,
-   "the pipes resemble a \"H\" shape 10m high when viewed from above. "
+   "extending to the right.", """
+color("blue") translate([0,0]) rotate([0,0,0]) cube([5,0.1,.1], center=true);
+translate([-2.55,2.5]) rotate([0,0,90]) cube([5,0.1,.1], center=true);
+color("red") translate([-2.55,-2.5]) rotate([0,0,90]) cube([5,0.1,.1], center=true);
+color("green") translate([0,4.95]) rotate([0,0,0]) cube([5,0.1,.1], center=true);
+   """, "F shape (4 pipes)"),
+  (5, "the pipes resemble a \"H\" shape 10m high when viewed from above. "
    "The given horizontal pipe is the crossbar of the H. Two vertical pipes on each side "
-   "form the uprights, extending above and below the crossbar.",
-   """
+   "form the uprights, extending above and below the crossbar.", """
    color("red") cube([5,0.1,.1], center=true);
    translate([2.55,2.5,0]) cube([0.1,5,.1], center=true);
    translate([-2.55,2.5,0]) cube([0.1,5,.1], center=true);
    translate([2.55,-2.5,0]) cube([0.1,5,.1], center=true);
    translate([-2.55,-2.5,0]) cube([0.1,5,.1], center=true);
-   """,
-   "H shape (5 pipes)"),
-
-  (5,
-   "the pipes resemble a capital \"I\" shape (with serifs) 10m tall when viewed from above. "
+   """, "H shape (5 pipes)"),
+  (4, "the pipes resemble a capital \"I\" shape (with serifs) 10m tall when viewed from above. "
    "The given horizontal pipe is the bottom serif. Two vertical pipes rise from the center "
    "of the bottom bar (stacked end to end) to reach 10m height, "
-   "then a horizontal pipe sits on top as the top serif.",
-   """
-   color("red") cube([5,0.1,.1], center=true);
-   translate([0,2.55,0]) cube([0.1,5,.1], center=true);
-   translate([0,7.55,0]) cube([0.1,5,.1], center=true);
-   translate([0,10.1,0]) cube([5,0.1,.1], center=true);
-   """,
-   "Capital I with serifs (5 pipes)"),
-
-  (4,
-   "the pipes resemble a square shape when viewed from above."
+   "then a horizontal pipe sits on top as the top serif.", """
+   color("red") translate([0,0]) rotate([0,0,0]) cube([5,0.1,.1], center=true);
+translate([0,2.55]) rotate([0,0,90]) cube([5,0.1,.1], center=true);
+translate([0,7.55]) rotate([0,0,90]) cube([5,0.1,.1], center=true);
+translate([0,10.1]) rotate([0,0,0]) cube([5,0.1,.1], center=true);
+   """, "Capital I with serifs (4 pipes)"),
+  (4, "the pipes resemble a square shape when viewed from above."
    "The given horizontal pipe is the entire bottom bar. A vertical pipe rises from each end of "
    "the bottom bar. A horizontal pipe spans the top, resting on the tops of both verticals. "
-   "The frame should be ~5m wide and ~5m tall, with no gaps in the corners.",
-   """
+   "The frame should be ~5m wide and ~5m tall, with no gaps in the corners.", """
    color("red") cube([5,0.1,.1], center=true);
    translate([2.45,2.55]) rotate([0,0,90.0]) cube([5,0.1,.1], center=true);
    translate([0.0,5.1]) rotate([0,0,0.0]) cube([5,0.1,.1], center=true);
    translate([-2.45,2.55]) rotate([0,0,90.0]) cube([5,0.1,.1], center=true);
-   """,
-   "Square shape (4 pipes)"),
+   """, "Square shape (4 pipes)"),
 ]
 
 subpassParamSummary = [tp[3] for tp in testParams]
@@ -155,7 +126,8 @@ def prepareSubpassPrompt(index):
   if index >= len(testParams):
     raise StopIteration
   pipeCount, description, _, _ = testParams[index]
-  return promptTemplate.replace("PIPE_COUNT", str(pipeCount)).replace("SHAPE_DESCRIPTION", description)
+  return promptTemplate.replace("PIPE_COUNT", str(pipeCount)).replace("SHAPE_DESCRIPTION",
+                                                                      description)
 
 
 def prepareSubpassReferenceScad(index):
@@ -202,7 +174,6 @@ X-----X - - - - - - -
 Common failure: pipes overlap at joins (x = -2.5 instead of -2.55).
 """
 
-
 PIPE_LENGTH = 5.0
 PIPE_WIDTH = 0.1
 OVERLAP_TOLERANCE = 0.02  # Allow 2cm tolerance for touching joins
@@ -218,8 +189,7 @@ def _pipe_corners(pipe):
   hh = PIPE_WIDTH / 2
   corners = []
   for dx, dy in [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]:
-    corners.append((cx + dx * cos_a - dy * sin_a,
-                    cy + dx * sin_a + dy * cos_a))
+    corners.append((cx + dx * cos_a - dy * sin_a, cy + dx * sin_a + dy * cos_a))
   return corners
 
 
