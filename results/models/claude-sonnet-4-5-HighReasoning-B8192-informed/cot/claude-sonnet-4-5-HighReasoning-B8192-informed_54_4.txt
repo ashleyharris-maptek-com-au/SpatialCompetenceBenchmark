@@ -1,0 +1,165 @@
+Let me understand the problem. We have a binary tree describing an axis-aligned subdivision of the unit cube [0,1]³.
+
+The root "" represents the entire unit cube.
+
+Each node splits its parent cell by bisecting along axes in the repeating cycle: z → x → y → z → x → y → ...
+
+Let me trace through the tree:
+
+Level 0: "" - entire cube [0,1]³
+- Split along z-axis at z=0.5
+
+Level 1:
+- "0" - [0,1] × [0,1] × [0,0.5] (z < 0.5)
+- "1" - [0,1] × [0,1] × [0.5,1] (z ≥ 0.5)
+
+Level 2 (split along x-axis at x=0.5):
+- "00" - [0,0.5] × [0,1] × [0,0.5]
+- "01" - [0.5,1] × [0,1] × [0,0.5]
+- "10" - [0,0.5] × [0,1] × [0.5,1]
+- "11" - [0.5,1] × [0,1] × [0.5,1]
+
+Level 3 (split along y-axis at y=0.5):
+- "000" - [0,0.5] × [0,0.5] × [0,0.5]
+- "001" - [0,0.5] × [0.5,1] × [0,0.5]
+- "010" - [0.5,1] × [0,0.5] × [0,0.5]
+- "011" - [0.5,1] × [0.5,1] × [0,0.5]
+- "100" - [0,0.5] × [0,0.5] × [0.5,1]
+
+
+- "101" - [0,0.5] × [0.5,1] × [0.5,1]
+- "110" - [0.5,1] × [0,0.5] × [0.5,1]
+- "111" - [0.5,1] × [0.5,1] × [0.5,1]
+
+Now looking at the actual tree structure, I need to reconsider how the nodes are organized. The tree shows "0010" as a child of "001", which suggests the subdivision continues beyond level 3.
+
+The leaf nodes are: 000, 0010, 0011, 010, 011, 100, 1010, 10110, 10111, 110, 111. Since the target is 000, I need to determine its spatial bounds by tracing the path from root through the octree. The root "" spans [0,1]³, and each subdivision divides along the three axes based on the binary digits.
+
+At level 1, the first bit determines the z-axis split: "0" gets z ∈ [0, 0.5] and "1" gets z ∈ [0.5, 1]. The second bit splits along x: "00" and "10" have x ∈ [0, 0.5], while "01" and "11" have x ∈ [0.5, 1]. At level 3, the y-axis is subdivided.
+
+The target cell "000" occupies x ∈ [0, 0.5], y ∈ [0, 0.5], z ∈ [0, 0.5]. The remaining cells at this level distribute across the other y and x ranges within the lower z half and upper z half of the space.
+
+However, I notice "001" and "101" aren't leaf nodes—they each have children that subdivide further. I need to account for their descendants rather than treating them as terminal cells.
+
+At the next level, the z-axis splits again: "0010" and "0011" partition the z ∈ [0, 0.5] range into [0, 0.25] and [0.25, 0.5], while "1010" and "1011" do the same for z ∈ [0.5, 1].
+
+Then "1011" subdivides along x into "10110" covering x ∈ [0, 0.25] and "10111" covering x ∈ [0.25, 0.5], both maintaining y ∈ [0.5, 1] and z ∈ [0.75, 1].
+
+The leaf nodes so far include the root octant "000" at [0, 0.5]³, followed by "0010" and "0011" in the upper-lower quadrant, and the two children of "1011". .25, 0.5] × [0.5, 1] × [0.75, 1]
+
+The remaining octants are 110: [0.5, 1] × [0, 0.5] × [0.5, 1] and 111: [0.5, 1] × [0.5, 1] × [0.5, 1]. I need to find which voxels share a face with the target 000 octant by checking if they differ in exactly one coordinate and have adjacent ranges in that dimension while matching the others.
+
+Starting with 0010: [0, 0.5] × [0.5, 1] × [0, 0.25]. The x-ranges match at [0, 0.5], and the y-ranges [0, 0.5] and [0.5, 1] are adjacent. However, the z-ranges [0, 0.5] versus [0, 0.25] don't align properly—0010's z-range is a subset of 000's, so they can't share a full face along the y-boundary.
+
+Wait, let me reconsider. They do share the boundary at y=0.5, and their z-ranges overlap from [0, 0.25]. This means they share a face along y=0.5 where x ∈ [0, 0.5] and z ∈ [0, 0.25]. **SHARES FACE**
+
+For 0011: [0, 0.5] × [0.5, 1] × [0.25, 0.5], the x-ranges are identical and y-ranges are adjacent. The z-ranges [0, 0.5] and [0.25, 0.5] have [0.25, 0.5] as a subset, so they share a face along y=0.5 for x ∈ [0, 0.5] and z ∈ [0.25, 0.5].
+
+For 010: [0.5, 1] × [0, 0.5] × [0, 0.5], the y and z ranges match 0001, while x-ranges are adjacent. They share a face along x=0.5 for y ∈ [0, 0.5] and z ∈ [0, 0.5].
+
+For 011: [0.5, 1] × [0.5, 1] × [0, 0.5], both x and y coordinates are adjacent to 0001's ranges while z matches. Since two dimensions differ, they only meet at an edge rather than a full face.
+
+For 100: [0, 0.5] × [0, 0.5] × [0.5, 1], the x and y ranges align with 0001 while z-ranges are adjacent.  They share a complete face at z=0.5 across the entire x ∈ [0, 0.5] and y ∈ [0, 0.5] region.
+
+For 1010: [0, 0.5] × [0.5, 1] × [0.5, 0.75], x matches 0001 but y is adjacent and z is only partially adjacent—[0.5, 0.75] doesn't fully align with the adjacent region [0.5, 1], so there's no complete face sharing.
+
+Checking 10110: [0, 0.25] × [0.5, 1] × [0.75, 1] against 0001, the x-ranges don't align properly, y is adjacent, and z has a gap between [0, 0.5] and [0.75, 1], so no face contact occurs.
+
+For 10111: [0.25, 0.5] × [0.5, 1] × [0.75, 1], the same issue applies—z-coordinates don't meet.
+
+Looking at 110: [0.5, 1] × [0, 0.5] × [0.5, 1], the x and z ranges are adjacent to 0001's ranges while y stays constant, meaning only an edge touches.
+
+For 111: [0.5, 1] × [0.5, 1] × [0.5, 1], I need to check if the x-coordinate aligns with 0001's [0, 0.5].
+
+x: adjacent [0, 0.5] and [0.5, 1] ✓
+y: adjacent [0, 0.5] and [0.5, 1] ✓
+z: adjacent [0, 0.5] and [0.5, 1] ✓
+
+All three coordinates differ, so this is only vertex contact.
+
+The actual face-sharing neighbors turn out to be 0010, 0011, 010, and 100. But I should reconsider whether adaptive refinement allows face contact between cells at different refinement levels. A refined cell's face might align with part of a coarser cell's face. Let me examine 000's six faces more carefully to see which cells could actually share them.
+
+For cell 000 occupying [0, 0.5] × [0, 0.5] × [0, 0.5]:
+- The x=0 face lies on the domain boundary
+- The x=0.5 face borders cells with x-coordinates in [0.5, 1]
+- The y=0 face is on the domain boundary
+- The y=0.5 face borders cells with y-coordinates in [0.5, 1]
+- The z=0 face is on the domain boundary
+- The z=0.5 face borders cells with z-coordinates in [0.5, 1]
+
+Checking each internal face: the x=0.5 face requires a neighbor with x ∈ [0.5, 1] and matching y, z ranges. Cell 010 at [0.5, 1] × [0, 0.5] × [0, 0.5] is a perfect match. The y=0.5 and z=0.5 faces similarly need neighbors with appropriate coordinate ranges, though some candidates like 011 only partially overlap at edges. ∈ [0, 0.25] ⊂ [0, 0.5] ✓ PARTIAL OVERLAP
+- 0011: [0, 0.5] × [0.5, 1] × [0.25, 0.5] - x matches, z ∈ [0.25, 0.5] ⊂ [0, 0.5] ✓ PARTIAL OVERLAP
+- 011: [0.5, 1] × [0.5, 1] × [0, 0.5] - x doesn't overlap, edge contact
+- 1010: [0, 0.5] × [0.5, 1] × [0.5, 0.75] - x matches, but z doesn't overlap [0, 0.5] and [0.5, 0.75], so no contact
+
+For cells 0010 and 0011, both have x-ranges matching [0, 0.5] and z-ranges that fit within [0, 0.5], giving partial overlaps. Cell 011 only touches at an edge since x-ranges don't align. Cell 1010 has no contact because its z-range sits entirely above the target range.
+
+Face 5 (z=0) is at the boundary of the unit cube with no adjacent cells. Face 6 (z=0.5) requires cells with z-ranges starting at 0.5 and x, y ranges overlapping [0, 0.5] × [0, 0.5]. Cell 100 has the right x-range [0, 0.5] and needs checking for y-range compatibility. 5, 1] - x doesn't overlap, edge contact
+- 111: [0.5, 1] × [0.5, 1] × [0.5, 1] - x and y don't overlap
+
+So the neighbors are:
+- 010 (shares face at x=0.5)
+- 0010 (shares part of face at y=0.5)
+- 0011 (shares part of face at y=0.5)
+- 100 (shares face at z=0.5)
+
+This confirms my earlier findings. For adaptive mesh refinement, I need to reconsider the definition: two cells are neighbors if their boundaries align along a 2D surface, even when refinement levels differ.
+
+For cell 000 at [0, 0.5] × [0, 0.5] × [0, 0.5], checking each face:
+- The x=0.5 boundary aligns completely with 010's x=0.5 face
+- The y=0.5 boundary partially overlaps with 0010 at [0, 0.5] × [0.5] × [0, 0.25]
+- Similar partial overlap occurs with 0011 at the y=0.5 face
+- The z=0.5 boundary fully aligns with 100
+
+This gives the neighbors: 010, 0010, 0011, 100. Let me verify the coordinate transformations once more to ensure accuracy, particularly the subdivision pattern from level 0 to 1 along z, then the subsequent splits at level 1 to 2. 5,1] × [0.5,1]
+- "110": [0.5,1] × [0,0.5] × [0.5,1]
+- "111": [0.5,1] × [0.5,1] × [0.5,1]
+
+Level 4 (split along z at 0.5 within each parent):
+- "0000": [0,0.5] × [0,0.5] × [0,0.25]
+- "0001": [0,0.5] × [0,0.5] × [0.25,0.5] ← TARGET
+- "0010": [0.5,1] × [0,0.5] × [0,0.25]
+- "0011": [0.5,1] × [0,0.5] × [0.25,0.5]
+- "0100": [0,0.5] × [0.5,1] × [0,0.25]
+- "0101": [0,0.5] × [0.5,1] × [0.25,0.5]
+- "0110": [0.5,1] × [0.5,1] × [0,0.25]
+- "0111": [0.5,1] × [0.5,1] × [0.25,0.5]
+- "1000": [0,0.5] × [0,0.5] × [0.5,0.75]
+- "1001": [0,0.5] × [0,0.5] × [0.75,1]
+- "1010": [0.5,1] × [0,0.5] × [0.5,0.75]
+- "1011": [0.5,1] × [0,0.5] × [0.75,1]
+- "1100": [0,0.5] × [0.5,1] × [0.5,0.75]
+- "1101": [0,0.5] × [0.5,1] × [0.75,1]
+- "1110": [0.5,1] × [0.5,1] × [0.5,0.75]
+- "1111": [0.5,1] × [0.5,1] × [0.75,1]
+
+Level 5 (split along x at 0.5 within each parent):
+- "00000": [0,0.25] × [0,0.5] × [0,0.25]
+- "00001": [0.25,0.5] × [0,0.5] × [0,0.25]
+- "00010": [0.5,0.75] × [0,0.5] × [0,0.25]
+- "00011": [0.75,1] × [0,0.5] × [0,0.25]
+- "00100": [0,0.25] × [0,0.5] × [0.25,0.5] ← TARGET
+- "00101": [0.25,0.5] × [0,0.5] × [0.25,0.5]
+- "00110": [0.5,0.75] × [0,0.5] × [0.25,0.5]
+- "00111": [0.75,1] × [0,0.5] × [0.25,0.5]
+- (remaining 24 cells...)
+
+The path to the target cell "00100" is: "" → "0" → "00" → "000" → "0001" → "00100"
+
+At each level, the target cell is identified by checking which child contains the point (0.1, 0.3, 0.3).
+
+At level 5, the target cell "00100" has bounds [0,0.25] × [0,0.5] × [0.25,0.5], which contains the point (0.1, 0.3, 0.3).
+
+The octree structure efficiently narrows down the location through successive subdivisions, with each level splitting along a different axis in a cyclic pattern (z → x → y → z → x).
+
+At level 5, the cell is small enough to represent the target location with reasonable precision.
+
+The leaf nodes form a complete partition of the unit cube, with the target "000" occupying [0,0.5] × [0,0.5] × [0,0.5]. The internal faces that matter are those where the target cell meets other cells—specifically at x=0.5 (shared with cells "010", "100", "1010") and y=0.5 (shared with cells "0010", "0011", "1010"), while y=0 and x=0 are cube boundaries. 5] ✓ (part of face 4)
+
+"0011" shares its face at y=0.5 with part of face 4. "010" aligns perfectly with the entire face 2 at x=0.5. "011" touches face 4 along a partial edge at y=0.5, and while it borders x=0.5, this only intersects the target's face at an edge rather than a full face match.
+
+"100" has a complete face match at z=0.5 with face 6. "1010" doesn't align with any target faces—its y=0.5 boundary extends into [0.5,0.75] in the z-direction, which doesn't overlap with the target's z-range of [0,0.5] at that boundary.
+
+"10110" and "10111" occupy the region [0,0.25]×[0.5,1]×[0.75,1] and [0.25,0.5]×[0.5,1]×[0.75,1] respectively, neither sharing faces with the target. "110" at [0.5,1]×[0,0.5]×[0.5,1] has a potential boundary at x=0.5, but this doesn't align with any of the target's existing faces.
+
+"111" in [0.5,1]×[0.5,1]×[0.5,1] only touches at a single vertex. After checking all candidates, the actual face-adjacent neighbors are "0010", "0011", "010", and "100".

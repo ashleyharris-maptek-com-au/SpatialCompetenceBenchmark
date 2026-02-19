@@ -1,0 +1,332 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 2, 3
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q52: VGB2 - Topology Edge Tasks: Enumerate Edges
+- Source file: `52.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Judge whether the model can enumerate all deterministic edge connections for labeled square cases under varying corner/edge orderings.
+
+## Output Contract
+- Return object with `edges`.
+- `edges` is nested list format of edge pair sets.
+- Parser tolerates raw list output but canonical field is `edges`.
+
+## Hard Constraints (Verifier-Checked)
+- Nested integer-pair schema.
+- Exact diff match against curated expected edge sets.
+- Supports per-record ordering variants.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `missing: [...]` | Indices of cases where predicted edge pairs do not match ground truth | `Local-Only`, `Near-Miss` |
+| `errors: [...]` | Parse/validation errors (e.g. `parse_failure`, `length_mismatch`, bad pair format/order) | `Trivialized`, `Evasion` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Empty/invalid edges payload.
+- `Trivialized / Misframed`: Wrong task interpretation (classification text instead of edge enumeration).
+- `Runaway Overthinking`: COT shows spiraling edge derivation that produces diverse error types (format AND count AND structural failures).
+- `Local-Only (Global Constraint Integration Failure)`: Broad mismatch in deterministic edge structure.
+- `Near-Miss Edge Case`: One-case mismatch with otherwise correct structure.
+
+## Judge Input Bundle
+1. Prompt with tuple set and ordering.
+2. Raw output.
+3. Parsed `edges`.
+4. Verifier diff summary.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q52 with one failure mode.
+Treat `missing` indices and `errors` as primary evidence.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+Attempts:
+### Subpass 2
+
+Attempt Metadata:
+- question_id: 52
+- subpass: 2
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 39
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(2, 1, 2, 3)
+(4, 1, 2, 3)
+(2, 1, 1, 1)
+(1, 1, 1, 2)
+
+You are given unit squares with corners labelled in ('top-left', 'bottom-left', 'bottom-right', 'top-right') order.
+Edges are indexed: top=0, left=1, bottom=2, right=3.
+
+For each square above (in the same order), list which edges are guaranteed to connect.
+Return a list where each element is a list of sorted [i,j] pairs (i < j).
+If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.
+
+Verifier Signal:
+passed:  False  missing:  [0, 2, 3]  errors:  []
+
+Raw Output:
+{'edges': [[], [], [[2, 3]], [[1, 2]]]}
+
+Chain of Thought:
+Let me analyze each square to determine which edges are guaranteed to connect based on the corner labels.
+
+For edges to connect, they must share the same class label on both corners of that edge.
+
+Let me label the corners:
+- Top-left (TL)
+- Bottom-left (BL)
+- Bottom-right (BR)
+- Top-right (TR)
+
+And edges:
+- Top edge (0): connects TL and TR
+- Left edge (1): connects TL and BL
+- Bottom edge (2): connects BL and BR
+- Right edge (3): connects TR and BR
+
+For an edge to be "on", both its corners must have the same label.
+
+Square 1: (2, 1, 2, 3)
+- TL=2, BL=1, BR=2, TR=3
+- Top edge (0): TL=2, TR=3 → different → edge OFF
+- Left edge (1): TL=2, BL=1 → different → edge OFF
+- Bottom edge (2): BL=1, BR=2 → different → edge OFF
+- Right edge (3): TR=3, BR=2 → different → edge OFF
+No edges connect. Return []
+
+Square 2: (4, 1, 2, 3)
+- TL=4, BL=1, BR=2, TR=3
+- Top edge (0): TL=4, TR=3 → different → edge OFF
+- Left edge (1): TL=4, BL=1 → different → edge OFF
+- Bottom edge (2): BL=1, BR=2 → different → edge OFF
+- Right edge (3): TR=3, BR=2 → different → edge OFF
+No edges connect. Return []
+
+Square 3: (2, 1, 1, 1)
+- TL=2, BL=1, BR=1, TR=1
+- Top edge (0): TL=2, TR=1 → different → edge OFF
+
+
+- Left edge (1): TL=2, BL=1 → different → edge OFF
+- Bottom edge (2): BL=1, BR=1 → same → edge ON
+- Right edge (3): TR=1, BR=1 → same → edge ON
+
+Edges 2 and 3 are both active. Now I need to check if they form a connected path. Since both edges share the corner BR with the same label (1), they connect to each other through that corner. The bottom and right edges form a connected component, so I should return [2, 3].
+
+For the second square, I need to identify which edges are active by checking if both endpoints belong to the same class. An edge activates only when its two corners have matching labels. Looking at square 2 with corners (4, 1, 2, 3), I'll examine each class to see which edges can be part of the same connected component.
+
+For square 3 with corners (2, 1, 1, 1), class 1 appears at three positions: bottom-left, bottom-right, and top-right. The bottom edge connects the two bottom corners (both labeled 1), and the right edge connects the two right corners (both labeled 1). Since these edges share the bottom-right corner, they're guaranteed to be in the same connected component for class 1.
+
+For square 4 with corners (1, 1, 1, 2), class 1 occupies the top-left, bottom-left, and bottom-right positions. The left edge is active (both endpoints are 1), and the bottom edge is active (both endpoints are 1), meeting at the bottom-left corner. Class 2 appears at the top-right and bottom-right, making the right edge active for that class.
+
+I'm reconsidering what "guaranteed to connect" means here. This seems to be about which boundary edges of a cell link through its interior based on corner values. Within each square, I need to identify which edges form connections through the cell's center, determined by which corners share the same label.
+
+For a given class, an edge becomes active when both its endpoints have that class value. The question is whether multiple active edges within the same cell actually connect to each other. I should trace potential paths: if two edges are both active for the same class, they can connect through the cell's interior. The connectivity depends on the specific arrangement of corner labels and which edges share class membership. edges are only active if both endpoints belong to the same class. So with 0 corners in a class, there are no active edges; with 1 corner, still no edges since an edge needs both endpoints; with 2 adjacent corners, exactly 1 edge forms between them; with 2 opposite corners, no edge exists; with 3 corners, 2 adjacent edges activate; with all 4 corners, all edges activate.
+
+Within a square, connectivity follows these patterns: a single edge stands alone, two adjacent edges connect at their shared corner, opposite edges create ambiguity at saddle points, three edges all link together, and four edges form a complete connected set. Now examining the specific squares—starting with (2, 1, 2, 3) where the top-left is 2 and bottom-left is 1. 1 → OFF
+  - Left edge (1): TL=2, BL=1 → OFF
+  Edges 2 and 3 are ON and share corner BR, so they connect.
+- Class 2: TL only → 0 edges
+Return [[2, 3]]
+
+Square 4: (1, 1, 1, 2)
+- TL=1, BL=1, BR=1, TR=2
+- Class 1: TL, BL, BR (3 corners)
+  - Left edge (1): TL=1, BL=1 → ON
+  - Bottom edge (2): BL=1, BR=1 → ON
+  - Right edge (3): BR=1, TR=2 → OFF
+  - Top edge (0): TL=1, TR=2 → OFF
+  Edges 1 and 2 both activate and meet at BL, forming a connected pair. Return [[1, 2]] - Position 3 (TR) = 2
+
+The edges break down as: top edge connects 1 to 2 (OFF), left edge connects 1 to 1 (ON for class 1), bottom edge connects 1 to 1 (ON for class 1), and right edge connects 2 to 1 (OFF). Since the left and bottom edges both activate for class 1 and share the bottom-left corner, they form a connected pair, giving [[1, 2]].
+
+For square 1 with corners (2, 1, 2, 3), no edge has matching corner values, so it returns an empty list. Moving to square 2: (4, 1, 2, 3) also has no matching edges. Square 3 with corners (2, 1, 1, 1) has both the bottom edge (1, 1) and right edge (1, 1) active for class 1, and they meet at the bottom-right corner, yielding [[2, 3]]. Square 4 has corners (1, 1, 1, 2), where the left edge activates with both corners equal to 1.
+
+For class 1, the bottom edge also activates since both corners are 1, and these edges share the bottom-left corner. I should verify whether additional edges could connect in either square—checking the top and left edges of Square 3 shows they don't activate since the corners differ, and for Square 4, I need to examine if any other edges besides the left and bottom could form connections. For Square 3, I've confirmed edges 2 and 3 (bottom and right) both activate for class 1 and share corner BR, so they connect. For Square 4, edges 1 and 2 (left and bottom) are both ON for class 1 and adjacent at corner BL, creating another connection. Now I'm wondering whether opposite edges—those that don't share a corner—could also form connections.
+
+Testing a configuration with opposite corners of the same class like (1, 0, 1, 0): no edge would be ON since each edge requires both its endpoints to match. With (1, 1, 0, 0), only the left edge activates. With (1, 0, 0, 1), only the top edge turns on. In each case, a single edge can't create a connection by itself.
+
+When three corners share a class, like (1, 1, 0, 1), multiple edges activate—the left and top edges both turn ON for class 1 since they each have matching endpoints. These adjacent edges share a corner, so they form a connection. Similarly, (0, 1, 1, 0) produces an ON edge on the bottom where both corners are class 1.
+
+For (1, 0, 1, 1), the top and right edges both activate and connect at the top-right corner. Saddle configurations like (1, 0, 1, 0) and (0, 1, 0, 1) are interesting because no edge has both endpoints in the same class, so they produce no active edges at all.
+
+When corners belong to different classes like (1, 1, 2, 2), the left edge activates for class 1 while the right edge activates for class 2—they're isolated from each other. But if all four corners share the same class, every edge becomes active for that class.
+
+In the connectivity model, active edges on a square connect through the contour line that passes between them. For configurations with three corners of one class—like (1,1,1,0)—the activated edges on adjacent sides link together through the line segment. The same applies to (1,1,0,1) where the top and left edges connect, or (1,0,1,1) where the top and right edges form a continuous path.
+
+When all four corners belong to the same class, all four edges activate and the entire square fills with that class, meaning every edge connects to every other edge. In this case, I should return all possible pairs. However, ambiguous configurations like saddle points don't guarantee specific connections, so those return empty results.
+
+For configurations with three corners of one class, like (2, 1, 1, 1) where three corners are class 1, only the bottom and right edges activate—and since they're adjacent, they definitely connect, giving [[2, 3]]. Similarly, (1, 1, 1, 2) has three class 1 corners with left and bottom edges ON, which are also adjacent, so [[1, 2]] is returned.
+
+When all four corners match, like (1, 1, 1, 1), every edge activates for that class and all pairs connect. The saddle case (1, 2, 1, 2) has no matching adjacent corners, so no edges turn ON and nothing connects. And in cases like (1, 1, 2, 2) where opposite corners match, different classes activate different edges with no overlap, so again no connections form.
+
+Now I need to verify the specific squares. For square 3 with corners (2, 1, 1, 1), the left edge connects the top-left (class 2) to bottom-left (class 1), and the bottom edge connects bottom-left to bottom-right (both class 1). Since the bottom edge has matching corners, it activates for class 1, giving the connection [[2, 3]]. For square 4 with corners (1, 1, 1, 2), the right edge connects top-right (class 1) to bottom-right (class 2), while the top and left edges both have matching class 1 corners, so the top edge activates and produces [[1, 2]]. =2, BR=1 → OFF
+- Edges 1 and 2 connect
+- Return [[1, 2]]
+
+The analysis checks out. The final result maps each square to its connected edge pairs:
+
+Square 0 has no active edges, square 1 produces edges [2, 3], square 2 yields edges [1, 2], and square 3 contributes no edges. This gives the complete edge configuration across all four squares.
+
+### Subpass 3
+
+Attempt Metadata:
+- question_id: 52
+- subpass: 3
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 125
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(1, 1, 1, 1)
+(2, 1, 2, 1)
+(1, 1, 1, 2)
+(1, 1, 3, 2)
+(2, 1, 2, 2)
+(3, 1, 2, 2)
+
+You are given unit squares with corners labelled in ('top-right', 'bottom-left', 'top-left', 'bottom-right') order.
+Edges are indexed: left=0, bottom=1, right=2, top=3.
+
+For each square above (in the same order), list which edges are guaranteed to connect.
+Return a list where each element is a list of sorted [i,j] pairs (i < j).
+If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.
+
+Verifier Signal:
+passed:  False  missing:  [0, 1, 2, 3, 4, 5]  errors:  []
+
+Raw Output:
+{'edges': [[[0, 1], [0, 3], [1, 2], [2, 3]], [], [[0, 1], [0, 3], [1, 2], [2, 3]], [], [[0, 1], [0, 3], [1, 2], [2, 3]], []]}
+
+Chain of Thought:
+Let me analyze each square to determine which edges are guaranteed to connect.
+
+The edges are indexed as:
+- left = 0
+- bottom = 1
+- right = 2
+- top = 3
+
+The corners are given in the order: (top-right, bottom-left, top-left, bottom-right)
+
+Let me think about the geometry:
+- Top-right corner connects edges: right (2) and top (3)
+- Bottom-left corner connects edges: left (0) and bottom (1)
+- Top-left corner connects edges: left (0) and top (3)
+- Bottom-right corner connects edges: right (2) and bottom (1)
+
+Two edges connect if they share the same class at their common corner.
+
+Let me work through each square:
+
+**Square 1: (1, 1, 1, 1)**
+All corners have class 1. All edges must connect to each other since they all share corners with the same class.
+- Left (0) and top (3) share top-left corner with class 1 → connect
+- Left (0) and bottom (1) share bottom-left corner with class 1 → connect
+- Right (2) and top (3) share top-right corner with class 1 → connect
+- Right (2) and bottom (1) share bottom-right corner with class 1 → connect
+
+Wait, but edges also need to consider if they can connect through the interior of the square. Let me reconsider.
+
+Actually, I think the problem is asking: which edges must belong to the same region/component based on the corner labels?
+
+Let me think about this more carefully. Each corner has a class label. Edges separate different classes. If two edges meet at a corner with a specific class, they are on the same side of the boundary if they both border that class.
+
+Actually, let me reconsider the problem. The corners are labeled with classes. The edges form boundaries between different classes. Two edges "connect" if they are part of the same continuous boundary or region.
+ 
+I need to think about the topology differently. With corner labels defining class regions, edges that meet at corners with matching classes should be part of the same boundary structure. Let me consider which pairs of edges must necessarily be in the same connected component based on the corner configuration.
+
+For all corners labeled the same, the interior is uniform—edges only form the outer boundary, so they're all connected. With alternating labels like (2, 1, 2, 1), the arrangement creates ambiguity about where internal boundaries actually run through the square, which affects which edges connect to each other. is a checkerboard pattern at the corners, creating ambiguity in how the boundary divides the square. Without additional constraints, there's no guarantee which edges must connect.
+
+The key is identifying when edges are forced to be adjacent along the same region boundary. Two edges connect if separating them would violate the corner label constraints—meaning the configuration is unavoidable given the corner assignments.
+
+I can model this by treating corners as vertices in a partition: edges of the square form boundaries between different classes. For (1, 1, 1, 1), all corners belong to the same class, so every edge bounds the same region. For a checkerboard like (2, 1, 2, 1), the corners split into two groups, and the internal boundary structure becomes underdetermined.
+
+The real question is which edges must share a corner where that corner's class forces them to be adjacent. At each corner, if the class appears on both adjacent edges, those edges connect at that point.
+
+For (1, 1, 1, 1), all four corners are class 1, so each corner connects its two adjacent edges: left connects to top and bottom, top connects to left and right, right connects to top and bottom, and bottom connects to left and right. This creates a cycle linking all four edges.
+
+The key insight is that edges are guaranteed to connect if they must bound the same region of a single class, independent of interior topology.
+
+For (2, 1, 2, 1), the corners alternate diagonally—class 2 at top-right and bottom-left, class 1 at top-left and bottom-right. Multiple boundary configurations satisfy this constraint, so no edges are necessarily connected. Perhaps the actual criterion depends on which edges share a corner of the same class.
+
+Testing this: the left edge connects top-left (1) and bottom-left (2)—different classes, so it doesn't connect. The bottom edge connects bottom-left (2) and bottom-right (1)—also different classes. The right edge connects bottom-right (1) and top-right (2)—different. The top edge connects top-left (1) and top-right (2)—different. So for this configuration, no edges connect at all.
+
+The real question is about which edges must be part of the same boundary segment given the corner labels. When all four corners are the same class, the entire square belongs to one region and all edges form a continuous boundary. When corners differ, I need to think about how regions partition the square and which edges necessarily separate different classes. For (2, 1, 2, 1), the alternating pattern creates multiple valid topologies, so no edge pairs are guaranteed to connect across all configurations. Return [].
+
+For (1, 1, 1, 2), three corners belong to class 1 while only the bottom-right is class 2. This means the class 2 region is isolated to that corner, forcing the three class 1 edges to form a connected boundary.
+
+The left and top edges both connect class 1 corners and share the top-left vertex. Since the class 2 region is confined to the bottom-right, the class 1 area must remain continuous through the top-left, guaranteeing these two edges are connected.
+
+For the left and bottom edges, they meet at the bottom-left corner (class 1), but the bottom edge transitions to class 2 at the bottom-right. The left edge stays entirely within class 1 boundaries, so they could potentially connect at their shared vertex. I need to reconsider what it means for edges to be connected in this context.
+
+The class 1 region encompasses the top-left, top-right, and bottom-left corners, while class 2 is isolated at the bottom-right. This means the class 2 region forms a small pocket near that corner. The boundary separating these regions must cut through the interior of the square—it can't just follow the edges since class 1 dominates three corners. The bottom edge specifically transitions from class 1 territory to class 2, so the class boundary intersects it somewhere between the bottom-left and bottom-right corners. the class 1 boundary traces a continuous path: the top edge connects to the right edge at the top-right corner, then the right edge has a segment that meets the bottom edge somewhere along it, the bottom edge continues to the left edge at the bottom-left corner, and the left edge returns to the top edge at the top-left corner. All four edges contribute to this boundary, though parts of the bottom and right edges are shared with the class 2 region's boundary. I need to think about what "connects" means more carefully—edges are part of the same boundary segment only if they form an uninterrupted path. For this square, the class 1 region's boundary forms a closed loop that includes the entire left and top edges, portions of the right and bottom edges, and an interior curve linking them. The class 2 region has its own closed boundary using the remaining portions of the right and bottom edges plus another interior curve. The left and top edges are guaranteed to connect at the top-left corner since both are entirely on the class 1 boundary, and similarly the top and right edges meet at the top-right corner. near bottom-right, so they connect there. Bottom and left meet at bottom-left where both border class 1, establishing that connection as well.
+
+This gives us all adjacent pairs connected: [0,1], [0,3], [1,2], [2,3]. For non-adjacent edges, left and right both trace the class 1 boundary—left entirely, right only partially—but since class 1 forms a single connected region, they're part of the same continuous boundary loop and thus connect to each other.
+
+I'm wondering if the question is really about direct adjacency at corners rather than shared boundary membership. Let me think about this differently: two edges connect if they meet at a corner and both have the same class at that corner. For the square at (1, 1, 1, 2), the top-left corner has class 1, so left and top edges both connect there. The top-right corner also has class 1, so right and top connect. Similarly, left and bottom connect at the bottom-left corner (class 1), and right and bottom connect at the bottom-right corner (class 2). This gives me adjacent edges [0,1], [0,3], [1,2], [2,3] all connecting.
+
+But this pattern seems to hold for almost any square. The real question is when adjacent edges would *not* connect—which happens when a corner sits at the boundary between multiple regions, meaning the two edges bordering that corner have different classes there.
+
+In a 2D square, three or more regions can only meet at a corner if the boundary passes through it. For the (1, 1, 1, 2) case with three corners of one class and one corner of another, I need to determine which edges are guaranteed to connect based on the region topology.
+
+The class 1 region dominates the square, with its boundary encompassing the left edge, top edge, and portions of both the right and bottom edges. These boundary segments form a continuous loop, meaning edges 0, 1, 2, and 3 all belong to the same connected boundary component. Therefore, all edge pairs—(0,1), (0,2), (0,3), (1,2), (1,3), and (2,3)—are guaranteed to connect.
+
+However, I should reconsider what the question is actually asking. It might be seeking which edges must be on the same boundary across all valid configurations, not just one specific arrangement. For the square (1, 1, 1, 2), the constraints are fixed: three corners belong to class 1 and the bottom-right corner belongs to class 2. This forces the separating boundary to curve from one edge to another, isolating that single corner. The exact path of this curve determines which edge segments form the boundary, but the connectivity between edges remains consistent regardless of where precisely the curve intersects the edges. The right edge (2) crosses the boundary since it connects class 2 and class 1, so part of it borders each class. The boundary of the class 1 region traces along all four edges—the complete left and top edges, plus portions of the bottom and right edges where they meet the class 2 region, connected by an interior curve. This creates a single connected loop where all edges participate in the boundary, making every pair of edges connected through the class 1 region. [0,1], [0,2], [0,3], [1,2], [1,3], [2,3].
+
+Moving to the next square, (1, 1, 3, 2) has three distinct classes at its corners with only the top-right and bottom-left both belonging to class 1. Each edge connects corners from different classes: the left edge joins classes 3 and 1, the bottom connects classes 1 and 2, and the right edge links classes 2 and 1. The top edge originates from class 3.
+
+Since class 1 occupies two diagonally opposite corners, the region must somehow connect these points—either through the interior or by wrapping around the square's perimeter. The arrangement of the three classes and how they meet internally determines the possible topologies.
+
+**Square 5: (2, 1, 2, 2)**
+
+Three corners belong to class 2, with only the bottom-left corner in class 1. The left and bottom edges both cross class boundaries, while the right and top edges connect corners within class 2. This means the right (2) and top (3) edges are guaranteed to connect. Right and bottom connect at the bottom-right corner, which is class 2. For bottom and left, they meet at the bottom-left corner which is class 1, so they don't connect through the class 2 boundary. The class 2 boundary has segments on the left edge (up to some point) and bottom edge (from some point), but these are separated by an interior curve rather than meeting at a corner. The class 1 boundary forms around the bottom-left region, and I need to determine if bottom and left connect through that instead.
+
+Looking at the class 2 boundary overall: top, right, and parts of bottom and left all border class 2. Top and right connect at the top-left corner, right and bottom connect at the bottom-right corner, and top and left connect at the top-left corner. Bottom and left meet at the bottom-left corner, but whether they connect depends on which boundary I'm tracing.
+
+Since the class 2 boundary forms a single connected loop, all edges that touch it—whether partially or fully—are part of the same boundary structure. This means non-adjacent edges like left and right both connect through the class 2 boundary, as do left and bottom through their shared boundary segments. The key insight is that edges don't need to be adjacent to connect if they're part of the same continuous boundary loop.
+
+For Square 6 with corners (3, 1, 2, 2), I'm looking at a configuration with three distinct classes distributed across the corners. The edges now separate different class pairs: the left edge divides classes 2 and 1, while the bottom edge separates classes 1 and 2.
+
+Continuing across: the right edge connects classes 2 and 3, and the top edge joins classes 2 and 3. Since no single class appears at multiple corners and the arrangement creates ambiguity about which topology applies, I can't definitively determine which edges should connect. This means returning an empty list.
+
+Reviewing all six squares, the pattern becomes clear: configurations where one class dominates multiple corners allow me to trace connected boundaries with certainty, yielding the complete edge set. But when classes are more evenly distributed without a clear dominant pattern, the topology becomes indeterminate, so I return nothing. parts of the bottom and right edges are shared between the two boundaries, but the class 1 boundary forms a single connected loop encompassing all four edges. For (1, 1, 3, 2): Three distinct regions exist, making the connectivity more complex.
+
+Squares with three classes where one appears at two diagonally opposite corners present ambiguous topologies—like (2, 1, 2, 2) and (3, 1, 2, 2)—where edge connections aren't guaranteed. However, (2, 1, 2, 2) has class 2 dominating three corners with class 1 isolated at one, suggesting all edges likely connect through the class 2 boundary by symmetry. The cases with diagonally opposite corners of the same class create uncertainty about which edges actually link together. must separate the top-right and bottom-left corners while keeping them in the same class, requiring the boundary to traverse the square's interior. Given the flexibility in how this region can be configured, no edges are necessarily guaranteed to connect.
+
+For the (3, 1, 2, 2) case, class 2 occupies the diagonal corners (top-left and bottom-right), while classes 1 and 3 each occupy a single corner. The ambiguity in topology means the connecting region could take multiple paths, so again no edges are forced to connect. I should examine the corner configurations more systematically—when all four corners share the same label, that class fills the square; when three corners match, one class dominates; when two adjacent corners align, a clean division emerges.
+
+Applying this framework: (1, 1, 1, 1) has all edges connecting since the entire square is one class. (2, 1, 2, 1) shows diagonal opposition, creating ambiguity with no guaranteed connections. (1, 1, 1, 2) has three corners of class 1 forming a dominant region whose boundary touches all four edges. (1, 1, 3, 2) mixes three classes with class 1 at diagonal positions, leaving the configuration indeterminate. (2, 1, 2, 2) has three class 2 corners dominating the square. (3, 1, 2, 2) again presents three different classes with ambiguous topology.
+
+For (1, 1, 1, 2), the class 1 region's boundary forms a continuous loop encompassing the left edge entirely, the top edge entirely, and portions of both the right and bottom edges where they meet the class 2 corner. This single connected boundary means all four edges participate in the same topological structure.
+
+The adjacent edge pairs along this boundary cycle are [0,1], [0,3], [1,2], and [2,3]. The same pattern holds for (2, 1, 2, 2) where class 2 dominates with three corners. For the ambiguous cases—(2, 1, 2, 1), (1, 1, 3, 2), and (3, 1, 2, 2)—the boundary configuration cannot be determined, so no edges are guaranteed to connect.

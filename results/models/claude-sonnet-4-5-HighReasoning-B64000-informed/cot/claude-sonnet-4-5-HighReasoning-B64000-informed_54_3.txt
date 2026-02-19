@@ -1,0 +1,182 @@
+Let me work through this step by step.
+
+First, I need to understand the coordinate system. We have a binary tree that subdivides the unit cube [0,1]³. Each level splits along axes in the cycle x → y → z → x → y → z...
+
+Let me trace the path to leaf "000111":
+- Start with root "" = [0,1] × [0,1] × [0,1]
+- Level 0 (split on x): "0" means x ∈ [0, 0.5]
+- Level 1 (split on y): "00" means y ∈ [0, 0.5]
+- Level 2 (split on z): "000" means z ∈ [0, 0.5]
+- Level 3 (split on x): "0001" means x ∈ [0.25, 0.5]
+- Level 4 (split on y): "00011" means y ∈ [0.25, 0.5]
+- Level 5 (split on z): "000111" means z ∈ [0.25, 0.5]
+
+So the target voxel is:
+x ∈ [0.25, 0.5]
+y ∈ [0.25, 0.5]
+z ∈ [0.25, 0.5]
+
+Now I need to find all leaves that share a face with this voxel.
+
+A face is shared when:
+- Two adjacent cells along x-axis: one has x_max = a, other has x_min = a, and their y and z ranges overlap in 2D
+- Two adjacent cells along y-axis: similar for y
+- Two adjacent cells along z-axis: similar for z
+
+For "000111" with bounds [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5]:
+
+
+I need to identify neighbors across each of the six faces. On the x-minus boundary at x = 0.25, I'm looking for cells where x_max = 0.25 and the y and z intervals overlap with [0.25, 0.5]. Similarly, the x-plus face at x = 0.5 requires cells with x_min = 0.5 and matching y-z overlap. The same logic applies to the y and z boundaries. 25, 0.5]
+
+I need a function to decode the spatial bounds for any node based on its path. Starting with the full domain [0, 1] for each axis, I recursively subdivide by checking each bit: if it's 0, I narrow the upper bound to the midpoint; if it's 1, I narrow the lower bound to the midpoint. Testing this with path "000111" shows how the subdivisions progressively constrain the region. .25, bit=1 → z∈[0.25, 0.5]
+
+The code "000111" maps to the region [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5]. Now I need to systematically enumerate all leaf nodes in the tree to verify the complete set of Morton codes.
+
+The full list of 64 leaves spans from "000000" through "111111", covering all 6-bit combinations. I'll compute the spatial bounds for each leaf and identify which ones share a boundary with the target region.
+
+For "000110", the bit sequence maps to: x∈[0, 0.5] → [0.25, 0.5], y∈[0, 0.5] → [0.25, 0.5], z∈[0, 0.5] → [0, 0.25]. This cube occupies [0.25, 0.5] × [0.25, 0.5] × [0, 0.25], which means it shares the z=0.25 face with the target cube.
+
+For "000101", the sequence gives: x∈[0, 0.5] → [0.25, 0.5], y∈[0, 0.5] → [0, 0.25], z∈[0, 0.5] → [0.25, 0.5]. This produces bounds [0.25, 0.5] × [0, 0.25] × [0.25, 0.5], which shares the y=0.25 face (x∈[0.25,0.5], z∈[0.25,0.5]).
+
+For "000011", applying the same refinement process yields x∈[0, 0.25], y∈[0.25, 0.5], z∈[0.25, 0.5], giving bounds [0, 0.25] × [0.25, 0.5] × [0.25, 0.5]. This shares the x=0.25 face (y∈[0.25,0.5], z∈[0.25,0.5]).
+
+Looking at "001111": the refinement steps give x∈[0.25, 0.5], y∈[0.25, 0.5], z∈[0.75, 1], so bounds are [0.25, 0.5] × [0.25, 0.5] × [0.75, 1]. The z-ranges don't match—[0.25, 0.5] versus [0.75, 1]—so these cubes don't share a face.
+
+For a z-plus neighbor, I need the target's z_max to equal the neighbor's z_min, both at 0.5. If a path has bit 2 = '1', then z spans [0.5, 1]. For "000111" to have such a neighbor, something must start at z = 0.5. Let me examine the tree structure more carefully—the subdivision is recursive, and different leaves can exist at different depths. Looking at the actual tree, all leaves appear to be at depth 6.
+
+To find a z-plus face neighbor, I need x ∈ [0.25, 0.5], y ∈ [0.25, 0.5], and z starting at 0.5. Tracing through the bit positions: bit 0 must be 0 (x in [0, 0.5]), bit 1 must be 0 (y in [0, 0.5]), bit 2 must be 1 (z in [0.5, 1]), bit 3 must be 1 (x in [0.25, 0.5]), and bit 4 must be 1 (y in [0.25, 0.5]).
+
+Continuing with bit 5, I need 0 for z ∈ [0.5, 0.75], giving the code "001110" which maps to the region [0.25, 0.5] × [0.25, 0.5] × [0.5, 0.75]. Checking each bit confirms the mapping is correct.
+
+Now looking at the y-plus face where y = 0.5. The region has x ∈ [0.25, 0.5] and z ∈ [0.25, 0.5]. Building the code: bit 0 gives x ∈ [0, 0.5], bit 1 gives y ∈ [0.5, 1], bit 2 gives z ∈ [0, 0.5], and bit 3 starts refining x to [0.
+
+25, 0.5]. Continuing with bit 4 to narrow y to [0.5, 0.75] and bit 5 to set z ∈ [0.25, 0.5], "010011" appears to be the candidate. But when I verify this step-by-step, the bit sequence doesn't produce the correct bounds—bit 3 being '0' would give x ∈ [0, 0.25], which contradicts what I need.
+
+Let me reconsider the constraints for the y-plus face. The neighbor's y_min is 0.5, and the target's y_max must equal 0.5. For the ranges to align, I need x ∈ [0.25, 0.5] and z ∈ [0.25, 0.5] on both sides.
+
+Tracing through the octree from the root: bit 0 = '0' gives x ∈ [0, 0.5], then bit 1 = '1' gives y ∈ [0.5, 1], then bit 2 = '0' gives z ∈ [0, 0.5]. Continuing with bit 3 = '1' narrows x to [0.25, 0.5], bit 4 = '0' narrows z to [0.25, 0.5], and bit 5 = '1' refines y to [0.75, 1]. 0.5]. To get to [0.25, 0.5], I need bit 5 = '1'
+  Now at [0.25, 0.5] × [0.5, 0.75] × [0.25, 0.5]
+
+So the path is "010101".
+
+Verifying each step: bit 0 places x in [0, 0.5], bit 1 places y in [0.5, 1], bit 2 places z in [0, 0.5], bit 3 refines x to [0.25, 0.5], bit 4 refines y to [0.5, 0.75], and bit 5 refines z to [0.25, 0.5].
+
+For the x-plus face where x=0.5, I need y and z both in [0.25, 0.5]. Starting with bit 0 = '1' to reach x∈[0.5, 1], then bit 1 = '0' for y∈[0, 0.5], bit 2 = '0' for z∈[0, 0.5], and bit 3 = '0' to narrow x to [0.25, 0.5].
+
+Continuing with bit 4 = '1' to get y∈[0.25, 0.5] and bit 5 = '1' to get z∈[0.25, 0.5], which gives "100011". Verifying the sequence confirms this cube occupies [0.5, 0.75] × [0.25, 0.5] × [0.25, 0.5], matching the required face.
+
+The six face-adjacent neighbors are identified by flipping each coordinate's boundary: "000011" shares the x-minus face, "100011" shares the x-plus face, "000101" shares the y-minus face, and "010101" shares the y-plus face, with two more neighbors completing the set along the z-axis.
+
+Before proceeding, I should verify these are all actual leaves in the octree structure. Checking against the tree: "000011", "000101", and "000110" are confirmed as leaves, and "001110" appears to be one as well, though I need to complete this verification for the remaining neighbors. ── 010100
+└── 010101
+```
+
+So "010101" is there.
+
+```
+10001
+├── 100010
+└── 100011
+```
+
+So "100011" is there.
+
+All six neighbors exist as leaves. Now I need to verify they actually share faces with the target. Two cells share a face when they're adjacent along one axis and their ranges overlap on the other two axes. For "000111" at [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5], checking "000011" at [0, 0.25] × [0.25, 0.5] × [0... ranges: [0.25, 0.5] and [0.25, 0.5] → identical ✓
+- z ranges: [0.25, 0.5] and [0.25, 0.5] → identical ✓
+- Shares x-plus face ✓
+
+The block "000101" at [0.25, 0.5] × [0, 0.25] × [0.25, 0.5] is adjacent along the y-axis at y=0.25, with matching x and z coordinates on both sides.
+
+"010101" at [0.25, 0.5] × [0.5, 0.75] × [0.25, 0.5] connects along the y-plus face at y=0.5, maintaining identical x and z ranges. "000110" at [0.25, 0.5] × [0.25, 0.5] × [0, 0.25] follows next in the sequence. ] and [0.25, 0.5] → identical ✓
+- y ranges: [0.25, 0.5] and [0.25, 0.5] → identical ✓
+- Shares z-plus face ✓
+
+All six neighbors check out as valid face-adjacent cells. But I should verify whether any larger cells might also be adjacent to these regions. Since the tree structure shows all paths expanded to depth 6, every leaf occupies the same level, so I don't need to account for size mismatches between cells. Let me examine the tree structure more closely to confirm this assumption.
+
+The tree confirms all branches terminate at depth 6, meaning every leaf cell has identical dimensions. For the cell occupying [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5], face neighbors must satisfy specific coordinate constraints: cells sharing the x=0.25 face require x_max = 0.25 with matching y and z ranges, while those sharing the x=0.5 face need x_min = 0.5 with the same y and z bounds.
+
+Similarly, the y-direction neighbors demand y_max = 0.25 or y_min = 0.5 respectively, and z-direction neighbors require z_max = 0.25 or z_min = 0.5, all while maintaining the perpendicular coordinate overlaps.
+
+Now I need to check if multiple cells could satisfy each condition. In a depth-6 tree where splits alternate through x, y, z axes, the subdivision pattern differs from a uniform grid. After 6 splits (at depths 0, 1, 2, 3, 4, 5), the x-axis has been split twice (depths 0 and 3), the y-axis twice (depths 1 and 4), and the z-axis twice (depths 2 and 5), creating 4 regions along each axis.
+
+This gives 64 total cells, each measuring 0.25 × 0.25 × 0.25. The cell "000111" occupies [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5], confirming its size. For the x-minus face, I need cells where x ∈ [0, 0.25], y ∈ [0.25, 0.5], and z ∈ [0.25, 0.5].
+
+Since each cell spans 0.25 units, the only cell with x_max = 0.25 in this y-z range is "000011" at x ∈ [0, 0.25]. For the x-plus face, the cell with x_min = 0.5 and matching y-z coordinates is "100011" at x ∈ [0.5, 0.75]. The same logic applies to the remaining four faces, confirming all six neighbors are correct. I should double-check this against the tree structure.
+
+Looking at the octree, I can verify that "000011", "000101", and "000110" all appear as leaf nodes, which matches the expected neighbors from the spatial analysis.
+
+Continuing down the tree, "001110" also shows up as a leaf node, confirming another neighbor in the structure. The pattern holds as I trace through the remaining branches—the tree organization correctly identifies all the expected adjacent nodes at the leaf level. The six face neighbors are identified as "000011", "000101", "000110", "001110", "010101", and "100011".
+
+Rather than enumerate all 64 leaves individually, I can approach this more efficiently by considering the target cell "000111" positioned at [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5] and examining which cells share a face with it based on spatial boundaries. .5]
+- bit 3 = 1: x ∈ [0.25, 0.5]
+
+So x-index = 1. Similarly, bits 1 and 4 give y-index = 1, and bits 2 and 5 give z-index = 1, confirming the target is at (1, 1, 1).
+
+For the face neighbors, I need to flip the appropriate bits. The x-minus neighbor (0, 1, 1) requires flipping bit 0 from 0 to 1, giving "100111". The x-plus neighbor (2, 1, 1) needs bit 3 flipped from 1 to 0, yielding "000011". Similarly, I can derive the bit strings for the y and z neighbors by flipping bits 1 and 4 for y-direction changes, and bits 2 and 5 for z-direction changes. ), y ∈ [0.25, 0.5], z ∈ [0.25, 0.5]
+- x: [0.5, 0.75] → bits 0,3 = 1,0 → "10"
+- y: [0.25, 0.5] → bits 1,4 = 0,1 → "01"
+- z: [0.25, 0.5] → bits 2,5 = 0,1 → "01"
+- Interleaved: bit0=1, bit1=0, bit2=0, bit3=0, bit4=1, bit5=1 → "100011" ✓
+
+For the neighbor at (0, 1, 1), the x-range contracts to the first quarter while y and z stay in the second quarter, giving the interleaved code "000011". Similarly, (2, 1, 1) shifts x into the third quarter but maintains the same y and z ranges, producing "100011". 5] → bits 0,3 = 0,1 → "01"
+- y: [0, 0.25] → bits 1,4 = 0,0 → "00"
+- z: [0.25, 0.5] → bits 2,5 = 0,1 → "01"
+- Interleaved: bit0=0, bit1=0, bit2=0, bit3=1, bit4=0, bit5=1 → "000101" ✓
+
+For (1, 2, 1), the ranges are x ∈ [0.25, 0.5], y ∈ [0.5, 0.75], z ∈ [0.25, 0.5]. Computing the bit patterns: x maps to "01", y maps to "11", z maps to "01", giving the interleaved result "010111" after combining bits 0-5.
+
+Moving to (1, 1, 0) with x ∈ [0.25, 0.5], y ∈ [0.25, 0.5], z ∈ [0, 0.25], I need to determine the bit representations for each coordinate and interleave them accordingly.
+
+For y in [0.25, 0.5], bits 1 and 4 are 0 and 1, giving "01". The z coordinate [0, 0.25] maps to bits 2 and 5 as 0 and 0, yielding "00". Interleaving all three coordinates produces "000110" as expected.
+
+For (1, 1, 2) where x ∈ [0.25, 0.5], y ∈ [0.25, 0.5], z ∈ [0.5, 0.75], the x and y coordinates both map to "01" in their respective bit positions. The z range [0.5, 0.75] gives bits 2 and 5 as 1 and 0. . 010101 - y-plus neighbor
+5. 000110 - z-minus neighbor
+6. 001110 - z-plus neighbor
+
+All six neighbors are accounted for, and each one differs from the target in exactly one bit position, which makes sense geometrically—flipping one bit corresponds to moving in one of the six cardinal directions.
+
+Let me double-check the bit encoding for "000111" by tracing through the octree structure. Starting from the root [0,1]³, each bit determines which octant to descend into: bit 0 controls the x-axis split, bit 1 the y-axis, and bit 2 the z-axis. Following 000 gives x ∈ [0, 0.5], y ∈ [0, 0.5], z ∈ [0, 0.5], then the next three bits (111) further subdivide to reach [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5].
+
+The tree appears to have uniform subdivision throughout, with every branch fully expanded to the same depth, so there shouldn't be any cells at different levels that could share faces.
+
+Looking at the structure more carefully, all leaf nodes reach depth 6, confirming this is a complete uniform grid. This means the six cells I identified—000011, 000101, 000110, 001110, 010101, 100011—are the correct answer.
+
+I'll order them lexicographically since that's cleaner than organizing by axis. Since all leaves are at the same depth, there's no need to handle neighbors at different octree levels.
+
+Let me verify the coordinate system matches the problem: the splits cycle through x → y → z at levels 0, 1, 2, then repeat. This aligns with my assumptions. For "000111", its immediate sibling from the z-split at level 5 is "000110", and they should share a face since they came from splitting their parent "00011".
+
+Checking the bit values: "000110" has bit 5 = 0 (z lower half) while "000111" has bit 5 = 1 (z upper half), confirming they're z-axis neighbors. At level 4, "000111" belongs to "00011" whose sibling "00010" contains cells like "000101", which should be adjacent along the y-axis—and indeed "000101" appears as the y-minus neighbor. At level 3, "000111" is part of "0001" whose sibling is "0000", which contains cells that should be x-axis neighbors.
+
+The six neighbors are: 000011, 000101, 000110, 001110, 010101, 100011. Let me verify by recalculating the spatial bounds for each neighbor to ensure accuracy.
+
+For 000011, the bit sequence maps to coordinates [0, 0.25] × [0.25, 0.5] × [0.25, 0.5]. For 000101, I need to work through the interleaved bit positions similarly—starting with bits 0-2 giving [0, 0.5] × [0, 0.5] × [0, 0.5], then bits 3-5 refining to [0, 0.25] × [0.25, 0.5] × [0.25, 0.5]. 0', axis=y: [0,1] → [0, 0.5]
+- i=2, bit='0', axis=z: [0,1] → [0, 0.5]
+- i=3, bit='1', axis=x: [0,0.5] → [0.25, 0.5]
+- i=4, bit='1', axis=y: [0,0.5] → [0.25, 0.5]
+- i=5, bit='0', axis=z: [0,0.5] → [0, 0.25]
+Final: [0.25, 0.5] × [0.25, 0.5] × [0, 0.25] ✓
+
+For **001110**, starting with the full unit cube and processing each bit sequentially: the first three bits all being 0 narrows each axis to its lower half, then the next two bits being 1 expand the x and y ranges to their upper halves within those constraints, and the final 0 bit keeps z in its lower half.
+
+**010101**:
+- i=0, bit='0', axis=x: [0,1] → [0, 0.5]
+- i=1, bit='1', axis=y: [0,
+
+1] → [0.5, 1]
+- i=2, bit='0', axis=z: [0,1] → [0, 0.5]
+- i=3, bit='1', axis=x: [0,0.5] → [0.25, 0.5]
+- i=4, bit='0', axis=y: [0.5,1] → [0.5, 0.75]
+- i=5, bit='1', axis=z: [0,0.5] → [0.25, 0.5]
+Final: [0.25, 0.5] × [0.5, 0.75] × [0.25, 0.5] ✓
+
+Continuing with **100011**: Starting with x-axis at [0,1], the first bit '1' narrows it to [0.5, 1]. Then y-axis gets refined by bit '0', z-axis by bit '0', and the pattern repeats for the remaining bits, progressively subdividing each dimension. 0.5, 1]
+- i=1, bit='0', axis=y: [0,1] → [0, 0.5]
+- i=2, bit='0', axis=z: [0,1] → [0, 0.5]
+- i=3, bit='0', axis=x: [0.5,1] → [0.5, 0.75]
+- i=4, bit='1', axis=y: [0,0.5] → [0.25, 0.5]
+- i=5, bit='1', axis=z: [0,0.5] → [0.25, 0.5]
+Final: [0.5, 0.75] × [0.25, 0.5] × [0.25, 0.5] ✓
+
+All six neighbors check out correctly.
+
+For "000111" at [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5], the adjacent cells are identified by flipping individual bits: "000011" shares the x=0.25 boundary, "000101" shares y=0.25, "000110" shares z=0.25, and "001110" shares the x=0.5 face.

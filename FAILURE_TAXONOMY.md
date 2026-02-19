@@ -70,16 +70,3 @@ These are useful for bookkeeping but should be tracked separately from the 5 fai
 - **Infra / harness issue:** Dependency/runtime error, toolchain failure, or other non-model error.
 - **Pipeline loss:** Model output cannot be inspected due to parsing/logging loss (e.g., stored as `{}` with no trace of original text).
 
-## Suggested Classifier Output Schema
-
-If you use an LLM as a classifier, have it emit something like:
-
-```json
-{
-  "failure_mode": "evasion_forfeit | trivialized_misframed | runaway_overthinking | local_only_global_integration | near_miss_edge_case",
-  "task_bucket": "axiomatic | constructive | planning",
-  "confidence": 0.0,
-  "justification": "One short paragraph grounded in prompt/output/verifier signals."
-}
-```
-

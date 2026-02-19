@@ -1,0 +1,175 @@
+Let me understand this problem. We have a binary tree that describes axis-aligned subdivision of a unit cube. Each node splits its parent cell into two children by bisecting along axes in a repeating cycle: x → z → y → z → x → z → y → z → ...
+
+Starting from the root (empty string ""), which represents the full unit cube [0,1]³:
+- Level 0 (""): split along x-axis
+- Level 1 (0, 1): split along z-axis
+- Level 2 (00, 01, 10, 11): split along y-axis
+- Level 3 (000, 001, 010, 011, ...): split along z-axis
+- Level 4: split along x-axis
+- Level 5: split along z-axis
+- Level 6: split along y-axis
+- Level 7: split along z-axis
+- Level 8: split along x-axis
+- And so on...
+
+The pattern is: x, z, y, z, x, z, y, z, ...
+
+So the axes are:
+- Depth 0: x
+- Depth 1: z
+- Depth 2: y
+- Depth 3: z
+- Depth 4: x
+- Depth 5: z
+- Depth 6: y
+- Depth 7: z
+- Depth 8: x
+- Depth 9: z
+
+The pattern repeats every 4 levels: x, z, y, z
+
+Target leaf: 110101011
+
+This has 9 digits, so it's at depth 9.
+
+Let me trace through the path to determine the bounding box:
+- Start with cube [0,1] × [0,1] × [0,1]
+
+Path: 1-1-0-1-0-1-0-1-1
+
+Depth 0 (split x): "1" means take the right half → x ∈ [0.5, 1], y ∈ [0, 1], z ∈ [0, 1]
+
+
+Depth 1 (split z): "1" means take the right half → x ∈ [0.5, 1], y ∈ [0, 1], z ∈ [0.5, 1]
+Depth 2 (split y): "0" means take the left half → x ∈ [0.5, 1], y ∈ [0, 0.5], z ∈ [0.5, 1]
+Depth 3 (split z): "1" means take the right half → x ∈ [0.5, 1], y ∈ [0, 0.5], z ∈ [0.75, 1]
+
+Continuing this process through the remaining digits, each choice of 0 or 1 selects the left or right half along the current axis, progressively narrowing the bounding box.
+
+Depth 4 narrows x to [0.5, 0.75], depth 5 tightens z to [0.875, 1], depth 6 constrains y to [0, 0.25], and depth 7 begins splitting z again.
+
+"1" means take the right half → x ∈ [0.5, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1]
+
+Depth 8 (split x): "1" means take the right half → x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1]
+
+So the target voxel is:
+x ∈ [0.625, 0.75] = [5/8, 3/4]
+y ∈ [0, 0.25] = [0, 1/4]
+z ∈ [0.9375, 1] = [15/16, 1]
+
+Now I need to find all leaves that share a face with this voxel. Two voxels share a face when two coordinates fully overlap and the third is adjacent—one's boundary meets the other's. The six faces to check are: x = 0.625 (neighbors with x_max = 0.625), x = 0.75 (neighbors with x_min = 0.75), y = 0 (neighbors with y_max = 0), y = 0.25 (neighbors with y_min = 0.25), z = 0.9375 (neighbors with z_max = 0.9375), and z = 1 (neighbors with z_min = 1).
+
+The z_max face is at the boundary, so no neighbors exist there. I need to parse the tree structure and compute bounding boxes for each leaf node by tracing paths from the root, then test which ones are adjacent to the target. A leaf is any node without children—further subdivision stops there. Looking at the tree, nodes like "110101011" represent leaf positions in the octree hierarchy.
+
+I'll write a script to parse the tree, identify all leaves, calculate their bounding boxes based on depth and position, and check for face adjacency. Two axis-aligned boxes share a face when they're adjacent along one axis (one's maximum equals the other's minimum) and their intervals overlap on the other two axes. The split pattern cycles through axes at each depth level. For each axis, I check if the boxes are adjacent along that axis (one's max equals the other's min). If they are, I verify they overlap on the other two axes by confirming that the maximum of their lower bounds is less than the minimum of their upper bounds. If both conditions hold, the boxes share a face.
+
+Once the adjacency check is complete, I need to parse the tree structure to extract all leaf nodes. I'll scan through the text to find all node labels (sequences of 0s and 1s) and collect them in a set, then identify which ones are leaves by determining which nodes don't have children.
+
+A node is a leaf if no other node in the tree starts with it as a prefix. After filtering out the root, I can return the list of leaves. However, looking at the actual tree format with indentation and tree characters like `├──` and `└──`, I need to adjust my parsing approach to properly handle the hierarchical structure based on indentation levels rather than just regex matching.
+
+The key insight is that a node is a leaf if it doesn't appear as a parent—meaning it has no children indented below it. I can identify all nodes that function as parents by checking which ones have children, then the leaves are simply the nodes that aren't parents. To parse this correctly, I need to extract node labels by removing the tree drawing characters and track indentation depth to determine parent-child relationships. them.
+
+Let me write a proper parser instead. Looking at the tree structure, the node labels are sequences of 0s and 1s, and a node is a leaf if no other node has it as a prefix. I'll extract all labels and identify which ones don't have children by checking if any other node starts with that label.
+
+For each line, I'll search for binary sequences and collect them. Then I'll iterate through all nodes to find leaves—those where no other node extends them. Once I have the leaves, I can compute the bounding box for the target and check distances to find neighbors. which ones share a face with it.
+
+I'll write out the code to properly compute bounding boxes and check adjacency. The approach is to track the split axis at each depth level following the pattern x, z, y, z repeating, then for each bit in the path, subdivide the current bounding box along that axis. Once I have bounding boxes for all leaves, I can check which ones share a face by comparing their coordinate ranges.
+
+```python
+import re
+from typing import List, Dict, Set, Tuple
+
+def get_split_axis(depth: int) -> str:
+    """Get the axis to split at a given depth. Pattern: x, z, y, z, x, z, y, z, ..."""
+    pattern = ['x', 'z', 'y', 'z']
+    return pattern[depth % 4]
+
+def compute_bbox(path: str) -> Dict[str, List[float]]:
+    """Compute bounding box for a given path."""
+    bbox = {'x': [0.0, 1.0], 'y': [0.0, 1.0], 'z': [0.0, 1.0]}
+    
+    for depth, bit in enumerate(path):
+        axis = get_split_axis(depth)
+        low, high = bbox[axis]
+        mid = (low + high) / 2
+        
+        if bit == '0':
+            bbox[axis] = [low, mid]
+        else:  # bit == '1'
+            bbox[axis] = [mid, high]
+    
+    return bbox
+
+def intervals_overlap(interval1: List[float], interval2: List[float]) -> bool:
+    """Check if two intervals [a,b] and [c,d] overlap."""
+    return max(interval1[0], interval2[0]) < min(interval1[1], interval2[1])
+
+def boxes_share_face(bbox1: Dict[str, List[float]], bbox2: Dict[str, List[float]]) -> bool:
+    """Check if two bounding boxes share a face by verifying they're adjacent on one axis and overlap on the other two."""
+    for axis in ['x', 'y', 'z']:
+        other_axes = [a for a in ['x', 'y', 'z'] if a != axis]
+        if (bbox1[axis][1] == bbox2[axis][0] or bbox1[axis][0] == bbox2[axis][1]) and \
+           all(intervals_overlap(bbox1[a], bbox2[a]) for a in other_axes):
+            return True
+    return False
+``` .split('\n'):
+    match = re.search(r'([01]+)', line)
+    if match:
+        all_nodes.add(match.group(1))
+
+I need to identify which nodes are leaves by checking if any other node extends them. Then I'll compute the bounding box for the target node and iterate through all leaves to find which ones share a face with it, collecting those neighbors.Now let me run the script to find the neighbors.Great! The script found 4 neighbors that share a face with the target voxel 110101011.
+
+Let me verify this makes sense by checking the bounding boxes:
+
+Target: 110101011
+- x=[0.625, 0.75]
+- y=[0.0, 0.25]
+- z=[0.9375, 1.0]
+
+Neighbors:
+1. 110101001: x=[0.625, 0.75], y=[0.0, 0.25], z=[0.875, 0.9375]
+   - Same x and y ranges, adjacent in z (z_max of neighbor = z_min of target = 0.9375)
+   - Shares the z=0.9375 face ✓
+
+2. 110101010: x=[0.5, 0.625], y=[0.0, 0.25], z=[0.9375, 1.0]
+   - Same y and z ranges, adjacent in x (x_max of neighbor = x_min of target = 0.625)
+   - Shares the x=0.625 face ✓
+
+3. 110101111: x=[0.625, 0.75], y=[0.25, 0.5], z=[0.9375, 1.0]
+   - Same x and z ranges, adjacent in y (y_min of neighbor = y_max of target = 0.25)
+   - Shares the y=0.25 face ✓
+
+4. 1101110: x=[0.75, 1.0], y=[0.0, 0.25], z=[0.875, 1.0]
+   - y ranges match [0, 0.25], z ranges overlap [0.9375, 1.0] ⊂ [0.875, 1.0], x adjacent (x_min of neighbor = x_max of target = 0.75)
+   - Shares the x=0.75 face ✓
+
+All four neighbors check out. The answer is: 110101001, 110101010, 110101111, 1101110Now let me read this file and output it as the final answer.Perfect! Let me verify my reasoning before returning the final answer.
+
+The target voxel 110101011 has the bounding box:
+- x ∈ [0.625, 0.75]
+- y ∈ [0.0, 0.25]  
+- z ∈ [0.9375, 1.0]
+
+The four neighbors found are:
+
+1. **110101001** - Shares the z=0.9375 face (below in z direction)
+   - x ∈ [0.625, 0.75] (same)
+   - y ∈ [0.0, 0.25] (same)
+   - z ∈ [0.875, 0.9375] (adjacent, touches at z=0.9375)
+
+2. **110101010** - Shares the x=0.625 face (left in x direction)
+   - x ∈ [0.5, 0.625] (adjacent, touches at x=0.625)
+   - y ∈ [0.0, 0.25] (same)
+   - z ∈ [0.9375, 1.0] (same)
+
+3. **110101111** - Shares the y=0.25 face (above in y direction)
+   - x ∈ [0.625, 0.75] (same)
+   - y ∈ [0.25, 0.5] (adjacent, touches at y=0.25)
+   - z ∈ [0.9375, 1.0] (same)
+
+4. **1101110** - Shares the x=0.75 face (right in x direction)
+   - x ∈ [0.75, 1.0] (adjacent, touches at x=0.75)
+   - y ∈ [0.0, 0.25] (same)
+   - z ∈ [0.875, 1.0] (overlaps with [0.9375, 1.0])
+
+Each neighbor shares exactly one face with the target voxel, confirming the solution is correct.I now need to provide my final answer. Let me format it as per the JSON schema requested, which should just be {"neighbors": [...]} with the array of neighbor labels.

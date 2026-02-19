@@ -1,0 +1,202 @@
+Let me work through this problem step by step.
+
+First, I need to understand the subdivision scheme:
+- The root "" represents the unit cube [0,1]³
+- Each level splits along x, y, z axes in cycle
+- Level 0 (first split): x-axis
+- Level 1: y-axis  
+- Level 2: z-axis
+- Level 3: x-axis (cycle repeats)
+- etc.
+
+For a node with path like "000111":
+- Position 0 (1st bit): split along x-axis, child 0 means left half (x ∈ [0, 0.5])
+- Position 1 (2nd bit): split along y-axis, child 0 means bottom half (y ∈ [0, 0.5])
+- Position 2 (3rd bit): split along z-axis, child 0 means front half (z ∈ [0, 0.5])
+- Position 3 (4th bit): split along x-axis, child 1 means right half
+- Position 4 (5th bit): split along y-axis, child 1 means top half
+- Position 5 (6th bit): split along z-axis, child 1 means back half
+
+Let me trace the bounds for "000111":
+- Start: [0,1] × [0,1] × [0,1]
+- After '0' (x-split, take left): [0,0.5] × [0,1] × [0,1]
+- After '00' (y-split, take bottom): [0,0.5] × [0,0.5] × [0,1]
+- After '000' (z-split, take front): [0,0.5] × [0,0.5] × [0,0.5]
+- After '0001' (x-split, take right): [0.25,0.5] × [0,0.5] × [0,0.5]
+
+
+- After '00011' (y-split, take top): [0.25,0.5] × [0.25,0.5] × [0,0.5]
+- After '000111' (z-split, take back): [0.25,0.5] × [0.25,0.5] × [0.25,0.5]
+
+The target voxel "000111" occupies the region where x, y, and z all fall in [0.25, 0.5]. Now I need to determine which octants contain this voxel and calculate the total volume.
+
+To find adjacent voxels, I check each of the six faces. For the left face at x = 0.25, I need a neighbor with x_max = 0.25 and matching y and z ranges. The right face at x = 0.5 requires x_min = 0.5. Similarly, the bottom and top faces at y = 0.25 and y = 0.5 need y_max and y_min respectively, while the front and back faces follow the same pattern for z.
+
+I'll compute the spatial bounds for every leaf node and test which ones satisfy the adjacency conditions for each face.
+
+```python
+def get_bounds(path):
+    x_min, x_max = 0.0, 1.0
+    y_min, y_max = 0.0, 1.0
+    z_min, z_max = 0.0, 1.0
+    
+    for i, bit in enumerate(path):
+        axis = i % 3
+        if axis == 0:
+            mid = (x_min + x_max) / 2
+            if bit == '0':
+                x_max = mid
+            else:
+                x_min = mid
+        elif axis == 1:
+            mid = (y_min + y_max) / 2
+            if bit == '0':
+                y_max = mid
+            else:
+                y_min = mid
+        else:  # axis == 2
+            mid = (z_min + z_max) / 2
+            if bit == '0':
+                z_max = mid
+            else:
+                z_min = mid
+    
+    return x_min, x_max, y_min, y_max, z_min, z_max
+```
+
+Now I can iterate through all 64 leaves, extract their bounds, and check adjacency for each face. i=4, bit='1', axis=1 (y): y in [0.25, 0.5]
+- i=5, bit='1', axis=2 (z): z in [0.25, 0.5]
+
+So the target region is [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5]. Now I need to extract all the leaf nodes from the octree at depth 6, which gives me the complete list of Morton codes: 000000 through 010010 and beyond, representing all the finest-grained spatial subdivisions. 0.25, 0.5] = ∅ ✗
+
+For two voxels to be face-adjacent, one coordinate must have the max of one equal the min of the other, while the remaining two coordinates must have overlapping ranges. Checking each leaf node against the target voxel at [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5]: the first voxel fails because its y-range [0, 0.25] doesn't overlap with [0.25, 0.5], and the second voxel has the same issue with its y-coordinate. [0.25,0.5] = [0.25,0.5] ✓
+
+This is a match—the two cubes share the x=0.25 face. Moving on to check 000100: x[0.25,0.5], y[0,0.25], z[0,0.25]. The y-coordinates are adjacent at 0.25, but z-ranges don't overlap. For 000101 with x[0.25,0.5], y[0,0.25], z[0.25,0.5], the y-adjacency holds and x-ranges fully overlap.
+
+Both z-ranges match at [0.25,0.5], confirming another face-sharing match along y=0.25. Checking 000110: x[0.25,0.5], y[0.25,0.5], z[0,0.25]—z-coordinates are adjacent at 0.25, and both x and y ranges completely overlap, so this is also a match sharing the z=0.25 face.
+
+Skipping 000111 since it's the target cube itself. For 001000 with x[0,0.25], y[0.5,1], z[0,0.25], there are no adjacent faces. Moving to 001001: x[0,0.25], y[0.5,1], z[0.25,0.5]—both x and y coordinates are adjacent simultaneously, but face-sharing requires exactly one dimension to be adjacent while the other two overlap. I need to clarify the adjacency rule: two cuboids share a face when one coordinate pair is adjacent (one's max equals the other's min) and the remaining two dimensions have overlapping ranges.
+
+Checking 001001 again with this rule: it has two adjacent dimensions, making it an edge neighbor rather than a face neighbor. For 001010 with x[0,0.25], y[0.5,1], z[0.5,1], the adjacency doesn't work out for face-sharing. Same issue with 001011. Moving through the remaining candidates systematically.
+
+001100 has x[0.25,0.5], y[0.5,1], z[0,0.25] - not a face neighbor. But 001101 with x[0.25,0.5], y[0.5,1], z[0.25,0.5] works: y is adjacent at 0.5, and both x and z ranges fully overlap, so this shares the y=0.5 face. Continuing to check 001110 and remaining octants.
+
+For 001110 with x[0.25,0.5], y[0.5,1], z[0.5,1], both y and z are adjacent at their boundaries, making this an edge neighbor rather than a face neighbor. 001111 similarly qualifies as an edge or vertex neighbor. Moving to the 010000 octant with x[0.5,1], y[0,0.25], z[0,0.25]: x is adjacent at 0.5, but y ranges don't overlap, so no face match. Checking 010001 next.
+
+For 010001 with x[0.5,1], y[0,0.25], z[0.25,0.5], x is adjacent at 0.5 but y intervals are disjoint, so this isn't a face neighbor either. 010010 has the same x adjacency but z intervals don't intersect. 010011 shows x adjacent at 0.5 with y overlapping at [0.25,0.5], continuing the pattern of checking which octants share a full face boundary. 0.5 ✓
+- Two dimensions align, making this an edge neighbor
+
+010111: x[0.5,1], y[0.25,0.5], z[0.5,1]
+- Shares the same edge configuration
+
+011000: x[0.5,1], y[0.5,1], z[0,0.25]
+- No face adjacency
+
+011001: x[0.5,1], y[0.5,1], z[0.25,0.5]
+- Both x and y boundaries meet at 0.5, creating an edge neighbor
+
+011010: x[0.5,1], y[0.5,1], z[0.5,1]
+- x and y both align at 0.5
+
+, z also aligns at 0.5, making all three dimensions adjacent and this a vertex neighbor
+
+011011: Matches the pattern of 011010
+
+011100: x[0.5,1], y[0.5,1], z[0,0.25]
+- Fails the adjacency test
+
+011101: x[0.5,1], y[0.5,1], z[0.25,0.5]
+- x and y coordinates align at 0.5, confirming edge neighbor status
+
+011110: x[0.5,1], y[0.5,1], z[0.5,1]
+- All three dimensions share boundaries, making this a vertex neighbor
+
+011111: x[0.5,1], y[
+
+0.5,1], z[0.5,1]
+- Vertex neighbor
+
+Moving to the "1" subtree where x spans [0.5,1]:
+
+100000: x[0.5,1], y[0,0.25], z[0,0.25]
+- This was already evaluated
+
+I notice I'm double-checking some cases. Let me be more systematic about the bit-to-axis mapping. When processing path "1XXXXX", the first bit determines x-range as [0.5,1], then subsequent bits determine y and z ranges based on their positions. For 100000 specifically, after x gets the '1', the next bits '0', '0', '0' should map to y and z subdivisions starting from [0,0.5] and continuing downward.
+
+Actually, let me trace through 100000 more carefully:
+- i=0, '1', x: [0.5, 1]
+- i=1, '0', y: [0, 0.5]
+- i=2, '0', z: [0, 0.5]
+- i=3, '0', x: [0.5, 0.75]
+- i=4, '0', y: [0, 0.25]
+- i=5, '0', z: [0, 0.25]
+Result: x[0.5,0.75], y[0,0.25], z[0,0.25]
+
+Comparing to target [0.25,0.5] × [0.25,0.5] × [0.25,0.5], the x ranges touch at 0.5 but y and z don't overlap at all, so this isn't a face neighbor. For 100001, the z-range becomes [0.25,0.5] instead, which means z now matches the target's z-range exactly.
+
+Checking 100010: x[0.5,0.75], y[0.25,0.5], z[0,0.25] has x and y aligned with the target but z is disjoint. However, 100011 gives x[0.5,0.75], y[0.25,0.5], z[0.25,0.5], where both y and z fully overlap with the target's ranges, making this a face neighbor.
+
+But I realize I already identified 010011 as sharing the x=0.5 face. Let me verify this more carefully by recalculating the coordinates from scratch. For 010011, the binary string breaks down as: position 0 gives x∈[0,0.5], position 1 gives y∈[0.5,1], position 2 gives z∈[0,0.5], then position 3 resets the x-axis to [0,0.25]. That doesn't seem right—I need to reconsider how the coordinates are actually being computed.
+
+I should track the bounds more systematically as I traverse the binary string. Starting with the full unit cube x∈[0,1], y∈[0,1], z∈[0,1], each bit determines which half of the current interval to keep for that axis.
+
+For 010011, cycling through axes x, y, z: the first '0' narrows x to [0,0.5], then '1' takes y to [0.5,1], then '0' takes z to [0,0.5]. Continuing this pattern with the remaining bits gives x∈[0,0.25], y∈[0.75,1], z∈[0.25,0.5]. But this region doesn't actually share a face with the target interval [0.25,0.5].
+
+Let me verify the target 000111 more carefully. The first three bits select the lower half across all dimensions: x∈[0,0.5], y∈[0,0.5], z∈[0,0.5]. The next three bits then subdivide within those ranges, giving x∈[0.25,0.5], y∈[0.25,0.5], z∈[0.25,0.5], which checks out. For 000000, all six bits select the lower half repeatedly, so x∈[0,0.5], y∈[0,0.5], z∈[0,0.5].
+
+5]
+- '0' x: [0,0.25]
+- '0' y: [0,0.25]
+- '0' z: [0,0.25]
+Result: [0,0.25] × [0,0.25] × [0,0.25]
+
+000001:
+- '0' x: [0,0.5]
+- '0' y: [0,0.5]
+- '0' z: [0,0.5]
+- '0' x: [0,0.25]
+- '0' y: [0,0.25]
+- '1' z: [0.25,0.5]
+Result: [0,0.25] × [0,0.25] × [0.25,0.5]
+
+000010:
+- '0' x: [0,0.
+
+5]
+- '0' y: [0,0.5]
+- '0' z: [0,0.5]
+- '0' x: [0,0.25]
+- '1' y: [0.25,0.5]
+- '0' z: [0,0.25]
+Result: [0,0.25] × [0.25,0.5] × [0,0.25]
+
+000011:
+- '0' x: [0,0.5]
+- '0' y: [0,0.5]
+- '0' z: [0,0.5]
+- '0' x: [0,0.25]
+- '1' y: [0.25,0.5]
+- '1' z: [0.25,0.5]
+Result: [0,0.25] × [0.25,0.5] × [0.25,0.5]
+
+The boundaries align at x=0.25, and both y and z ranges overlap perfectly—this is a match. Moving to 000100 gives [0.25,0.5] × [0,0.25] × [0,0.25], then 000101 starts with the same initial constraints before applying the next bit.
+
+For 000101, the z-coordinate shifts to [0.25,0.5] due to the final '1', resulting in [0.25,0.5] × [0,0.25] × [0.25,0.5]. The y-boundaries meet at 0.25 with overlapping x and z ranges—another match. Continuing to 000110, the second '1' modifies the y-range to [0.25,0.5]
+
+—giving [0.25,0.5] × [0.25,0.5] × [0,0.25]—where z-boundaries align at 0.25 with x and y overlapping. For 001000, the third position's '1' sets z to [0.5,1], and the subsequent '0's reset x and y to [0,0.25] and z to [0.5,0.75], producing [0,0.25] × [0,
+
+0.25] × [0.5,0.75]. The pattern continues with 001001 yielding [0,0.25] × [0,0.25] × [0.75,1] when the final bit is '1', and 001010 extending y to [0.25,0.5] while maintaining the other constraints.
+
+For 001010, I need to verify the adjacency: x shares the boundary at 0.25, y overlaps in [0.25,0.5], and z touches at 0.5. This gives two adjacent dimensions, making it an edge neighbor rather than a face neighbor. Continuing with 001011, the coordinates become [0,0.25] × [0.25,0.5] × [0.75,1] when both y and z take their upper ranges.
+
+For 001100, the result is [0.25,0.5] × [0,0.25] × [0.5,0.75], where y and z are adjacent while x overlaps—again an edge neighbor. The pattern shows that whenever two dimensions are adjacent (touching at boundaries) rather than overlapping, the relationship is an edge neighbor, not a face neighbor.
+
+For 001101, applying the same logic: z spans [0.75,1], x is [0.25,0.5], and y is [0,0.25], giving [0.25,0.5] × [0,0.25] × [0.75,1]. Here y and x overlap while z is adjacent, so this is also an edge neighbor.
+
+For 001110, the coordinates are x [0.25,0.5], y [0.25,0.5], and z [0.5,0.75], resulting in [0.25,0.5] × [0.25,0.5] × [0.5,0.75]. All three dimensions overlap, which means this is a face neighbor—a stronger adjacency than edge neighbors.
+
+For 001111, the result is [0.25,0.5] × [0.25,0.5] × [0.75,1], where x and y overlap while z is adjacent at the boundary.
+
+For 010000, I need to continue processing the bit sequence to determine its spatial region.
+
+For 010001, the coordinates map to [0,0.25] × [0.5,0.75] with z spanning [0.25,0.5], giving a partial overlap in the x-y plane.

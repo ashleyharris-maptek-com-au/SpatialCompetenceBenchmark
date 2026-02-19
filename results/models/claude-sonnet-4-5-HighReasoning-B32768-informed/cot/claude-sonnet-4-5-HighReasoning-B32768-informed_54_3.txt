@@ -1,0 +1,328 @@
+I need to find all leaves that share a face with the target leaf "000111".
+
+First, let me understand the structure:
+- The root "" represents the unit cube [0,1]³
+- Each level alternates splitting along x, y, z axes
+- "0" means the lower half, "1" means the upper half
+- Level 0 (root): no split
+- Level 1: split along x-axis
+- Level 2: split along y-axis
+- Level 3: split along z-axis
+- Level 4: split along x-axis
+- Level 5: split along y-axis
+- Level 6: split along z-axis
+
+Let me trace the path for "000111":
+- Start with [0,1]³
+- "0": x-split, take lower half → [0, 0.5] × [0,1] × [0,1]
+- "00": y-split, take lower half → [0, 0.5] × [0, 0.5] × [0,1]
+- "000": z-split, take lower half → [0, 0.5] × [0, 0.5] × [0, 0.5]
+- "0001": x-split, take upper half → [0.25, 0.5] × [0, 0.5] × [0, 0.5]
+- "00011": y-split, take upper half → [0.25, 0.5] × [0.25, 0.5] × [0, 0.5]
+- "000111": z-split, take upper half → [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5]
+
+So the target voxel is [0.25, 0.5] × [0.25, 0.5] × [0.25, 0.5].
+
+
+Now I'll identify the six faces of this voxel and determine which leaves are adjacent to each. The left face at x = 0.25 spans [0.25] × [0.25, 0.5] × [0.25, 0.5], the right face at x = 0.5 spans [0.5] × [0.25, 0.5] × [0.25, 0.5], the front face at y = 0.25 spans [0.25, 0.5] × [0.25] × [0.25, 0.5], and the back face at y = 0.5 spans [0.25, 0.5] × [0.5] × [0.25, 0.5]. The bottom face at z = 0.25 spans [0.25, 0.5] × [0.25, 0.5] × [0.25], and the top face at z = 0.5 spans [0.25, 0.5] × [0.25, 0.5] × [0.5].
+
+To find adjacent leaves, I need to compute the bounds for each leaf node and check which ones intersect with these faces. I'll create a helper function that takes a path and returns the spatial bounds by recursively subdividing the space based on the octree structure.
+
+The function starts with the full unit cube and iterates through each bit in the path, alternating between x, y, and z axes. For each bit, it either keeps the lower half (bit = '0') or upper half (bit = '1') of the current interval on that axis. For "000111", this gives bounds of [[0, 0.5], [0, 0.5], [0, 0.5]] for the first three bits, then [[0.5, 1], [0.5, 1], [0.5, 1]] after processing the remaining bits.
+
+Now I need to identify all leaf nodes in the tree and determine their spatial bounds. The leaves under "0" include the eight 6-bit paths starting with "000" (000000 through 000111) plus 001000, which represents the first child of the "00" node.
+
+Continuing from there, I have the remaining children of "00" (001001 through 001111), then all eight children under "01" (010000 through 011111). Under the "1" branch, there are the complete sets under "10" and "11" (100000 through 110111).
+
+Now I need to check which voxels actually share a face with the target at [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]]. Two voxels are face-adjacent when they differ in exactly one dimension, their bounds meet at that dimension (one's maximum equals the other's minimum), and their intervals overlap in the other two dimensions. Let me work through the bounds systematically, starting with 000000 which spans [0, 0.5] in each dimension. .5]]
+
+000010:
+- '0' (x): [0, 0.25]
+- '1' (y): [0.25, 0.5]
+- '0' (z): [0, 0.25]
+Bounds: [[0, 0.25], [0.25, 0.5], [0, 0.25]]
+
+000011:
+- '0' (x): [0, 0.25], '0' (y): [0, 0.25], '1' (z): [0.25, 0.5]
+Bounds: [[0, 0.25], [0, 0.25], [0.25, 0.5]]
+
+The pattern continues with each 6-bit code defining a specific octant subdivision, where the bit positions determine which half of each axis the region occupies. '0' (y): [0, 0.5]
+- '0' (z): [0, 0.5]
+- '1' (x): [0.25, 0.5]
+- '0' (y): [0, 0.25]
+- '0' (z): [0, 0.25]
+Bounds: [[0.25, 0.5], [0, 0.25], [0, 0.25]]
+
+For 000101, the bounds are [[0, 0.5], [0, 0.5], [0.25, 0.5]] after applying the '1' (z) constraint to the third dimension.
+
+Comparing 000101 and 000111 reveals they share a boundary: the x and z ranges match exactly, while the y ranges [0, 0.25] and [0.25, 0.5] are adjacent along the y=0.25 plane.
+
+000110 starts with the same initial constraints as the previous codes.
+
+When checking 000110 against 000111, the x and y bounds are identical, but the z ranges [0, 0.25] and [0.25, 0.5] meet at z=0.25, confirming they're face-adjacent.
+
+Now I need to verify the remaining three faces. For the x=0.5 boundary, I'm looking for nodes with x ∈ [0.5, ...] that share y and z ranges with 000111. The y=0.5 and z=0.5 faces require similar logic. Since 000111 falls in the "0" subtree (x ∈ [0, 0.5]), any neighbor crossing the x=0.5 boundary must come from the "1" subtree. The same constraint applies to y and z coordinates.
+
+Checking nodes in the "1" subtree: a candidate sharing the x=0.5 face needs x ∈ [0.5, ...], y overlapping [0.25, 0.5], and z overlapping [0.25, 0.5]. Following the path through '1' gives x ∈ [0.5, 1], then '0' narrows it to [0.5, 0.75]. Nodes like 100xxx would have x ∈ [0.5, 0.75], which is the right range to check for y and z overlaps. z ∈ [0, 0.5] overlaps [0.25, 0.5]? Yes, [0.25, 0.5]. I need to compute the exact bounds more carefully.
+
+Let me restart systematically by tracking which axis gets split at each level. The pattern cycles: x at level 1, y at level 2, z at level 3, x at level 4, y at level 5, and so on. For the path "100000", I need to trace through each bit and determine the resulting coordinate ranges.
+
+Starting with bit 0 ('1'): x-axis split gives x ∈ [0.5, 1]. Bit 1 ('0'): y-axis split gives y ∈ [0, 0.5]. Bit 2 ('0'): z-axis split gives z ∈ [0, 0.25]. Bit 3 ('0'): x-axis split again gives x ∈ [0.5, 0.75]. Bit 4 ('0'): y-axis split gives y ∈ [0, 0.25]. Bit 5 ('0'): z-axis split gives z ∈ [0, 0.125].
+
+This produces bounds [[0.5, 0.75], [0, 0.25], [0, 0.125]]. Comparing against 000111 with bounds [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]]: the x-ranges touch at 0.5, but the y and z ranges don't align—they're offset rather than sharing a boundary. For voxels to be face neighbors, they need to share an entire face, which requires matching bounds on two axes and adjacent bounds on the third. Must have y overlapping [0.25, 0.5] non-trivially and z overlapping [0.25, 0.5] non-trivially. A node starting with '1' has x ∈ [0.5, 1], but to share the x=0.5 face requires x ending exactly at 0.5. Since the next splits after '1' are on y then z, the x range stays [0.5, 1] through level 3. Only at level 4 does the splitting pattern cycle back to x.
+
+When x gets subdivided after '1', we get either [0.5, 0.75] or [0.75, 1]. The first option does touch x=0.5, so a cell like '1abc0' with x ∈ [0.5, 0.75] actually shares the boundary plane at x=0.5.
+
+For two cells to be face-adjacent, they need to match on one coordinate pair while their ranges overlap in the other two dimensions. For instance, if one cell has its right boundary at x=0.75 and another has its left boundary at x=0.75, and their y and z ranges intersect, they share a face along that plane. 1,x2] ∩ [x3,x4] ≠ ∅ AND [y1,y2] ∩ [y3,y4] ≠ ∅
+   - z4 = z1 AND [x1,x2] ∩ [x3,x4] ≠ ∅ AND [y1,y2] ∩ [y3,y4] ≠ ∅
+
+For each adjacency case, I need the corresponding coordinate ranges to overlap. Now I'll work through the leaf nodes systematically—for instance, 000111 maps to [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]]. I should compute the bounds for all leaves by recursively subdividing each dimension based on the binary code.
+
+The algorithm processes each bit of the code sequentially, cycling through the x, y, and z axes. For each axis, I find the midpoint of the current interval and either keep the lower half (if the bit is 0) or the upper half (if the bit is 1). After processing all six bits, the three intervals represent the final bounds for that leaf node.
+
+Now I'll compute the bounds for leaves starting with "000". For the first two bits being 0, both x and y get restricted to [0, 0.25]. The third bit determines z: if it's 0, z becomes [0, 0.25]; if it's 1, z becomes [0.25, 0.5]. The remaining three bits further subdivide whichever axis comes next in the cycle. .5] ✓, z: [0.25,0.5]∩[0.25,0.5]=[0.25,0.5] ✓
+  NEIGHBOR! ✓
+
+Continuing to check the remaining octant pairs: 000100 maps to x[0.25,0.5] y[0,0.25] z[0,0.25], and 000101 maps to x[0.25,0.5] y[0,0.25] z[0.25,0.5]. Both follow the same pattern of subdividing the parent octant's space into the child's corresponding region. 0, 0.25]]
+  Check: z: 0.25=0.25 ✓, x: [0.25,0.5]∩[0.25,0.5]=[0.25,0.5] ✓, y: [0.25,0.5]∩[0.25,0.5]=[0.25,0.5] ✓
+  NEIGHBOR! ✓
+
+Found the target at 000111: [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]]. Now checking leaves with "001" prefix, starting with 001000: x[0,0.5] y[0,0.5] z[0.5,1] → x[0,0.25] y[0,0.25] z[0.5
+
+,0.75] giving [[0, 0.25], [0, 0.25], [0.5, 0.75]]. Then 001001 maps to [[0, 0.25], [0, 0.25], [0.75, 1]], and 001010 produces [[0, 0.25], [0.25, 0.5], [0.5,
+
+0.75]].
+
+Continuing with 001011 which yields [[0, 0.25], [0.25, 0.5], [0.75, 1]], followed by 001100 mapping to [[0.25, 0.5], [0, 0.25], [0.5, 0.75]]. The pattern shows each 6-bit code systematically subdivides the initial cube region into progressively smaller octants. 0.25,0.5] ✓, y: [0.25,0.5]∩[0.25,0.5]=[0.25,0.5] ✓ - this confirms they're neighbors. For 001111, the ranges are x[0.25,0.5] y[0.25,0.5] z[0.75,1].
+
+Now checking leaves beginning with "010": 010000 maps x[0,0.5] y[0.5,1] z[0,0.5] to x[0,0.25] y[0.5,0.75] z[0
+
+,0.25], and 010001 gives x[0,0.25] y[0.5,0.75] z[0.25,0.5]. For 010010, the transformation yields x[0,0.25] y[0.75,1] z[0,0.25].
+
+Continuing with 010011 through 010101, each code maps the base region x[0,0.5] y[0.5,1] z[0,0.5] to progressively different octant subdivisions. 010011 produces x[0,0.25] y[0.75,1] z[0.25,0.5], while 010100 maps to x[0.25,0.5] y[0.5,0.75] z[0,0.25], and 010101 begins mapping with x[0,0.5] y[0.5,1] z[0,0.5] transforming to x[0.25,0.5] y[0.5,0.75] z[0.25,0.5].
+
+For 010101, I need to verify the neighbor relationship: y-boundaries match at 0.5, x-ranges [0.25,0.5] overlap completely, and z-ranges [0.25,0.5] overlap completely—this confirms a valid neighbor. Moving forward with 010110, which also starts from the same base region x[0,0.5] y[0.5,1] z[0,0.5] and continues the mapping pattern. 75]
+  [[0, 0.25], [0.5, 0.75], [0.5, 0.75]]
+
+Continuing with the "011" prefix leaves: 011001 maps x[0,0.5] y[0.5,1] z[0.5,1] to x[0,0.25] y[0.5,0.75] z[0.75,1], and 011010 transforms the same initial bounds to x[0,0.25] y[0.75,1] z[0.5,0.75].
+
+The remaining cases with this prefix follow the same pattern—011011 produces x[0,0.25] y[0.75,1] z[0.75,1], while 011100 and 011101 shift into the next subdivision tier with x starting at 0.25 instead of 0.
+
+5. Cases 011110 and 011111 continue the alternating pattern of y and z ranges, maintaining the recursive structure across the octree divisions.
+
+Now examining leaves with the "1" prefix, starting with those labeled "100": the first two cases show x shifting to [0.5,0.75] while y and z both compress to their lower quarters [0,0.25] and [0.25,0.5] respectively.
+
+The next pair follows a similar pattern with x remaining [0.5,0.75], but y expands to [0.25,0.5] while z stays in [0,0.25] for one case and shifts to [0.25,0.5] for the other.
+
+For the second case, I can verify the neighbor relationship: the x-coordinates match at 0.5, and both y and z intervals overlap perfectly at [0.25,0.5], confirming they're adjacent.
+
+Moving forward, the pattern continues with x[0.5,1] y[0,0.5] z[0,0.5] mapping to x[0.75,1] y[0,0.25] z[0,0.25], pushing into the upper octant region. ] → x[0.75,1] y[0.25,0.5] z[0.25,0.5]
+  [[0.75, 1], [0.25, 0.5], [0.25, 0.5]]
+
+For leaves beginning with "101", the pattern continues with similar subdivisions. Each node splits the parent region into eight octants, with coordinates adjusted accordingly—for instance, 101000 maps x[0.5,1] y[0,0.5] z[0.5,1] to x[0.5,0.75] y[0,0.25] z[0.5,0.75], and subsequent leaves follow the same recursive structure with their own coordinate transformations. 5], [0.75, 1]]
+
+- 101100: x[0.5,1] y[0,0.5] z[0.5,1] → x[0.75,1] y[0,0.25] z[0.5,0.75]
+  [[0.75, 1], [0, 0.25], [0.5, 0.75]]
+  
+- 101101: x[0.5,1] y[0,0.5] z[0.5,1] → x[0.75,1] y[0,0.25] z[0.75,1]
+  [[0.75, 1], [0, 0.25], [0.75, 1]]
+  
+- 101110: x[0.5,1] y[0,0.5] z[0.5,1] → x[0.75,1] y[0.25,0.5] z[0.5,0.75]
+  [[0.75, 1], [0.25, 0.5], [0.5, 0.75]]
+
+Continuing the octree subdivision pattern for the remaining child nodes in this branch, mapping coordinates through successive binary divisions. 0.75], [0.5, 0.75], [0, 0.25]]
+
+Continuing with the octree subdivisions for leaves starting with "110". Each subsequent leaf refines the spatial bounds by halving the parent region along different axes. For instance, 110001 constrains z to [0.25,0.5] while maintaining x and y at [0.5,0.75], and 110010 shifts y to [0.75,1] while z returns to [0,0.25]. 75] z[0.25,0.5]
+  [[0.75, 1], [0.75, 1], [0.25, 0.5]]
+  
+- 111000: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.5,0.75] y[0.5,0.75] z[0.5,0.75]
+  [[0.5, 0.75], [0.5, 0.75], [0.5, 0.75]]
+  
+- 111001: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.5,0.75] y[0.5,0.75] z[0.75,1]
+  [[0.5, 0.75], [0.5, 0.75], [0.75, 1]]
+  
+- 111010: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.5,0.75] y[0.75,1] z[0.5,0.75]
+  [[0.5, 0.75], [0.75, 1], [0.5, 0.75]]
+  
+- 111011: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.5,0.75] y[0.75,1] z[0.75,1]
+  [[0.5, 0.75], [0.75, 1], [0.75, 1]]
+  
+- 111100: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.75,1] y[0.5,0.75] z[0.5,0.75]
+  [[0.75, 1], [0.5, 0.75], [0.5, 0.75]]
+  
+- 111101: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.75,1] y[0.5,0.75] z[0.75,1]
+  [[0.75, 1], [0.5, 0.75], [0.75, 1]]
+  
+- 111110: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.75,1] y[0.75,1] z[0.5,0.75]
+  [[0.75, 1], [0.75, 1], [0.5, 0.75]]
+  
+- 111111: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.75,1] y[0.75,1] z[0.75,1]
+  [[0.75, 1], [0.75, 1], [0.75, 1]]
+
+Continuing the octree subdivision pattern, the remaining octants follow the same logic. Each 6-bit code maps to a specific octant within the parent region, with the first two bits controlling x-axis subdivision, the next two controlling y, and the final two controlling z. The upper octants (111xxx) all map to the upper half of the parent cube in all three dimensions, with each subsequent bit pair refining the position within that half. .5,1] y[0.5,1] z[0.5,1] → x[0.75,1] y[0.75,1] z[0.5,0.75]
+  [[0.75, 1], [0.75, 1], [0.5, 0.75]]
+  
+- 111111: x[0.5,1] y[0.5,1] z[0.5,1] → x[0.75,1] y[0.75,1] z[0.75,1]
+  [[0.75, 1], [0.75, 1], [0.75, 1]]
+
+The neighbors I've identified so far include 000011 sharing the x=0.25 face and 000101 sharing the y=0.25 face. I need to continue checking the remaining adjacencies.
+
+000110 shares the z=0.25 face, 001110 shares z=0.5, 010101 shares y=0.5, and 100011 shares x=0.5. Let me verify these systematically by checking the coordinate overlaps for each pair. For 000011, the x-coordinate 0.25 aligns perfectly where the target's left boundary meets the neighbor's right boundary, and the y and z ranges overlap completely. .5] ✓
+   CORRECT!
+
+3. 000110 = [[0.25, 0.5], [0.25, 0.5], [0, 0.25]]
+   - x: [0.25, 0.5] ∩ [0.25, 0.5] = [0.25, 0.5] ✓
+   - y: [0.25, 0.5] ∩ [0.25, 0.5] = [0.25, 0.5] ✓
+   - z: 0.25 (bottom of target) = 0.25 (top of 000110) ✓
+   CORRECT!
+
+4. 001110 = [[0.25, 0.5], [0.25, 0.5], [0.5, 0.75]] also works—all three dimensions align with the target region.
+
+5. 010101 = [[0.25, 0.5], [0.5, 0.75], [0.25, 0.5]] needs checking on the y-coordinate since it spans [0.5, 0.75] while the target is [0.25, 0.5]
+
+—wait, the boundary at y = 0.5 aligns perfectly between them. The x and z coordinates both match [0.25, 0.5] with the target. This one works.
+
+6. 100011 = [[0.5, 0.75], [0.25, 0.5], [0.25, 0.5]] has x at the boundary (0.5 matches the right edge of the target), y and z both intersect correctly at [0.25, 0.5].
+
+So the six cells that contain the target are: 000011, 000101, 000110, 001110, 010101, 100011. Let me verify the bounds once more for 001110 to make sure I have the bit-to-coordinate mapping right—bit 0 controls x (lower half), bit 1 controls y (lower half), bit 2 controls z (upper half), and bit 3 controls x again (upper half), which gives x ∈ [0.25
+
+, 0.5], then bit 4 controls y (upper half) for y ∈ [0.25, 0.5], and bit 5 controls z (lower half) for z ∈ [0.5, 0.75]. That checks out. For 010101, the pattern is x-lower, y-upper, z-lower, x-upper, y-lower, z-upper, which produces the bounds [[0.5, 0.75], [0.5, 1], [0.25, 0.5]].
+
+Now checking 100011: the first bit sets x to the upper half [0.5, 1], the second bit puts y in the lower half [0, 0.5], and the third bit places z in the lower half [0, 0.5]. The remaining bits continue subdividing these ranges accordingly.
+
+I should verify the tree structure to ensure I'm correctly identifying which nodes are leaves and how the splits progress through the hierarchy. The structure under "000" branches into "0000" and "0001". The first splits into "00000" (yielding "000000" and "000001") and "00001" (yielding "000010" and "000011"). The second splits into "00010" (yielding "000100" and "000101") and "00011" (yielding "000110" and "000111"). This gives me eight leaf nodes at depth 6: 000000, 000001, 000010, 000011, 000100, 000101, 000110, 000111—which checks out. Now I'm verifying the "001" branch, which divides into "0010"
+
+—containing "00100" (with leaves 001000 and 001001) and "00101" (with leaves 001010 and 001011)—and "0011"—containing "00110" (with leaves 001100 and 001101) and "00111" (with leaves 001110 and 001111). The eight leaves under "001" are 001000, 001001, 001010, 001011, 001100, 001101, 001110, 001111. Moving on to check "01".
+
+Under "010", I see the structure splits into "0100" and "0101". The "0100" branch contains "01000" (leaves 010000, 010001) and "01001" (leaves 010010, 010011). The "0101" branch has "01010" (leaves 010100, 010101) and "01011" (leaves 010110, 010111). This gives eight leaves starting with "010": 010000, 010001, 010010, 010011, 010100, 010101, 010110, 010111.
+
+The "011" branch follows a similar pattern with "0110" and "0111" subdivisions. Under "0110" are "01100" (leaves 011000, 011001) and "01101" (leaves 011010, 011011). Under "0111" are "01110" (leaves 011100, 011101) and "01111" (leaves 011110, 011111). This yields eight leaves starting with "011": 011000, 011001, 011010, 011011, 011100, 011101, 011110, 011111.
+
+The same recursive structure applies to the "1" subtree. To verify the neighbor relationships, I need to systematically compute the spatial bounds for all 64 leaf nodes and check which ones share boundaries. Starting with the "0" branch, each leaf occupies a specific region in 3D space—for instance, 000000 spans [[0, 0.125], [0, 0.125], [0, 0.125]] while 000001 spans [[0, 0.125], [0, 0.125], [0.125, 0.25]]. I should recalculate these bounds carefully to ensure accuracy. Let me trace through more carefully.
+
+For "000000":
+- Bit 0 '0' (axis 0=x): x ∈ [0, 0.5]
+- Bit 1 '0' (axis 1=y): y ∈ [0, 0.5]
+- Bit 2 '0' (axis 2=z): z ∈ [0, 0.5]
+- Bit 3 '0' (axis 0=x): x ∈ [0, 0.25]
+- Bit 4 '0' (axis 1=y): y ∈ [0, 0.25]
+- Bit 5 '0' (axis 2=z): z ∈ [0, 0.25]
+
+So 000000 maps to [[0, 0.25], [0, 0.25], [0, 0.25]]. Working through the bit sequence step by step: starting with the full unit cube, each '0' bit splits the current range along the cycling axis and keeps the lower half. After the first three bits, I get the octant [0, 0.5]³, then the next three bits subdivide that octant further to reach [0, 0.25]³. 0, 0.5], [0, 1], [0, 1]]
+'0' at y: [[0, 0.5], [0, 0.5], [0, 1]]
+'0' at z: [[0, 0.5], [0, 0.5], [0, 0.5]]
+'0' at x: [[0, 0.25], [0, 0.5], [0, 0.5]]
+'0' at y: [[0, 0.25], [0, 0.25], [0, 0.5]]
+'1' at z: [[0, 0.25], [0, 0.25], [0.25, 0.5]]
+
+For 000001, I work through the same pattern but flip the final z-bit to take the upper half instead, giving [[0, 0.25], [0, 0.25], [0.25, 0.5]]. Now checking 000011 by starting fresh and applying the first four bits identically, then taking the upper z range for both final bits.
+
+000101:
+Start: [[0, 1], [0, 1], [0, 1]]
+'0' at x: [[0, 0.5], [0, 1], [0, 1
+
+]]
+'0' at y: [[0, 0.5], [0, 0.5], [0, 1]]
+'0' at z: [[0, 0.5], [0, 0.5], [0, 0.5]]
+'1' at x: [[0.25, 0.5], [0, 0.5], [0, 0.5]]
+'0' at y: [[0.25, 0.5], [0, 0.25], [0, 0.5]]
+'1' at z: [[0.25, 0.5], [0, 0.25], [0.25, 0.5]]
+
+Checks out.
+
+000110:
+Start: [[0, 1], [0, 1], [0, 1]]
+'0' at x: [[0, 0.5],
+[0, 1], [0, 1]]
+'0' at y: [[0, 0.5], [0, 0.5], [0, 1]]
+'0' at z: [[0, 0.5], [0, 0.5], [0, 0.5]]
+'1' at x: [[0.25, 0.5], [0, 0.5], [0, 0.5]]
+'1' at y: [[0.25, 0.5], [0.25, 0.5], [0, 0.5]]
+'0' at z: [[0.25, 0.5], [0.25, 0.5], [0, 0.25]]
+
+Looks right.
+
+000111:
+Start: [[0, 1], [0, 1], [0, 1]]
+
+Processing each digit: first three zeros narrow the space along x, y, and z axes to [0, 0.5] ranges, then the ones refine it further to [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]]. The target region converges to [[0.25, 0
+
+.5], [0.25, 0.5], [0.25, 0.5]].
+
+For 001110, the sequence starts with the full cube and applies the same initial zero operations, but the final digit is 0 instead of 1, so the z-range stays at [0.5, 1] rather than collapsing to [0.25, 0.5]. The last two ones then refine x and y to [0.25, 0.5], yielding [[0.25, 0.5], [0.25, 0.5], [0.5, 1]].
+
+Now working through 010101: starting from the full cube, the first 0 constrains x to [0, 0.5], then 1 pushes y to [0.5, 1], then 0 narrows z to [0, 0.5]. The next 1 refines x further to [0.25, 0.5], and the final 0 at y is being processed, which would constrain y to [0.5, 0.75].
+
+For 100011: beginning with the full space, 1 at x moves to [0.5, 1], then 0 at y goes to [0, 0.5], and 0 at z stays [0, 0.5]. Continuing, 0 at x narrows to [0.5, 0.75], 1 at y adjusts to [0.25, 0.5], and 1 at z is being applied next.
+
+Now I'm verifying the complete list of leaves that touch the target region. The candidates identified so far are 000011, 000101, 000110, 001110, 010101, and 100011. I should systematically check additional potential neighbors to ensure none were overlooked, particularly those sharing edges or corners with the target. For 001111, starting from the full cube, 0 at x restricts to [0, 0.5], then 0 at y further limits to [0, 0.5]. .75, 1], [0.25, 0.5]]
+
+Comparing to target [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]]:
+- x: matches
+- y: [0.75, 1] doesn't overlap with [0.25, 0.5]
+- z: [0.25, 0.5] matches
+
+This isn't a neighbor either. Moving to 010111: I start with the full unit cube and apply each bit sequentially. After processing '0' at x, '1' at y, '0' at z, '1' at x, '1' at y, and '1' at z, I get [[0.25, 0.5], [0.75, 1], [0.25, 0.5]]. The y-coordinate range [0.75, 1] has no overlap with the target's [0.25, 0.5], so this code also doesn't produce a neighbor.
+
+For 100111, starting again from [[0, 1], [0, 1], [0, 1]] and applying '1' at x, '0' at y, '0' at z, '1' at x, '1' at y, '1' at z yields [[0.75, 1], [0.25, 0.5], [0.25, 0.5]]. The x-coordinate [0.75, 1] doesn't match the target's [0.25, 0.5], confirming this isn't a neighbor.
+
+Now I should check tree-adjacent nodes. The sibling of 000111 is 000110, which I've already verified as a neighbor. Moving up to the parent 00011, its sibling 00010 branches into 000100 and 000101—I need to evaluate these.
+
+For 000100, after applying the bit sequence, the final bounds are [[0.25, 0.5], [0, 0.25], [0.25]]. Comparing this against the target [[0.25, 0.5], [0.25, 0.5], [0.25, 0.5]], the y-coordinate shows no overlap between [0, 0.25] and [0.25, 0.5], so this isn't a neighbor either.
+
+To properly identify face neighbors, I need to check all six faces of the target cube. The left face at x=0.25 requires x_max=0.25 with overlapping y and z ranges within [0.25, 0.5].
+
+The right face at x=0.5 needs x_min=0.5 and matching y-z overlap. Similarly, the front face at y=0.25 requires y_max=0.25 with x-z intersection, while the back face at y=0.5 needs y_min=0.5 and x-z overlap. The top and bottom faces follow the same pattern for the z-axis boundaries.
+
+Rather than checking all 64 leaves individually, I should identify which ones could possibly touch each face by examining their coordinate constraints.
+
+For the left face (x=0.25), I need leaves where x_max equals 0.25. Starting with '0' gives x ∈ [0, 0.5]. To narrow this to x_max=0.25, I must follow the lower x-splits. At position 3, taking '0' gives x ∈ [0, 0.25], so candidates have the form '0000??'. However, '0000' itself isn't a leaf—it branches into '00000' and '00001', each of which further subdivides into two children. So I need to examine the actual leaf nodes descended from this prefix.
+
+The leaves under '0000' are 000000, 000001, 000010, and 000011, all with x ∈ [0, 0.25]. Now I check which satisfy the y and z constraints. For 000000 with ranges [[0, 0.25], [0, 0.25], [0, 0.25]], the y-interval [0, 0.25] only touches [0.25, 0.5] at a single point, which doesn't count as a proper intersection.
+
+For 000001 = [[0, 0.25], [0, 0.25], [0.25, 0.5]], the y-interval [0, 0.25] doesn't overlap with [0.25, 0.5] at all. Similarly, 000010 = [[0, 0.25], [0.25, 0.5], [0, 0.25]] has y-interval [0.25, 0.5] that intersects with [0.25, 0.5], but I need to verify the z-interval [0, 0.25] against [0.25, 0.5], which also fails the non-trivial intersection test.
+
+However, 000011 = [[0, 0.25], [0.25, 0.5], [0.25, 0.5]] works—both y and z intervals match perfectly with [0.25, 0.5], making this a valid neighbor.
+
+Now checking face 2 where x=0.5, I need x_min=
+
+0.5. Leaves starting with '1' have x ∈ [0.5, 1], and after the next two bits split y and z. The subsequent bit splits x again, so '1000' gives x ∈ [0.5, 0.75]. To keep x_min at exactly 0.5, the first x-split after '1' must be '0', meaning codes matching '100???' will work.
+
+The fourth bit being '0' produces '1000??', which generates four leaf codes: 100000, 100001, 100010, 100011. Checking each against the target region [0.25, 0.5] × [0.25, 0.5] × [0, 0.5]: 100000 has y ∈ [0, 0.25], which doesn't overlap with [0.25, 0.5], so it's not a neighbor. Similarly, 100001 has y ∈ [0, 0.25], also no overlap. The pattern continues with 100010 having y ∈ [0,
+
+25, 0.5] that matches, but z ∈ [0, 0.25] fails to intersect [0.25, 0.5]. However, 100011 = [[0.5, 0.75], [0.25, 0.5], [0.25, 0.5]] satisfies all three dimensions—y and z both have the required overlaps—making it a valid neighbor.
+
+For the face where y_max = 0.25, I need leaves with y ∈ [?, 0.25]. The first y-coordinate split occurs at position 1, so starting with '0' constrains y to [0, 0.5]. The second y split is at position 4; appending '0' there narrows it to [0, 0.25]. This means valid codes follow the pattern '???00?' with position 1 being either '0' or '1' and position 4 fixed as '0'—giving candidates like '00?00?', '01?00?', '10?00?', and '11?00?'. Checking '00?00?' as a starting point...
+
+The leaves matching '00?00?' are 000000, 000001, 001000, and 001001. Testing 000000 yields x ∈ [0, 0.25], which doesn't overlap with [0.25, 0.5], so it's not adjacent. Similarly, 000001 has x ∈ [0, 0.25] with no intersection. For 001000, the x-range is [0.25, 0.5], which does intersect with the target x-range, making it a valid neighbor.
+
+Now checking the '0?100?' pattern: the first bit constrains x to [0, 0.5], the third bit forces z into the upper half, and the remaining bits can vary.
+
+Tracing through '00100?': starting with x in [0, 0.5], then y in [0, 0.5], z jumps to [0.5, 1], x narrows to [0, 0.25], and y further restricts to [0, 0.25] while z remains in the upper half.
+
+The final bit determines whether z ends at [0.5, 0.75] or [0.75, 1], giving us the two possible coordinates for codes 001000 and 001001.
+
+Now checking '01100?': x starts in [0, 0.5], then y shifts to [0.5, 1]
+
+—but this puts y outside the target range of [0, 0.25], so these aren't valid candidates. I need to reconsider the approach more systematically. To achieve y_max = 0.25, the second bit (controlling the y split) must be '0' to keep y in [0, 0.5], and then a subsequent bit must narrow it further to [0, 0.25].
+
+The pattern I'm looking for is '?0?0??'. Within this constraint, I also need the x and z ranges to overlap with [0.25, 0.5]. For x, if the first bit is '0', I get x ∈ [0, 0.5], which already intersects [0.25, 0.5]. If the first bit is '1', then the third bit determines whether x reaches into [0.25, 0.5]. Similarly for z, I need to check which bit combinations allow the range to intersect [0.25, 0.5]. 0??1'. For z to intersect [0.25, 0.5], bit 2 must be '0' (giving z ∈ [0, 0.5]), and then bit 5 must be '1' (giving z ∈ [0.25, 0.5]). This means the pattern continues as '0??10?'.
+
+Now I need to reconsider the bit structure more carefully. The bits alternate between x, y, and z splits at positions 0, 1, 2, then repeat at 3, 4, 5. For face 3 where y = 0.25, bit 1 controls the first y split and bit 4 controls the second y split.
+
+Setting bit 1 = '0' gives y ∈ [0, 0.25], and bit 4 = '0' further constrains to y ∈ [0, 0.25]. For the x-coordinate, bit 0 = '0' gives x ∈ [0, 0.5] while bit 3 = '1' narrows it to [0.25, 0.5]. Similarly, bit 2 = '0' gives z ∈ [0, 0.5] and bit 5 = '1' refines it to [0.25, 0.5]. This yields the pattern '000101', which maps to the region [[0.25, 0.5], [0, 0.25], [0.25, 0.5]].
+
+Checking intersections: x ranges [0.25, 0.5] ∩ [0.25, 0.5] = [0.25, 0.5] ✓ and z ranges [0.25, 0.5] ∩ [0.25, 0.5] = [0.25, 0.5] ✓ — this is a valid neighbor.
+
+For face 4 where y = 0.5, I need the leaf's y_min to equal 0.5. Setting bit 1 = '1' gives y ∈ [0.5, 1], then bit 4 = '0' constrains it to [0.5, 0.75]. To satisfy x ∩ [0.25, 0.5] ≠ ∅, bit 0 = '0' provides x ∈ [0, 0.5], which overlaps with the target range. 0.25, 0.5] ✓
+z: [0.25, 0.5] ∩ [0.25, 0.5] = [0.25, 0.5] ✓
+
+This is a valid neighbor. For the z=0.25 face, I need z_max equal to 0.25, so the leaf's z range ends at 0.25. With bit 2='0' giving z ∈ [0, 0.5] and bit 5='0' giving z ∈ [0, 0.25], and bits 0 and 3 controlling x to overlap [0.25, 0.5], the pattern '000101' emerges as another candidate.
+
+Actually, checking bits 1 and 4 for y: bit 1='0' gives y ∈ [0, 0.5] while bit 4='1' gives y ∈ [0.25, 0.5], so the correct pattern is '000110'. This maps to [[0.25, 0.5], [0.25, 0.5], [0, 0.25]], where the z boundary matches and both x and y ranges intersect properly with the target.
+
+Now for face 6 where z=0.5, I need z_min=0.5, which requires bit 2='1' (z ∈ [0.5, 1]) and bit 5='0' (z ∈ [0.5, 0.75]). For the x constraint, bit 0='0' gives x ∈ [0, 0.5], and I'm checking bit 3 to narrow this further.
+
+Continuing with the coordinate constraints: bit 3='1' gives x ∈ [0.25, 0.5], bit 1='0' gives y ∈ [0, 0.5], and bit 4='1' gives y ∈ [0.25, 0.5]. This yields the code '001110', which maps to the leaf [[0.25, 0.5], [0.25, 0.5], [0.5, 0.75]]. The z-coordinate matches (0.5 = 0.5), and the x and y ranges both intersect correctly with [0.25, 0.5].
+
+The six face neighbors are identified: '000011' at x=0.25, '100011' at x=0.5, '000101' at y=0.25, '010101' at y=0.5, '000110' at z=0.25, and '001110' at z=0.5.

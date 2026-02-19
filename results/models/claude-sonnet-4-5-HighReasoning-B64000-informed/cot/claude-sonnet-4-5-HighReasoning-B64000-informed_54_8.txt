@@ -1,0 +1,288 @@
+Let me understand the problem first. We have a binary tree that represents an octree-like subdivision of the unit cube [0,1]³. 
+
+The splitting pattern is:
+- Level 0 (root ""): split along y-axis
+- Level 1: split along z-axis
+- Level 2: split along x-axis
+- Level 3: split along y-axis (cycle repeats)
+- etc.
+
+So the cycle is: y → z → x → y → z → x → ...
+
+For a node with path string s:
+- If len(s) % 3 == 0: split along y-axis
+- If len(s) % 3 == 1: split along z-axis  
+- If len(s) % 3 == 2: split along x-axis
+
+Each node represents a box in 3D space. Child 0 takes the lower half along the split axis, child 1 takes the upper half.
+
+Let me trace the target leaf "001101000":
+
+Starting with the unit cube [0,1]³:
+
+Position 0 (len=0, split y): Take lower half → y ∈ [0, 0.5]
+Box: [0,1] × [0,0.5] × [0,1]
+
+Position 1 (len=1, split z): 0 = lower half → z ∈ [0, 0.5]
+Box: [0,1] × [0,0.5] × [0,0.5]
+
+Position 2 (len=2, split x): 1 = upper half → x ∈ [0.5, 1]
+Box: [0.5,1] × [0,0.5] × [0,0.5]
+
+Position 3 (len=3, split y): 1 = upper half → y ∈ [0.25, 0.5]
+
+
+Box: [0.5,1] × [0.25,0.5] × [0,0.5]
+
+Continuing with position 4, I split along z taking the lower half to narrow z to [0, 0.25], then at position 5 split along x taking the upper half to narrow x to [0.75, 1]. This gives the box [0.75,1] × [0.25,0.5] × [0,0.25].
+
+At position 6, splitting along y with the lower half constrains y to [0.25, 0.375]. Position 7 splits z again, taking the lower half to get z ∈ [0, 0.125]. Finally, at position 8, splitting x along the lower half narrows it to [0.75, 0.875].
+
+The target voxel is bounded by x ∈ [0.75,0.875].
+
+Now I need to identify all leaf nodes that share a face with this voxel. The six faces to check are: the left face at x = 0.75, the right face at x = 0.875, the bottom face at y = 0.25, the top face at y = 0.375, and the bottom and top faces along z at z = 0 and z = 0.125.
+
+To find which leaves touch these boundaries, I'll need a helper function that computes the bounding box for any node in the tree based on its path. The function iterates through each bit in the path, determining which axis it corresponds to and whether to take the lower or upper half of the current range.
+
+The axis cycling follows the pattern y → z → x, so at depth 0 we split on y, depth 1 on z, depth 2 on x, then it repeats. This means depth % 3 tells us which axis: 0 for y, 1 for z, 2 for x.
+
+Now tracing through the path "001101000" step by step: starting with the full unit cube, each bit narrows the bounding box along the appropriate axis. At depth 0 the '0' bit constrains y to [0, 0.5], then '0' at depth 1 constrains z to [0, 0.5], then '1' at depth 2 constrains x to [0.5, 1]. Continuing this pattern through depths 3-6 progressively refines the box to y ∈ [0.25, 0.375], z ∈ [0, 0.25], and x ∈ [0.75, 1].
+
+At depth 7, bit '0' splits z further to z ∈ [0, 0.125], and at depth 8, bit '0' splits x to x ∈ [0.75, 0.875]. This gives the target box: x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125].
+
+To find adjacent leaves that share a face, I need boxes that are adjacent along one axis while overlapping on the other two. Rather than enumerate all leaves individually, I can identify which neighboring octants at each depth level could potentially share a face with this target region.
+
+For a face-sharing neighbor, it must have a boundary touching the target's boundary on exactly one axis, with proper overlap on the remaining two axes. Checking the x = 0.75 face: a left neighbor would need x ∈ [x_left, 0.75] with y and z overlapping the target's ranges. The tree path "001101000" tells me the target's position through successive octant choices, so I can trace back to find which sibling or cousin nodes might occupy adjacent space. if they share a face. Rather than manually listing every leaf, I should systematically traverse the tree and identify all nodes with no children. Once I have the complete set of leaves, I can compute their bounding boxes and check which ones are adjacent to node "001101000" by testing for shared faces between boxes.
+
+For finding face neighbors, I need to consider that flipping the bit corresponding to the last split on a given axis and checking if that path exists in the tree would work if the tree were uniformly subdivided. But since it's not, I need to trace through the actual structure. For the target node "001101000" with box x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125], I should check each of the six faces individually to find which leaves have boxes that share a boundary.
+
+For the left face at x = 0.75, I need leaves whose x-max equals 0.75 and whose y and z ranges overlap with the target. To reach x = 0.75 as a maximum, the sequence of x-splits must produce that boundary—specifically, after splitting [0, 1] to [0.5, 1] with bit 1, then [0.5, 1] to [0.75, 1] with bit 1, the next x-split must use bit 0 to get [0.75, 0.875], meaning any neighbor on this face would have a path ending in ...10 for the x-splits.
+
+Looking at "001101000": the x-splits at positions 2, 5, and 8 give x ∈ [0.75, 0.875]. To find a neighbor at exactly x = 0.75, I'd need position 5 to be bit 0 instead, yielding x ∈ [0.5, 0.75], but then I need to verify the y and z splits align with the overlapping ranges.
+
+Flipping position 5 in "001100***": position 0 gives y ∈ [0, 0.5], position 1 gives z ∈ [0, 0.5], position 2 gives x ∈ [0.5, 1], position 3 refines y to [0.25, 0.5], position 4 refines z to [0, 0.25], and position 5 gives x ∈ [0.5, 0.75]. This produces a box with x ∈ [0.5, 0.75], y ∈ [0.25, 0.5], z ∈ [0, 0.25]. I need to check whether the remaining positions further constrain these ranges to create an actual neighbor.
+
+At position 6, the y-split occurs with midpoint 0.375. Since the target y-range is [0.25, 0.375], a '0' bit keeps y ∈ [0.25, 0.375], which matches perfectly. Position 7 handles the z-split with midpoint 0.125, and since the target z-range is [0, 0.125], a '0' bit gives z ∈ [0, 0.125], which also aligns exactly.
+
+For position 8, the x-split at midpoint 0.625 creates two possibilities: "001100000" or "001100001". Both could potentially be face neighbors depending on whether they're actual leaf nodes in the tree. Checking the tree structure, neither "001100000" nor "001100001" appears as a leaf node, and "0011000" itself isn't present as a node either. 0011001".
+
+Computing the bounding boxes for these nodes: "0011000" maps to x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.25], giving an x-maximum of 0.75. I need to check the sibling "0011001" and continue evaluating which boxes contain the target point.
+
+For face adjacency, two boxes must align on one axis (where one's maximum equals the other's minimum) while their projections on the remaining two axes have a non-trivial interior overlap. The z-ranges [0, 0.25] and [0, 0.125] only intersect at [0, 0.125], which doesn't constitute a proper interior overlap for face neighbors.
+
+Let me check "0011001" next. Decoding the bits gives x ∈ [0.5, 0.75], y ∈ [0.375, 0.5], z ∈ [0, 0.25]. The x-maximum of 0.75 matches the target's x-minimum, so they're adjacent along the x-axis.
+
+However, examining the y-intervals: the target has y ∈ [0.25, 0.375] while this box has y ∈ [0.375, 0.5]. These only touch at the boundary y = 0.375 without overlapping in their interiors, making this an edge neighbor rather than a face neighbor.
+
+Looking at the tree structure, both "0011000" and "0011001" are leaf nodes with no children. The box for "0011000" is x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.25], which does share a complete face with the target along the x-direction.
+
+Since this is a non-uniform octree, I need to account for the fact that different regions may be subdivided to different depths. The leaves represent the actual voxels, so I should focus on identifying which leaf nodes are adjacent to the target.
+
+For the left face at x = 0.75, I'm looking for all leaves where x-max equals 0.75 and their y-z footprint overlaps with the target's y ∈ [0.25, 0.375], z ∈ [0, 0.125]. The node "0011000" with bounds x ∈ [0.5, 0.75], y ∈ [0.25, 0.375], z ∈ [0, 0.25] appears to be the candidate, though its z range extends beyond what I need. I should verify whether this region is further subdivided or if it remains as a single leaf.
+
+Examining the tree structure under "00110" reveals that "001100" branches into two leaves: "0011000" and "0011001", which partition the region x ∈ [0.5, 0.75], y ∈ [0.25, 0.5], z ∈ [0, 0.25] into two parts. The deeper branch "0011010" subdivides further, with "001101000" being the target node itself. This shows the octree has varying depths across different regions.
+
+For the left face at x = 0.5, the neighbor is "0011000" since it shares the boundary. On the right face at x = 0.875, I need to find voxels with x-min = 0.875 that overlap y ∈ [0.25, 0.375], z ∈ [0, 0.125]. The target's bit pattern shows x-splits at positions 2, 5, and 8, with position 8 being '0' (placing it in x ∈ [0.75, 0.875]). For x-min = 0.875, I need position 8 bit '1', pointing toward paths like "001101001" and their descendants.
+
+Checking "001101001" as a leaf: the bit sequence yields x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0, 0.125], which exactly matches the required overlap region for the right neighbor.
+
+Now examining the bottom face at y = 0.25. I need to find neighbors with y-max = 0.25 that overlap x ∈ [0.75, 0.875], z ∈ [0, 0.125]. The y-coordinate splits occur at bit positions 0, 3, and 6 in the target path, with the final split at position 6 giving y ∈ [0.25, 0.375]. To get y-max = 0.25, I need a different bit value at one of these positions.
+
+Looking at paths starting with "001001" and checking their descendants. The tree shows "001001" branches into "0010010" and "0010011". Computing the box for "0010010": the first bit gives y ∈ [0, 0.5], third bit gives y ∈ [0.25, 0.5], and sixth bit gives y ∈ [0, 0.25], which is exactly what I need for the bottom face.
+
+Wait, I need to recalculate more carefully. With 7 bits in "0010010", the position indices are 0-6, and I should trace through each constraint systematically to get the correct bounding box. ∈ [0.125, 0.25], z ∈ [0, 0.25]
+
+Now checking "0010011" instead: the sequence yields x ∈ [0.75, 1], y ∈ [0.125, 0.25], and z ∈ [0, 0.25]. This configuration satisfies the constraint that y-max equals 0.25.
+
+Looking at the tree structure, "0010011" appears as a leaf node with no children, which is important for determining whether it can be subdivided further.
+
+The box defined by "0010011" spans x ∈ [0.75, 1], and while this overlaps with the target's x range of [0.75, 0.875], the leaf status means it represents a complete region without finer subdivisions. For face adjacency between voxels, I need both spatial contact along a face and overlapping projections in the perpendicular directions—so I should verify whether "0010011" actually qualifies as a bottom neighbor given these constraints.
+
+Checking the boundaries: "0010011" has y-max at 0.25, which matches the target's y-min at 0.25, confirming they touch along a face. The x-ranges [0.75, 1] and [0.75, 0.875] overlap meaningfully, as do the z-ranges [0, 0.25] and [0, 0.125]. This confirms "0010011" is indeed a bottom neighbor. Now I need to determine if there are additional bottom neighbors beyond this one.
+
+Since I'm looking for leaves with y-max = 0.25 that also overlap the target's x-z footprint, I should examine other regions at that y-boundary. The sibling "001100" produces children covering y ∈ [0.25, 0.5], so nothing there qualifies. Moving up the tree, "001" branches into "0010" and "0011"—I've already explored "0010", but I should check what lies under "00100" at the y ∈ [0, 0.25] level to see if any other leaves might touch the target. - 0: z ∈ [0, 0.25]
+- 0: x ∈ [0.5, 0.75]
+
+This gives the box x ∈ [0.5, 0.75], y ∈ [0, 0.25], z ∈ [0, 0.25]. The x-max of 0.75 matches the target's x-min, placing it at the left face. But y-max also equals 0.25, which is the target's y-min. For a face adjacency to hold, the voxels need to be adjacent along exactly one axis while overlapping with positive measure on the other two—here they only touch at an edge, not a face.
+
+Looking at "001000": x ∈ [0.5, 0.75], y ∈ [0, 0.25], z ∈ [0, 0.25] against the target x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]. They meet at both x = 0.75 and y = 0.25 simultaneously, which is only an edge contact. This rules it out as a face neighbor.
+
+For a bottom neighbor, I need y-max = 0.25 with x and z overlapping the target's ranges [0.75, 0.875] and [0, 0.125]. Checking "00101":
+- First 0: y ∈ [0, 0.5]
+- Second 0: z ∈ [0, 0.5]
+- 1: x ∈ [0.5, 1]
+- Third 0: y ∈ [0, 0.25]
+
+This gives y ∈ [0, 0.25], which has the right upper bound. The x range [0.5, 1] overlaps [0.75, 0.875], and z ∈ [0, 0.5] overlaps [0, 0.125]. I need to check deeper subdivisions of "00101" to find candidates with tighter z bounds.
+
+The 1 in position five narrows z to [0.25, 0.5], which doesn't intersect the target's z ∈ [0, 0.125]. So "00101" and its descendants don't contribute bottom neighbors.
+
+Looking at "0010011" instead: x ∈ [0.75, 1], y ∈ [0.125, 0.25], z ∈ [0, 0.25]. This appears to be the only bottom neighbor candidate.
+
+The overlap occurs at x ∈ [0.75, 0.875] and z ∈ [0, 0.125], which matches the target's constraints. Since the octree partitions space into non-overlapping leaves, adjacent leaves touching a given face are uniquely determined by the tree structure. "0010011" covers the region that meets the target at y = 0.25 with the correct x-z alignment.
+
+Now I need to verify whether any other leaves at that y-boundary might also overlap the target's footprint. Checking the descendants of "0010010" to see if they extend into the relevant x range. 0.25], z ∈ [0.25, 0.5]
+
+This doesn't overlap the target's z range of [0, 0.125], so it's not a neighbor.
+
+The only bottom neighbor is **"0010011"**.
+
+I should approach this more systematically. At the y = 0.25 boundary, I need leaves where y-max equals 0.25 and their x-z footprint overlaps [0.75, 0.875] × [0, 0.125].
+
+The target sits in subtree "0" (y ∈ [0, 0.5]), then "00" (z ∈ [0, 0.25]), then "001" (x ∈ [0.5, 0.75]).
+
+"001" spans x ∈ [0.5, 0.75], y ∈ [0, 0.5], z ∈ [0, 0.25]. It branches into "0010" with y ∈ [0, 0.25] and "0011" with y ∈ [0.25, 0.5]. Leaves under "0010" all have y ≤ 0.25, and those at the boundary have y-max = 0.25.
+
+"0010" further divides into "00100" (z ∈ [0, 0.25]) and "00101" (z ∈ [0.25, 0.5]).
+
+Since the target region has z ∈ [0, 0.125], I need to look at neighbors from "00100".
+
+"00100" splits into "001000" (x ∈ [0.5, 0.75]) and "001001" (x ∈ [0.75, 1]).
+
+The target has x ∈ [0.75, 0.875], so neighbors come from "001001".
+
+Tracing "001001" down: x ∈ [0.75, 1], y ∈ [0, 0.25], z ∈ [0, 0.25].
+
+This node splits into "0010010" (y ∈ [0, 0.125]) and "0010011" (y ∈ [0.125, 0.25]).
+
+"0010011" is a leaf with y-max = 0.25, which matches the target's y boundary. "0010010" only reaches y-max = 0.125, so its descendants can't touch y = 0.25. This means "0010011" is the only bottom neighbor from this branch.
+
+I should also verify whether "001000" descendants could contribute neighbors—even though "001000" spans x ∈ [0.5, 0.75], some descendants might extend far enough to reach x = 0.75 and potentially touch the target at y = 0.25.
+
+Since "001000" has y ∈ [0, 0.25], all its descendants inherit this range and could achieve y-max = 0.25. However, if a descendant has both x-max = 0.75 and y-max = 0.25, it would be an edge neighbor rather than a face neighbor. A face neighbor requires sharing a 2D rectangular surface, not just an edge or corner.
+
+The bottom face of the target at y = 0.25 spans [0.75, 0.875] × [0, 0.125]. For a voxel to share this face, its y-max must equal 0.25 and its x and z ranges must overlap the interior of this rectangle with positive area. Since "001000" has x ∈ [0.5, 0.75], it only touches the boundary at x = 0.75 without overlapping the interior, so it doesn't qualify as a face neighbor. This confirms "0010011" is the sole bottom face neighbor.
+
+But I should verify this more rigorously. Two voxels share a face when their closures intersect in a 2D region while their interiors remain disjoint. For "001000" at [0.5, 0.75] × [0, 0.25] × [0, 0.25] and the target at [0.75, 0.875] × [0.25, 0.375] × [0, 0.125], the closure intersection is just a line segment at {0.75} × {0.25} × [0, 0.125]—a 1D set, not a 2D face.
+
+However, "0010011" at [0.75, 1] × [0.125, 0.25] × [0, 0.25] does work: the closure intersection is [0.75, 0.875] × {0.25} × [0, 0.125], which is indeed 2D. This voxel shares the bottom face. Now I need to check the top face at y = 0.375, looking for boxes where y-min = 0.375 and x overlaps [0.75, 0.875].
+
+The target's y-coordinate splits place it at position 6 with bit '0' giving y ∈ [0.25, 0.375]. To get y-min = 0.375, I need position 6 bit '1' instead, yielding y ∈ [0.375, 0.5]. This means checking paths like "0011011" with the right x and z ranges. The target sits under "001101", which branches into "0011010" and "0011011", so I should evaluate "0011011" next.
+
+Computing the box for "0011011": the y-split at position 0 gives y ∈ [0, 0.5], z-split at position 1 gives z ∈ [0, 0.5], x-split at position 2 gives x ∈ [0.5, 1], y-split at position 3 gives y ∈ [0.25, 0.5], z-split at position 4 gives z ∈ [0, 0.25], x-split at position 5 gives x ∈ [0.75, 1], and y-split at position 6 gives y ∈ [0.375, 0.5]. This produces the box x ∈ [0.75, 1], y ∈ [0.375, 0.5], z ∈ [0, 0.25]. Examining the tree structure shows "001101" splits into "0011010" and "0011011", with further subdivisions below.
+
+"0011011" is a leaf node. Comparing its bounds to the target x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0, 0.125]: the y-minimum of the leaf (0.375) matches the y-maximum of the target, and the x-ranges overlap at [0.75, 0.875].
+
+Now checking if other nodes qualify. The sibling "0011010" has y ∈ [0.25, 0.375], placing it below the target's y-range. Moving up to "001100", which spans x ∈ [0.5, 0.75], y ∈ [0.25, 0.5], z ∈ [0, 0.25]—this node subdivides into "0011000" and "0011001" along the y-axis.
+
+"0011001" has y ∈ [0.375, 0.5], meeting the y-min requirement of 0.375. However, its x-range [0.5, 0.75] only touches the target's x ∈ [0.75, 0.875] at the boundary x = 0.75, with no interior overlap. Checking whether this constitutes a face or edge neighbor requires examining the full spatial relationship of "0011001": [0.5, 0.75] × [0.375, 0.5] × [0,
+0.25] against the target [0.75, 0.875] × [0.25, 0.375] × [0, 0.125]. The intersection of their closures yields {0.75} × {0.375} × [0, 0.125], a 1-dimensional set, confirming "0011001" is an edge neighbor rather than a face neighbor. This means **"0011011"** stands as the sole top neighbor.
+
+Moving to the front face (z = 0), I need to identify boxes where z-max = 0. Since the target has z ∈ [0, 0.125], its front face is at z = 0.
+
+125. But actually, z = 0 is the z-min boundary of the target, which coincides with the unit cube's boundary. Since there are no voxels with z < 0 in the domain, there are no neighbors on this face—it's at the domain's edge.
+
+For the back face at z = 0.125, a neighbor would need z-max = 0.125, meaning z ∈ [z_min, 0.125] where z_min < 0.125. The voxel at z ∈ [0.125, 0.25] would have z-min = 0.125, so its face would coincide with the target's back face. That's a valid neighbor. 75, 0.875], y ∈ [0.25, 0.375]
+
+For a neighbor at z = 0.125, I need the z-coordinate to have its minimum at that value. The target's z-splits place it in [0, 0.125], so I'd need position 7 to be '1' instead, giving z ∈ [0.125, 0.25]. This would require a path like "001101001" at depth 8, but the target ends with '0' at that position, meaning no such neighbor exists at this face either.
+
+Let me check if "001101010" exists in the tree. Following the structure, this path would be a leaf node. Computing its bounding box: the first two bits '00' constrain y to [0, 0.5] and z to [0, 0.5], then '1' at position 2 sets x ∈ [0.5, 1], and '1' at position 3 narrows y to [0.25, 0.5].
+
+Continuing through the remaining bits: '0' gives z ∈ [0, 0.25], '1' sets x ∈ [0.75, 1], '0' constrains y ∈ [0.25, 0.375], '1' gives z ∈ [0.125, 0.25], and finally '0' narrows x to [0.75, 0.875].
+
+This yields the box x ∈ [0.75, 0.875], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25]. The z-minimum matches the target's z-maximum at 0.125, and the x and y ranges align perfectly.
+
+Now checking the sibling "001101011" to see if it's also a back neighbor. Following its bit sequence: the first two bits establish y and z ranges, then alternating bits refine x, y, and z bounds progressively.
+
+The final box for "001101011" spans x ∈ [0.875, 1], y ∈ [0.25, 0.375], z ∈ [0.125, 0.25]. Comparing with the target's x ∈ [0.75, 0.875], these ranges only touch at the boundary x = 0.875 rather than overlapping in the interior, so this sibling doesn't qualify as a back neighbor.
+
+Now checking "0011011": x ∈ [0.75, 1], y ∈ [0.375, 0.5], z ∈ [0, 0.25]. The y-ranges meet only at y = 0.375, and while the z-range contains part of the target's z-interval, I need to verify whether any of its descendants actually share a face with the target.
+
+Since "0011011" is a leaf node with no children, and its y-coordinate doesn't properly overlap the target's y-range, it can't be a face neighbor. Looking at the parent level, "001101" splits into the two siblings I've already examined. Its own sibling "001100" has x ∈ [0.5, 0.75], which would only touch the target at x = 0.75 if it qualifies as a back neighbor—but this would make it an edge neighbor instead if z-min = 0.125.
+
+Checking "001100" and its descendants: the node splits by y into two leaves, "0011000" and "0011001", both with z ∈ [0, 0.25]. Since this range includes the target's z-interval [0.125, 0.25], these are potential candidates to examine further.
+
+However, neither leaf can be a back neighbor because they both have z-min = 0, not z-min = 0.125. A voxel sharing the target's back face at z = 0.125 must have z-min = 0.125. I need to clarify: the target occupies z ∈ [0, 0.125], so its back face is at z = 0.125, and a true back neighbor would need to start exactly at that boundary. Let me verify there aren't other voxels in the same z-range that share the target's x-y footprint. The parent "0011010" and grandparent "001101" have already been checked. The sibling "001100" spans z ∈ [0, 0.25], so any descendant reaching z-min = 0.125 would require a z-split at position 7, which I need to examine further.
+
+"001100" branches into "0011000" and "0011001" at position 7 (a y-split), but both are leaf nodes without further subdivision. Moving up the tree, "00111" covers x ∈ [0.5, 1], y ∈ [0.25, 0.5], z ∈ [0.25, 0.5], which doesn't overlap the target's z-range.
+
+The only neighbor sharing the z = 0.125 face is "001101010". Collecting all face neighbors: "0011000" (left), "001101001" (right), "0010011" (bottom), "0011011" (top), and "001101010" (back). The front face at z = 0 is on the boundary with no neighbor.
+
+Now I should verify each candidate by computing their bounding boxes and confirming they actually share a face with the target cube [0.75, 0.875] × [0.25, 0.375] × [0, 0.125]. Starting with "0011000": following the path 0-0-1-1-0-0-0 gives y ∈ [0, 0.5], z ∈ [0, 0.5], x ∈ [0.5, 1], y ∈ [0.25, 0.5], z ∈ [0, 0.25], x ∈ [0
+
+.5, 0.75], and y ∈ [0.25, 0.375], which produces the box [0.5, 0.75] × [0.25, 0.375] × [0, 0.25]. This shares the face at x = 0.75 with matching y and z ranges, so it's valid. For "001101001", I need to trace through the full path to get its bounding box and check if it also shares a face with the target. ] × [0.25, 0.375] × [0, 0.125]
+
+The box matches the target perfectly—x-min aligns with the target's x-max at 0.875, and both y and z ranges correspond exactly. This gives us the 2D face at {0.875} × [0.25, 0.375] × [0, 0.125].
+
+For "0010011", I'm tracing through the path 0-0-1-0-0-1-1, which constrains y to [0, 0.5], then z to [0, 0.5], followed by x to [0.5, 1], and continuing to narrow down the remaining dimensions.
+
+Following this path further: y gets restricted to [0, 0.25], z to [0, 0.25], x to [0.75, 1], and finally y to [0.125, 0.25]. This produces the box [0.75, 1] × [0.125, 0.25] × [0, 0.25]. The y-max of 0.25 matches the target's y-min, and the x-range [0.75, 1] intersects with the target's x-range [0.75, 0.875] to give [0.75, 0.875]. The z-range [0, 0.25] also needs to be checked against the target.
+
+The z-intersection [0, 0.25] ∩ [0, 0.125] = [0, 0.125] confirms the shared face is [0.75, 0.875] × {0.25} × [0, 0.125].
+
+For "0011011", following the sequence 0-0-1-1-0-1-1 constrains y to [0, 0.5], z to [0, 0.5], x to [0.5, 1], y further to [0.25, 0.5], z to [0, 0.25], and x to [0.75, 1]. The final step continues the refinement.
+
+: y ∈ [0.375, 0.5]
+   Box: [0.75, 1] × [0.375, 0.5] × [0, 0.25]
+   
+   Check: y-min = 0.375 = target's y-max ✓
+   x: [0.75, 1] ∩ [0.75, 0.875] = [0.75, 0.875] ✓
+   z: [0, 0.25] ∩ [0, 0.125] = [0, 0.125] ✓
+   Face: [0.75, 0.875] × {0.375} × [0, 0.125] (2D) ✓
+
+5. "001101010":
+   Path: 0-0-
+
+1-1-0-1-0-1-0
+   - 0: y ∈ [0, 0.5]
+   - 0: z ∈ [0, 0.5]
+   - 1: x ∈ [0.5, 1]
+   - 1: y ∈ [0.25, 0.5]
+   - 0: z ∈ [0, 0.25]
+   - 1: x ∈ [0.75, 1]
+   - 0: y ∈ [0.25, 0.375]
+   - 1: z ∈ [0.125, 0.25]
+   - 0: x ∈ [0.75, 0.875]
+   Box: [0.75, 0.875] × [0.25, 0.375] × [0.125, 0.25]. Checking intersection with target bounds: x-range overlaps at [0.75, 0.875], y-range matches at [0.25, 0.375], z-range overlaps at [0.125, 0.25]. The resulting face is [0.75, 0.875] × {0.25} × [0.125, 0.25] (2D).
+
+The neighboring cells sharing this face are "0011000", "001101001", "0010011", "0011011", and "001101010". Need to double-check this list.
+
+For face neighbors, each must share exactly one of the six faces. I've found neighbors on the left (x=0.75), right (x=0.875), bottom (y=0.25), top (y=0.375), and back (z=0.125) faces, but none on the front. The question is whether a single face could be subdivided across multiple leaves on the neighboring side, meaning I might have missed some neighbors.
+
+Looking at the left face specifically: it spans y ∈ [0.25, 0.375] and z ∈ [0, 0.125]. The leaf "0011000" occupies [0.5, 0.75] × [0.25, 0.375] × [0, 0.25], so its z-range extends beyond the actual shared region. Since "0011000" doesn't have children subdividing that shared face, it's the only neighbor on that side.
+
+I should check if other voxels in the tree could also touch x = 0.75 along this face. The sibling "0011001" has y ∈ [0.375, 0.5], which doesn't overlap with the target's y-range. Looking at the parent "001100" with bounds [0.5, 0.75] × [0.25, 0.5] × [0, 0.25], it's subdivided by y into two children, so the region at x = 0.75 is already accounted for by these two leaves. ] × [0.25, 0.375] × [0, 0.25] is a single leaf voxel "0011000" with no further splits. That's the only left face neighbor.
+
+For the right face at x=0.875, the region spans y ∈ [0.25, 0.375] and z ∈ [0, 0.125]. I can verify "001101001" occupies exactly [0.875, 1] × [0.25, 0.375] × [0, 0.125], which matches perfectly. Since "001101000" is the target itself, there are no other leaf neighbors on this face.
+
+Now checking the bottom face at y=0.25, which covers the target's y-range of [0.25, 0.375] and z-range of [0, 0.25].
+
+I identify "0010011" with box [0.75, 1] × [0.125, 0.25] × [0, 0.25], sharing the face [0.75, 0.875] × {0.25} × [0, 0.125]. Since "0010011" extends beyond x=0.875, only the portion [0.75, 0.875] overlaps. Its sibling "0010010" has y ∈ [0, 0.125], so it doesn't reach y=0.25.
+
+Checking other branches: "001000" covers x ∈ [0.5, 0.75], which doesn't overlap the interior of [0.75, 0.875]. This means "0010011" is the sole bottom neighbor. Now examining the top face at y=0.375, which spans x ∈ [0.75, 0.875] and z ∈ [0, 0.125].
+
+"0011011" has the box [0.75, 1] × [0.375, 0.5] × [0, 0.25], sharing the face [0.75, 0.875] × {0.375} × [0, 0.125]. Its sibling "0011010" reaches y=0.375 but isn't a leaf—it has children "00110100" (containing the target) and "00110101". Since "00110101" has z ∈ [0.125, 0.25], it doesn't intersect the target's z range.
+
+Looking at the broader tree, "00110" splits into "001100" and "001101". The descendants of "001100" with y-min = 0.375 span x ∈ [0.5, 0.75], which doesn't overlap the target's interior at x ∈ [0.75, 0.875]. So "0011011" is the sole top face neighbor.
+
+For the back face at z=0.125, I need to find neighbors spanning x ∈ [0.
+
+75, 0.875] and y ∈ [0.25, 0.375]. The node "001101010" has exactly this x-y footprint. Its sibling "001101011" covers x ∈ [0.875, 1], which doesn't overlap the interior. Since "00110100" contains the target itself, there are no additional neighbors from that branch. Moving up to "001101", which splits into "0011010" and "0011011"—I need to check if "0011011" contributes any back face neighbors.
+
+"0011011" has y ∈ [0.375, 0.5], which doesn't overlap the interior of [0.25, 0.375], so it doesn't qualify. This confirms "001101010" is the only back face neighbor. My final list includes "0011000", "001101001", "0010011", "0011011", and "001101010".
+
+Let me verify the tree structure is correct. The diagram shows "00110100" with two children: "001101000" (child 0) and "001101001" (child 1). ✓
+
+Now checking my bounding box calculations using the splitting rule where depth d % 3 determines the axis (0→y, 1→z, 2→x). For "001101000": depth 0 bit '0' splits y to [0, 0.5], depth 1 bit '0' splits z to [0, 0.5], depth 2 bit '1' splits x to [0.5, 1], and depth 3 bit '1' splits y to [0.25, 0.5].
+
+Continuing through depths 4-8: depth 4 bit '0' splits z to [0, 0.25], depth 5 bit '1' splits x to [0.75, 1], depth 6 bit '0' splits y to [0.25, 0.375], depth 7 bit '0' splits z to [0, 0.125], and depth 8 bit '0' splits x to [0.75, 0.875]. This gives the final bounding box [0.75, 0.875] × [0.25, 0.375] × [0, 0.125]. ✓
+
+For path "00110000": Starting with bit '0' narrows y to [0, 0.5], then bit '0' narrows z to [0, 0.5]. Bit '1' at depth 2 takes x to [0.5, 1], followed by bit '1' at depth 3 refining y to [0.25, 0.5]. Depths 4-6 apply bits '0', '0', '0' to progressively narrow z to [0, 0.25], x to [0.5, 0.75], and y to [0.25, 0.375]. The box is [0.5
+
+, 0.75] × [0.25, 0.375] × [0, 0.25].
+
+For path "001101001": Following the same initial splits through depth 4 gives the same constraints, but at depth 5 bit '1' takes x to [0.75, 1
+
+], then depth 6 bit '0' narrows y to [0.25, 0.375], depth 7 bit '0' constrains z to [0, 0.125], and finally depth 8 bit '1' refines x to [0.875, 1], yielding the box [0.875, 1] × [0.25, 0.375] × [0, 0.125].
+
+For path "0010011": The first two splits again give y ∈ [0, 0.5] and z ∈ [0, 0.5], with depth 2 bit '1' setting x to [0.5, 1].
+
+Continuing through depths 3-6, the path alternates between splitting y and z in the lower halves while pushing x into [0.75, 1], ultimately producing the box [0.75, 1] × [0.125, 0.25] × [0, 0.25].
+
+For path "0011011": Starting with y ∈ [0, 0.5] and z ∈ [0, 0.5] again, the pattern continues with subsequent refinements. 5, 1]
+
+Box: [0.75, 1] × [0.25, 0.375] × [0.5, 1] ✓
+
+Following the same pattern, each bit in the path determines which half of the current dimension to select at each depth level. The sequence of splits progressively narrows the bounding box until reaching the final 3D region.
+
+The face neighbors identified through this systematic traversal are: "0011000", "001101001", "0010011", "0011011", and "001101010".

@@ -1,0 +1,465 @@
+Let me understand the problem first. We have a binary tree describing an axis-aligned subdivision of the unit cube. Each node splits its parent cell into two children by bisecting along axes in the repeating cycle x → z → y → z (repeating).
+
+The splitting cycle is: x, z, y, z, x, z, y, z, ...
+
+So:
+- Level 0 (root ""): entire unit cube [0,1]³
+- Level 1: split along x-axis
+- Level 2: split along z-axis
+- Level 3: split along y-axis
+- Level 4: split along z-axis
+- Level 5: split along x-axis
+- Level 6: split along z-axis
+- Level 7: split along y-axis
+- Level 8: split along z-axis
+- Level 9: split along x-axis
+- ...
+
+The target leaf is: 110101011
+
+Let me trace through the path to understand what region this leaf represents:
+
+Starting with the unit cube [0,1] × [0,1] × [0,1]:
+
+Level 1 (split along x): "1" means take the right half
+→ [0.5, 1] × [0, 1] × [0, 1]
+
+Level 2 (split along z): "1" means take the back half
+→ [0.5, 1] × [0, 1] × [0.5, 1]
+
+Level 3 (split along y): "0" means take the bottom half
+→ [0.5, 1] × [0, 0.5] × [0.5, 1]
+
+Level 4 (split along z): "1" means take the back half
+→ [0.5, 1] × [0, 0.5] × [0.75, 1]
+
+Level 5 (split along x): "0" means take the left half
+→ [0.5, 0.75] × [0, 0.5] × [0.75, 1]
+
+
+Continuing the subdivision, at level 6 I split along z and take the back half, narrowing the z-range to [0.875, 1]. At level 7, splitting along y and selecting the bottom half gives [0, 0.25] for y. Level 8 splits z again, taking the back portion to get [0.9375, 1]. This leaves level 9 to split along x.
+
+At level 9, selecting the right half along x yields [0.625, 0.75], so the voxel 110101011 occupies x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1].
+
+Now I need to identify all adjacent voxels sharing a face with this target. Two voxels are face-adjacent when they're next to each other along one axis while their ranges overlap in the other two dimensions. The target can share faces along x at 0.625 or 0.75, along y at 0 or 0.25, and along z at 0.9375 or 1. 0.25], z ∈ [?, 0.9375])
+6. Share the z=1 face (need x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [1, ?]) - but z can't exceed 1, so this is the boundary
+
+Rather than enumerate all leaves manually, I should trace the path to the target node and identify which siblings and cousins could share faces with it. The path to 110101011 goes: 1 → 11 → 110 → 1101 → 11010 → 110101 → 1101010 → 11010101 → 110101011. At each level, the alternate branch represents a sibling that might share a face. I'll compute the bounding box for each node in the tree systematically to determine which ones actually share a face with the target.
+
+I can write a function that takes a path and computes its bounding box by subdividing along the repeating axis cycle (x, z, y, z, ...). For each bit in the path, if it's 0, I take the lower half of the current axis range; if it's 1, I take the upper half.
+
+Let me trace through the target path "110101011" to verify the logic works correctly.
+
+Starting with the initial bounds, each bit narrows the range along the cycling axes. The first bit '1' moves x_min to 0.5, then '1' for z shifts z_min to 0.5. A '0' for y constrains y_max to 0.5, followed by '1' pushing z_min to 0.75. The pattern continues with '0' limiting x_max to 0.75, then '1' refining z to 0.875-1.0, and '0' tightening y to 0.0-0.25. The sequence demonstrates the algorithm correctly alternates through dimensions while applying the binary decisions to progressively narrow each coordinate range.
+
+Now I need to systematically identify all leaf nodes in the tree by finding nodes without children. I'll traverse the structure and collect every terminal node. I need to map out this tree structure systematically to identify all the leaves. A leaf is a terminal node with no children beneath it.
+
+Following the binary tree pattern, the leaves appear at the deepest levels where nodes don't branch further. At the "00000000" level, both "000000000" and "000000001" are leaves. Under "00000001", the nodes "000000010" and "000000011" are also leaves with no children extending below them.
+
+Continuing through the structure, I can identify leaves at various depths: "0000001" is a leaf since it has no child nodes listed. Working through the complete tree systematically, the terminal nodes include sequences like "000001010", "000001011", "00001000", "00001001", and continuing through "000011000", "000011001", "000011010", "000011011". Further down are "000100100", "000100101", "000101010", "000101011", "000101110", "000101111", "001010010", "001010011", and "001100" - each representing a path that terminates without further branching.
+
+The enumeration extends through "001100110", "001100111", "001111010", "001111011", "010000110", "010000111", "010001000", "010001001", "010010100", "010010101", "010010110", "010010111", "010100100", "010100101", "010101000", "010101001", "010101010", "010101011", "010101100", "010101101", "010101110", "010101111", "010110000", "010110001", "010110010", "010110011", "011000000", "011000001", "011000100", "011000101", "011110110", "011110111", "011111010", and "011111011".
+
+Continuing with "100000000", "100000001", "100000100", "100000101", "100000110", "100000111", "100001000", "100001001", "100001110", "100001111", "100010000", "100010001", "100010010", "100010011", "100011000", "100011001", "100100010", "100100011", "100110010", "100110011", "100111100", "100111101", "101000100", "101000101", "101001100", "101001101", "101001110", "101001111", "101010000", "101010001", "101010010", "101010011", "101110010", and "101110011".
+
+The sequence extends through "101110110", "101110111", "101111000", "101111001", then shifts to patterns starting with "110" including "110010110", "110010111", "110011000" through "110011111", followed by "110101000" through "110101011" which marks the target, continuing with "110101100" through "110111111", then "111010000", "111010001", "111010100", "111010101", and "111010110".
+
+Now examining the remaining paths: "111010111", "111100010", "111100011", "111110010", "111110011", "111111110", "111111111". But I should also check for shorter leaf nodes systematically. Looking at 7-bit leaves: "0000001", "0000111", "0001000", "0001001", "0001100", "0001101", "0001110", "0001111", "0010000", "0010001", "0010010", "0010011", "0010110", "0010111", "0011000", and more to catalog.
+
+Continuing through the 7-bit leaves: "0011001", "0011010", "0011011", "0011100", "0011101", "0100000", "0100001", "0100100", "0100110", "0100111", "0101000", "0101001", "0110000", "0110001", "0110100", "0110101", "0110110", "0110111", "0111000", "0111001", "0111010", "0111011", "0111100", "0111110", "0111111", "1000001", "1000101", "1001001", "1001101", "1001110", "1001111", "1010000", "1010001", "1010010", and more to continue cataloging.
+
+This manual enumeration is becoming unwieldy. I should write a script to systematically extract all the leaf nodes instead of listing them out by hand.
+
+Looking more carefully at the tree structure, I can identify leaves by checking which nodes don't have any children listed beneath them. Let me go through the tree methodically, examining each level and marking nodes that have no descendants. For instance, nodes like 000000000, 000000001, 000000010, and 000000011 appear to be leaves since they have no further branches, while nodes like 00000000 and 00000001 have children and therefore aren't leaves. 100100 ← leaf
+  000100101 ← leaf
+00010011 ← leaf
+
+The structure continues with 000101 containing branches for 0001010 (with leaves 00010100) and 00010101 (leaves 000101010 and 000101011). Under 0001011 sits 00010110, while 00010111 branches into leaves 000101110 and 000101111. The 00011 section splits into 000110 with leaves 0001100 and 0001101, and 000111 with leaves 0001110 and 0001111. Finally, 001 begins with 0010 containing 00100, which branches to 001000 holding leaves 0010000 and 0010001.
+
+Continuing from 001001 with leaves 0010010 and 0010011, then 00101 branches through 001010 to 0010100, which further splits at 00101000 into leaves 001010010 and 001010011, with 0010101 as a separate leaf. Under 001011 are leaves 0010110 and 0010111. The 0011 section contains 00110 with 001100 (leaf 0011000) and 0011001 (leaf 00110010), plus 00110011 branching to leaves 001100110 and 001100111. Under 001101 sit leaves 0011010 and 0011011, while 00111 begins with 001110.
+
+Continuing from 001110, I see leaves 0011100 and 0011101, then 001111 splits into 0011110 (leaf 00111100) and 00111101 with leaves 001111010 and 001111011. Under 0011111 are leaves 00111110 and 00111111. Moving to 01, the 010 branch contains 0100 leading through 01000 and 010000 to leaf 0100000, with 0100001 producing leaf 01000010. The 01000011 node branches to leaves 010000110 and 010000111. Under 010001, I find 0100010 which expands to 01000100 with leaves 010001000 and 010001001.
+
+Continuing further, 01000101 is a leaf. Under 0100011 are leaves 01000110 and 01000111. The 01001 section has 010010 containing leaf 0100100, while 0100101 branches through 01001010 (leaves 010010100 and 010010101) and 01001011 (leaves 010010110 and 010010111). Under 010011 sit leaves 0100110 and 0100111. In the 0101 branch, 01010 contains 010100 with leaf 0101000, and 0101001 expands through 01010010 (leaves 010100100 and 010100101) with 01010011 as a leaf.
+
+Moving into 010101, I see 0101010 subdividing into 01010100 (leaves 010101000 and 010101001) and 01010101 (leaves 010101010 and 010101011). The 0101011 section has 01010110 with leaves 010101100 and 010101101, plus 01010111 containing leaves 010101110 and 010101111. Under 01011, the 010110 branch includes 0101100 with 01011000 (leaves 010110000 and 010110001) and 01011001 (leaves 010110010 and 010110011), while 0101101 is a leaf. The 010111 section begins with 0101110 starting to branch further.
+
+Continuing from there, 01011100 and 01011101 are leaves, with 0101111 as a leaf. Moving to 011, the 0110 branch expands significantly—01100 contains 011000 which nests 0110000 (011000000 and 011000001 as leaves) and 01100001 as a leaf. Under 0110001, the 01100010 node has leaves 011000100 and 011000101, with 01100011 as a leaf. The 011001 section shows 0110010 with leaves 01100100 and 01100101, and 0110011 with leaves 01100110 and 01100111. The 01101 branch begins with 011010 starting to subdivide.
+
+Under 0110100, I see leaves 01101000 and 01101001, then 0110101 as a leaf. The 011011 node contains leaves 0110110 and 0110111. Moving to 0111, the 01110 section has 011100 with leaves 0111000 and 0111001, and 011101 with leaves 0111010 and 0111011. The 01111 branch shows 011110 containing leaf 0111100, with 0111101 having leaf 01111010. Under 01111011 are leaves 011110110 and 011110111. Finally, 011111 branches to 0111110 with leaf 01111100, and 01111101 begins another subdivision.
+
+Continuing from 01111101, I find leaves 011111010 and 011111011, plus 0111111 as a leaf. The 1 section starts a new major branch with deeply nested levels—10000000 contains leaves 100000000 and 100000001, while 10000001 is itself a leaf. Under 1000001, the 10000010 node has leaves 100000100 and 100000101, and 10000011 contains leaves 100000110 and 100000111. The 100001 branch shows 10000100 with leaves 100001000 and 100001001, plus 10000101 as a leaf, with further nesting beginning under that structure.
+
+Continuing deeper, 1000011 branches into 10000110 as a leaf and 10000111 containing leaves 100001110 and 100001111. The 10001 section expands with 1000100 leading to 10001000 (leaves 100010000 and 100010001) and 10001001 (leaves 100010010 and 100010011), while 1000101 is a leaf. Under 100011, the 1000110 node has 10001100 with leaves 100011000 and 100011001, plus 10001101 as a leaf, and 1000111 terminates as a leaf. The 1001 branch begins with 10010 containing 100100, which leads to 1001000 with leaf 10010000, continuing the pattern of nested binary structures. Under 101000:
+  1010000 ← leaf
+Under 1010001:
+Under 10100010:
+  101000100 ← leaf
+  101000101 ← leaf
+10100011 ← leaf
+Under 101001:
+Under 1010010:
+  10100100 ← leaf
+  10100101 ← leaf
+Under 1010011:
+Under 10100110:
+  101001100 ← leaf
+  101001101 ← leaf
+Under 10100111:
+  101001110 ← leaf
+  101001111 ← leaf
+
+Under 10101:
+Under 101010:
+Under 1010100:
+Under 10101000:
+  101010000 ← leaf
+  101010001 ← leaf
+Under 10101001:
+  101010010 ← leaf
+  101010011 ← leaf
+1010101 ← leaf
+Under 101011:
+  1010110 ← leaf
+  1010111 ← leaf
+
+Under 1011:
+Under 10110:
+Under 101100:
+  1011000 ← leaf
+  1011001 ← leaf
+Under 101101:
+  1011010 ← leaf
+  1011011 ← leaf
+Under 10111:
+Under 101110:
+Under 1011100:
+  10111000 ← leaf
+Under 10111001:
+  101110010 ← leaf
+  101110011 ← leaf
+Under 1011101:
+  10111010 ← leaf
+Under 10111011:
+  101110110 ← leaf
+  101110111 ← leaf
+Under 101111:
+Under 1011110
+
+:
+Under 10111100:
+  101111000 ← leaf
+  101111001 ← leaf
+10111101 ← leaf
+1011111 ← leaf
+
+Under 11:
+Under 110:
+Under 1100:
+Under 11000:
+Under 110000:
+  1100000 ← leaf
+  1100001 ← leaf
+Under 110001:
+  1100010 ← leaf
+  1100011 ← leaf
+Under 11001:
+Under 110010:
+Under 1100100:
+  11001000 ← leaf
+  11001001 ← leaf
+Under 1100101:
+  11001010 ← leaf
+Under 11001011:
+  110010110 ← leaf
+  110010111 ← leaf
+Under 110011:
+Under 1100110
+
+:
+Under 11001100:
+  110011000 ← leaf
+  110011001 ← leaf
+Under 11001101:
+  110011010 ← leaf
+  110011011 ← leaf
+Under 1100111:
+Under 11001110:
+  110011100 ← leaf
+  110011101 ← leaf
+Under 11001111:
+  110011110 ← leaf
+  110011111 ← leaf
+
+Under 1101:
+Under 11010:
+Under 110100:
+  1101000 ← leaf
+  1101001 ← leaf
+Under 110101:
+Under 1101010:
+Under 11010100:
+  110101000 ← leaf
+  110101001 ← leaf
+Under 11010101:
+  110101010 ← leaf
+  110101011 ← leaf (TARGET)
+
+Continuing through the remaining branches: 11010110 and 11010111 each contain two leaves, while 11011 splits into multiple paths including 1101101 as a direct leaf, 1101110 as a leaf, and 11011110 as a leaf, with 11011111 containing two additional leaves. The structure then moves into the 111 branch.
+
+Under 1110, the pattern continues with 111000 and 111001 each holding two leaves. The 11101 subtree branches further into 1110100 (which contains 11101000 with two leaves and 11101001 as a direct leaf) and 1110101 (containing 11101010 and 11101011, each with two leaves). Under 111011, both 1110110 and 1110111 are leaves. The 1111 branch begins at the end.
+
+Under 11110, the structure shows 111100 containing 1111000 with one leaf and 11110001 with two leaves, plus 1111001 as a direct leaf. The 111101 subtree has 1111010 as a leaf, while 1111011 holds 11110110 and 11110111. Under 11111, similar branching occurs with 111110 containing 1111100 (one leaf) and 11111001 (two leaves), 1111101 as a direct leaf, and 111111 holding 1111110 as a leaf with 1111111 containing 11111110 and 11111111 beginning further nesting.
+
+111110 ← leaf
+111111111 ← leaf
+
+Now I need to find which leaves are adjacent to the target voxel 110101011. The target occupies x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1]. Two voxels share a face when they're adjacent along one axis and their ranges overlap on the other two. I'll compute the bounding box for each leaf and check for face adjacency.
+
+The bbox calculation subdivides space recursively: starting with [0,1] for each axis, I cycle through x, z, y, z and split the current range at its midpoint based on each bit. If the bit is 0, I keep the lower half; if 1, the upper half.
+
+For checking if two bboxes share a face, I need to verify they're adjacent along one axis (where one's max equals the other's min, or vice versa) and that their ranges overlap in the perpendicular directions. overlap
+        x_overlap = not (x1_max <= x2_min or x1_min >= x2_max)
+        y_overlap = not (y1_max <= y2_min or y1_min >= y2_max)
+        if x_overlap and y_overlap:
+            return True
+    
+    return False
+```
+
+Now I need to compute the bounding box for the target and systematically check all leaves to see which ones share a face with it.
+
+Target: 110101011
+Target bbox: [0.625, 0.75] × [0, 0.25] × [0.9375, 1]
+
+I'll go through each leaf and calculate its bounding box, then verify if it shares a face with the target's box. The target follows a specific path through the octree with splits occurring in the x, z, y, z sequence at each level.
+
+Face-adjacent voxels would touch along one of the six boundaries: x=0.625, x=0.75, y=0, y=0.25, z=0.9375, or z=1.0. For each boundary, I need to find leaves whose bounding boxes have a matching face coordinate and overlapping ranges in the other two dimensions. For instance, a voxel sharing the x=0.625 face would need x_max=0.625 with y and z ranges that overlap [0,0.25] and [0.9375,1] respectively.
+
+The y=0 boundary presents a constraint—any voxel there would require y_max=0, placing it outside the valid domain [0,1], so no neighbor exists on that face. The other five faces (x=0.625, x=0.75, y=0.25, z=0.9375, z=1.0) are candidates for finding actual neighbors with matching boundary coordinates and overlapping interior dimensions.
+
+The z=1.0 face is also impossible since it would need z_min=1.0. This leaves four viable neighbor configurations: one sharing the x=0.625 boundary, another at x=0.75, one at y=0.25, and one at z=0.9375, each with their respective coordinate constraints. Now I should trace how the path 110101011 connects through these neighboring voxels.
+
+For the sibling path 110101010, I'll work through the bit sequence: starting with x-axis split at 0.5 (bit 1), then z-axis at 0.5 (bit 1), y-axis at 0.5 (bit 0), z-axis again at 0.75 (bit 1), x-axis at 0.75 (bit 0), and finally z-axis at 0.875 (bit 1), which gives the bounding box x∈[0.5,0.75], y∈[0,0.5], z∈[0.875,1.0].
+
+Continuing through the remaining bits: y-axis split at 0.25 (bit 0) narrows y to [0,0.25], z-axis at 0.9375 (bit 1) narrows z to [0.9375,1.0], and x-axis at 0.625 (bit 0) narrows x to [0.5,0.625]. The final bounding box is x∈[0.5,0.625], y∈[0,0.25], z∈[0.9375,1.0], which shares the x=0.625 face with the target octant.
+
+The sibling octant touches along the last split axis (x). For the remaining faces, I need to examine cousins at various levels—particularly the y=0.25 face where the target occupies y∈[0,0.25].
+
+To reach y_min=0.25, I'd need a voxel that took the upper half (bit=1) at the y-split instead of the lower half (bit=0). The target's path is 1 1 0 1 0 1 0 1 1 with splits along x z y z x z y z x. At position 2 (y-split), the target has bit=0. Its sibling "111" would have y∈[0.5,1], not the adjacent [0.25,0.5] range. I need to reconsider the y-split at position 6 to find the correct neighbor.
+
+The path through position 6 is 1101010, which constrains y to [0,0.5] after both y-splits. Working through each coordinate: x starts at [0.5,1] after bit=1, z reaches [0.5,1] after bit=1, y becomes [0,0.5] after bit=0, z narrows to [0.75,1] after bit=1, x refines to [0.5,0.75] after bit=0, and z continues subdividing after bit=1.
+
+To access the upper half of y's range [0.25,0.5], I'd need 1101011 instead. Checking the tree structure, 1101011 isn't a leaf—it has four children formed by splitting along the z-coordinate at position 7.
+
+The z-split creates 11010110 covering [0.875,0.9375] and 11010111 covering [0.9375,1]. Then 11010111 splits again along x at position 8, yielding 110101110 for [0.5,0.625] and 110101111 for [0.625,0.75]. Computing the bounding box for 110101111 by tracing through each bit: the first bit sets x to [0.5,1], the second sets z to [0.5,1], the third constrains y to [0,0.5], and the fourth narrows x further to [0.625,0.75]. 375, 1]
+
+This shares the y=0.25 face with the target. Now checking if 110101111 is actually a leaf in the tree—yes, it appears under 11010111 as a leaf node. For the z direction, the target occupies z∈[0.9375,1], so I need to find a neighbor at z_max=0.9375. The z split at position 7 gives bit=1 for the upper half, meaning the lower half [0.875,0.9375] would require path 11010100, but I need to verify if this node exists in the tree structure.
+
+Looking at the tree, 11010100 isn't a leaf—it has children 110101000 and 110101001 that split along x. Checking 110101001: starting from the root and following bits 1,1,0,1,0,1,0,0,1 through the alternating x-z-y-x-z-y-x-z-y axes gives x∈[0.625,0.75] and z∈[0.875,0.9375], which matches the z boundary I need. , 1.0], I'd need bit=1 at position 4, which would give x∈[0.75,1]. Let me trace through what that would look like: starting from x∈[0.5,1], then taking the upper half at position 4 gives x∈[0.75,1]. At position 8, taking the lower half (bit=0) would give x∈[0.75,0.875]. So a neighbor differing only at position 4 would have x∈[0.75,0.875] × [0,0.25] × [0.875,0.9375], which shares the x=0.75 face with the target. 0.5], z∈[0.875,1]
+
+Next is y (position 6). Since we need y∈[0,0.25], we require bit=0:
+Path: 1101110...
+
+- i=6, bit='0', axis='y': y_min=0.0, y_max=0.25
+
+This gives us x∈[0.75,1], y∈[0,0.25], z∈[0.875,1]. The next split along z (position 7) with bit=1 narrows z further to [0.9375,1], matching our target range exactly. I can continue tracing descendants of this path to find all matching leaves. ∈[0.9375,1]
+
+Checking if 1101110 is a leaf in the tree structure—it appears under 110111 and is marked as a leaf node with only 7 bits, meaning no further subdivisions exist. Verifying the bounding box by tracing through each bit: the first bit (1) along x gives x∈[0.5,1], second bit (1) along z gives z∈[0.5,1], third bit (0) along y gives y∈[0,0.5], and fourth bit (1) along z gives z∈[0.75,1].
+
+Continuing with bits 5-7: the fifth bit (1) along x narrows to x∈[0.75,1], sixth bit (1) along z narrows to z∈[0.875,1], and seventh bit (0) along y narrows to y∈[0,0.25]. This yields the region [0.75,1]×[0,0.25]×[0.875,1]. Since this z-range [0.875,1] encompasses the target's z-range [0.9375,1], I need to check whether these two regions share a face—the target occupies [0.625,0.75]×[0,0.25]×[0.9375,1] while 1101110 occupies [0.75,1]×[0,0.25]×[0.875,1].
+
+They meet at x=0.75, their y-ranges are identical, and their z-ranges overlap, confirming they share a face. Now I should systematically examine all six faces of the target to identify every neighboring leaf. The west face at x=0.625 requires x_max=0.625, which corresponds to sibling 110101010. The east face at x=0.75 requires x_min=0.75, which I've confirmed is 1101110. I need to check whether additional leaves with x_min=0.75 and overlapping y and z ranges exist.
+
+The bottom face at y=0 has no neighbors since it's at the boundary. The top face at y=0.25 requires y_min=0.25, giving me 110101111. The front face at z=0.9375 requires z_max=0.9375, which is 110101001. The back face at z=1.0 is also at the boundary with no neighbors.
+
+Rather than checking each leaf individually, I can recognize that at this depth, neighbors are either siblings differing in one bit, or leaves from different subtrees whose bounding boxes align with the target's faces.
+
+For the x=0.75 face, I identified 1101110 at depth 7, but I need to verify whether deeper voxels in the tree also contact this boundary. Examining the structure under 11011 reveals multiple leaves at varying depths—110110000, 110110001, 110110010, 110110011 at depth 9, then 1101101 at depth 7, 1101110 at depth 7, and 11011110 at depth 8. I should check which of these actually touch the x=0.75 face based on their computed bounding boxes. 375, 1]? The x-ranges touch at x=0.75, y-ranges fully overlap, and z-ranges touch at z=0.9375. But touching at two boundaries means they share an edge, not a face—for a proper face adjacency, they need to be adjacent in exactly one direction while overlapping in the other two. Here the x-ranges are adjacent at x=0.75, so I need to verify the y and z ranges actually overlap rather than just meeting at a point.
+
+The y-ranges match exactly, which is good. But the z-ranges only touch at z=0.9375 without overlapping, so there's no face along the x-direction. Similarly, checking the z-direction: the z-ranges are adjacent at z=0.9375, the y-ranges overlap completely, but the x-ranges only touch at x=0.75 without overlapping—so no face there either. This means they share an edge at x=0.75, z=0.9375, but not a face, so 110110000 isn't a neighbor.
+
+Now checking 1101110: its bounding box is [0.75, 1] × [0, 0.25] × [0.875, 1]. The y-ranges match perfectly. For the x-direction: [0.75, 1] and [0.625, 0.75] are adjacent at x=0.75. For the z-direction: [0.875, 1] contains [0.9375, 1], so they overlap in z.
+
+This means 1101110 shares the x=0.75 face with the target. Now I should systematically identify all neighbors. So far I have:
+- 110101010 (shares x=0.625 face)
+- 110101001 (shares z=0.9375 face)
+- 110101111 (shares y=0.25 face)
+- 1101110 (shares x=0.75 face)
+
+For the x=0.75 face specifically, I need to find all voxels where x_min=0.75, y∈[0,0.25], and z overlaps with [0.9375,1].
+
+The path 1101110 gives [0.75,1] × [0,0.25] × [0.875,1], which satisfies this. Since 1101110 is itself a leaf with no children, there are no descendants to check. However, 1101111 does have descendants—let me examine those to see if any are leaves that could also share this face.
+
+For 1101111, the bounding box is [0.75, 1] × [0, 0.25] × [0.9375, 1]. Comparing with the target [0.625, 0.75] × [0, 0.25] × [0.9375, 1], the x-intervals are adjacent at x=0.75, and the y and z intervals match, so this node also touches the target's face. Since 1101111 has children (11011110, 110111110, 110111111), I need to check whether any of these descendants are leaves that also share the boundary.
+
+For 11011110, the bounding box becomes [0.75, 1] × [0, 0.25] × [0.9375, 0.96875]. The x-intervals are still adjacent at x=0.75, but now the z-interval [0.9375, 0.96875] is only a subset of the target's z-interval [0.9375, 1], so this child still touches the face.
+
+For 110111110, following the path through 9 bits gives x: 0.5→1, z: 0.5→1, y: 0→0.5, z: 0.75→1, x: 0.75→1, z: 0.9375→1, y: 0→0.25, z: 0.96875→1, x: 0.75→0, which refines the region further.
+
+The resulting octant [0.75, 0.875] × [0, 0.25] × [0.96875, 1] is adjacent to the target along the x=0.75 boundary, with matching y and z ranges, so this also shares a face. ✓
+
+For 110111111, the path yields [0.875, 1] × [0, 0.25] × [0.96875, 1]. Checking adjacency: the x-ranges [0.875, 1] and [0.625, 0.75] don't touch—there's a gap between them—so this octant doesn't share a face with the target.
+
+Looking at the x=0.75 boundary, I need to identify which leaves actually exist in the tree structure. Under 110111, there's 1101110 as a leaf. Under 1101111 and 11011111, the branches continue further, creating 11011110 and 110111110 as additional leaves. So 1101110 is the only leaf that directly borders the x=0.75 face.
+
+For the y=0.25 boundary, 110101111 maps to [0.625, 0.75] × [0.25, 0.5] × [0.9375, 1]. To find other leaves on this face, I need paths with x∈[0.625,0.75], y_min=0.25, and z overlapping [0.9375,1]. The x-range constraint requires the prefix 110101...1 through position 8. The y_min=0.25 constraint is satisfied when bit 2 or bit 6 equals 1, but bit 2 is 0 here, giving y∈[0,0.5] instead.
+
+At position 6, setting bit=1 yields y∈[0.25,0.5], so the path becomes 1101011... For z to overlap [0.9375,1], I need z_min ≤ 1 and z_max ≥ 0.9375. Bits 1, 3, 5, and 7 all set to 1 produce z-ranges [0.5,1], [0.75,1], [0.875,1], and [0.9375,1] respectively. The path 11010111 should satisfy these constraints.
+
+Checking this path: it spans [0.5,0.75] × [0.25,0.5] × [0.9375,1]. To reach x∈[0.625,0.75], position 8 needs bit=1, giving 110101111. If position 2 were 1 instead, y would span [0.5,1], missing the y=0.25 boundary. So descendants of 11010111 are the only leaves on the y=0.25 face: 110101110 and 110101111.
+
+For 110101110 with bounds [0.5,0.625] × [0.25,0.5] × [0.9375,1]: it touches the target region [0.625,0.75] × [0,0.25] × [0.9375,1] at x=0.625 and y=0.25 simultaneously, meaning they share an edge rather than a face. A proper face contact requires alignment in one coordinate pair while the third overlaps—here both x and y are just adjacent, not overlapping.
+
+For 110101111 at [0.625,0.75] × [0.25,0.5] × [0.9375,1]: checking if it shares a face along y, the y-coordinates are adjacent at y=0.25 while the x-ranges match exactly, so this one does share a face with the target.
+
+Now I need to identify all cells sharing the z=0.9375 face. The cell 110101001 occupies [0.625,0.75] × [0,0.25] × [0.875,0.9375], so any neighbor on this face must have x∈[0.625,0.75], y∈[0,0.25], and z_max=0.9375. This constrains the path prefix to 110101...1 to reach the correct spatial region.
+
+Checking the constraints: bit 2 and bit 6 must be 0 (for y range), bits 1, 3, 5 must be 1 and bit 7 must be 0 (for z_max), and bit 8 must be 1 (for x range). This gives 11010100 as a candidate. Its bbox [0.5,0.75] × [0,0.25] × [0.875,0.9375] overlaps the required x-range, and descendants like 110101000 need checking for the exact overlap.
+
+110101000 has bbox [0.5,0.625] × [0,0.25] × [0.875,0.9375]. Comparing with the target [0.625,0.75] × [0,0.25] × [0.9375,1]: the z-ranges meet at z=0.9375, the x-ranges touch at x=0.625 without overlapping, and the y-ranges match exactly. Since the x-intervals don't overlap, this cell doesn't share a face along z.
+
+110101001 at [0.625,0.75] × [0,0.25] × [0.875,0.9375] has z-ranges adjacent at z=0.9375, x-ranges that fully overlap, and y-ranges that fully overlap. This cell does share the z=0.9375 face with the target.
+
+For the z=0.9375 face, only 110101001 qualifies.
+
+Now I need to check if there are shallower voxels that could also be neighbors. The target sits at depth 9, so potential neighbors could be at the same depth or shallower. For the x=0.625 face, I found 110101010 as a sibling. But I should verify whether any ancestors or other voxels at reduced depths could touch this face. The prefix 110101 constrains x to [0.5,0.75], and to reach x_max=0.625, I need bit=0 at position 4 (giving x∈[0.5,0.75]) and bit=0 at position 8 (giving x∈[0.5,0.625]). This means any valid neighbor must have bits 1, 3, 5 set to 1 and bits 4, 8 set to 0.
+
+Following this pattern with 110101000, I get the voxel [0.5, 0.625] × [0, 0.25] × [0.875, 0.9375]. Checking adjacency: the x-ranges [0.5,0.625] and [0.625,0.75] meet exactly at x=0.625, the y-ranges [0,0.25] overlap completely, but the z-ranges [0.875,0.9375] and [0.9375,1] only touch at a single point, which doesn't constitute a face-sharing neighbor.
+
+Let me explore whether a shallower voxel could work instead. At depth 7, if the bit is 0 rather than 1, the z-coordinate would span [0.875,0.9375] instead of [0.9375,1]. Testing 11010100 at 8 bits gives the bounding box [0.5, 0.75] × [0, 0.25] × [0.875, 0.9375], which I should verify against the target region.
+
+Checking the overlap: the x and y ranges align properly with the target, and the z-ranges [0.875,0.9375] and [0.9375,1] meet exactly at z=0.9375, creating a shared face. However, 11010100 isn't actually a leaf node—it has two children (110101000 and 110101001), so it can't be the answer I'm looking for.
+
+Now I'm identifying the actual neighbors: 110101010 shares the x=0.625 boundary, 110101001 shares the z=0.9375 boundary, and 110101111 shares the y=0.25 boundary. On the x=0.75 side, there are three candidates at different depths: 1101110, 11011110, and 110111110. Let me verify 1101110 by tracing through its bit sequence—starting with x∈[0.5,1], then z∈[0.5,1], then y∈[0,0.5].
+
+Continuing the subdivision: z narrows to [0.75,1], x to [0.75,1], z further to [0.875,1], and y to [0,0.25], giving the bounding box [0.75,1]×[0,0.25]×[0.875,1]. For 11011110, the pattern begins identically with x∈[0.5,1], z∈[0.5,1], y∈[0,0.5].
+
+The remaining bits refine these bounds: z becomes [0.75,1], x becomes [0.75,1], z becomes [0.875,1], but then y shifts to [0.25,0.5] and z to [0.9375,1], producing [0.75,1]×[0.25,0.5]×[0.9375,1]. This differs from the target in the y-range—one occupies [0,0.25] while the other spans [0.25,0.5]. They appear to share a boundary face along y=0.25.
+
+Checking adjacency: the x-ranges [0.75,1] and [0.625,0.75] meet at x=0.75, and the z-ranges both include [0.9375,1], but the y-ranges only touch at y=0.25 without overlapping. A face along the y-axis would require the y-ranges to be adjacent (which they are) and the x and z ranges to overlap or be adjacent—the x-ranges are adjacent at x=0.75, so this could form a valid shared face.
+
+Actually, let me reconsider: for a shared face perpendicular to the y-axis, I need the x and z intervals to overlap, not just touch. Since [0.75,1] and [0.625,0.75] only meet at a single point, they don't form a face. So 11011110 shares only an edge, not a face.
+
+Now checking 110111110: this has bits set for x∈[0.5,1], z∈[0.5,1], y∈[0,0.5], z∈[0.75,1], x∈[0.75,1], and z∈... 1]
+Level 4: x split, bit 1 → x ∈ [0.75, 1]
+Level 5: z split, bit 1 → z ∈ [0.875, 1]
+Level 6: y split, bit 1 → y ∈ [0.25, 0.5]
+Level 7: z split, bit 1 → z ∈ [0.9375, 1]
+Level 8: x split, bit 0 → x ∈ [0.75, 0.875]
+
+The resulting bounding box is [0.75, 0.875] × [0.25, 0.5] × [0.9375, 1], but the target region is [0.625, 0.75] × [0, 0.25] × [0.9375, 1]. The z-range matches perfectly, but the x and y ranges don't align with what's needed.
+
+Checking if they share a face along x: the x-intervals [0.75, 0.875] and [0.625, 0.75] are adjacent at x=0.75, which is good, but the y-intervals [0.25, 0.5] and [0, 0.25] only touch at y=0.25 without overlapping. This means they share an edge, not a face. Similarly, 110111110 also fails the face-sharing test for the same reason.
+
+So far I've identified four neighbors that actually share faces: 110101010 (x=0.625 face), 110101001 (z=0.9375 face), 110101111 (y=0.25 face), and 1101110 (x=0.75 face). I need to continue checking whether there are additional neighbors I haven't considered yet.
+
+For any voxel sharing the x=0.75 face, I need x_min = 0.75, y overlapping [0, 0.25], and z overlapping [0.9375, 1]. This requires bit=1 at position 4 to achieve x_min = 0.75, giving the prefix 1101. For y to overlap [0, 0.25], I need bit=0 at position 2 since bit=1 would place y in [0.5, 1]. Continuing this analysis at position 3 to further constrain the y-range... if bit=0, y stays in [0, 0.25], while bit=1 gives y ∈ [0.25, 0.5]. For proper overlap with the target range, I need y_max > 0 and y_min < 0.25. Setting bit=1 produces y_min = 0.25, which fails the overlap condition, so bit=0 is required at position 6.
+
+This gives the path 110101..., but I'm noticing this contradicts what I found earlier. Let me trace through 11010 from the start to verify.
+
+Starting with 11010: the first bit (1) constrains x to [0.5, 1], the second bit (1) puts z in [0.5, 1], the third bit (0) gives y ∈ [0, 0.5], the fourth bit (1) narrows z to [0.75, 1], and the fifth bit (0) restricts x to [0.5, 0.75]. This means x_min = 0.5, not 0.75, so descendants of this path can't achieve x_min = 0.75. I need to reconsider—to get x_min = 0.75, I should set bit=1 at position 4 instead.
+
+For the path 11011, checking y's overlap with [0, 0.25]: at position 2, bit=0 yields y ∈ [0, 0.5] which overlaps, but bit=1 gives y ∈ [0.5, 1] with no overlap. So position 2 must be 0. But I'm getting confused about the path structure—let me trace through more carefully, starting with the bit sequence 11011 and tracking how each level's split constrains the coordinates.
+
+At level 3, the z split with bit 1 gives z ∈ [0.75, 1]. At level 4, the x split with bit 1 gives x ∈ [0.75, 1]. So the current path yields x ∈ [0.75, 1], y ∈ [0, 0.5], z ∈ [0.75, 1]. At position 5 (another z split), bit=0 narrows z to [0.75, 0.875] while bit=1 narrows it to [0.875, 1]. For z to overlap the target range [0.9375, 1], I need the interval's upper bound to exceed 0.9375 and lower bound to stay below 1—bit=0 fails this test since 0.875 < 0.9375.
+
+With bit=1, z ∈ [0.875, 1] does overlap [0.9375, 1], so the path continues as 110111. At position 6, a y split occurs within the current y ∈ [0, 0.5] range, where bit=0 produces y ∈ [0, 0.25].
+
+For the y coordinate to stay within [0, 0.25], bit=0 is required since bit=1 would give y ∈ [0.25, 0.5], which only touches the boundary without true overlap. This sets the path to 1101110. At position 7, the z coordinate splits again: bit=0 yields z ∈ [0.875, 0.9375] while bit=1 gives z ∈ [0.9375, 1], and I need to determine which maintains the necessary overlap with [0.9375, 1]. Since bit=0 only touches at the boundary, bit=1 is required, extending the path to 11011101. Moving to position 8 with x ∈ [0.75, 1], both bit options (x ∈ [0.75, 0.875] or x ∈ [0.875, 1]) could potentially reach the target region since both maintain the lower bound of 0.75.
+
+However, I need to verify these voxels actually exist as leaves in the tree. Checking the structure, 1101110 is marked as a leaf with no children, so 11011101 doesn't exist in the tree. Looking at the full tree under 11011, I see 110110 and its descendants, along with 1101110 and 1101111 as leaves, but the path I'm constructing doesn't correspond to any valid leaf node.
+
+Let me recalculate the bounding box for 1101110 by tracing through each level: starting with x split giving [0.5, 1], then z split giving [0.5, 1], y split giving [0, 0.5], z split again giving [0.75, 1], x split giving [0.75, 1], and z split giving [0.875, 1].
+
+At level 6, the y split with bit 0 narrows y to [0, 0.25], so the final bounding box is [0.75, 1] × [0, 0.25] × [0.875, 1].
+
+Comparing this to the target [0.625, 0.75] × [0, 0.25] × [0.9375, 1], I can verify they share a face along x: the x-intervals are adjacent at 0.75, the y-intervals match exactly, and the z-intervals overlap with the target's range contained within the node's range. They are indeed adjacent.
+
+Now I need to check if any other leaf has x_min=0.75 while also overlapping the target's y and z ranges. Looking at 1101111, I trace through its path: x split gives [0.5, 1], z split gives [0.5, 1], y split gives [0, 0.5], another z split gives [0.75, 1], x split gives [0.
+
+75, 1], z split gives [0.875, 1], and finally y split gives [0.25, 0.5]. This produces a bounding box of [0.75, 1] × [0.25, 0.5] × [0.875, 1].
+
+Checking adjacency along the x-axis: the x-ranges [0.75, 1] and [0.625, 0.75] do touch at x=0.75, but the y-ranges [0.25, 0.5] and [0, 0.25] only meet at a boundary without overlapping. This means 1101111 shares an edge with the target rather than a face. Additionally, 1101111 isn't a leaf node since it has further subdivisions.
+
+Looking at its child 11011110, which is a leaf: the z-range narrows to [0.9375, 1], giving bbox [0.75, 1] × [0.25, 0.5] × [0.9375, 1]. The same adjacency issue persists—x-ranges align but y-ranges don't overlap. The other child 11011111 continues subdividing further.
+
+At level 8, 110111110 splits on x with range [0.75, 0.875], producing bbox [0.75, 0.875] × [0.25, 0.5] × [0.9375, 1]. Again, the y-coordinates only touch at a boundary rather than sharing interior points. Its sibling 110111111 takes the complementary x-range [0.875, 1]
+
+—creating a gap between 0.75 and 0.875 that prevents adjacency with the target's x-interval [0.625, 0.75].
+
+Exploring other branches from 11011, the node 110110 reaches level 5 with a z-split placing it at [0.75, 1] × [0, 0.5] × [0.75, 0.875]. Since this z-range maxes out at 0.875, it falls short of overlapping the target's z-interval [0.9375, 1].
+
+For paths diverging from 11010, I need to reconsider the geometry. The prefix 11010 constrains x to [0.5, 0.75], meaning its descendants have x_max = 0.75. The target occupies x ∈ [0.625, 0.75], also with x_max = 0.75. This shared boundary at x = 0.75 is where adjacency could occur—specifically, I'm looking for voxels with x_min = 0.75 to sit directly adjacent on the right side, and 1101110 fits that criterion.
+
+Now I should verify the complete neighbor list: 110101010 shares the x = 0.625 face on the left, 1101110 shares the x = 0.75 face on the right, 110101111 shares the y = 0.25 face on top, and 110101001 shares the z = 0.9375 face in front. Let me confirm there aren't additional voxels meeting these face conditions.
+
+For the left face at x = 0.625, I need voxels with x_max = 0.625 and overlapping y and z ranges. The target's path through position 8 is 11010101, placing it in x ∈ [0.5, 0.625]. At position 8, flipping the bit from 1 to 0 gives the sibling 110101010 with x ∈ [0.5, 0.625], y ∈ [0, 0.25], z ∈ [0.9375, 1]—exactly what I need. I should check if any other voxels could have x_max = 0.625 with matching y and z ranges.
+
+A shallower voxel would need x_max = 0.625, but since position 8 is the next x-split after position 4, only depth-8 voxels with bit=0 at position 8 can achieve this boundary. That means 110101010 is the only candidate, unless it has descendants. I need to determine if 110101010 is a leaf node.
+
+Looking at the tree structure, 110101010 is indeed a leaf. For the z=0.9375 face, I need z_max=0.9375 with x overlapping [0.625,0.75] and y overlapping [0,0.25]. Position 7 with bit=0 gives z ∈ [0.875, 0.9375], and the path 11010100 produces z ∈ [0.875, 0.9375], x ∈ [0.5, 0.75], y ∈ [0, 0.25]. At position 8, x needs to overlap [0.625, 0.75], which requires bit=1 to narrow the x range further.
+
+So 110101001 is the target leaf. Checking if other leaves exist with the same z_max and overlapping ranges: z_max=0.9375 requires bit=0 at position 7, and the prefix 1101010 constrains x ∈ [0.5, 0.75], y ∈ [0, 0.25], z ∈ [0.
+
+875, 1]. This means descendants of 11010100 are the only candidates. Since 0.9375 = 15/16 needs exactly 4 z-splits (at positions 1, 3, 5, 7), the minimum depth to achieve this z_max is 7, so no shallower voxel can have this boundary. But 11
+
+010100 itself has 8 bits, placing it at depth 8. At depth 7, the code 1101010 hasn't undergone the final z-split yet and has children, so it's not a leaf. The only relevant leaf matching z_max=0.9375 is 110101001, since 110101000 doesn't share a face with the target. Now I need to check the y=0.25 face, which requires y_min=0.25 with x and z overlapping [0.625,0.75] and [0.9375,1] respectively. Following the path 1101011 through position 6 gives y ∈ [0.25, 0.5], x ∈ [0.5, 0.75], z ∈ [0.875, 1]. At position 7, the z-coordinate must overlap [0.9375, 1]—bit 0 produces z ∈ [0.875, 0.9375], which only touches the boundary without overlapping, while bit 1 is needed to reach the required range.
+
+Setting bit 7 to 1 gives the path 11010111 with z ∈ [0.9375, 1]. Position 8 requires x to overlap [0.625, 0.75]—bit 0 leaves x ∈ [0.5, 0.625] touching but not overlapping, so bit 1 is necessary, yielding path 110101111. This path terminates at a leaf node, and I should check whether other leaves satisfy the same constraints.
+
+For the x=0.75 face, I found leaf 1101110. Now I'm examining if additional leaves exist with x_min=0.75, y overlapping [0, 0.25], and z overlapping [0.9375, 1]. The configuration requires bit 1 at position 4, bit 0 at position 2, bit 0 at position 6, plus appropriate bits for the z range. At position 5, bit 0 produces z ∈ [0.75, 0.875], which falls short of the target range.
+
+Bit 1 at position 5 gives z ∈ [0.875, 1], overlapping the target. Then at position 7 with bit 1 at position 5, bit 0 yields z ∈ [0.875, 0.9375]—touching but not overlapping [0.9375, 1]—while bit 1 produces z ∈ [0.9375, 1], which works. I need to verify whether both positions 5 and 7 require bit 1, or if there's flexibility in the configuration. I need to clarify the depth-to-position mapping. Position 0 corresponds to depth 1, position 1 to depth 2, and so on, meaning position 6 is depth 7. A path of length 6 covers positions 0-5, which represents depth 6.
+
+Let me recalculate the bounds for the path 110111. Starting from the root: the first bit (1) splits on x, placing us in [0.5, 1]. The second bit (1) splits on z, giving z ∈ [0.5, 1]. I need to continue through all six bits to get the correct final intervals.
+
+After working through each level—y split at bit 2 (0), z split at bit 3 (1), x split at bit 4 (1), and z split at bit 5 (1)—the final bounds are x ∈ [0.75, 1], y ∈ [0, 0.5], z ∈ [0.875, 1]. Now I need to check whether 110111 itself is a leaf or if it has children in the tree structure.
+
+Looking at the tree, 110111 has descendants 1101110 and 1101111. I've already verified that 1101110 with bounds [0.75, 1] × [0, 0.25] × [0.875, 1] shares the x=0.75 face with the target region. The 1101111 branch and its descendants don't contribute any additional face-sharing neighbors. This means the complete neighbor list consists of 110101010, 110101001, 110101111, and 1101110.
+
+Verifying each: 110101010 at [0.5, 0.625] × [0, 0.25] × [0.9375, 1] is adjacent along x=0.625 with matching y and z ranges. 110101001 at [0.625, 0.75] × [0, 0.25] × [0.875, 0.9375] touches at z=0.9375 with overlapping x and y. 110101111 occupies [0.625, 0.75] × [0.25, 0.5] and shares a face along the y boundary.
+
+For 1101110 at [0.75, 1] × [0, 0.25] × [0.875, 1], I need to double-check the z-axis overlap since the target spans [0.9375, 1] while this cell goes from 0.875 to 1—they do overlap in the range [0.9375, 1], confirming adjacency along x=0.75.
+
+So the four adjacent leaves are 110101010, 110101001, 110101111, and 1101110. Let me verify I haven't missed any by checking all six faces of the target region systematically. The target occupies x ∈ [0.625, 0.75], y ∈ [0, 0.25], z ∈ [0.9375, 1], so I should examine which cells touch each boundary: the left face at x=0.625, the right face at x=0.75, and the remaining four faces along the y and z axes.
+
+For the left face where x=0.625, I need cells with x_max=0.625 that also overlap the target's y and z ranges. This means checking cells where y_min < 0.25 and y_max > 0, plus z_min < 1 and z_max > 0.9375.
+
+The x_max=0.625 constraint is critical—it requires specific bit patterns in the octree path. Following the splits: starting with bit=1 at the first x division gives x ∈ [0.5, 1], then bit=0 at the next x split narrows it to [0.5, 0.75], and finally bit=0 at the third x split produces exactly [0.5, 0.625].
+
+For the y-coordinate to reach [0, 0.25], I need bit=0 at the first y split to stay in [0, 0.5], which allows overlap with the target range. At the second y split, bit=0 keeps y ∈ [0, 0.25], achieving the required overlap, while bit=1 would push y into [0.25, 0.5] and miss the target entirely.
+
+For z to intersect [0.9375, 1], the first z split requires bit=1 to enter [0.5, 1]. The second z split then needs bit=1 to narrow down further into the upper portion of that range.
+
+Continuing this process, at position 5 we need bit=1 to reach [0.875, 1], which actually overlaps with our target interval. At position 7, bit=0 gives [0.875, 0.9375], which only touches the boundary without true overlap, so we need bit=1 to proceed further.
+
+The complete bit sequence emerges: positions 0, 1, 3, 5, 7 all require bit=1, while positions 2, 4, 6, 8 require bit=0. This gives us the path 110101010, confirming our earlier result. The analysis then moves to examining face 2 where x=0.
+
+75, which demands x_min=0.75 through successive splits at positions 0 and 4 (both bit=1), y overlapping [0, 0.25] via bit=0 at positions 2 and 6, and z overlapping [0.9375, 1] requiring bit=1 at position 1.
+
+For z to reach [0.9375, 1], position 3 must be bit=1 (since bit=0 gives [0.5, 0.75] with no overlap), and position 5 must also be bit=1 (bit=0 yields [0.75, 0.875] which doesn't reach 0.9375). Stopping at depth 7 with position 6 as a y-split gives the path 1101110.
+
+Continuing further, position 7 requires bit=1 to stay in [0.9375, 1], extending the path to 11011101. At position 8, the x-dimension splits again.
+
+For bit=0, the cell spans [0.75, 0.875] × [0, 0.25] × [0.9375, 1], which is adjacent along x=0.75. For bit=1, it spans [0.875, 1] × [0, 0.25] × [0.9375, 1], which doesn't connect at x=0.75. So 110111010 is the valid candidate if it exists in the tree.
+
+But 1101110 is marked as a leaf with no children, so 110111010 can't exist. Checking other descendants of 110111—1101111 and its children all have y ∈ [0.25, 0.5], which doesn't overlap [0, 0.25]. Paths under 11010 have x_max ≤ 0.75, not the required x_min = 0.75. This leaves 11011 as the remaining branch to explore.
+
+11011 has x ∈ [0.75, 1], so I need to find descendants with y overlapping [0, 0.25] and z overlapping [0.9375, 1]. The child 110110 has z ∈ [0.75, 0.875], which doesn't reach 0.9375. However, 110111 has z ∈ [0.875, 1], which works. Under 110111, the node 1101110 satisfies y ∈ [0, 0.25] and is a leaf. The other child 1101111 has y ∈ [0.25, 0.5], which doesn't properly overlap the required range.
+
+For the y=0.25 face, I need y_min=0.25, x overlapping [0.625, 0.75], and z overlapping [0.9375, 1]. To get y_min=0.25, I need bit 0 at position 2 (giving y ∈ [0, 0.5]) and bit 1 at position 6 (giving y ∈ [0.25, 0.5]). Now checking what constraints apply to x.
+
+At position 0 (x split), bit 0 gives x ∈ [0, 0.5] with no overlap to [0.625, 0.75], while bit 1 gives x ∈ [0.5, 1] which could work. At position 4 (x split), bit 0 yields x ∈ [0.5, 0.75] overlapping the target range, but bit 1 yields x ∈ [0.75, 1] which only touches at the boundary. So I need bit 1 at position 0 and bit 0 at position 4. The next x split at position 8 will further refine the range.
+
+Given bits 1 and 0 at positions 0 and 4, bit 0 at position 8 gives x ∈ [0.5, 0.625], which just touches the target but doesn't actually overlap, while bit 1 gives x ∈ [0.625, 0.75], which fully overlaps. So bit 1 is required at position 8.
+
+For the z coordinate to reach [0.9375, 1], I need bits 1, 1, 1 at positions 1, 3, 5. At position 7, bit 0 produces z ∈ [0.875, 0.9375] with no overlap, so bit 1 must be selected instead.
+
+Assembling all constraints across the eight positions yields the sequence 110101111. The pattern confirms bits 1, 1, 0, 1, 0, 1, 1, 1, 1 at positions 0 through 8 respectively, matching the earlier result.
+
+For face 5 where z_max equals 0.9375, I need x overlapping [0.625, 0.75] and y overlapping [0, 0.25]. Setting bits 1, 1, 1 at positions 1, 3, 5 constrains z to [0.875, 1], then bit 0 at position 7 narrows it to [0.875, 0.9375]. For the x-range, bits 1 and 0 at positions 0 and 4 establish [0.625, 0.75], with bit 1 at position 8 confirming the overlap.
+
+The y-range requires bits 0 and 0 at positions 2 and 6. Assembling all constraints across the eight positions yields the path 110101001, which satisfies all three coordinate ranges simultaneously.
+
+Let me verify these are actual leaves in the tree structure. 110101010 terminates under the 11010101 branch, 110101001 under 11010100, and 110101111 under 11010111. The path 1101110 also forms a leaf node. All four candidates check out as valid endpoints in the tree.

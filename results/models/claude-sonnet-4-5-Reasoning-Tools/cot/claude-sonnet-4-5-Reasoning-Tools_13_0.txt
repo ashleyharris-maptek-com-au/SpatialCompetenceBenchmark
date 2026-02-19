@@ -1,0 +1,73 @@
+Let me understand this problem:
+
+1. Building: at origin (0,0,0), axis-aligned, 2m wide and deep, 10m tall
+   - So it occupies x: [-1, 1], y: [-1, 1], z: [0, 10]
+
+2. Sniper: at (100, 100, 20) looking at the building
+
+3. People: 4 people, each represented by 0.5×0.5×2m bounding box on z=0 plane
+   - So each person occupies 0.5m×0.5m footprint on the ground
+   - Height is 2m (from z=0 to z=2)
+
+4. Constraints:
+   - Sniper cannot see any person (building blocks line of sight)
+   - People on ground (z=0)
+   - No overlap between people or with building
+   - Within 30m of building center (origin)
+
+The sniper is at (100, 100, 20), so they're looking from the positive x, positive y direction, elevated.
+
+For the building to block the line of sight to a person, the person needs to be positioned such that any line from the sniper to any point on the person intersects with the building.
+
+Since the sniper is at (100, 100, 20), which is in the first quadrant (positive x, positive y), the shadow of the building (where the sniper cannot see) would be in the opposite direction - towards negative x and negative y.
+
+Let me think about this more carefully. The sniper is at (100, 100, 20). The building is at the origin with dimensions:
+- x: [-1, 1]
+- y: [-1, 1]  
+- z: [0, 10]
+
+For a person to be hidden from the sniper by the building, they need to be in the "shadow" cast by the building from the sniper's perspective.
+
+The sniper's position is (100, 100, 20). The direction from the origin to the sniper is roughly (1, 1, 0.2) normalized.
+
+
+The shadow extends away from the sniper's viewpoint, into the third quadrant. A point is truly hidden only if every ray from the sniper through that point hits the building. Since the sniper is far away and elevated, I should position people on the opposite side of the building—negative x and negative y—where the structure blocks direct line of sight. Each person occupies 0.5m×0.5m on the ground, so I can fit multiple people in the shadow region while staying within the 30m radius constraint. direction) — they need to be outside in both dimensions, or outside in just one. Let me position people behind the building from the sniper's vantage point. Person 1 at (-2, -2, 0) has a footprint from -2.25 to -1.75 in both x and y, which clears the building and sits about 2.83m from origin. Person 2 at (-3, -2, 0) extends further back without overlapping the building or Person 1.
+
+Person 3 and Person 4 follow similar logic, positioned at (-2, -3, 0) and (-3, -3, 0) respectively, each maintaining safe distances from the building and other people while staying roughly 3.6m away from the origin.
+
+Now I need to verify line-of-sight blocking. The sniper positioned at (100, 100, 20) can only see a person if an unobstructed ray exists from the sniper to any point on that person's body. For person 1 at (-2, -2, 0), I need to check whether the line segment from the sniper through the person's footprint intersects the building's volume.
+
+The building occupies x: [-1, 1], y: [-1, 1], z: [0, 10]. For any ray from the sniper to a point on the person, I'll parameterize it and check if it passes through these bounds. The most promising line of sight would be toward the person's highest, most exposed corner at (-1.75, -1.75, 2), which is closest to the sniper's position. The direction vector from (100, 100, 20) to this corner is (-101.75, -101.75, -18).
+
+Using the parametric equation (100, 100, 20) + t(-101.75, -101.75, -18), I need to find where this ray intersects the building's constraints. For the x and y coordinates to fall within [-1, 1], the parameter t must satisfy 0.973 ≤ t ≤ 0.993. The z-coordinate constraint 0 ≤ 20 - 18t ≤ 10 further restricts the valid range.
+
+Solving for z: 10 ≤ 18t ≤ 20 gives 0.556 ≤ t ≤ 1.111. The intersection of all three constraints is 0.973 ≤ t ≤ 0.993, which is non-empty and within [0, 1], confirming the line passes through the building.
+
+However, I realize I need to check whether every possible line of sight from the sniper to any point on the person gets blocked. The person is positioned in the third quadrant while the sniper is in the first quadrant with the building positioned between them. For complete obstruction, I need to verify that no line from the sniper to any part of the person's body can bypass the building.
+
+To approach this geometrically, I should trace the shadow boundary created by the building. The critical rays are those passing through the building's top corners—specifically from (100, 100, 20) through (1, 1, 10) and through (-1, -1, 10)—which will define the extent of the shadow region on the ground plane.
+
+For any point (x, y, 0) on the ground, I can parameterize the ray from the sniper through that point and find where it intersects the building's top surface at z=10. Setting up the ray equation and solving for the parameter value when z=10 gives t=0.5, which means the intersection point at the building's height has coordinates (50 + 0.5x, 50 + 0.5y, 10). This relationship will help determine which ground points fall within the shadow.
+
+For the ray to pass through the building's top surface (which spans from -1 to 1 in both x and y), the intersection point must satisfy -1 ≤ 50 + 0.5x ≤ 1 and -1 ≤ 50 + 0.5y ≤ 1. Solving these inequalities shows that ground points with x ∈ [-102, -98] and y ∈ [-102, -98] are blocked by the top surface. I also need to account for the vertical faces of the building, which will create additional shadow regions on the ground.
+
+For the vertical face at x = -1, I can trace rays from the sniper position through ground points to see if they intersect this face. Using the parametric ray equation and setting x = -1, I find that t = -101/(x-100). For ground points with x < -1, this parameter is less than 1, meaning the ray hits the face before reaching the ground. At a specific ground point like x = -2, the parameter t ≈ 0.990, which determines where along the ray the intersection occurs.
+
+Computing the y and z coordinates at this intersection point: y ≈ -0.98 and z ≈ 0.2. Both values fall within the building face bounds (y ∈ [-1,1] and z ∈ [0,10]), confirming the ray is blocked by the building. This means a person standing at ground level beyond x = -1 would be hidden from the sniper's line of sight by the building's face.
+
+Now checking whether the entire person's bounding box is obscured. The person occupies space from x ∈ [-2.25, -1.75], y ∈ [-2.25, -1.75], z ∈ [0, 2]. The corner nearest the sniper in the horizontal plane is at (-1.75, -1.75) at height z = 2. Tracing a ray from the sniper position to this corner point, at the x = -1 plane the parameter t ≈ 0.9926, which yields y ≈ -1.00 and falls within the building's face bounds, so this corner is also blocked. also blocked. But given they are further in the negative x and y directions, they should be blocked as well.
+
+Let me reconsider the positioning to ensure they're definitely in the shadow. I'll place them further behind the building: Person 1 at (-3, -3, 0), Person 2 at (-4, -3, 0), Person 3 at (-3, -4, 0), and Person 4 at (-4, -4, 0). With 0.5m × 0.5m footprints, Person 1 spans x ∈ [-3.25, -2.75], y ∈ [-3.25, -2.75], z ∈ [0, 2], and Person 2 spans x ∈ [-4.25, -3.75], y ∈ [-3.25, -2.75]. 5m ✓
+Person 4: sqrt(16+16) = 5.66m ✓
+
+All four people maintain adequate spacing with no overlaps, and they're positioned far enough from the building that it won't interfere. For person 1, I need to check if the sniper's line of sight to their closest point at (-2.75, -2.75, 2) gets blocked by the structure. The ray from the sniper at (100, 100, 20) toward that position has direction (-102.75, -102.75, -18), and when this ray reaches the building's edge at x = -1, the parameter t equals 101/102.
+
+75 ≈ 0.9830. At this point, the ray passes through (-1, -1.00, 2.31), which falls within the building's bounds (y between -1 and 1, z between 0 and 10), so the structure successfully blocks the line of sight. I should verify this more rigorously to ensure the geometry is correct.
+
+The ray needs to pass through the building's interior to reach the person. Checking the x-coordinate constraints: for x ∈ [-1, 1], I need 0.9633 ≤ t ≤ 0.9828. The y-coordinate gives the same range, and I should verify the z-coordinate stays within bounds throughout this interval.
+
+For z ∈ [0, 10], the valid t range is 0.5556 ≤ t ≤ 1.1111, which encompasses the x-y intersection. Since the ray intersects the building between t = 0.9633 and t = 0.9828, and the person is positioned at t = 1, the building blocks the line of sight. This confirms the first position works.
+
+The remaining three positions are (-4, -3), (-3, -4), and (-4, -4). I need to format these as a JSON array with the structure {"people": [{"xy": [x, y]}, ...]}. Let me verify I'm interpreting the problem correctly—the people need to be positioned such that the building obstructs the direct line from the camera to each person.
+
+The building occupies x ∈ [-1, 1], y ∈ [-1, 1], z ∈ [0, 10], and the sniper is at (100, 100, 20). Since the people are represented by 0.5×0.5×2m bounding boxes, I'm treating the xy coordinates as the center of each footprint. Person 1 at (-3, -3) has a footprint spanning x ∈ [-3.25, -2.75] and y ∈ [-3.25, -2.75], which ensures the building blocks the line of sight from the sniper's position. All four positions are within the 30m radius and don't overlap with each other. From the sniper's vantage point, they're all shielded by the building. The solution places them at (-3, -3), (-4, -3), (-3, -4), and (-4, -4).

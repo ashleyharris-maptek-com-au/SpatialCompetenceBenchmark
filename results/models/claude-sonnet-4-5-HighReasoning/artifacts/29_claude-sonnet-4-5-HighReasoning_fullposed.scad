@@ -1,0 +1,10 @@
+color("Red") import("29_0_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Green") import("29_1_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Blue") import("29_2_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Yellow") import("29_3_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Cyan") import("29_4_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Magenta") import("29_5_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Brown") import("29_6_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("White") import("29_7_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Orange") import("29_8_claude-sonnet-4-5-HighReasoning_posed.stl");
+color("Grey") import("29_9_claude-sonnet-4-5-HighReasoning_posed.stl");

@@ -1,0 +1,105 @@
+Let me understand the problem:
+
+1. Building: axis-aligned, at origin, 2m wide (x), 2m deep (y), 10m tall (z)
+   - So the building occupies: x ∈ [-1, 1], y ∈ [-1, 1], z ∈ [0, 10]
+
+2. Sniper: at position (100, 100, 20)
+
+3. People: 0.5m × 0.5m × 2m bounding boxes on ground (z=0)
+   - Each person is a box on the ground
+
+4. Constraints:
+   - Sniper can't see any person (building blocks line of sight)
+   - People on ground (z=0)
+   - People don't overlap with building or each other
+   - All people within 30m of building center (origin)
+
+To hide from the sniper at (100, 100, 20), I need to place people behind the building relative to the sniper's position.
+
+The sniper is at (100, 100, 20), looking towards the origin. The direction from sniper to origin is:
+- Direction vector: (0, 0, 0) - (100, 100, 20) = (-100, -100, -20)
+- Normalized: roughly (-0.816, -0.816, -0.163)
+
+Since the sniper is in the positive x, positive y quadrant, people should be placed on the opposite side - in the negative x and/or negative y region, behind the building.
+
+Let me think about the shadow cast by the building from the sniper's perspective:
+
+The sniper is at S = (100, 100, 20)
+The building corners at ground level (z=0) are:
+- (1, 1, 0)
+- (1, -1, 0)
+- (-1, 1, 0)
+- (-1, -1, 0)
+
+
+The top corners at z=10 are:
+- (1, 1, 10)
+- (1, -1, 10)
+- (-1, 1, 10)
+- (-1, -1, 10)
+
+To find where people can hide, I need to trace rays from the sniper through the building's edges and corners to determine the shadow region on the ground. For a ray from S = (100, 100, 20) through a building corner C = (cx, cy, cz), the ray equation is P(t) = S + t(C - S), and I can find where it intersects z=0 to map out the protected zone.
+
+At ground level, solving 0 = 20 + t(cz - 20) gives t = -20/(cz - 20). For the base corners at z=0, this yields t=1, while the top corners at z=10 give t=2. Computing the shadow projections for each corner shows how the building's silhouette expands as it extends downward from the sniper's perspective. 100, 20), looking toward the building at the origin. The edges that cast the shadow are those on the silhouette of the building as seen from the sniper's position—specifically, the far edges that face away from the sniper. I need to project rays from the sniper through these silhouette edges down to the ground plane to determine where the shadow falls. The building's vertical edges at the corners facing away from the sniper's viewpoint will define the shadow boundary. (100 - 202, 100 - 202, 0) = (-102, -102, 0). Tracing rays through the other top edges: the ray through (-1, 1, 10) projects to (-102, -98, 0), and through (1, -1, 10) projects to (-98, -102, 0).
+
+The ray passing through the building's back corner at (-1, -1, 0) stays at that point since it's already on the ground plane. The shadow region forms a quadrilateral bounded by these projection points, extending outward from the structure away from the sniper's position. For a person standing at height 2m, I need to determine where they'd be visible or hidden within this shadow zone.
+
+A person occupies a bounding box of 0.5m width and 2m height. They're completely obscured only if every point in their bounding box—including the top at z=2—falls within the building's shadow. The most restrictive shadow comes from projecting the building's top corners (at z=10) down to ground level. Computing this shadow polygon requires identifying all 8 corners of the building structure and tracing which rays from the sniper position intersect them. the building's silhouette from the sniper's viewpoint onto the ground plane.
+
+Since the sniper is positioned at (100, 100, 20)—positive x, y, and z—they see the right face (x=1), front face (y=1), and top face (z=10). The silhouette edges that matter for casting shadows are the back and left edges of the box: the top back edge from (-1, 1, 10) to (-1, -1, 10), the top left edge from (-1, -1, 10) to (1, -1, 10), and the vertical edges connecting these to the ground.
+
+Actually, I'm making this too complicated. The shadow on the ground depends on projecting the building's visible outline from the sniper's position downward. The key edges are the far vertical ones—those that form the silhouette boundary when viewed from the sniper's location.
+
+The critical corners to project are the top corners of the building that face away: (-1, -1, 10), (-1, 1, 10), and (1, -1, 10). I need to cast rays from the sniper through each of these points to find where they hit the ground plane.
+
+For the corner at (-1, -1, 10), the ray passes through (100, 100, 20) and (-1, -1, 10), reaching the ground at t = 2, which gives (-102, -102, 0). Similarly, projecting (-1, 1, 10) involves a ray from the sniper position through that point to find its ground intersection.
+
+The bottom corners of the building—(-1, -1, 0), (-1, 1, 0), and (1, -1, 0)—are already on the ground plane, so they don't need projection. The shadow boundary is formed by connecting these projected top corners with the bottom corners that remain fixed.
+
+The safe zone forms a region bounded by the building's base and the shadows cast by its top edges. To ensure people are protected, I should position them well within this shadowed area, away from the sniper's line of sight. Placing them at negative x and y coordinates relative to the building's position makes sense. I'll position four people at strategic points, starting with (-3, -3, 0) as a central location.
+
+Each person occupies a 0.5 × 0.5 × 2 bounding box, so a person centered at (-3, -3) extends from -3.25 to -2.75 in both x and y directions. I should verify the other positions similarly—(-5, -3), (-3, -5), and (-5, -5)—to confirm they all fall within the shadow region and maintain safe distances from the sniper's potential line of fire.
+
+None of these positions overlap with the building at [-1, 1] × [-1, 1] × [0, 10], and they're spaced 2 meters apart in a grid pattern so they don't collide with each other. The distances from origin are all under 30 meters, meeting the constraint requirements.
+
+Now I need to verify line-of-sight blocking from the sniper position at (100, 100, 20). For the person at (-3, -3), I'll trace whether any ray from the sniper to points on that person's box intersects the building. The top corners of the box at z=2 are at (-3.25, -3.25, 2), (-3.25, -2.75, 2), (-2.75, -3.25, 2), and (-2.75, -2.75, 2).
+
+Taking the nearest corner at (-2.75, -2.75, 2), I can set up a ray from the sniper: R(t) = (100, 100, 20) + t(-102.75, -102.75, -18) for t ∈ [0, 1]. For this ray to pass through the building's volume [-1, 1] × [-1, 1] × [0, 10], the x and y coordinates must satisfy the building's bounds while traveling along the parametric path.
+
+Checking the z-constraint: 20 - 18t must fall within [0, 10], which gives t ∈ [0.556, 1.111]. Since the ray only extends to t = 1, the relevant interval is t ∈ [0.556, 1]. At t = 0.556, both x and y equal approximately 42.87, which lies far outside the building's [-1, 1] bounds. This means the ray never actually enters the building's footprint while traveling between the sniper and the target point.
+
+Given this result, a person positioned at (-3, -3) could potentially be visible. I need to verify whether rays from the sniper to the top corners of a person at that location intersect the building. For someone 2m tall at (-3, -3), the top front-right corner sits at (-2.75, -2.75, 2). The ray from S = (100, 100, 20) toward this point has direction vector (-102.75, -102.75, -18).
+
+Checking the parametric ray (100, 100, 20) + t(-102.75, -102.75, -18) against the building bounds [-1, 1] × [-1, 1] × [0, 10], the x and y constraints both yield 0.963 ≤ t ≤ 0.983, indicating the ray passes through the building's horizontal cross-section within the valid parameter range. that's outside the valid range. Let me recalculate more carefully.
+
+For x to stay in [-1, 1]: when x = 100 - 102.75t equals 1, I get t ≈ 0.9633, and when it equals -1, t ≈ 0.9828. The same bounds apply to y. At t = 0.9633, z = 20 - 18(0.9633) ≈ 2.66, which is within the valid z range. I need to check what happens at the upper bound of this interval. = [2.31, 2.66], which is well within the building's height range of [0, 10]. So the ray passes through the building volume at those parameter values. The person positioned at (-3, -3) is indeed blocked by the structure. Let me verify this by checking the nearest corner of the person to the sniper's position, located at (-2.75, -2.75,
+
+The sniper at (100, 100, 20) is closest to the corner at (-2.75, -2.75, 2) since that's the nearest point in the x-y plane and at the top of the person's height. This corner is also blocked. Now I should check the remaining three people to see if they're similarly obstructed.
+
+For the person at (-5, -3) with box [-5.25, -4.75] × [-3.25, -2.75] × [0, 2], the closest corner to the sniper is (-4.75, -2.75, 2). Tracing a ray from the sniper to this corner and checking against the building's bounds [-1, 1] × [-1, 1] × [0, 3], the x-coordinate constraint gives t between 0.9451 and 0.9642, while the y-coordinate gives t between 0.9633 and 0.9828. These ranges overlap, so the ray passes through the building and blocks the line of sight. , z = 20 - 18 × 0.9642 = 2.64, which is in [0, 10]. ✓
+
+The person at (-5, -3) is blocked. For the person at (-3, -5), the closest corner to the sniper is (-2.75, -4.75, 2), and by the same geometric reasoning as the previous case, this position is also blocked. The person at (-5, -5) has a box with corners at [-5.25, -4.75] × [-5.25, -4.75] × [0, 2
+
+], with the nearest corner at (-4.75, -4.75, 2). The ray direction is (-104.75, -104.75, -18), and checking the building intersection shows the same t-range of 0.9451 to 0.9642 for both x and y coordinates, with z = 2.64 falling within the valid range, confirming this person is also blocked.
+
+All four positions successfully block the sniper's line of sight. The final arrangement places people at (-3, -3), (-5, -3), (-3, -
+
+5), and (-5, -5).
+
+Let me verify a tighter configuration instead. Positioning them closer to the building at (-2, -2), (-3, -2), (-2, -3), and (-3, -3) would be more conservative. I need to confirm these don't overlap with the building's footprint at [-1, 1] × [-1, 1] × [0, 10], checking each person's bounding box to ensure proper clearance. Neither x nor y ranges overlap. ✓
+
+Verifying the remaining pairs: Person 2 and 3 have no overlapping ranges, Person 2 and 4's y ranges don't overlap, and Person 3 and 4's x ranges don't overlap. All distance checks from origin pass the 30m threshold, with the farthest person at approximately 4.24m away.
+
+Now checking if the sniper can see each position. For Person 1 at (-2, -2), I need to trace a ray from the sniper's vantage point at (100, 100, 20) toward the closest corner of their location at (-1.75, -1.75, 2). The ray direction is (-101.75, -101.75, -18), and calculating where this intersects the building's boundaries shows the ray passes through the structure between t values of approximately 0.973 and 0.993.
+
+At the entry point t = 0.973, the z-coordinate is about 2.49, which falls within the building's height range [0, 10], confirming the building blocks the line of sight. For Person 2 at (-3, -2), the nearest corner is (-2.75, -1.75, 2), and the ray direction becomes (-102.75, -101.75, -18). The x-coordinate constraint gives a t range starting around 0.963, and I'm checking whether this intersection also falls within the building's vertical extent. The four positions satisfy all constraints—each person is hidden from the camera, they don't overlap, they're on the ground level, and they're within 30 meters of the building center. Now I need to format the output according to the schema, which expects an array of people objects where each has an "xy" property containing [x, y] coordinates. so they're blocked from view. These positions feel solid.
+
+Let me double-check person 1 at (-2, -2) though. Their bounding box spans x: [-2.25, -1.75], y: [-2.25, -1.75], z: [0, 2], with the nearest corner to the sniper at (-1.75, -1.75, 2). Since the building occupies [-1, 1] × [-1, 1] × [0, 10], I need to verify the sightline from (100, 100, 20) to that corner actually intersects the building structure.
+
+Tracing the ray parametrically: P(t) = (100, 100, 20) + t(-101.75, -101.75, -18). When x reaches the building's boundary at x = 1, I get t ≈ 0.9728, and at x = -1, t ≈ 0.9928. This means the ray passes through the building's x-range within those parameter values.
+
+The y-coordinate follows the same interval since it has identical coefficients. For the z-coordinate between 0 and 10, the valid range is t ∈ [0.556, 1.111]. The intersection of all three constraints gives t ∈ [0.9728, 0.9928], confirming the ray intersects the building. At the entry point (t = 0.9728), the ray reaches coordinates (1.00, 1.00).
+
+At the exit point where t = 0.9928, the coordinates are (-1.00, -1.00, 2.33). The ray passes through the building from (1, 1, 2.49) to (-1, -1, 2.33). However, the closest corner at (-1.75, -1.75, 2) occurs at t = 1, which I should verify by checking the position vector at that parameter value.
+
+Substituting t = 1 into the ray equation confirms the position is (-1.75, -1.75, 2). Since the building blocks the line of sight during the interval [0.9728, 0.9928], which happens before the ray reaches the person at t = 1, the first position is indeed blocked. All four candidate locations—(-2, -2), (-3, -2), (-2, -3), and (-3, -3)—satisfy the constraints: they're hidden from the sniper's view, don't intersect with the building or each other, sit on ground level, and fall within the 30-meter radius from the building's center.

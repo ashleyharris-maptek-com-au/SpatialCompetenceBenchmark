@@ -6,49 +6,21 @@ import random
 import copy
 
 _module_names = {
-  1: "q1",
   2: "q2",
   3: "q3",
   4: "q4",
-  5: "q5",
   6: "q6",
   7: "q7",
   8: "q8",
   9: "q9",
-  10: "q10",
   11: "q11",
   12: "q12",
   13: "q13",
-  14: "q14",
-  15: "q15",
   16: "q16",
-  17: "q17",
-  18: "q18",
-  19: "q19",
-  20: "q20",
-  21: "q21",
-  22: "q22",
   23: "q23",
-  24: "q24",
-  25: "q25",
-  26: "q26",
-  27: "q27",
   28: "q28",
   29: "q29",
   30: "q30",
-  31: "q31",
-  32: "q32",
-  35: "q35",
-  36: "q36",
-  37: "q37",
-  38: "q38",
-  41: "q41",
-  42: "q42",
-  43: "q43",
-  45: "q45",
-  48: "q48",
-  49: "q49",
-  50: "q50",
   51: "q51",
   52: "q52",
   53: "q53",
@@ -105,10 +77,6 @@ def cache_solutions(questionNum: int):
       module.cache_solutions()
   elif questionNum == 28:
     module = _load_module(28)
-    if module:
-      module.cache_solutions()
-  elif questionNum == 45:
-    module = _load_module(45)
     if module:
       module.cache_solutions()
 

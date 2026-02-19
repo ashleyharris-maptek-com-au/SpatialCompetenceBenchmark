@@ -1,0 +1,531 @@
+You are a strict failure-mode judge for visual geometry benchmark tasks. Use only the provided task card and evidence. Return valid JSON that matches the requested schema.
+
+Classify each attempt below into exactly one failure mode.
+
+Allowed labels:
+- Evasion / Forfeit
+- Trivialized / Misframed
+- Runaway Overthinking
+- Local-Only (Global Constraint Integration Failure)
+- Near-Miss Edge Case
+
+Rules:
+- You must output one decision per listed subpass.
+- Listed subpasses: 0, 1, 3
+- Base justification on verifier signals and model output/COT evidence.
+- Do not invent constraints absent from the task card.
+- Runaway Overthinking requires BOTH (a) COT evidence of spiraling or overcomplicated reasoning AND (b) diverse error types in the verifier signal. Repeated instances of the same error type indicate a systematic Local-Only failure, not Runaway.
+
+Task Card:
+# Task q52: VGB2 - Topology Edge Tasks: Enumerate Edges
+- Source file: `52.py`
+- Taxonomy: `FAILURE_TAXONOMY.md`
+- Run cards dir: `experiments/failure_mode_analysis/failure_mode_task_cards/cards/gpt-5.2-chat-azure-Reasoning/`
+
+## Intent
+Judge whether the model can enumerate all deterministic edge connections for labeled square cases under varying corner/edge orderings.
+
+## Output Contract
+- Return object with `edges`.
+- `edges` is nested list format of edge pair sets.
+- Parser tolerates raw list output but canonical field is `edges`.
+
+## Hard Constraints (Verifier-Checked)
+- Nested integer-pair schema.
+- Exact diff match against curated expected edge sets.
+- Supports per-record ordering variants.
+
+## Verifier Signals
+| Signal/Error | Meaning | Likely failure mode(s) |
+| --- | --- | --- |
+| `missing: [...]` | Indices of cases where predicted edge pairs do not match ground truth | `Local-Only`, `Near-Miss` |
+| `errors: [...]` | Parse/validation errors (e.g. `parse_failure`, `length_mismatch`, bad pair format/order) | `Trivialized`, `Evasion` |
+
+## Failure-Mode Tie-Breaks (Task-Specific)
+- `Evasion / Forfeit`: Empty/invalid edges payload.
+- `Trivialized / Misframed`: Wrong task interpretation (classification text instead of edge enumeration).
+- `Runaway Overthinking`: COT shows spiraling edge derivation that produces diverse error types (format AND count AND structural failures).
+- `Local-Only (Global Constraint Integration Failure)`: Broad mismatch in deterministic edge structure.
+- `Near-Miss Edge Case`: One-case mismatch with otherwise correct structure.
+
+## Judge Input Bundle
+1. Prompt with tuple set and ordering.
+2. Raw output.
+3. Parsed `edges`.
+4. Verifier diff summary.
+5. Optional reasoning summary.
+
+## Classification Prompt Snippet
+```text
+Classify q52 with one failure mode.
+Treat `missing` indices and `errors` as primary evidence.
+Return JSON: failure_mode, confidence, justification.
+```
+
+
+Attempts:
+### Subpass 0
+
+Attempt Metadata:
+- question_id: 52
+- subpass: 0
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 59
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(1, 1, 1, 1)
+(1, 1, 1, 2)
+(1, 1, 2, 1)
+(1, 1, 2, 2)
+
+You are given unit squares with corners labelled in ('bottom-left', 'bottom-right', 'top-right', 'top-left') order.
+Edges are indexed: bottom=0, right=1, top=2, left=3.
+
+For each square above (in the same order), list which edges are guaranteed to connect.
+Return a list where each element is a list of sorted [i,j] pairs (i < j).
+If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.
+
+Verifier Signal:
+passed:  False  missing:  [0, 1, 2, 3]  errors:  []
+
+Raw Output:
+{'edges': [[[2, 3]], [[1, 2]], [[1, 3]], [[0, 2], [1, 3]]]}
+
+Chain of Thought:
+Let me analyze this problem carefully. I need to determine which edges are guaranteed to connect for each square based on the corner labels.
+
+The corners are labeled in order: (bottom-left, bottom-right, top-right, top-left)
+The edges are:
+- Edge 0: bottom (connects bottom-left to bottom-right)
+- Edge 1: right (connects bottom-right to top-right)
+- Edge 2: top (connects top-right to top-left)
+- Edge 3: left (connects top-left to bottom-left)
+
+An edge connects if both of its endpoints (corners) have the same class label.
+
+Let me analyze each square:
+
+**Square 1: (1, 1, 1, 1)**
+All corners have the same label (1).
+- Edge 0 (bottom): corners 1,1 → same class ✓
+- Edge 1 (right): corners 1,1 → same class ✓
+- Edge 2 (top): corners 1,1 → same class ✓
+- Edge 3 (left): corners 1,1 → same class ✓
+
+All edges connect. So we have pairs: [0,1], [0,2], [0,3], [1,2], [1,3], [2,3]
+
+Wait, I think I misunderstood. The question asks "which edges are guaranteed to connect". I think this means which edges connect to each other through shared regions of the same class, not just whether an edge has both endpoints of the same class.
+
+Let me reconsider. In the context of image segmentation or similar problems, edges typically "connect" or form boundaries based on whether they separate the same class or different classes.
+
+Actually, re-reading more carefully: "which edges are guaranteed to connect" - this could mean which edges share the same class on both sides, or which edges are part of the same boundary component.
+
+Let me think about this differently. In many segmentation problems, an "edge" in this context might refer to the edge of a square (a side of the square). 
+
+Here is the next thinking you need to rewrite: Two edges "connect" if they are adjacent and share some property. Hmm, but that doesn't quite make sense either. Let me think about the Marching Squares algorithm or similar contouring algorithms. In those, you determine which edges of a square have contour lines passing through them based on the corner values. Adjacent edges that both have contours would form connected boundary segments. So edges connect if they're next to each other and both have the same property—either both have boundaries or both don't.
+
+Actually, I think the question is asking: which edges of the square have both endpoints with the same class label (meaning no boundary crosses that edge), and which of those edges connect to each other (are adjacent).
+
+Wait, let me reconsider the problem more carefully. The phrase "which edges are guaranteed to connect" suggests that we're looking at which edges connect to each other in some way. In marching squares or similar algorithms, when you have a square with labeled corners, you determine how contour lines pass through the square. Edges "connect" when there's a contour line segment connecting them through the interior of the square.
+
+Let me think about this from a different angle. If we have a labeled square, we can think about the regions of each class within the square. Edges connect if there's a contour line of the boundary between classes that passes through both edges.
+
+Actually, I think I need to interpret this as: which edges are on the boundary between different classes? And which of those boundary edges connect to each other?
+
+Let me try yet another interpretation: In the context of a discrete surface or mesh, edges of adjacent squares connect if they share the same edge. But within a single square, edges connect at corners.
+
+Hold on. Let me think about this more systematically. Given corner labels, we can interpolate to understand how the boundary between classes cuts through the square. Edges that both intersect this boundary would be connected by the contour line passing through the square's interior.
+
+I'm thinking about this in terms of marching squares—when corners have different labels, a boundary line passes through the square, and it intersects certain edges. The edges it intersects are the ones that "connect" because they're linked by that boundary segment.
+
+So the question might be: given the corner labels, which edges are guaranteed to have the boundary pass through them, and therefore connect to each other? So edges 1 and 2 would connect.
+
+For case (1,1,2,2): The bottom corners are class 1 while the top corners are class 2. A horizontal boundary separates them, entering from the left edge and exiting from the right edge. This means edges 3 and 1 connect.
+
+I'm realizing I should simplify my approach. The key is identifying which edges the contour line passes through, then determining which pairs of edges connect within the square.
+
+Looking at the standard marching squares cases: when all corners match, there's no contour. When three corners are one class and one is different, the contour connects two adjacent edges. When opposite corners differ, the contour connects the other pair of opposite edges. This gives me the lookup table where (1,1,1,1) produces no connections, (1,1,1,2) connects edges 2 and 3, (1,1,2,1) connects edges 1 and 2, and (1,1,2,2) connects edges 1 and 3.
+
+Let me verify the edge definitions are correct. The corners go: bottom-left (0), bottom-right (1), top-right (2), top-left (3). The edges are: bottom (0) between corners 0-1, right (1) between corners 1-2, top (2) between corners 2-3, and left (3) between corners 3-0. When the configuration is (1,1,1,2), meaning the top-left corner differs, the contour should cross the edges adjacent to that corner—the top and left edges.
+
+For (1,1,2,1), the top-right corner is different, so the boundary crosses the right and top edges instead.
+
+For (1,1,2,2), the right side has mismatched corners while the left stays consistent.
+
+The boundary crosses edges 1 and 3, connecting them: [[1,3]].
+
+For (1,1,1,1), all corners match, so no edges cross the boundary: [].
+
+The final answer lists these connections for each square: [[], [[2,3]], [[1,2]], [[1,3]]].
+
+However, I need to reconsider the output format. The problem asks for "sorted [i,j] pairs," which could mean multiple connections per square. In marching squares, most configurations produce a single contour line connecting two edges, but ambiguous cases—where opposite corners differ from the other pair—can have two contour lines. For instance, (1,2,1,2) and (2,1,2,1) represent saddle points with two possible configurations.
+
+Looking at the non-ambiguous cases: when three corners share one class and one corner differs, there's exactly one contour. When two adjacent corners match and two others match differently, like (1,1,2,2), the boundary is clear and unambiguous. The truly ambiguous configurations occur when opposite corners form one class and the other opposite corners form another class. look at which edges the contour crosses. Edge 0 (bottom) has both corners in class 1, so no crossing. Edge 1 (right) connects class 1 to class 2, so it crosses. Edge 2 (top) has both corners in class 2, so no crossing. Edge 3 (left) connects class 2 to class 1, so it crosses. The contour must connect edges 1 and 3, giving [[1,3]] with no ambiguity.
+
+Checking all cases systematically: when all four corners are the same class, there's no contour. When three corners match and one differs, the contour crosses the three edges touching the different corner. When corners form a diagonal pattern like (1,1,2,2), the contour crosses the two edges separating the classes. 3 (TL=2, BL=1): different classes
+- Contour connects edges 1 and 3
+- Result: [[1,3]]
+
+The final answer is:
+```
+[
+  [],
+  [[2,3]],
+  [[1,2]],
+  [[1,3]]
+]
+```
+
+Let me verify the edge numbering scheme matches the problem specification. The corners are ordered as (bottom-left, bottom-right, top-right, top-left), and edges are numbered: bottom=0, right=1, top=2, left=3. This means edge 0 spans the bottom, edge 1 the right side, edge 2 the top, and edge 3 the left side.
+
+### Subpass 1
+
+Attempt Metadata:
+- question_id: 52
+- subpass: 1
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 55
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(2, 1, 1, 1)
+(2, 1, 2, 1)
+(2, 1, 3, 1)
+(2, 2, 1, 1)
+(2, 2, 2, 1)
+
+You are given unit squares with corners labelled in ('bottom-right', 'top-right', 'top-left', 'bottom-left') order.
+Edges are indexed: right=0, top=1, left=2, bottom=3.
+
+For each square above (in the same order), list which edges are guaranteed to connect.
+Return a list where each element is a list of sorted [i,j] pairs (i < j).
+If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.
+
+Verifier Signal:
+passed:  False  missing:  [2, 3, 4]  errors:  []
+
+Raw Output:
+{'edges': [[[0, 3]], [], [[1, 3]], [[0, 2]], [[0, 1]]]}
+
+Chain of Thought:
+Let me understand this problem. I have squares with corners labeled with class integers. The corners are given in the order: (bottom-right, top-right, top-left, bottom-left).
+
+Edges are indexed as:
+- right=0 (connects bottom-right to top-right)
+- top=1 (connects top-right to top-left)
+- left=2 (connects top-left to bottom-left)
+- bottom=3 (connects bottom-left to bottom-right)
+
+The question is asking which edges are "guaranteed to connect". I think this means edges where both corners have the same class label.
+
+Let me analyze each square:
+
+**Square 1: (2, 1, 1, 1)**
+- Bottom-right: 2
+- Top-right: 1
+- Top-left: 1
+- Bottom-left: 1
+
+Edges:
+- right=0: connects corners 2 and 1 (different) - NO
+- top=1: connects corners 1 and 1 (same) - YES
+- left=2: connects corners 1 and 1 (same) - YES
+- bottom=3: connects corners 1 and 2 (different) - NO
+
+So edges that connect: [1, 2]
+Pairs with i < j: [[1, 2]]
+
+**Square 2: (2, 1, 2, 1)**
+- Bottom-right: 2
+- Top-right: 1
+- Top-left: 2
+- Bottom-left: 1
+
+Edges:
+- right=0: connects corners 2 and 1 (different) - NO
+- top=1: connects corners 1 and 2 (different) - NO
+- left=2: connects corners 2 and 1 (different) - NO
+- bottom=3: connects corners 1 and 2 (different) - NO
+
+So edges that connect: []
+Pairs: []
+
+
+**Square 3: (2, 1, 3, 1)**
+- Bottom-right: 2
+- Top-right: 1
+- Top-left: 3
+- Bottom-left: 1
+
+All four corners have different values or mismatches across each edge, so no edges connect here either.
+
+**Square 4: (2, 2, 1, 1)**
+- Bottom-right: 2
+- Top-right: 2
+- Top-left: 1
+- Bottom-left: 1
+
+The right edge pairs matching corners (both 2), and the left edge also pairs matching corners (both 1). This gives us edges [0, 2] and the pair [[0, 2]].
+
+**Square 5: (2, 2, 2, 1)**
+- Bottom-right: 2
+- Top-right: 2
+- Top-left: 2
+- Bottom-left: 1
+
+Here the right edge connects two 2s, and the top edge also connects two 2s, so edges [0, 1] form the pair [[0, 1]].
+
+I need to clarify what "guaranteed to connect" actually means. The problem asks for edge pairs [i, j] where i < j, which suggests we're identifying which edges connect to one another, not corner pairs.
+
+In marching squares algorithms, edges connect through regions of the same classification. Depending on how the corners are labeled, certain edge midpoints get linked by line segments. For this configuration with corners [2, 2, 2, 1], the edges connecting identical corner values would be the ones that form boundaries or paths through the square. With 16 possible binary configurations in standard marching squares (or more for multi-class scenarios), each creates a specific pattern of which edges should connect. boundary enters through one edge and exits through another. For square 1 with corners (2, 1, 1, 1), the single class 2 region at the bottom-right corner creates boundaries crossing both the right edge (separating the 2 from the 1 above it) and the bottom edge (separating the 2 from the 1 to its left), so these edges connect as [0, 3]. In square 2 with alternating corners (2, 1, 2, 1), the pattern is more complex since class 2 appears at opposite corners.
+
+This creates a saddle point—the boundaries could connect in two different ways: either linking the right and top edges while the left and bottom edges connect separately, or the opposite pairing. The configuration is fundamentally ambiguous, so square 2 returns an empty result.
+
+For square 3 with corners (2, 1, 3, 1), three distinct classes appear simultaneously, creating multiple overlapping boundaries between classes 1-2, 1-3, and 2-3. Without additional resolution rules, this also returns empty. Square 4 presents a horizontal split where the top corners are class 1 and bottom corners are class 2, with the dividing line crossing the left edge (2) and right edge (0), giving [0, 2]. Square 5 has class 2 at the bottom-left corner while the other three corners are class 1, creating a different boundary configuration. right (a).
+
+For square 1 with corners (2, 1, 1, 1), the single class-2 corner at bottom-right means the boundary isolates it, crossing the adjacent right and bottom edges. For square 2 with corners (2, 1, 2, 1), the checkerboard pattern creates a saddle point where the boundary's path becomes ambiguous.
+
+Square 3 presents three distinct classes at its corners, making the connection pattern unclear without additional context. Square 4 with corners (2, 2, 1, 1) has class 2 on the right side and class 1 on the left, requiring verification of the corner positions to determine the correct boundary configuration.
+
+For Square 4, mapping the corners as (bottom-right, top-right, top-left, bottom-left) gives us class 1 on both left corners and class 2 on both right corners. The boundary runs vertically between these two regions, crossing the top edge (1) and bottom edge (3), so the connection is [[1, 3]].
+
+Square 5 with corners (2, 2, 2, 1) has three corners in class 2 and only the bottom-left corner in class 1. Since class 1 is isolated, the boundary crosses the two edges adjacent to it—the left edge (2) and bottom edge (3)—giving a connection of [[2, 3]]. to 1 (boundary crosses)
+- left (2): c to d = 1 to 1 (same class, no boundary)
+- bottom (3): d to a = 1 to 2 (boundary crosses)
+
+The boundary enters via the top edge and exits through the bottom, giving the connection [[1, 3]]. Checking my work: square 1 has the boundary crossing right and bottom edges for [[0, 3]], square 2 is ambiguous with [], and square 3 involves three different classes which creates a more complex situation.
+
+For square 4 with the vertical split pattern, the boundary passes through top and bottom for [[1, 3]]. Square 5 shows one corner differing from the rest, with the boundary crossing left and bottom edges for [[2, 3]].
+
+Looking more closely at square 3 where the corners are (2, 1, 3, 1) arranged as bottom-right, top-right, top-left, bottom-left:
+
+```
+  c=3 ----- b=1
+   |         |
+   |         |
+  d=1 ----- a=2
+```
+
+Checking each edge: the right side goes from a to b = 2 to 1 (boundary between 1 and 2), the top goes from b to c = 1 to 3 (boundary between 1 and 3), the left goes from c to d = 3 to 1 (boundary between 1 and 3), and the bottom goes from d to a = 1 to 2 (boundary between 1 and 2). This creates a 1-2 boundary on the right and bottom edges, while the 1-3 boundary appears on the top and left edges. The topology here is more complex since we have three distinct classes meeting at different edges, so I need to figure out how these boundaries actually connect across the square.
+
+For class 1 at the diagonally opposite corners, it might form a single connected region crossing through the square, or it could split into two separate regions. Class 2 is confined to the bottom-right area, and class 3 is confined to the top-left area. Given this multi-class configuration and the ambiguity in how to properly handle the saddle point, the safest answer is an empty list. For square 2, the saddle configuration also presents similar ambiguity, so that's also empty. The final answers are: square 1 gets [[0, 3]], square 2 gets [], square 3 gets [], and square 4 gets [[1, 3.
+
+The output should be formatted as a JSON object with an "edges" array containing these lists. I need to verify my interpretation—the task asks for edges that are "guaranteed to connect," meaning edges where the connection is unambiguous based on the class values at the corners. For each square, I return a list of [i, j] pairs representing which edges connect, where i < j.
+
+Looking at the saddle case more carefully: square 2 has corner values (2, 1, 2, 1), which creates ambiguity. There are two valid configurations—either edges 0 and 1 connect while edges 2 and 3 connect, or edges 0 and 3 connect while edges 1 and 2 connect. Since both are possible, no edges are guaranteed to connect in this square, so it should return an empty list.
+
+I'm reconsidering what "edges are guaranteed to connect" actually means. Perhaps it's asking which edges have both endpoints belonging to the same class, forming a continuous boundary. Let me test this interpretation: for square 1 with values (2, 1, 1, 1), the right edge connects corners with values 2 and 1 (different classes, so no), while the top edge connects two corners both valued 1 (same class, so yes). 2 to 1 - different - NO
+- bottom (3): 1 to 2 - different - NO
+
+No edges satisfy the condition.
+Answer: []
+
+Square 3: (2, 1, 3, 1)
+All four edges connect corners of different classes.
+Answer: []
+
+Square 4: (2, 2, 1, 1)
+- right (0): 2 to 2 - same - YES
+- top (1): 2 to 1 - different - NO
+- left (2): 1 to 1 - same - YES
+- bottom (3): 1 to 2 - different - NO
+
+Edges 0 and 2 both have matching endpoints, though they're opposite rather than adjacent. They might still form a valid pair through some connection.
+Answer: [[0, 2]]?
+
+Square 5: (2, 2, 2, 1)
+- right (0): 2 to 2 - same - YES
+- top (1): 2 to 2 - same - YES
+- left (2): 2 to 1 - different - NO
+- bottom (3): 1 to 2 - different - NO
+
+Edges 0 and 1 both have same-class corners and share the top-right vertex.
+Answer: [[0, 1]]
+
+This gives results: [[1, 2]], [], [], [[0, 2]], [[0, 1]]. The question is whether opposite edges without a shared corner should count as a pair, or if adjacency matters.
+
+In marching squares, contour lines connect edges where the boundary crosses. For square 4, edges 0 and 2 are opposite—they don't touch directly. The first interpretation treats them as connected through the contour line passing through the square, while the second only pairs edges that share a corner. The marching squares approach suggests the first interpretation is correct, where the contour determines which edges connect.
+
+For a binary case, the pattern depends on corner configuration: a single different corner means the contour isolates it by connecting its two adjacent edges; two adjacent different corners means connecting edges that separate the classes; opposite corners create ambiguity. Applying this to square 1 with bottom-right as class 2 and others as class 1, the boundary isolates that corner by connecting its adjacent edges—right and bottom.
+
+For square 2 with diagonal corners differing, the saddle configuration is ambiguous. Square 3 with three different classes is also complex and ambiguous. Square 4 has right corners as class 2 and left as class 1, so the boundary runs vertically through the middle, connecting the top and bottom edges where each has one corner from each class.
+
+For square 5, the bottom-left corner is isolated as class 1 while the others are class 2, so the boundary connects the left and bottom edges.
+
+This gives the pattern: square 1 produces [[0, 3]], squares 2 and 3 are empty, square 4 produces [[1, 3]], and square 5 produces [[2, 3]]. The corner ordering is bottom-right, top-right, top-left, bottom-left. Bottom and right edges form a connected boundary. In square 4, a vertical division separates the left side (class 1) from the right side (class 2), with the boundary crossing both the top and bottom edges to create another connected pair. Square 5 shows the top-left corner shifting to class 2, leaving only the bottom-left as class 1.
+
+The final answer identifies which edges connect across the five squares: the first and fourth squares share a boundary, the fourth and fifth squares share a boundary, and the second and third squares have no connecting edges.
+
+### Subpass 3
+
+Attempt Metadata:
+- question_id: 52
+- subpass: 3
+- score: 0.0
+- status: None
+- incomplete_reason: None
+- output_text_chars: 93
+
+Original Prompt:
+Squares (each tuple lists the four corner labels; integers denote distinct classes):
+(1, 1, 1, 1)
+(2, 1, 2, 1)
+(1, 1, 1, 2)
+(1, 1, 3, 2)
+(2, 1, 2, 2)
+(3, 1, 2, 2)
+
+You are given unit squares with corners labelled in ('top-right', 'bottom-left', 'top-left', 'bottom-right') order.
+Edges are indexed: left=0, bottom=1, right=2, top=3.
+
+For each square above (in the same order), list which edges are guaranteed to connect.
+Return a list where each element is a list of sorted [i,j] pairs (i < j).
+If no edges are deterministically guaranteed (including ambiguous cases), return [] for that square.
+
+Verifier Signal:
+passed:  False  missing:  [0, 1, 2, 3, 4, 5]  errors:  []
+
+Raw Output:
+{'edges': [[[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]], [], [[0, 3]], [], [[2, 3]], []]}
+
+Chain of Thought:
+Let me understand the problem. We have squares with corners labeled with class integers. The corners are given in the order: (top-right, bottom-left, top-left, bottom-right).
+
+Edges are indexed as:
+- left = 0
+- bottom = 1  
+- right = 2
+- top = 3
+
+I need to determine which edges are guaranteed to connect for each square.
+
+Two edges connect if they share the same class label. Let me think about which corners define which edges:
+
+For a square:
+```
+top-left ----top---- top-right
+   |                    |
+  left               right
+   |                    |
+bottom-left --bottom-- bottom-right
+```
+
+Given the corner order is (top-right, bottom-left, top-left, bottom-right):
+- Position 0: top-right
+- Position 1: bottom-left
+- Position 2: top-left
+- Position 3: bottom-right
+
+Now, which corners define which edges?
+- Left edge (0): connects top-left and bottom-left (positions 2 and 1)
+- Bottom edge (1): connects bottom-left and bottom-right (positions 1 and 3)
+- Right edge (2): connects top-right and bottom-right (positions 0 and 3)
+- Top edge (3): connects top-left and top-right (positions 2 and 0)
+
+For edges to connect, they need to have the same class. An edge has a class if both its corners have the same class.
+
+Let me reconsider. I think the problem is asking about when edges of the same class connect to each other within the square.
+
+Actually, I think I need to understand what "edges are guaranteed to connect" means. 
+
+Looking at this more carefully: if two edges share the same class, they might be connected. But we need to determine which edges are "guaranteed to connect".
+
+Let me think about this differently. Each edge can be assigned a class based on its two corners. 
+
+An edge belongs to a class only when both its corners share that class. Two edges "connect" when they're assigned to the same class. For each square, I need to identify which edge pairs will definitely have matching classes. Let me start by checking the first square where all corners are labeled 1.
+
+Since every corner is class 1, all four edges—left, bottom, right, and top—are guaranteed to be class 1. This means every possible pairing of these edges connects: [0,1], [0,2], [0,3], [1,2], [1,3], [2,3].
+
+Moving to square 2 with corners (2, 1, 2, 1), the corners alternate between classes. The left edge connects a class 2 corner to a class 1 corner, making it mixed and unable to be assigned a single class.
+
+The bottom edge has both corners as class 1, so it's class 1. The right edge mixes class 2 and class 1, so it's also mixed. The top edge connects two class 2 corners, making it class 2. Since only the bottom edge has a definite class and the top edge has a different class, there are no connections between them: [].
+
+For square 3 with corners (1, 1, 1, 2), the left edge connects two class 1 corners, so it's class 1. The bottom edge mixes class 1 and class 2, making it mixed. The right edge also mixes class 1 and class 2.
+
+The top edge connects two class 1 corners, making it class 1. Since both the left and top edges are class 1, they connect: [0,3].
+
+Square 4 has corners (1, 1, 3, 2). All four edges mix different classes—the left edge has class 3 and class 1, the bottom has class 1 and class 2, the right has class 1 and class 2, and the top has class 3 and class 1. No edge maintains a single class, so there are no connections: [].
+
+For square 5 with corners (2, 1
+
+, 2, 2), the right edge has both corners as class 2, and the top edge also has both corners as class 2. Since both the right and top edges are class 2, they connect: [2,3].
+
+Square 6 has corners (3, 1, 2, 2). The left edge mixes class 2 and class 1
+
+, the bottom edge mixes class 1 and class 2, the right edge mixes class 3 and class 2, and the top edge mixes class 2 and class 3. No edge is uniform, so there are no connections.
+
+Compiling all results: square 1 connects to [0,1,2,3], square 2 has no connections, square 3 connects to [0,3], square 4 has no connections, square 5 connects to [2,3], and square 6 has no connections. Let me verify the corner labeling order to ensure I'm interpreting the positions correctly. ✓
+- Right (2): a=1, d=1 → class 1 ✓
+- Top (3): c=1, a=1 → class 1 ✓
+
+All edges match class 1, fully connected. ✓
+
+Square 2: (2, 1, 2, 1)
+- a=2, b=1, c=2, d=1
+- Left (0): c=2, b=1 → mixed
+- Bottom (1): b=1, d=1 → class 1
+- Right (2): a=2, d=1 → mixed
+- Top (3): c=2, a=2 → class 2
+
+Bottom edge is class 1 while top is class 2—no overlap, so no valid neighbors. []
+
+Square 3: (1, 1, 1, 2)
+- a=1, b=1, c=1, d=2
+- Left (0): c=1, b=1 → class 1
+- Bottom (1): b=1, d=2 → mixed
+- Right (2): a=1, d=2 → mixed
+- Top (3): c=1, a=1 → class 1
+
+Only left and top edges are class 1, bottom and right are mixed.
+
+Square 4: (1, 1, 3, 2)
+- a=1, b=1, c=3, d=2
+- All four edges are mixed—no consistent classification.
+
+Square 5: (
+
+2, 1, 2, 2)
+- a=2, b=1, c=2, d=2
+- Right (2): a=2, d=2 → class 2
+- Top (3): c=2, a=2 → class 2
+
+Right and Top both class 2. [[2,3]]
+
+Square 6: (3, 1, 2, 2)
+- a=3, b=1, c=2, d=2
+- Left (0): c=2, b=1 → mixed
+- Bottom (1): b=1, d=2 → mixed
+- Right (2): a=3, d=2 → mixed
+- Top (3): c
+
+=2, a=3 → mixed
+
+All edges mixed. []
+
+Final answer:
+[
+  [[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]],
+  [],
+  [[0,3]],
+  [],
+  [[2,3]],
+  []
+]Now let me run this analysis to get the answer.Perfect! The analysis is complete. Let me format the final answer as required JSON:
+
+```json
+{
+  "edges": [
+    [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]],
+    [],
+    [[0, 3]],
+    [],
+    [[2, 3]],
+    []
+  ]
+}
+```

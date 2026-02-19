@@ -1,0 +1,315 @@
+I need to find all leaf cells that share a face with the target leaf "1110110".
+
+First, let me understand the subdivision scheme:
+- Root ("") is the unit cube [0,1]³
+- The axes cycle: y → y → x → y → z (repeating)
+- Each node splits along the specified axis, creating two children (0 = lower half, 1 = upper half)
+
+Let me trace the path to "1110110":
+- Level 0 (root ""): split along y
+  - "1" takes upper half in y: y ∈ [0.5, 1]
+  
+- Level 1 ("1"): split along y
+  - "11" takes upper half in y: y ∈ [0.75, 1]
+  
+- Level 2 ("11"): split along x
+  - "111" takes upper half in x: x ∈ [0.5, 1], y ∈ [0.75, 1]
+  
+- Level 3 ("111"): split along y
+  - "1110" takes lower half in y: x ∈ [0.5, 1], y ∈ [0.75, 0.875]
+  
+- Level 4 ("1110"): split along z
+  - "11101" takes upper half in z: x ∈ [0.5, 1], y ∈ [0.75, 0.875], z ∈ [0.5, 1]
+  
+- Level 5 ("11101"): split along y (cycle repeats)
+  - "111011" takes upper half in y: x ∈ [0.5, 1], y ∈ [0.8125, 0.875], z ∈ [0.5, 1]
+  
+- Level 6 ("111011"): split along y
+  - "1110110" takes lower half in y: x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]
+
+The target cell occupies x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]. To find adjacent leaf cells, I need to identify cells where two dimensions align exactly and one dimension is adjacent.
+
+The six faces have potential neighbors: the left face at x = 0.5 connects to cells with x ∈ [x2, 0.5] where x2 < 0.5; the right face at x = 1 is at the boundary; the front face at y = 0.8125 connects to cells with y ∈ [y2, 0.8125] where y2 < 0.8125; the back face at y = 0.84375 connects to cells with y ∈ [0.84375, y2] where y2 > 0.84375; and the bottom and top faces at z = 0.5 and z = 1 similarly connect to adjacent cells in the z-direction.
+
+I need to trace through the split sequence more carefully. The splitting pattern cycles through y, y, x, y, z repeatedly. Following the path "1110110" through these levels, each bit determines which half of the current interval the cell occupies, which progressively narrows the bounds in each dimension. [0.8125, 0.875], z ∈ [0.5, 1]
+- Level 6, axis y, bit 0: x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]
+
+The target cell spans x ∈ [0.5, 1] (width 0.5), y ∈ [0.8125, 0.84375] (width 1/32), and z ∈ [0.5, 1] (width 0.5). I need to identify neighboring cells by checking each face boundary. Starting with the x = 0.5 face on the left side, I'm looking for cells where x_max equals 0.5 and the y and z ranges overlap with the target.
+
+The x = 1 face is at the cube boundary, so there are no neighbors there. For the y = 0.8125 face, I need cells with y_max = 0.8125 that share the x and z ranges. Similarly, the y = 0.84375 face requires cells with y_min = 0.84375 in the same x-z region. The z faces also need checking.
+
+Now I'll systematically go through the tree to identify all leaf nodes. From the "0" branch, the leaves include 00000, 0001000, 0001001, 0001100, 0001101, 0001110, 0001111, and continuing through the 0010 and 0011 sequences.
+
+From the "1" branch, I have leaves like 100000, 100001, 100010, 1000110, 1000111, 1001000, 1001001, 1001010, 1001011, and various nodes in the 101 and 1011 sequences. I need to continue cataloging these systematically to ensure I capture all terminal nodes in the tree structure.
+
+Looking more carefully at the overall tree, I should identify only the actual leaves—nodes that don't branch further. Under the "0" prefix, "00" splits into "000" and "001", where "000" itself branches into "0000" and "0001", and "0000" has a child "00000". This hierarchical structure means I need to trace each path to its endpoint rather than listing intermediate nodes. "0001111" is a leaf
+
+I need to systematically determine the bounds for each leaf node. I'll create a function that tracks how the bounding box subdivides as we traverse the path. The function cycles through axes in the pattern y, y, x, y, z, and at each step, the bit determines whether we take the lower or upper half of the current range for that axis.
+
+For a path like "1110110", I can trace through: starting with y-axis, bit 1 means the upper half [0.5, 1], then another y-axis split gives [0.75, 1], and so on through the remaining bits and axes. y', bit='0': x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]
+
+The target region is x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]. To find neighboring cells that share a face, I need to check where boundaries align. For cells adjacent along the x-axis, one must have x_max = 0.5 or x_min = 1.0, with overlapping y and z ranges. Similar logic applies for y and z adjacencies. AND x ranges overlap: [x1_min, x1_max] ∩ [0.5, 1] ≠ ∅
+AND y ranges overlap: [y1_min, y1_max] ∩ [0.8125, 0.84375] ≠ ∅
+
+Now I need to compute the spatial bounds for all leaf nodes and verify adjacency. Let me traverse the tree to identify every leaf, starting with those under branch "0":
+
+From the "0" branch, the leaves are: 00000, 00001, 0001000, 0001001, 000101, 0001100, 0001101, 0001110, 0001111, 0010000, 0010001, 0010010, 0010011, 0010100, 0010101, and continuing through the remaining nodes in that subtree.
+
+From the "1" branch, I have: 100000, 100001, 100010, 1000110, 1000111, 1001000, 1001001, 1001010, 1001011, 101000, 1010010, 1010011, 10101, 10110, 1011100, 1011101, 101111, 1100000, 1100001, 1100010, 1100011, 1100100, 1100101, 1100110, 1100111, 11010, 110110, 1101110, 1101111, 11100, 1110100, 1110101, 1110110 (the target node), 1110111, and more.
+
+Continuing with 1111000, 1111001, 1111010, 1111011, 1111100, 1111101, and 111110. But wait—I need to verify whether 111110 is actually a leaf. Looking at the structure, 111110 has children 1111100 and 1111101, so it's not a leaf itself. Similarly, 111111 appears to be a leaf with no children. I should be more systematic about identifying which nodes are terminal. Under the "0" branch, I have 00000 and 00001 as candidates, but I need to check their full subtrees to confirm they're leaves. "0100010" ✓
+- "0100011" ✓
+- "0100100" ✓
+- "0100101" ✓
+- "0101000" ✓
+- "0101001" ✓
+- "0101010" ✓
+- "0101011" ✓
+- "0101100" ✓
+- "0101101" ✓
+- "0101110" ✓
+- "0101111" ✓
+- "011000" ✓
+- "0110010" ✓
+- "0110011" ✓
+- "011010" ✓
+- "011011" ✓
+- "011100" ✓
+- "011101" ✓
+
+Under "1":
+- "100000" ✓
+-
+
+"100001" ✓
+- "100010" ✓
+- "1000110" ✓
+- "1000111" ✓
+- "1001000" ✓
+- "1001001" ✓
+- "1001010" ✓
+- "1001011" ✓
+- "101000" ✓
+- "1010010" ✓
+- "1010011" ✓
+- "10101" ✓
+- "10110" ✓
+- "1011100" ✓
+- "1011101" ✓
+- "101111" ✓
+- "1100000" ✓
+- "1100001" ✓
+- "1100010" ✓
+- "1100011" ✓
+- "1100100"
+- "1100101" ✓
+- "1100110" ✓
+- "1100111" ✓
+- "11010" ✓
+- "110110" ✓
+- "1101110" ✓
+- "1101111" ✓
+- "11100" ✓
+- "1110100" ✓
+- "1110101" ✓
+- "1110110" (target)
+- "1110111" ✓
+- "1111000" ✓
+- "1111001" ✓
+- "1111010" ✓
+- "1111011" ✓
+- "1111100" ✓
+- "1111101" ✓
+- "111111" ✓
+
+Now I need to establish bounds for candidates that could potentially share faces with the target.
+
+The target "1110110" occupies x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1]. I should examine cells that are siblings of the target's ancestors and those within the "1110" subtree. For instance, "1110111" is a sibling of the target, and tracing through its bit sequence: the first two bits set y ∈ [0.75, 1], the third bit expands x to [0.5, 1] while keeping y ∈ [0.75, 1], and the fourth bit further refines the y-range. same y-face at y=0.84375. The cousin node "1110101" follows a similar path: it narrows y to [0.75, 1], then x to [0.5, 1], constrains y to [0.75, 0.875], and begins adding z constraints.
+
+Continuing through the remaining bits, the z-range expands to [0.5, 1], then y gets further refined to [0.75, 0.8125] and finally [0.78125, 0.8125]. This gives a matching y-face at y=0.8125. The next node "1110100" starts with similar y-axis constraints. For the uncle node "11100": the first four steps match the previous path, establishing x ∈ [0.5, 1] and y ∈ [0.75, 0.875]. At i=4, the z-axis bit is '0', placing z in [0, 0.5] instead of [0.5, 1]. This creates a different z-range that prevents any face sharing along the z-dimension.
+
+Now checking for neighbors across other branches. To find x-face neighbors where x=0.5, I need cells with x_max = 0.5 and matching y and z ranges. These would come from the "0" subtree at level 2, where the x-axis split gives x < 0.5.
+
+Since the target starts with "1" (upper y half), I'm looking for cells with pattern "??0..." that also have y overlapping [0.8125, 0.84375] and z overlapping [0.5, 1]. The first two bits determine which y-range subdivision they fall into.
+
+For y ∈ [0.8125, 0.84375], I need bits "11" at levels 0-1 (selecting y ∈ [0.75, 1]), then bit "0" at level 2 for x ∈ [0, 0.5]. This gives candidates starting with "110".
+
+Checking all leaves under "110": 1100000, 1100001, 1100010, 1100011, 1100100, 1100101, 1100110, 1100111, 11010, 110110, 1101110, 1101111. Now I need to compute the spatial bounds for each to verify which ones actually neighbor the target.
+
+For "1100000": at i=0 I select y ∈ [0.5, 1], then at i=1 refine to y ∈ [0.75, 1], at i=2 select x ∈ [0, 0.5], at i=3 narrow y to [0.75, 0.875], at i=4 select z ∈ [0, 0.5], and at i=5 further constrain y to [0.8125, 0.84375].
+
+At i=6, y narrows to [0.78125, 0.8125], but this creates a problem: z_max = 0.5 equals the target's z_min = 0.5 (no overlap), and y_max = 0.78125 falls below the target's y_min = 0.8125 (no overlap either), so this path doesn't intersect the target region.
+
+For "1100001": I start with y ∈ [0.5, 1], refine to y ∈ [0.75, 1] at i=1, then select x ∈ [0, 0.5] at i=2. 0.5]
+
+The z-coordinate remains capped at 0.5, so there's still no overlap with the target z range of [0.5, 1]. For the "1100010" sequence, the constraints progressively narrow: y gets restricted to [0.5, 1], then [0.75, 1], x is limited to [0, 0.5], y further tightens to [0.75, 0.875], and z begins at [0, 0.5].
+
+Continuing through the remaining steps, y narrows to [0.8125, 0.875] and then [0.8125, 0.84375], but z stays bounded at 0.5 maximum—no overlap achieved. The "1100011" sequence follows a similar pattern, starting with y ∈ [0.5, 1], then y ∈ [0.75, 1], and x ∈ [0, 0.5]. ∈ [0, 0.5]
+
+z_max = 0.5, no z-overlap.
+
+For "1100100": starting with y ∈ [0.5, 1], then narrowing to y ∈ [0.75, 1], constraining x ∈ [0, 0.5], refining y further to [0.75, 0.875], and introducing z ∈ [0.5, 1] while maintaining the x and y bounds.
+
+Continuing with i=5 and i=6, y gets progressively tightened to y ∈ [0.75, 0.8125] then y ∈ [0.75, 0.78125], all while keeping x ∈ [0, 0.5] and z ∈ [0.5, 1]. The final y_max = 0.78125 falls short of the required 0.8125, so there's no y-overlap despite having x and z overlaps.
+
+Moving to "1100101": beginning with y ∈ [0.5, 1] and y ∈ [0.75, 1] 5, 1]
+
+The y-ranges don't actually overlap in the interior—they only touch at the boundary y=0.8125, so there's no face sharing here. For "1100110", I need to trace through the subdivisions starting with y ∈ [0.5, 1], then y ∈ [0.75, 1], and continue building out the spatial constraints. , 0.84375], z ∈ [0.5, 1]
+
+The regions share an x-face at x=0.5 with overlapping y and z ranges. For "1100111", the sequence progressively narrows the y-bounds from [0.5, 1] to [0.75, 1], then constrains x to [0, 0.5] while continuing to refine y further. 375, 0.875] only touch at y=0.84375, so there's no actual face overlap in the x-direction. Let me reconsider the criteria for sharing an x-face: one cell needs x_max = 0.5 while another has x_min = 0.5, and their y and z ranges must genuinely overlap rather than just touching at a boundary. Checking the target cell against "1100111": the y intervals [0.8125, 0.84375] and [0.84375, 0.875] only meet at a single point, which doesn't constitute a proper face share.
+
+For "11010", I need to trace through the bit sequence: starting with y ∈ [0.5, 1], then narrowing to [0.75, 1], applying an x-split to get [0, 0.5], refining y to [0.875, 1], and finally applying a z-split at z=0.
+
+5 to get z ∈ [0, 0.5]. Since y_min = 0.875 exceeds the previous region's y_max of 0.84375, there's no overlap in the y-direction.
+
+For "110110", the pattern follows similarly through the first four steps, reaching x ∈ [0, 0.5], y ∈ [0.875, 1], but then applies a z-split at z=1 instead, giving z ∈ [0.
+
+5, 1]. The final y-split narrows to y ∈ [0.875, 0.9375], and again y_min = 0.875 prevents any y-overlap with the earlier region.
+
+"1101110" begins with the same y-splits and x-constraint, then continues through additional refinements in the y-direction. ∈ [0.5, 1]
+- i=1, y, 1: y ∈ [0.75, 1]
+- i=2, x, 0: x ∈ [0, 0.5], y ∈ [0.75, 1]
+- i=3, y, 1: x ∈ [0, 0.5], y ∈ [0.875, 1]
+- i=4, z, 1: x ∈ [0, 0.5], y ∈ [0.875, 1], z ∈ [0.5, 1]
+- i=5, y, 1: x ∈ [0, 0.5], y ∈ [0.9375, 1], z ∈ [0.5, 1]
+
+Continuing to refine the bounds through successive constraints, narrowing the y-range progressively from [0.5, 1] down to [0.9375, 1] while maintaining x ∈ [0, 0.5] and z ∈ [0.5, 1].
+
+At i=6, the y-interval tightens further to [0.96875, 1], which exceeds the target's y_min of 0.84375, eliminating any y-face overlap. This means only "1100110" from the "110" branch connects to the target cell. Checking other branches under "111" that share the same x-range [0.5, 1] as the target, I need to examine whether cells like "1111000" could form adjacent faces. , y, 0: x ∈ [0.5, 1], y ∈ [0.875, 0.90625], z ∈ [0, 0.5]
+
+The z-boundaries align at z=0.5, but the y-ranges don't intersect since 0.875 exceeds 0.84375, so there's no shared face here. Checking "111010..." next, I find "1110101" does share a y-face at y=0.8125. Now I need to systematically examine all leaves under the "111" branch, including "11100" which I've already verified. ∈ [0.875, 1]
+- i=4, z, 1: x ∈ [0.5, 1], y ∈ [0.875, 1], z ∈ [0.5, 1]
+- i=5, y, 0: x ∈ [0.5, 1], y ∈ [0.875, 0.9375], z ∈ [0.5, 1]
+- i=6, y, 0: x ∈ [0.5, 1], y ∈ [0.875, 0.90625], z ∈ [0.5, 1]
+
+No overlap with target.
+
+"1111011":
+- i=0, y, 1: y ∈ [0.5, 1]
+- i=1, y, 1: y ∈ [0.75, 1]
+- i=2, x, 1: x ∈ [0.5, 1]
+- i=3, y, 1: x ∈ [0.5, 1], y ∈ [0.875, 1]
+- i=4, z, 1: x ∈ [0.5, 1], y ∈ [0.875, 1], z ∈ [0.5, 1]
+- i=5, y, 0: x ∈ [0.5, 1], y ∈ [0.875, 0.9375], z ∈ [0.5, 1]
+- i=6, y, 1: x ∈ [0.5, 1], y ∈ [0.90625, 0.9375], z ∈ [0.5, 1]
+
+No overlap with target.
+
+"1111100":
+- i=0, y, 1: y ∈ [0.5, 1]
+- i=1, y, 1: y ∈ [0.75, 1]
+- i=2, x, 1: x ∈ [0.5, 1]
+- i=3, y, 1: x ∈ [0.5, 1], y ∈ [0.875, 1]
+- i=4, z, 0: x ∈ [0.5, 1], y ∈ [0.875, 1], z ∈ [0, 0.5]
+- i=5, x, 0: x ∈ [0.5, 0.75], y ∈ [0.875, 1], z ∈ [0, 0.5]
+- i=6, y, 0: x ∈ [0.5, 0.75], y ∈ [0.875, 0.9375], z ∈ [0, 0.5]
+
+No overlap with target.
+
+"1111101":
+- i=0, y, 1: y ∈ [0.5, 1]
+- i=1, y, 1: y ∈ [0.75, 1]
+- i=2, x, 1: x ∈ [0.5, 1]
+- i=3, y, 1: x ∈ [0.5, 1], y ∈ [0.875, 1]
+- i=4, z, 0: x ∈ [0.5, 1], y ∈ [0.875, 1], z ∈ [0, 0.5]
+- i=5, x, 0: x ∈ [0.5, 0.75], y ∈ [0.875, 1], z ∈ [0, 0.5]
+- i=6, y, 1: x ∈ [0.5, 0.75], y ∈ [0.9375, 1], z ∈ [0, 0.5]
+
+No overlap with target.
+
+"111111":
+- i=0, y, 1: y  , 1: y ∈ [0.75, 1]
+- i=2, x, 1: x ∈ [0.5, 1]
+- i=3, y, 1: x ∈ [0.5, 1], y ∈ [0.875, 1]
+- i=4, z, 1: x ∈ [0.5, 1], y ∈ [0.875, 1], z ∈ [0.5, 1]
+- i=5, y, 1: x ∈ [0.5, 1], y ∈ [0.9375, 1], z ∈ [0.5, 1]
+
+The y-range doesn't intersect with the target. Checking what I've found so far: "1100110" shares a face with the target region.
+
+I've identified several neighbors: "11100" at the z=0.5 face, "1110101" and "1110111" at different y-faces. For z-neighbors specifically, cells touching at z=0.5 need z_max = 0.5, which means taking the "0" branch at level 4. Since the target follows "1110110" with "1110" through level 3 and "1" at level 4, z-neighbors must start with "11100".
+
+Checking the tree structure, "11100" is a leaf with no children, making it the sole z-face neighbor. Now I need to systematically find x-face neighbors where x_max = 0.5. The target cell spans x ∈ [0.5, 1], so at the x-split (level 2), I need cells that took the "0" branch instead of "1".
+
+Candidates follow the pattern "110...", and I've already verified "1100110" exists as a leaf. For y-face neighbors, the target occupies y ∈ [0.8125, 0.84375], requiring neighbors with either y_max = 0.8125 or y_min = 0.84375. The path to the target's y-range involves level 0 bit "1" (y ∈ [0.5, 1]) and level 1 bit "1", so I need to explore adjacent y-branches to find remaining neighbors.
+
+At the y=0.8125 boundary, potential neighbors must have y ∈ [?, 0.8125], which means levels 0-1 stay "11", level 3 stays "0", but level 5 flips to "0" instead of the target's "1". This gives patterns like "1110?0?..." where the fifth level bit is "0". Since the target path "1110110" has bit "1" at level 5, I need to check what valid leaves exist with bit "0" at that position.
+
+The path "11100" forms a complete leaf at level 4, so level 5 doesn't exist there. Checking its bounds: levels 0-1 give y ∈ [0.75, 1], level 2 constrains x ∈ [0.5, 1], level 3 with bit "0" narrows y to [0.75, 0.875], and level 4 with bit "0" further restricts to x ∈ [0.5, 1] and y ∈ [0.75, 0.8125].
+
+Since this region has y ∈ [0.75, 0.8125] but z ∈ [0, 0.5], it can only share a face along the z-boundary, not the y-boundary. For a y-neighbor at y=0.8125 with matching x and z ranges, I need a path where level 5 bit is "0". The candidate "1110101" works here since it produces the required y-range overlap.
+
+Now checking another y-neighbor positioned at y=0.84375. This requires levels 0-1 as "11", level 3 as "0" to get y ∈ [0.75, 0.875], then level 5 as "1" to narrow to y ∈ [0.8125, 0.875], and finally level 6 as "1" to reach y ∈ [0.84375, 0.875]. This gives the path "1110110".
+
+The cell with code "1110111" (level 6 bit "1") occupies y ∈ [0.84375, 0.875] and represents the y-neighbor at this position. I should also explore whether cells elsewhere in the tree could be adjacent to the target region, particularly at the x=0.5 boundary where x-neighbors would need to span from some lower bound up to 0.5 while maintaining y overlap with [0.8125, 0.84375].
+
+Since the x-split occurs at level 2, any cell with x < 0.5 must have "0" at that position. For y-overlap with the target's y-range, I need cells where y_max exceeds 0.8125 and y_min stays below 0.84375. This requires "1" bits at both level 0 and level 1 for the y-coordinate, placing the cell in the upper half of the y-axis.
+
+At level 3, a "0" bit further constrains y to [0.75, 0.875], which contains both boundary values. Continuing the subdivision at level 5 with another "0" bit narrows it to [0.75, 0.8125], while a "1" bit gives [0.8125, 0.875]. At level 6, the pattern continues splitting these ranges into even finer intervals like [0.75, 0.78...].
+
+The key observation is that cells matching "110??1?" have y-ranges in [0.8125, 0.875]. When subdivided further, "110??10" produces exactly [0.8125, 0.84375], while "110??11" reaches [0.84375, 0.875] but only touches the boundary without overlapping the interior. This means "110???" needs careful examination to determine which specific bit patterns actually contain the target region.
+
+For the z-constraint where z ∈ [0.5, 1], bit 4 must be "1", narrowing candidates to patterns like "110?1?1?" or "110?111". Starting with "110" at level 2, level 3 can branch as either "11001" or "11011", both requiring bit 4 to be "1". Under "11001", the y-range after level 3 spans [0.75, 0.8125], which is narrower than the full [0.75, 0.875] range. "1101": y ∈ [0.875, 1]
+
+To reach y ∈ [0.8125, 0.84375], I need the "1100" branch. Following "1100" through level 4 (z-axis split): "11000" gives z ∈ [0, 0.5], while "11001" gives z ∈ [0.5, 1], which works. This path yields x ∈ [0, 0.5], y ∈ [0.75, 0.875], z ∈ [0.5, 1]. At level 5, the y-split divides into "110010" with y ∈ [0.75, 0.8125] and "110011" with y ∈ [0.8125, 0.875].
+
+"110011" narrows to x ∈ [0, 0.5], y ∈ [0.8125, 0.875], z ∈ [0.5, 1]. One more level 6 y-split produces "1100110" covering y ∈ [0.8125, 0.84375] and "1100111" covering y ∈ [0.84375, 0.875]. The node "1100110" matches the target's y and z ranges exactly, with x boundaries aligning at 0.5.
+
+Now checking "1100111": it spans y ∈ [0.84375, 0.875], which only touches the target at the boundary y = 0.84375 rather than overlapping in the interior. For face-sharing between cells, they need a common 2D surface where one cell's maximum coordinate equals another's minimum coordinate, and their ranges in the other dimensions must align or overlap. At the x = 0.5 face, "1100111" would have x_max = 0.5 matching the target's x_min = 0.5, but the y-z rectangles need to be checked for compatibility.
+
+The y-ranges [0.84375, 0.875] and [0.8125, 0.84375] only meet at a single point, not across an area, so they don't form a shared face. For a proper face to exist between two cells, the overlapping region must have positive area, not just touch at boundaries.
+
+Checking "110010..." paths with y_max = 0.8125: these also only touch the target at y=0.8125 as a line rather than a region. For instance, "1100101" has y ∈ [0.78125, 0.8125], which overlaps with target's y-range only along the boundary line y=0.8125, confirming no face sharing occurs.
+
+The x-face neighbor is "1100110". Verifying the complete neighbor list: "1100110" shares an x-face at x=0.5, "11100" shares a z-face at z=0.5, "1110101" and "1110111" share y-faces at y=0.8125 and y=0.84375 respectively. Checking "1100110" confirms it has x ∈ [0, 0.5], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1], which matches the target's y and z ranges exactly along the x=0.5 boundary.
+
+For "11100", recalculating the bounds: after applying the first four splits (y at 0.5, y at 0.75, x at 0.5, y at 0.75), the region is x ∈ [0.5, 1], y ∈ [0.75, 0.875]. The final split on z at 0 gives z ∈ [0, 0.5], which matches the target's z-face at z=0.5 with overlapping x and y ranges.
+
+For "1110101", the sequence of splits narrows y progressively: starting from [0.5, 1], then [0.75, 1], then [0.75, 0.875], then [0.75, 0.8125], and finally [0.78125, 0.8125]. With x ∈ [0.5, 1] and z ∈ [0.5, 1] maintained throughout, the resulting region's y-face at y=0.8125 aligns with the target.
+
+For "1110111", the same initial splits apply through i=4, establishing x ∈ [0.5, 1], y ∈ [0.75, 0.875], z ∈ [0.5, 1]. At i=5, the y-split with bit 1 expands y upward to [0.8125,
+
+0.875], and at i=6 another y-split with bit 1 narrows it further to [0.84375, 0.875]. This converges on the target region x ∈ [0.5, 1], y ∈ [0.8125, 0.84375], z ∈ [0.5, 1], with the boundary face at y=0.84375 matching perfectly.
+
+All four neighbors are now verified. I should systematically check the six faces of the target region to ensure no neighbors were overlooked—starting with x=0.5, then moving through the remaining boundaries. Actually, each leaf cell occupies a unique region without further subdivision. So "1100110" is the only cell on the left side that touches this face. Since the cells partition the unit cube without overlapping, no other cell can occupy that same space. For another cell to share the x=0.5 face, it would need to have a different y or z range, which means it wouldn't actually touch the target's face at that location. left with x_max = 0.5 that overlaps this region. Any adjacent cell would only touch at a boundary, not share a face. Since "1100110" is a leaf node covering exactly the required rectangle at x = 0.5, it's the sole cell that could form a face here.
+
+Looking at the tree structure, "110011" has two children: "1100110" and "1100111". These subdivide the parent's space along the y-axis, with "1100110" occupying y ∈ [0.8125, 0.84375] and "1100111" taking y ∈ [0.84375, 0.875], both within x ∈ [0, 0.5] and z ∈ [0.5, 1].
+
+For the target's x=0.5 face at y ∈ [0.8125, 0.84375], z ∈ [0.5, 1], "1100110" fully covers this region while "1100111" doesn't overlap since its y-range starts where the target's ends.
+
+Checking the y=0.8125 face (x ∈ [0.5, 1], z ∈ [0.5, 1]), "1110101" spans exactly this region. I should verify whether there are sibling leaves that might also contribute to the neighbor set. ∈ [0.5, 1]):
+"1110111" covers x ∈ [0.5, 1], y ∈ [0.84375, 0.875], z ∈ [0.5, 1], fully covering the y=0.84375 face. For the z=0.5 face where x ∈ [0.5, 1] and y ∈ [0.8125, 0.84375], "11100" with x ∈ [0.5, 1], y ∈ [0.75, 0.875], z ∈ [0, 0.5] contains the needed y-range, so it covers this face as well.
+
+Now I need to verify "11100" is the only cell at z=0.5 with the right x and y overlap. Under "111", the structure shows "11100" as a leaf beneath "1110", which splits at level 4 on z-coordinate into "11100" (z ∈ [0, 0.5]) and "11101" (z ∈ [0.5, 1]). The "11100" cell covers the full z ∈ [0, 0.5] range for that region.
+
+Since "11100" spans x ∈ [0.5, 1] and y ∈ [0.75, 0.875], which includes my target's y-range of [0.8125, 0.84375], it's the only z-face neighbor. My neighbor list is now complete: "1100110" at x=0.5, "11100" at z=0.5, "1110101" at y=0.8125, and "1110111" at y=0.84375. I should check whether other branches might contain additional neighbors.
+
+The "0" branch is eliminated since it constrains y < 0.5, but my target requires y ≥ 0.8125. Similarly, the "10" branch only allows y ∈ [0.5, 0.75], which doesn't reach my target's minimum y of 0.8125, so no neighbors exist there either.
+
+I've already verified the "110" and "111" branches. My candidate list is: "1100110", "11100", "1110101", and "1110111". But I should verify that "1100110" actually shares a face with my target. Let me trace through the path again—starting with the first split on y giving y ∈ [0.5, 1], then the second split on y yielding y ∈ [0.75,
+
+1]. At level 2, x splits to [0.5, 1], and y stays [0.75, 1]. Level 3 narrows y to [0.75, 0.875], level 4 expands z to [0.5, 1], level 5 tightens y to [0.8125, 0.875], and level 6 further constrains y to [0.8125, 0.84375]. For the candidate path, the first two splits match (y ∈ [0.75, 1]), but at level 2 the x-split goes to [0, 0.5] instead of [0.5, 1], which means the regions don't overlap in the x-dimension and therefore can't share a face. at x = 0.5:
+- y ∈ [0.8125, 0.84375] (matches exactly)
+- z ∈ [0.5, 1] (matches exactly)
+Face area: 0.03125 × 0.5 = 0.015625 > 0 ✓
+
+So "1100110" shares the x=0.5 face. ✓
+
+Let me now verify all four one more time with the corrected bounds:
+
+1. **"1100110"**: [0, 0.5] × [0.8125, 0.84375] × [0.5, 1]
+   - Shares x=0.5 face: y ∈ [0.8125, 0.84375], z ∈ [0.5, 1] ✓
+
+2. **"
+
+11100"**: [0.5, 1] × [0.75, 0.875] × [0, 0.5]
+   - Shares z=0.5 face: x ∈ [0.5, 1], y ∈ [0.8125, 0.84375] (subset of [0.75, 0.875]) ✓
+
+3. **"1110101"**: [0.5, 1] × [0.78125, 0.8125] × [0.5, 1]
+   - Shares y=0.8125 face: x ∈ [0.5, 1], z ∈ [0.5, 1] ✓
+
+4. **"1110111"**: [0.5, 1] × [0.84375, 0.875] × [0.5, 1]
+   - Shares y=0.84375 face: x ∈ [0.5, 1], z ∈ [0.5, 1] ✓
+
+All four cells share faces with each other, confirming they form a connected group.
+
+The answer is: 1100110, 11100, 1110101, 1110111

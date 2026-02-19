@@ -1,0 +1,125 @@
+I need to find all leaves that share a face with the target leaf "1101010000".
+
+First, let me understand the subdivision scheme. The cycle is: x → y → z → z → y → x → z (repeating).
+
+So for depths:
+- Depth 0: root (unit cube)
+- Depth 1: split along x
+- Depth 2: split along y
+- Depth 3: split along z
+- Depth 4: split along z
+- Depth 5: split along y
+- Depth 6: split along x
+- Depth 7: split along z
+- Depth 8: split along x (cycle repeats)
+- Depth 9: split along y
+- Depth 10: split along z
+
+The target leaf "1101010000" has 10 digits, so it's at depth 10.
+
+Let me trace the path:
+- Start with unit cube [0,1]³
+- "1": right half along x → [0.5, 1] × [0, 1] × [0, 1]
+- "1": back half along y → [0.5, 1] × [0.5, 1] × [0, 1]
+- "0": bottom half along z → [0.5, 1] × [0.5, 1] × [0, 0.5]
+- "1": top half along z → [0.5, 1] × [0.5, 1] × [0.25, 0.5]
+- "0": front half along y → [0.5, 1] × [0.5, 0.75] × [0.25, 0.5]
+- "1": right half along x → [0.75, 1] × [0.5, 0.75] × [0.25, 0.5]
+- "0": bottom half along z → [0.75, 1] × [0.5, 0.75] × [0.25, 0.375]
+
+
+- "0": left half along x → [0.75, 0.875] × [0.5, 0.75] × [0.25, 0.375]
+- "0": front half along y → [0.75, 0.875] × [0.5, 0.625] × [0.25, 0.375]
+- "0": bottom half along z → [0.75, 0.875] × [0.5, 0.625] × [0.25, 0.3125]
+
+The target voxel occupies [0.75, 0.875] × [0.5, 0.625] × [0.25, 0.3125]. Now I need to identify which neighboring voxels share a face with this region by checking the six face boundaries. The octree splits follow a pattern at each depth: x, y, z, z, y, x, z, x, y, z. Tracing through the path "1101010000" step by step, I start with the full cube [0, 1] × [0, 1] × [0, 1]. The first bit "1" indicates an x-split going right to [0.5, 1] × [0, 1] × [0, 1].
+
+Continuing through the remaining bits, the y-split at depth 2 selects the back half, the z-split at depth 3 picks the bottom, then depth 4's z-split narrows to the upper portion of that region. At depth 5, a y-split moves toward the front, and depth 6's x-split goes right again, progressively refining the bounding box to [0.75, 1] × [0.5, 0.75] × [0.25, 0.5].
+
+From there, successive splits continue subdividing: a z-split takes the lower section, an x-split moves left, a y-split goes front, and another z-split selects the bottom, each step tightening the spatial bounds further down the tree.
+
+The final voxel occupies [0.75, 0.875] × [0.5, 0.625] × [0.25, 0.3125]. To find face neighbors, I need to identify adjacent voxels sharing boundaries—starting with the left face at x = 0.75, which requires finding siblings or cousins in the octree that have x-ranges terminating at that coordinate.
+
+Going back through the path "1101010000", at depth 6 an x-split chose "1" (right half [0.5, 0.75]), and at depth 8 another x-split chose "0" (left half [0.75, 0.875]). The left neighbor would come from flipping the depth 8 bit to access [0.5, 0.75], then matching the remaining splits to stay within the same y and z bounds. Rather than tracing each sibling individually, I can identify the common ancestor where the x-coordinate diverges, flip that decision, and reconstruct the path that maintains adjacency along the other dimensions. 1101010100" and "1101010101"
+- "110101011" has children "1101010110" and "1101010111"
+
+The rightmost leaf under "11010101" would be "1101010111".
+
+So the left neighbor of "1101010000" at x = 0.75 is "1101010111".
+
+Let me verify this makes sense: "1101010000" is at x ≈ 0.8203125, and "1101010111" is at x ≈ 0.8203125 - (1/512) ≈ 0.8203125 - 0.001953125 ≈ 0.8183594. Yes, that's to the left.
+
+Now for the right neighbor at depth 8. Since we chose "0" at depth 8 (going left), the sibling "110101001" is to the right. Its descendants at depth 9 would be "1101010010" and "1101010011".
+
+For the left neighbor, I need to backtrack further. At depth 6, we chose "1" (right), so the sibling "110100" is to the left with x-range [0.5, 0.75]. I need to find the rightmost descendants of "110100" at depth 9 to get the left neighbor.
+
+Let me reconsider the path structure more carefully. "1101010000" breaks down as:
+- Depth 1-5: "11010"
+- Depth 6: "1" (x-split, chose right)
+- Depth 7: "0" (y-split, chose left)
+- Depth 8: "0" (x-split, chose left)
+- Depth 9: "0" (y-split, chose left)
+
+So at depth 6, the sibling "110100" is to the left. I need its rightmost leaf at depth 9 to find the left neighbor. split)
+- Bit 3: 1 (depth 4, z-split)
+- Bit 4: 0 (depth 5, y-split)
+- Bit 5: 1 (depth 6, x-split)
+- Bit 6: 0 (depth 7, z-split)
+- Bit 7: 0 (depth 8, x-split)
+- Bit 8: 0 (depth 9, y-split)
+- Bit 9: 0 (depth 10, z-split)
+
+For the left face neighbor (x-min = 0.75), I need to flip bit 7 since that's where the x-split occurs at depth 8, and we went left (0) at that decision point. The sibling would have the opposite value at that position.
+
+Flipping bit 7 from 0 to 1 gives "1101010100..." but I need to verify this path actually exists as a leaf node. Checking the tree structure, "11010101" itself isn't a leaf—it branches into "110101010" and "110101011". The first child "110101010" further subdivides into "1101010100" and "1101010101", while "110101011" splits into "1101010110" and "1101010111". So the actual leaves under this parent are "1101010100", "1101010101", "1101010110", and "1101010111".
+
+These leaves all lie to the right of my target since flipping bit 7 moves me rightward at depth 8. For the left neighbor, I need to backtrack to an earlier x-split. At depth 6, I went right by choosing 1, so flipping bit 5 to 0 gives "110100...". The rightmost leaves under "110100" would form the left boundary adjacent to my target's left face.
+
+Let me reconsider the structure more systematically. When traversing an x-split at depth d with bit b, finding the left neighbor depends on which direction I chose: if b = 0, I went left and need my parent's left sibling's right neighbor; if b = 1, I went right and need my parent's left neighbor. Since bit 7 = 0 at depth 8, I went left, making the parent "110101000", and I should look for that parent's left neighbor instead.
+
+This geometric approach is clearer: for the target voxel spanning [0.75, 0.875] × [0.5, 0.625] × [0.25, 0.3125], the left face at x = 0.75 requires adjacent voxels with x-max = 0.75.
+
+At depth 6, bit 5 = 1 places us in the right half [0.75, 1] along x. To find neighbors with x-max = 0.75, I need to flip bit 5 to 0, giving prefix "110100", and trace which leaves under this prefix have the matching y and z ranges and reach exactly x = 0.75.
+
+Tracing through "110100": bit 0 selects x in [0.5, 1], bit 1 selects y in [0.5, 1], bit 2 selects z in [0, 0.5], bit 3 narrows z to [0.25, 0.5], bit 4 narrows y to [0.5, 0.75], and bit 5 = 0 would select x in [0.5, 0.75].
+
+Continuing to match the target's y-range [0.5, 0.625] and z-range [0.25, 0.3125], at depth 7 bit 6 = 0 splits z to [0.25, 0.375], then at depth 8 bit 7 = 0 splits x to [0.5, 0.625].
+
+For bit 7 = 1, the x-range becomes [0.625, 0.75] × [0.5, 0.75] × [0.25, 0.375]. At depth 9, bit 8 = 0 narrows y to [0.5, 0.625], which matches the target. Then at depth 10, bit 9 = 0 further constrains z toward [0.25, 0.3125].
+
+The sequence "11010001100" produces exactly [0.625, 0.75] × [0.5, 0.625] × [0.25, 0.3125]—this aligns with the target's left face. Checking the tree structure, "110100011" has children "1101000110" and "1101000111", so it's not a leaf. "1101000110" itself has a child "11010001100", suggesting this might be a valid leaf node. └── 110100011
+│           ├── 1101000110
+│           └── 1101000111
+```
+
+Both "1101000110" and "1101000111" are leaves at depth 10. Following the bit path for "1101000110": bit 0 = 1 narrows x to [0.5, 1], bit 1 = 1 narrows y to [0.5, 1], bit 2 = 0 narrows z to [0.5, 1] × [0.5, 1] × [0, 0.5], and bit 3 = 1 further refines z to [0.5, 1] × [
+
+0.5, 1] × [0.25, 0.5]. Continuing through bits 4-7: bit 4 = 0 constrains y to [0.5, 0.75], bit 5 = 0 constrains x to [0.5, 0.75], bit 6 = 0 constrains z to [0.25, 0.375], and bit 7 = 1 constrains x to [0.625, 0.75]. The remaining bits 8 and 9 continue subdividing within [0.625, 0.75] × [0.5, 0.75] × [0.25, 0.375].
+
+However, this path yields y in [0.625, 0.75], which contradicts the target's y range of [0.5, 0.625]. I need to explore a different sequence. Testing "110100010" instead: bit 0 = 1 expands x to [0.5, 1], bit 1 = 1 expands y to [0.5, 1].
+
+Continuing through the remaining bits, I narrow z to [0.25, 0.5] after bits 2-3, then constrain y to [0.5, 0.75] and x to [0.5, 0.75] with bits 4-5. This still doesn't align with the target ranges.
+
+At depth 9, the sequence "110100010" terminates but requires depth 10 to fully specify the point. Its two children are "1101000100" and "1101000101", with the first child having bit 9 = 0.
+
+For "1101000100", the z-range becomes [0.625, 0.75] × [0.5, 0.625] × [0.25, 0.3125], which aligns with the target region—this is a left neighbor sharing the x = 0.75 face. The sibling "1101000101" has bit 9 = 1, placing it in [0.625, 0.75] × [0.5, 0.625] × [0.3125, 0.375], which sits above the target and isn't a face neighbor.
+
+Now checking the right face at x = 0.875: I need voxels where x-min equals 0.875. At depth 8, selecting bit 7 = 0 (left) constrains x to [0.75
+
+, 0.875], but the alternative bit 7 = 1 (right) gives x in [0.875, 1]. Following path "1101010010" with bit 7 = 1 yields [0.875, 1] × [0.5, 0.75] × [0.25, 0.375]. Setting bit 8 = 0 (y) narrows to [0.875, 1] × [0.5, 0.625] × [0.25, 0.375], and bit 9 = 0 (z) further refines to [0.875, 1] × [0.5, 0.625] × [0.25, 0.3125]. This would qualify as a right neighbor if it's a leaf node.
+
+Checking the tree structure confirms "1101010010" is indeed a leaf, making it a valid right neighbor. For the front face at y = 0.5, I need voxels where y-max equals 0.5. The depth 9 y-split used bit 8 = 0 (front), producing y in [0.5, 0.625]. Looking back at depth 5's y-split, bit 4 = 0 (front) gave y in [0.5, 0.75], while the sibling bit 4 = 1 would give y in [0.75, 1]—not adjacent to the target face.
+
+At depth 2's y-split, bit 1 = 1 (back) produced y in [0.5, 1], so the sibling bit 1 = 0 gives y in [0, 0.5], which is adjacent. I need to find leaves under path "10" that have y-max = 0.5, x in [0.75, 0.875], and z in [0.25, 0.3125]. Starting with "10": bit 0 = 1 (x) spans [0.5, 1] × [0, 1] × [0, 1], then bit 1 = 0 (y) narrows to [0.5, 1] × [0, 0.5] × [0, 1]. Further refinement is needed to match the x and z ranges.
+
+For z in [0.25, 0.3125], bit 2 must be 1 since this range falls within [0.25, 0.5]. At bit 3, z in [0.25, 0.5] requires bit 3 = 0 to stay within [0.25, 0.375], which contains the target range.
+
+For y, since the maximum needs to reach 0.5, bit 4 = 1 places y in [0.25, 0.5]. For x in [0.5, 1], bit 5 = 1 is necessary to narrow down to [0.75, 1], which includes the required [0.75, 0.875].
+
+Bit 6 targets z: the range [0.25, 0.375] needs to be constrained to [0.25, 0.3125], so bit 6 = 0. For the next x refinement in [0.75, 1], bit 7 = 0 selects [0.75, 0.875], matching the target. Bit 8 continues refining y from [0.25,
+
+0.5] to reach the upper bound, requiring bit 8 = 1 to select [0.375, 0.5]. For z in [0.25, 0.3125], bit 9 can be either 0 or 1 depending on which child nodes are leaves—this needs verification against the tree structure. The path "1010110101" is being constructed, and checking whether "101011010" leads to valid leaf nodes.
+
+Both "1010110100" and "1010110101" are leaves. The first voxel spans z ∈ [0.25, 0.28125], which overlaps with the target's z-range. I need to verify if they actually share a face rather than just an edge—this requires checking if they're adjacent in y and overlap in x and z. The target voxel has x ∈ [0.75, 0.875], y ∈ [0.375, 0.5], and z ∈ [0.25, ...], while "1010110100" occupies x ∈ [0.75, 0.875], y ∈ [0.375, 0.5], z ∈ [0.25, 0.28125].
+
+Since the y-ranges are adjacent (one ends at 0.5, the

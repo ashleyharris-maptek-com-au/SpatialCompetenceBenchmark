@@ -35,7 +35,7 @@ _BATCH_SCHEMA = {
   },
 }
 
-_TASK_GROUP_MAX_WORKERS = 4
+_TASK_GROUP_MAX_WORKERS = 1
 
 
 def _make_llmbenchcore_engine(config: AnalysisConfig):
