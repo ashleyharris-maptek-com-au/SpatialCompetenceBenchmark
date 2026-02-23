@@ -30,7 +30,7 @@ Paper-model reports (tools):
 
 ```bash
 # Clone the repository
-git clone https://github.com/ashleyharris-maptek-com-au/MeshBenchmark.git
+git clone <REPO_URL>
 cd MeshBenchmark
 
 # Install dependencies
