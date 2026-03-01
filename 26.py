@@ -2,6 +2,8 @@ skip = True
 
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Voxels"]
+
 title = "Subdivided binary tree walk."
 
 # Credit to Jash Vira for the idea.

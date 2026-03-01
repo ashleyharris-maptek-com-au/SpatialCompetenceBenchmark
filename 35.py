@@ -5,6 +5,8 @@ import random
 import os
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Simulation", "Image Upload"]
+
 title = "Gear Train Reasoning - predict rotation directions and speeds"
 skip = True
 prompt = """

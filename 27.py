@@ -1,5 +1,7 @@
 import random
 
+tags = ["2D", "Game"]
+
 title = "Jewel swap"
 skip = True
 

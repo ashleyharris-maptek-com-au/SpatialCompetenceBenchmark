@@ -2,6 +2,8 @@ import math
 
 import OpenScad
 
+tags = ["3D", "Constructive", "Solved Algorithm"]
+
 title = "CSG Union of Polyhedra"
 
 # Base prompt template - DESCRIPTION is replaced per test case
@@ -423,9 +425,8 @@ def earlyFailTest(result, subpass):
 
       # Track directed edges for winding check
       if directed_key in directed_edges:
-        winding_errors.append(
-          f"Edge ({v1}, {v2}) appears twice in same direction "
-          f"(faces {directed_edges[directed_key]} and {face_idx})")
+        winding_errors.append(f"Edge ({v1}, {v2}) appears twice in same direction "
+                              f"(faces {directed_edges[directed_key]} and {face_idx})")
       directed_edges[directed_key] = face_idx
 
       edge_count[edge_key] = edge_count.get(edge_key, 0) + 1
@@ -457,15 +458,13 @@ def earlyFailTest(result, subpass):
   if winding_errors or boundary_edges or nonmanifold_edges:
     parts = []
     if winding_errors:
-      parts.append(f"{len(winding_errors)} winding error(s): "
-                   + "; ".join(winding_errors))
+      parts.append(f"{len(winding_errors)} winding error(s): " + "; ".join(winding_errors))
     if boundary_edges:
-      parts.append(f"{len(boundary_edges)} boundary edge(s) (not watertight): "
-                   + ", ".join(str(e) for e in boundary_edges))
+      parts.append(f"{len(boundary_edges)} boundary edge(s) (not watertight): " +
+                   ", ".join(str(e) for e in boundary_edges))
     if nonmanifold_edges:
-      parts.append(f"{len(nonmanifold_edges)} non-manifold edge(s): "
-                   + "; ".join(f"{e} used by {c} faces"
-                               for e, c in nonmanifold_edges))
+      parts.append(f"{len(nonmanifold_edges)} non-manifold edge(s): " +
+                   "; ".join(f"{e} used by {c} faces" for e, c in nonmanifold_edges))
     return " | ".join(parts)
 
   # Calculate signed volume to check for inside-out mesh or zero volume

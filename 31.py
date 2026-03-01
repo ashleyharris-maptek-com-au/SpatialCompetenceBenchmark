@@ -4,6 +4,8 @@ import OpenScad as vc
 import math
 from LLMBenchCore.ResultPaths import result_path
 
+tags = ["3D", "Simulation", "Projection"]
+
 title = "Prove a convex solid can fit throught itself"
 skip = True
 

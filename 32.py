@@ -1,5 +1,7 @@
 skip = True
 
+tags = ["3D", "Fundamentals"]
+
 title = "Essay section"
 skip = True
 questions = [{

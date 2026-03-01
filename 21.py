@@ -2,6 +2,8 @@ import math, itertools
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Constructive", "Simulation", "Physics", "Gravity"]
+
 title = "Rollercoaster Track planner"
 skip = True
 prompt = """
@@ -372,13 +374,15 @@ hull() {{
 """
 
   import os, scad_format
-  output_path = result_path("21_Visualization_" + aiEngineName + "_" + str(len(
-    answer["trackPoints"])) + ".png", aiEngineName)
+  output_path = result_path(
+    "21_Visualization_" + aiEngineName + "_" + str(len(answer["trackPoints"])) + ".png",
+    aiEngineName)
   vc.render_scadText_to_png(scadOutput, output_path)
   print(f"Saved visualization to {output_path}")
 
-  scadFile = result_path("21_Visualization_" + aiEngineName + "_" + str(len(
-    answer["trackPoints"])) + "temp.scad", aiEngineName)
+  scadFile = result_path(
+    "21_Visualization_" + aiEngineName + "_" + str(len(answer["trackPoints"])) + "temp.scad",
+    aiEngineName)
 
   scadOutput = scad_format.format(scadOutput, vc.formatConfig)
 

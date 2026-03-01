@@ -3,6 +3,8 @@ import numpy as np
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["2D", "Packing", "NP Hard"]
+
 title = "Hamiltonian Loop on Grid"
 
 

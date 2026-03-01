@@ -1,3 +1,8 @@
+tags = [
+  "3D",
+  "Constructive",
+]
+
 title = "Pyamid construction - more bricks than token limits"
 skip = True
 

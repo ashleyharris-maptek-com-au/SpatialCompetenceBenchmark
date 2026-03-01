@@ -1,5 +1,6 @@
+tags = ["2D", "ASCII Art", "Constructive"]
+
 title = "Maze generation - ASCII Art"
-skip = True
 
 prompt = """
 Generate a PARAM_A * PARAM_A ASCII art maze.

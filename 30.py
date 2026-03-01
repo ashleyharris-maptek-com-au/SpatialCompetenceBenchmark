@@ -5,6 +5,7 @@ import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "What's the largest prime number you can 3D print without supports?"
+tags = ["3D", "Simulation"]
 
 prompt = """
 2 3D shapes can be said to be stackable if there exists an orientation in which:
@@ -338,13 +339,15 @@ def resultToNiceReport(answer: dict, subPassIndex: int, aiEngineName: str):
     scad += "\n\n"
 
   import os
-  output_path = result_path("30_Visualization_" + aiEngineName + "_" + str(len(
-    answer["numberSequence"])) + ".png", aiEngineName)
+  output_path = result_path(
+    "30_Visualization_" + aiEngineName + "_" + str(len(answer["numberSequence"])) + ".png",
+    aiEngineName)
   vc.render_scadText_to_png(scad, output_path, "--camera=-10,-10,10,55,0,25,100")
   print(f"Saved visualization to {output_path}")
 
-  scadFile = result_path("30_Visualization_" + aiEngineName + "_" + str(len(
-    answer["numberSequence"])) + "temp.scad", aiEngineName)
+  scadFile = result_path(
+    "30_Visualization_" + aiEngineName + "_" + str(len(answer["numberSequence"])) + "temp.scad",
+    aiEngineName)
 
   open(scadFile, "w").write(scad_format.format(scad, vc.formatConfig))
 

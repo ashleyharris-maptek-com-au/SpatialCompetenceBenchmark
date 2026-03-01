@@ -17,6 +17,8 @@ DATA_PATH = REPO_ROOT / "data" / "vgb" / "shikaku_curated.jsonl"
 _DATA = None
 PARSER = PythonLiteralParser()
 
+tags = ["2D", "Voxel"]
+
 title = "VGB7 — Shikaku Rectangles"
 structure = {
   "type": "object",
@@ -29,7 +31,10 @@ structure = {
         "type": "array",
         "minItems": 4,
         "maxItems": 4,
-        "items": {"type": "integer", "minimum": 0},
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
       },
     },
   },

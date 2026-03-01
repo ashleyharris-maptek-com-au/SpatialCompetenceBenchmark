@@ -9,6 +9,8 @@ import shutil
 from typing import Dict, List, Tuple
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["2D", "Constructive", "Packing"]
+
 title = "Fit a loop into a square that's perimeter is smaller than the total length"
 
 basePrompt = """
@@ -725,8 +727,9 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
 
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="loop-view view-{idx}" '
-                      f'style="max-width: 100%;">')
+    image_tags.append(
+      f'<img src="{report_relpath(path, aiEngineName)}" class="loop-view view-{idx}" '
+      f'style="max-width: 100%;">')
 
   style_lines = [
     f'#{viewer_id} {{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }}',
@@ -741,17 +744,18 @@ def resultToNiceReport(result: dict, subPass, aiEngineName: str):
     style_lines.append(f'#{radio_id}:checked ~ .prev-{idx} {{ display:inline-flex; }}')
     style_lines.append(f'#{radio_id}:checked ~ .next-{idx} {{ display:inline-flex; }}')
 
-  html = (f'<div id="{viewer_id}" class="loop-viewer">'
-          f'<style>{" ".join(style_lines)}</style>'
-          f'{"".join(inputs)}'
-          f'{"".join(labels)}'
-          f'<div class="loop-frame">{"".join(image_tags)}</div>'
-          f'<div class="loop-hires" style="width:100%; text-align:center; margin-top:8px;">'
-          f'<a href="{report_relpath(hires_output_path, aiEngineName)}" target="_blank" rel="noopener" '
-          f'style="font-size:14px; color:#1d4ed8; text-decoration:underline;">'
-          f'Open high-res ({hires_filename})</a>'
-          f'</div>'
-          f'</div>')
+  html = (
+    f'<div id="{viewer_id}" class="loop-viewer">'
+    f'<style>{" ".join(style_lines)}</style>'
+    f'{"".join(inputs)}'
+    f'{"".join(labels)}'
+    f'<div class="loop-frame">{"".join(image_tags)}</div>'
+    f'<div class="loop-hires" style="width:100%; text-align:center; margin-top:8px;">'
+    f'<a href="{report_relpath(hires_output_path, aiEngineName)}" target="_blank" rel="noopener" '
+    f'style="font-size:14px; color:#1d4ed8; text-decoration:underline;">'
+    f'Open high-res ({hires_filename})</a>'
+    f'</div>'
+    f'</div>')
 
   return html
 

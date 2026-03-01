@@ -2,6 +2,8 @@ import itertools
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Constructive", "Packing", "Voxels"]
+
 title = "Voxel Grid Projection - shadow coverage and no symmetries"
 
 prompt = """

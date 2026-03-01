@@ -1,5 +1,7 @@
 import math
 
+tags = ["3D", "Constructive", "Projection", "Reflection"]
+
 title = "Laser beam art"
 earlyFail = True
 skip = True

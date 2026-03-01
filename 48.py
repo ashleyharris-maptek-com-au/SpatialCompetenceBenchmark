@@ -27,6 +27,8 @@ import pybullet_data
 import numpy as np
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Simulation", "Gravity"]
+
 title = "Can an AI aim a catapult to destroy a structure?"
 skip = True
 

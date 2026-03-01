@@ -22,6 +22,8 @@ PARSER = PythonLiteralParser()
 FIGURES_DIR = VGB_ROOT / "data" / "figures" / "topology_enumeration"
 GENERATOR_SCRIPT = VGB_ROOT / "scripts" / "generate_topology_enumeration_figures.py"
 
+tags = ["2D", "Funamental Geometry"]
+
 title = "VGB1 — Topology Enumeration"
 structure = {
   "type": "object",
@@ -34,7 +36,9 @@ structure = {
         "type": "array",
         "minItems": 4,
         "maxItems": 4,
-        "items": {"type": "integer"},
+        "items": {
+          "type": "integer"
+        },
       },
     },
   },

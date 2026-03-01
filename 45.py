@@ -1,5 +1,7 @@
 title = "Can an AI navigate via the stars?"
 
+tags = ["Image Upload", "Simulation", "Orbital Dynamics"]
+
 import os
 import math
 import random

@@ -2,6 +2,8 @@ import random, os, math
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path
 
+tags = ["3D", "Visual Processing", "Image Stitching", "Voxels"]
+
 title = "Can you navigate a maze from photos only?"
 skip = True
 

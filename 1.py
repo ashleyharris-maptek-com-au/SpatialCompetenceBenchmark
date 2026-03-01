@@ -1,5 +1,7 @@
 import math
 
+tags = ["2D", "Constructive", "Packing"]
+
 title = "Lay out pipe to make letter shapes."
 
 promptTemplate = """

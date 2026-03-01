@@ -5,6 +5,8 @@ import random
 from math import isqrt
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Packing"]
+
 title = "Pack rectangular prisms"
 
 

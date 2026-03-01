@@ -20,6 +20,8 @@ import pybullet_data
 import numpy as np
 from LLMBenchCore.ResultPaths import report_relpath
 
+tags = ["3D", "Physics Engine", "Simulation", "Image Input"]
+
 title = "Can an AI determine how someone fell from the crime scene?"
 skip = True
 

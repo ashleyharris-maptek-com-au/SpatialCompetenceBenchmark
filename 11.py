@@ -1,3 +1,5 @@
+tags = ["4D+", "Packing", "NP Hard"]
+
 title = "Hyper-snake Challenge"
 
 promptChangeSummary = "Dimensions increase from 3D to 10D"

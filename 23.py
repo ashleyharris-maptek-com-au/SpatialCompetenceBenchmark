@@ -41,6 +41,8 @@ def _save_to_cache(cache_key: str, cache_type: str, result):
     pass
 
 
+tags = ["3D", "Constructive", "Simulation"]
+
 title = "Fluid simulation"
 prompt = """
 You are given a 3D voxel world, of dimensions PARAM_A * PARAM_A * 8 voxels,
@@ -760,8 +762,9 @@ def _gradeAnswerImpl(answer: dict, subPass: int, aiEngineName: str):
   viewer_id = f"voxel-viewer-{hashlib.md5(base_name.encode()).hexdigest()}"
   image_tags = []
   for idx, path in enumerate(image_paths):
-    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="voxel-view view-{idx}" '
-                      f'style="max-width: 100%;">')
+    image_tags.append(
+      f'<img src="{report_relpath(path, aiEngineName)}" class="voxel-view view-{idx}" '
+      f'style="max-width: 100%;">')
 
   radio_name = f"{viewer_id}-view"
   radio_ids = [f"{viewer_id}-view-{idx}" for idx in range(len(image_paths))]

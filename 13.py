@@ -2,6 +2,8 @@ import OpenScad as vc
 import os
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Projection"]
+
 title = "Hide and seek behind a building"
 
 promptChangeSummary = "Varying crowd size and building dimensions"

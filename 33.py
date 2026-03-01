@@ -31,6 +31,8 @@ def _save_grade_cache():
       json.dump(_grade_cache, f)
 
 
+tags = ["3D", "Orbital Dynamics", "Simulation"]
+
 title = "Gravitational trickshots"
 skip = True
 prompt = """

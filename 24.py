@@ -2,6 +2,8 @@ skip = True
 
 import itertools, random
 
+tags = ["2D", "Solved Algorithm"]
+
 title = "2D convex hull, identify points on the hull."
 skip = True
 

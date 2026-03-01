@@ -2,8 +2,9 @@ import os
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path
 
+tags = ["3D", "Projections", "ASCII Art"]
+
 title = "Painting a 3D scene in ASCII, with lighting."
-skip = True
 
 subpassParamSummary = ["16x16", "32x32", "64x64", "128x128", "256x256"]
 

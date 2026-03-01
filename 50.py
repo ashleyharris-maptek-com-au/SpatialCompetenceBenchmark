@@ -1,3 +1,5 @@
+tags = ["3D", "Reflections"]
+
 title = "How many consent forms does this photographer need?"
 skip = True
 

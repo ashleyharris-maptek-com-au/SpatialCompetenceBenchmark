@@ -5,6 +5,8 @@ import random
 import itertools
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Constructive", "Visual Processing"]
+
 title = "Mental Rotation - Identify which 3D shapes are rotations of each other"
 skip = True
 prompt = """

@@ -12,6 +12,8 @@ import pybullet as p
 import pybullet_data
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Simulation", "Physics Engine", "Voxels"]
+
 title = "AI controlling explosives, what could possibly go wrong?"
 
 singleThreaded = True
@@ -673,8 +675,9 @@ def resultToNiceReport(answer, subPass, aiEngineName):
   image_tags = []
   caption_tags = []
   for idx, (path, label) in enumerate(image_entries):
-    image_tags.append(f'<img src="{report_relpath(path, aiEngineName)}" class="blast-view view-{idx}" '
-                      f'style="max-width: 100%;" alt="{label}">')
+    image_tags.append(
+      f'<img src="{report_relpath(path, aiEngineName)}" class="blast-view view-{idx}" '
+      f'style="max-width: 100%;" alt="{label}">')
     caption_tags.append(f'<div class="blast-caption caption-{idx}">{label}</div>')
 
   style_lines = [
