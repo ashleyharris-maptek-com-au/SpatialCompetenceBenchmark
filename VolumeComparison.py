@@ -30,7 +30,13 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
     referenceScad = testGlobals["referenceScad"]
 
   if "earlyFailTest" in testGlobals:
-    reason = testGlobals["earlyFailTest"](result, subPass)
+    try:
+      reason = testGlobals["earlyFailTest"](result, subPass)
+    except e:
+      reason = "Exception " + str(
+        e
+      ) + " while judging earlyFail criteria. Typically this occurs with a very malformed response."
+
     if reason:
       return {
         "score": 0,
@@ -259,7 +265,12 @@ difference()
                        previewMode="usePreviewModeForRendering" in testGlobals)
 
   if "lateFailTest" in testGlobals:
-    failureReason = testGlobals["lateFailTest"](result, subPass)
+    try:
+      failureReason = testGlobals["lateFailTest"](result, subPass)
+    except e:
+      failureReason = "Exception " + str(
+        e
+      ) + " while judging lateFail criteria. Typically this occurs with a very malformed response."
 
     if failureReason:
       result_dict = {

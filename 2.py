@@ -410,6 +410,8 @@ def earlyFailTest(result, subpass):
     return "No bricks provided"
 
   for i, brick in enumerate(bricks):
+    if len(brick["Centroid"]) != 3:
+      return "Brick " + str(brick) + " has invalid centroid"
     cx, cy, cz = brick["Centroid"]
 
     # Z-level alignment check: bricks should be at layer heights
