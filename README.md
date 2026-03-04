@@ -12,24 +12,24 @@ MESH stands for Model Evaluation of Spatial Hueristics.
 
 Some of the best results broken down by test:
 
-- [Gemini 3 Pro (w/ reasoning, Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gemini-3-pro-preview-Reasoning-Tools.html)
-- [ChatGPT 5.1 High (w Web & Python)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/gpt-5.1-Reasoning-Tools.html)
+- [Gemini 3 Pro (w/ reasoning, Web & Python)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/models/gemini-3-pro-preview-Reasoning-Tools/report.html)
+- [ChatGPT 5.1 High (w Web & Python)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/models/gpt-5.2-HighReasoning/report.html)
 
-**[Breakdown by test and per-test details →](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html)**
+**[Breakdown by test and per-test details →](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html)**
 
 ## What We're Measuring
 
-This benchmark evaluates how well AI models can "picture things" in working memeory, such as forseeing
+This benchmark evaluates how well AI models can "picture things" in working memory, such as foreseeing
 how objects fit together, interact, move, or flow.
 
 Examples include:
 
-- Playing 1 player visual games, such as [Tetris(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q15) or [Bejewelled(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q27) or [Angry Birds(tm)](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q48)
-- Planning a [rollercoaster ride](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q21) that isn't lethal.
-- Creating a [maze in 3D](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q7) which requires jumps and stair climbs, or [solving a maze from close up photos](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q43).
-- Catching and [redirecting water](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q23) within a voxel map.
-- [Stacking 3D printable digits](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q30) on top of each other without them sagging, or designing [complex interlocking 3D printable parts](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q29).
-- [Travelling salesman in orbit](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#q22), or [navigating by the stars](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html#Q45).
+- Playing 1 player visual games, such as [Tetris(tm)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#q15) or [Bejewelled(tm)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#Q27) or [Angry Birds(tm)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#Q48)
+- Planning a [rollercoaster ride](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#q21) that isn't lethal.
+- Creating a [maze in 3D](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#q7) which requires jumps and stair climbs, or [solving a maze from close up photos](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#Q43).
+- Catching and [redirecting water](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#q23) within a voxel map.
+- [Stacking 3D printable digits](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#q30) on top of each other without them sagging, or designing [complex interlocking 3D printable parts](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#Q29).
+- [Travelling salesman in orbit](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#q22), or [navigating by the stars](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html#Q45).
 - Modelling shadows.
 - Working with quaternion rotations.
 - Concepts like "hidden behind" or "falling"
@@ -67,19 +67,19 @@ Provide exactly 3 shots. For each shot, specify:
 
 **SCENE IMAGES:**
 **1. Overview (side view of entire field):**
-![48_scene_0](results/48_scene_2.png)
+![48_scene_0](results/models/qwen3-coder-next/artifacts/48_scene_2.png)
 **2. Catapult's View (looking from catapult toward structure):**
-![48_scene_0_catapult_view.png](results/48_scene_2_catapult_view.png)
+![48_scene_0_catapult_view.png](results/models/qwen3-coder-next/artifacts/48_scene_2_catapult_view.png)
 **3. Behind Structure (looking back at catapult):**
-![48_scene_0_behind_target.png](results/48_scene_2_behind_target.png)
+![48_scene_0_behind_target.png](results/models/qwen3-coder-next/artifacts/48_scene_2_behind_target.png)
 **4. Structure Close-up (front-left angle):**
-![48_scene_0_structure_front.png](results/48_scene_2_structure_front.png)
+![48_scene_0_structure_front.png](results/models/qwen3-coder-next/artifacts/48_scene_2_structure_front.png)
 **5. Structure Close-up (front-right angle):**
-![48_scene_0_structure_side.png](results/48_scene_2_structure_side.png)
+![48_scene_0_structure_side.png](results/models/qwen3-coder-next/artifacts/48_scene_2_structure_side.png)
 **6. Top-Down View (aerial view of field):**
-![48_scene_0_top_down.png](results/48_scene_2_top_down.png)
+![48_scene_0_top_down.png](results/models/qwen3-coder-next/artifacts/48_scene_2_top_down.png)
 
-![48_scene_2](results/48_scene_2.png)
+![48_scene_2](results/models/qwen3-coder-next/artifacts/48_scene_2.png)
 
 ### LLM returns (structured JSON, following a provided schema)
 
@@ -93,9 +93,9 @@ Provide exactly 3 shots. For each shot, specify:
 
 ### Which, using Python, pyBullet physics engine and OpenSCAD, is converted into
 
-![Example test](results/48_scene_2_post_gpt-5-nano.png)
+![Example test](results/models/qwen3-coder-next/artifacts/48_scene_2_post_gpt-5-nano.png)
 
-This shows that it didn't understand the scene at all. It understood the physics of the problem, calculating 3 good balistic arcs, as it's training data likely included physics
+This shows that it didn't understand the scene at all. It understood the physics of the problem, calculating 3 good ballistic arcs, as it's training data likely included physics
 textbooks with very similar problems, and it has access to calculators to plug in the
 numbers, but it doesn't understand the geometry of the scene.
 
@@ -106,6 +106,7 @@ numbers, but it doesn't understand the geometry of the scene.
 - Python 3.10+
 - [OpenSCAD](https://openscad.org/) (required for 3D geometry tests)
   - If OpenSCAD is not on your PATH, set `OPENSCAD_PATH` to the full path of the `openscad` binary.
+  - Prefer nightly build as performance is 100x better.
 
 ### Installation
 
@@ -187,10 +188,10 @@ To help keep costs down, caching is used to store responses from previous runs. 
 - "Service not available", "Service over capacity", "Error 500 try again" is retried 3 times before declaring a failure. Will score a 0 but will be reattempted next run.
 - Taking over an hour to respond to an API call 3 times (so 3 hours total) is considered a failure.
 - Violating JSON schemas is considered a failure, and after 3 retries it scores 0. This is why some LLMs degrade in performance when tools are added, as they loose structured validation. This is a weakness of the LLM and should be reflected in the scoring.
-- "This violates our content policy" is considered a **dismal failure**, as nothing in here is risque. If an LLM thinks "jumping near heights" (Q7, 3d maze) or "Planting explosives" (Q28, terrain flatterning) is banned, that's a well deserved 0 for it. I'm pointing and laughing. To avoid permabanning, a prompt is never repeated when this is seen, and the failure prompt hash is committed to the repository in a *hall of shame*, resulting in a well-earned eternal 0 score. Fix your guardrails.
+- "This violates our content policy" is considered a **dismal failure**, as nothing in here is risqué. If an LLM thinks "jumping near heights" (Q7, 3d maze) or "Planting explosives" (Q28, terrain flattening) is banned, that's a well deserved 0 for it. I'm pointing and laughing. To avoid permabanning, a prompt is never repeated when this is seen, and the failure prompt hash is committed to the repository in a *hall of shame*, resulting in a well-earned eternal 0 score. Fix your guardrails.
 - "Score of 1000/1" is used to indicate a test framework failure, as it should stand out in the graph clearly.
-- Not answering the question directly, but instead responding with clarification questions is considered a failure. 99% of the time when LLMs do this it's because they are either overwhelemed or not understanding the problem. Be alert to
-oppertunities to improve the prompt if confusion seems genuine however.
+- Not answering the question directly, but instead responding with clarification questions is considered a failure. 99% of the time when LLMs do this it's because they are either overwhelmed or not understanding the problem. Be alert to
+opportunities to improve the prompt if confusion seems genuine however.
 
 ## What motivated this benchmark
 
