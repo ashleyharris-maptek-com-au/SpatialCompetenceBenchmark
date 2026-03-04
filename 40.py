@@ -6,6 +6,7 @@ from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 earlyFail = True
 title = "Mirror Reflection."
+tags = ["3D", "Reflection"]
 skip = True
 
 prompt = """

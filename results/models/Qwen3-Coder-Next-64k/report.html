@@ -1,0 +1,1749 @@
+<html>
+<head>
+<style>
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333;
+    --text-secondary: #666;
+    --border-color: #ddd;
+    --header-bg: #4CAF50;
+    --header-text: white;
+    --test-header-bg: #45a049;
+    --prompt-bg: #f9f9f9;
+    --subpass-bg: #ffffff;
+    --img-border: #ccc;
+    --score-good: #228B22;
+    --score-bad: #dc3545;
+}
+@media screen and (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --text-secondary: #aaa;
+        --border-color: #444;
+        --header-bg: #2d5a2d;
+        --header-text: #e0e0e0;
+        --test-header-bg: #3d6a3d;
+        --prompt-bg: #2a2a2a;
+        --subpass-bg: #1f1f1f;
+        --img-border: #555;
+        --score-good: #4CAF50;
+        --score-bad: #ff6b6b;
+    }
+    a[href] { color: #55f}
+}
+body { background-color: var(--bg-color); color: var(--text-color); }
+table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; vertical-align: top; }
+th { background-color: var(--header-bg); color: var(--header-text); }
+.test-header { background-color: var(--test-header-bg); font-weight: bold; }
+.prompt-row { background-color: var(--prompt-bg); font-style: italic; }
+.subpass-row { background-color: var(--subpass-bg); }
+img { max-width: 100%; height: auto; border: 1px solid var(--img-border); }
+.score-good { color: var(--score-good); font-weight: bold; }
+.score-bad { color: var(--score-bad); font-weight: bold; }
+h1 { color: var(--text-color); }
+h2 { color: var(--text-secondary); margin-top: 30px; }
+</style>
+<meta charset='UTF-8'/>
+
+<script>
+// VizManager: Virtualizes WebGL contexts to prevent "Too many active WebGL contexts" errors
+// Only the visualization closest to the viewport center is active; all others are disposed
+window.VizManager = (function() {
+    const registeredViz = [];
+    let activeVizId = null;
+    let scrollTimeout = null;
+    
+    function getDistanceToViewportCenter(element) {
+        const rect = element.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+        const elementCenter = rect.top + rect.height / 2;
+        return Math.abs(elementCenter - viewportCenter);
+    }
+    
+    function updateActiveVisualization() {
+        let closestViz = null;
+        let closestDistance = Infinity;
+        
+        for (const viz of registeredViz) {
+            const container = document.getElementById(viz.containerId);
+            if (!container) continue;
+            
+            // Check if container is in an open <details> element
+            const details = container.closest('details');
+            if (details && !details.open) continue;
+            
+            const distance = getDistanceToViewportCenter(container);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestViz = viz;
+            }
+        }
+        
+        if (closestViz && closestViz.id !== activeVizId) {
+            // Deactivate current
+            if (activeVizId) {
+                const currentViz = registeredViz.find(v => v.id === activeVizId);
+                if (currentViz && currentViz.dispose) {
+                    try { currentViz.dispose(); } catch(e) { console.warn('Dispose error:', e); }
+                }
+            }
+            
+            // Activate new
+            activeVizId = closestViz.id;
+            if (closestViz.activate) {
+                try { closestViz.activate(); } catch(e) { console.warn('Activate error:', e); }
+            }
+        }
+    }
+    
+    function onScrollOrResize() {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateActiveVisualization, 100);
+    }
+    
+    // Listen for scroll and resize
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    
+    // Also listen for details toggle events
+    document.addEventListener('toggle', function(e) {
+        if (e.target.tagName === 'DETAILS') {
+            setTimeout(updateActiveVisualization, 50);
+        }
+    }, true);
+    
+    return {
+        register: function(vizConfig) {
+            // vizConfig: { id, containerId, activate, dispose }
+            registeredViz.push(vizConfig);
+            // Trigger update after a short delay to allow DOM to settle
+            setTimeout(updateActiveVisualization, 100);
+        },
+        
+        forceUpdate: function() {
+            updateActiveVisualization();
+        },
+        
+        getActiveId: function() {
+            return activeVizId;
+        }
+    };
+})();
+</script>
+</head>
+<body>
+<h1>Benchmark Results for Qwen3-Coder-Next-64k</h1>
+<table>
+  <tr class='test-header'>
+    <th colspan=3><a name='q1'>Test 1: Lay out pipe to make letter shapes.</a></th>
+    <th class='score-good'>Score: 700000.00 / 7</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You are given 2 rigid lengths of pipe, each 5 meters long and 10cm in diameter. <br><br>One pipe is fixed with its center at the origin (0,0) and a rotation of 0, meaning its length is along the x-axis, and it<br>spans from -2.5,-0.05 to 2.5, 0.05.<br><br>Arrange the remaining pipes on a 2D plane such that the pipes resemble a "T" shape 5m tall when viewed from above. The given horizontal pipe is the top bar of the T, and a single vertical pipe descends from the center of that bar.<br><br>Importantly:<br>- Pipes can NOT intersect each other, and this must be buildable in real life. <br>- Corners and joins should not have gaps in them.<br>- When rendered in a 3D preview with each pipe a different colour there must be ZERO Z-Fighting.<br><br>Return a 2 element array of where each of the pipes are located:<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Different letter shapes with varying pipe counts and spatial complexity</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: T shape (2 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_0.txt">View chain of thought</a><br>
+Tests arranging rigid pipes into letter shapes. The core challenge is handling the 10cm pipe 
+diameter at joins — pipes must touch at their ends without overlapping.
+
+<br><br>
+
+Simpler shapes (T, L, J) test basic spatial reasoning. The H, I, and frame shapes require careful 
+placement of 4-5 pipes with correct offsets at 3-way joins.
+
+<br><br>
+
+Closeup of correct 3-way join (e.g. H shape): pipes touch but don't overlap.
+<pre>
+   x = -2.55 (from -2.6 to -2.5)
+   | 
+|  i  |
+|  i  X--------------- 
+|  i  | 5 m long
+X-----X - - - - - - - 
+|  i  | -2.5 to 2.5
+|  i  X---------------
+|  i  |
+</pre>
+
+Common failure: pipes overlap at joins (x = -2.5 instead of -2.55).
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: L shape (2 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: U shape (3 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: F shape (4 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: H shape (5 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Capital I with serifs (4 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: Square shape (4 pipes)<br><a href="prompts/Qwen3-Coder-Next-64k_1_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_1_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_1_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>100000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Exception: list indices must be integers or slices, not str in resultToScad</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q2'>Test 2: Build a Lego(tm) hemispherical shell</a></th>
+    <th class='score-bad'>Score: 0.00 / 8</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You have an unlimited number of Lego(tm) bricks, each of individual size 31.8mm * 15.8mm * 11.4mm but when assembled they are <br>32mm * 16mm * 9.6mm due to interlocking studs and voids. Each brick has 8 studs, in a 2x4 layout. <br><br>These bricks snap together. For example: A brick at (centroid=[0, 0, 4.8],r=90) is resting on the ground centred over the origin, <br>and a second brick at (centroid=[0, 0, 14.4],r=180) is clicked into the first brick with 4 interlocked studs (out of 8). A third brick at <br>(centroid=[24, 0, 24],r=0) is snapped into 2 studs of the second brick, forming a 75% overhang. Were that third brick at <br>[22,0,24] instead, its shell would intersect 2 studs of the Lego brick below it, and thus not be buildable.<br><br>Assemble the bricks such that they resemble a 3D hemispherical shell, with inner radius 4 cm and outer radius 7 cm, <br>the centre of the hemisphere is at the origin (0,0,0).<br><br>Since it's impossible to create a perfect curve, the best score is one which is closer to the ideal curve, with<br>scoring being calculated based on the volume difference between the ideal curve and the actual brick structure. <br>The structure needs to be buildable in 3D, so bricks can not overlap or be floating in mid air. A great answer does not <br>contain any holes or missing bricks.<br><br>Blocks are being placed directly on a flat surface, i.e. without a base plate, so those resting on the ground can have<br>any orientation and are not confined to a specific grid structure. Connected blocks must follow legal Lego(tm) connection<br>rules and must not fall over when built. (Two unstable structures leaning on each other will push each other apart and fall over)<br><br>Return a list of the bricks. (location in xyz mm relative to the origin and rotation in degrees). <br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Inner and outer radius parameters increase progressively across subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: 4cm inner, 7cm outer. ~120 bricks<br><a href="prompts/Qwen3-Coder-Next-64k_2_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_0.txt">View chain of thought</a><br>
+Lego bricks look like they'd benefit from voxelization, but they really don't.
+<br><br>
+So most reasoning models try to voxelise the problem in Python, and then struggle to convert
+that back to Lego bricks.<br><br>They end up losing points for overlapping bricks or bricks
+entirely underground or outside of the hemispheres.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: No bricks provided</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: 8cm inner, 11cm outer. ~300 bricks<br><a href="prompts/Qwen3-Coder-Next-64k_2_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: No bricks provided</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: 15cm inner, 17cm outer ~400 bricks<br><a href="prompts/Qwen3-Coder-Next-64k_2_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: No bricks provided</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: (see typical prompt)<a href="prompts/Qwen3-Coder-Next-64k_2_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: (see typical prompt)<a href="prompts/Qwen3-Coder-Next-64k_2_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: (see typical prompt)<a href="prompts/Qwen3-Coder-Next-64k_2_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: (see typical prompt)<a href="prompts/Qwen3-Coder-Next-64k_2_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: (see typical prompt)<a href="prompts/Qwen3-Coder-Next-64k_2_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_2_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_2_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q3'>Test 3: CSG Union of Polyhedra</a></th>
+    <th class='score-bad'>Score: 0.00 / 22</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You can output polyhedrons in a json format. For example here is a simple cube, every face has 4 vertices, and there are 6 faces:<br><br>``` json<br>{<br>"polyhedron":<br>  {<br>    "vertex":[{"xyz":[-1.0,-1.0,-1.0]},{"xyz":[1.0,-1.0,-1.0]},{"xyz":[1.0,1.0,-1.0]},{"xyz":[-1.0,1.0,-1.0]},{"xyz":[-1.0,-1.0,1.0]},{"xyz":[1.0,-1.0,1.0]},{"xyz":[1.0,1.0,1.0]},{"xyz":[-1.0,1.0,1.0]}],<br>    "faces":[{"vertex":[3,2,1,0]},{"vertex":[4,5,6,7]},{"vertex":[0,1,5,4]},{"vertex":[7,6,2,3]},{"vertex":[3,0,4,7]},{"vertex":[1,2,6,5]}]<br>  }<br>}<br>```<br><br>Now you've learnt the format, use it to solve the following problem:<br><br>You are given two solid cubes, each with side length 10cm. The first cube is centered at the origin (0, 0, 0). The second cube is centered at (8, 0, 0)<br><br>Return a polyhedron that is the union of all the solid objects described above.<br>- Ensure faces have normals encoded in a consistent direction (outward-facing).<br>- Ensure no geometry occurs inside the polyhedron, and no faces cross through it.<br>- Note that some faces may have more than 4 vertices.<br>- Your output should have no degenerate faces or redundant vertices.<br>- The task is a failure if the output is not watertight.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Various CSG union problems with different shape combinations.</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Two cubes overlapping 2cm in X<br><a href="prompts/Qwen3-Coder-Next-64k_3_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_0.txt">View chain of thought</a><br>
+CSG union of polyhedra is very hard without tooling, and hard to do right even with Python.
+
+<br><br>
+
+This test includes 23 different shape combinations: cubes, rectangular prisms, wedges, 
+tetrahedra, cylinders (24-gon approximation), hexagonal/octagonal prisms, spheres (24-segment), 
+cones, and complex multi-shape unions.
+
+<br><br>
+
+Most LLMs fail to output a closed mesh or correct winding order, 
+and this shows up with OpenSCAD throwing errors when it tries to intersect the result
+with a reference model.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: 6 winding error(s): Edge (3, 7) appears twice in same direction (faces 0 and 3); Edge (6, 2) appears twice in same direction (faces 1 and 3); Edge (0, 3) appears twice in same direction (faces 0 and 4); Edge (2, 1) appears twice in same direction (faces 1 and 4); Edge (1, 0) appears twice in same direction (faces 2 and 4); Edge (7, 6) appears twice in same direction (faces 3 and 5)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Two cubes overlapping at corner<br><a href="prompts/Qwen3-Coder-Next-64k_3_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: 12 winding error(s): Edge (3, 0) appears twice in same direction (faces 0 and 2); Edge (0, 1) appears twice in same direction (faces 0 and 3); Edge (1, 5) appears twice in same direction (faces 3 and 4); Edge (5, 17) appears twice in same direction (faces 1 and 4); Edge (16, 9) appears twice in same direction (faces 0 and 5); Edge (17, 16) appears twice in same direction (faces 4 and 5); Edge (9, 13) appears twice in same direction (faces 5 and 6); Edge (13, 14) appears twice in same direction (faces 1 and 6); Edge (14, 15) appears twice in same direction (faces 1 and 7); Edge (15, 19) appears twice in same direction (faces 1 and 8); Edge (19, 7) appears twice in same direction (faces 1 and 9); Edge (7, 3) appears twice in same direction (faces 2 and 9)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Two separate cubes (no intersection)<br><a href="prompts/Qwen3-Coder-Next-64k_3_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Early failure: Missing 'polyhedron' in result</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: Small cube inside large cube<br><a href="prompts/Qwen3-Coder-Next-64k_3_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: Rectangular prism and cube overlapping<br><a href="prompts/Qwen3-Coder-Next-64k_3_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Two prisms forming a cross<br><a href="prompts/Qwen3-Coder-Next-64k_3_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: Three prisms forming 3D jack<br><a href="prompts/Qwen3-Coder-Next-64k_3_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: Cube and triangular wedge<br><a href="prompts/Qwen3-Coder-Next-64k_3_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: Cube with tetrahedron on top<br><a href="prompts/Qwen3-Coder-Next-64k_3_8.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_8.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 9</strong><br>Parameters: L-shaped prisms<br><a href="prompts/Qwen3-Coder-Next-64k_3_9.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_9.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_9.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 10</strong><br>Parameters: Three cubes forming stairs<br><a href="prompts/Qwen3-Coder-Next-64k_3_10.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_10.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_10.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 11</strong><br>Parameters: Cylinder (24-gon) and cube<br><a href="prompts/Qwen3-Coder-Next-64k_3_11.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_11.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_11.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 12</strong><br>Parameters: Two perpendicular cylinders<br><a href="prompts/Qwen3-Coder-Next-64k_3_12.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_12.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_12.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 13</strong><br>Parameters: Hexagonal prism and cube<br><a href="prompts/Qwen3-Coder-Next-64k_3_13.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_13.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_13.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 14</strong><br>Parameters: Octagonal prism inside cube<br><a href="prompts/Qwen3-Coder-Next-64k_3_14.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_14.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_14.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 15</strong><br>Parameters: 2x2 grid of overlapping cubes<br><a href="prompts/Qwen3-Coder-Next-64k_3_15.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_15.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_15.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 16</strong><br>Parameters: Sphere (24-segment) and cube<br><a href="prompts/Qwen3-Coder-Next-64k_3_16.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_16.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_16.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 17</strong><br>Parameters: Two cubes sharing a face<br><a href="prompts/Qwen3-Coder-Next-64k_3_17.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_17.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_17.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 18</strong><br>Parameters: Two cubes, one rotated 45°<br><a href="prompts/Qwen3-Coder-Next-64k_3_18.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_18.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_18.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 19</strong><br>Parameters: T-shaped prisms<br><a href="prompts/Qwen3-Coder-Next-64k_3_19.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_19.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_19.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 20</strong><br>Parameters: Cone (24-sided) and cube<br><a href="prompts/Qwen3-Coder-Next-64k_3_20.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_20.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_20.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 21</strong><br>Parameters: Hollow box (6 wall prisms)<br><a href="prompts/Qwen3-Coder-Next-64k_3_21.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_3_21.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_3_21.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q4'>Test 4: Tetrahedron Shadow Coverage</a></th>
+    <th class='score-bad'>Score: 0.00 / 20</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Here is the points and faces of a regular tetrahedron with all sides equal 1, resting on the Z=0 plane and with an edge along the X=0 plane:<br><br>polyhedron(<br>    points = [<br>        [0, 0, 0],                               // 0<br>        [1, 0, 0],                               // 1<br>        [0.5, sqrt(3)/2, 0],                     // 2<br>        [0.5, sqrt(3)/6, sqrt(2/3)]              // 3 (apex)<br>    ],<br>    faces = [<br>        [0, 2, 1],   // base (oriented outward)<br>        [0, 1, 3],<br>        [1, 2, 3],<br>        [2, 0, 3]<br>    ],<br>    convexity = 4<br>);<br><br>We define a 7-part rigid transform of (x,y,z,q0,q1,q2,q3), where q0,q1,q2,q3 is a normalised quaternion, and x, y, z are the translation.<br>Rotation is defined around the 0,0,0 point (Which is NOT THE CENTRE), and is performed before translation.<br><br>We create a scene with multiple tetrahedra, each with a different transform. Return the transforms of such a scene<br>such that a shadow projected vertically (onto the Z=0 plane) fully covers a square of side length 4, centered at the origin.<br><br>Use as many tetrahedra as you need, scoring is based on shadow coverage, not the number of tetrahedra used.<br><br>Score will be deducted for:<br>- any shadow outside of the shape<br>- redundant tetrahedra<br>- non-normalised quaternions<br>- intersection tetrahedra<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Cover a square of side length 4.<br><a href="prompts/Qwen3-Coder-Next-64k_4_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_0.txt">View chain of thought</a><br>
+Creating 2D shapes with regular tetrahedrons isn't something that appears in much
+training data, because, why on earth would you want to do that?
+<br><br>
+
+Perfect scores are possible for the square and holed square (a single tetrahedron
+can make a shadow that casts to a perfect square, but care needs to be taken to avoid intersection 
+as you can't tile the plane with them all at the same z level).
+
+<br><br>
+
+Note that multiple rings of tetrahedra stacked in z and projected to z can
+approximate a circle very precisely, pixel perfect even.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Cover a circle of diameter 4.<br><a href="prompts/Qwen3-Coder-Next-64k_4_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Cover a square of side length 6, with a hole in the centre of side length 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: Cover an equilateral triangle of side length 4.<br><a href="prompts/Qwen3-Coder-Next-64k_4_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: Cover a regular hexagon with circumradius 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Cover a rectangle of width 6 and height 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: Cover a diamond (rotated square) with diagonal 4.<br><a href="prompts/Qwen3-Coder-Next-64k_4_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: Cover a plus/cross shape with arm length 4 and arm width 1.<br><a href="prompts/Qwen3-Coder-Next-64k_4_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: Cover an L-shape with outer dimensions 4x4 and thickness 1.<br><a href="prompts/Qwen3-Coder-Next-64k_4_8.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_8.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 9</strong><br>Parameters: Cover an annulus (ring) with outer radius 2 and inner radius 1.<br><a href="prompts/Qwen3-Coder-Next-64k_4_9.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_9.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_9.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 10</strong><br>Parameters: Cover a regular pentagon with circumradius 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_10.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_10.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_10.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 11</strong><br>Parameters: Cover a 5-pointed star inscribed in a circle of radius 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_11.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_11.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_11.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 12</strong><br>Parameters: Cover an ellipse with semi-major axis 2 and semi-minor axis 1.<br><a href="prompts/Qwen3-Coder-Next-64k_4_12.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_12.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_12.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 13</strong><br>Parameters: Cover a semicircle of radius 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_13.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_13.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_13.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 14</strong><br>Parameters: Cover a right triangle with legs of length 4.<br><a href="prompts/Qwen3-Coder-Next-64k_4_14.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_14.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_14.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 15</strong><br>Parameters: Cover a parallelogram with base 4, height 2, and slant 1.<br><a href="prompts/Qwen3-Coder-Next-64k_4_15.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_15.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_15.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 16</strong><br>Parameters: Cover a trapezoid with parallel sides 4 and 2, and height 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_16.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_16.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_16.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 17</strong><br>Parameters: Cover a regular octagon with circumradius 2.<br><a href="prompts/Qwen3-Coder-Next-64k_4_17.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_17.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_17.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 18</strong><br>Parameters: Cover an arrow shape pointing right, 4 units long.<br><a href="prompts/Qwen3-Coder-Next-64k_4_18.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_18.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_18.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 19</strong><br>Parameters: Cover a chevron (V-shape) with span 4 and thickness 1.<br><a href="prompts/Qwen3-Coder-Next-64k_4_19.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_4_19.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_4_19.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Result was empty</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q5'>Test 5: Maze generation - ASCII Art</a></th>
+    <th class='score-good'>Score: 0.00 / 0</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Generate a 16 * 16 ASCII art maze.<br><br>The maze must use the following characters:<br># - Wall<br>. - Correct solution path<br>A - Start<br>B - End<br>  - Untaken path (space)<br><br>The maze must be solvable, there must be only one solution, the annotated path must not have any loops or branches, and shortest path<br>from A to B must cover at least 10% of the maze area. The path threw the maze can only be 1 cell wide, and solvable with<br>only horizontal or vertical moves.<br><br>The maze must be 'watertight', that is have walls touching the border of the grid all around, A and B must be within the maze.<br><br>Return the maze as a string, with newlines between rows. <br>Every row and column of your output must be 16 characters long, and your output must be 16 rows long.<br>Outputting anything else than the maze will obviously result in a score of 0. <br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='test-header'>
+    <th colspan=3><a name='q6'>Test 6: Voxel Grid Projection - shadow coverage and no symmetries</a></th>
+    <th class='score-good'>Score: 50000.00 / 6</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Position 50 voxels in a cubic grid of 6 voxels per side, such that the orthographic projection to all 3 planes is <br>solid (no holes in the projection), and there are no trivial symmetries (rotations or reflections that leave the shape unchanged).<br><br>0,0,0 is the bottom left grid cell and indices increase up and to the right.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Progressively larger grids with more voxels across subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Cover a 6x6x6 grid with 50 voxels<br><a href="prompts/Qwen3-Coder-Next-64k_6_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_6_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_6_0.txt">View chain of thought</a><br>
+Laying out voxels in 3D with no symmetries is a solved problem. So is covering all 2D projections.
+<br><br>
+Lets do both at once for a bit more of a challenge. 
+And with more voxels requiring to be placed that either trivial solution to ensure that it
+can't just blindly run a known python algorithm.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>voxels must be a list</div></td>
+  </tr>
+    <td colspan='2'><img src="artifacts/6_Visualization_Qwen3-Coder-Next-64k_0.png" alt="Voxel Grid Visualization" style="max-width: 100%;"></td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Cover a 8x8x8 grid with 100 voxels<br><a href="prompts/Qwen3-Coder-Next-64k_6_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_6_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_6_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>10000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Failed to grade subpass 1 - 'list' object has no attribute 'get'This is a framework error, not an AI error.</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 1 - 'list' object has no attribute 'get'</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Cover a 12x12x12 grid with 200 voxels<br><a href="prompts/Qwen3-Coder-Next-64k_6_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_6_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_6_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>10000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Failed to grade subpass 2 - 'list' object has no attribute 'get'This is a framework error, not an AI error.</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 2 - 'list' object has no attribute 'get'</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: Cover a 16x16x16 grid with 400 voxels<br><a href="prompts/Qwen3-Coder-Next-64k_6_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_6_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_6_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>10000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Failed to grade subpass 3 - 'list' object has no attribute 'get'This is a framework error, not an AI error.</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 3 - 'list' object has no attribute 'get'</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: Cover a 24x24x24 grid with 1000 voxels<br><a href="prompts/Qwen3-Coder-Next-64k_6_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_6_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_6_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>10000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Failed to grade subpass 4 - 'list' object has no attribute 'get'This is a framework error, not an AI error.</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 4 - 'list' object has no attribute 'get'</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Cover a 20x20x20 grid with 500 voxels, and sum of coordinates (x + y + z) has no 7 in it.<br><a href="prompts/Qwen3-Coder-Next-64k_6_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_6_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_6_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-good'><strong>10000.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Failed to grade subpass 5 - 'list' object has no attribute 'get'This is a framework error, not an AI error.</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 5 - 'list' object has no attribute 'get'</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q7'>Test 7: 3D maze - solution requires jumping over gaps</a></th>
+    <th class='score-bad'>Score: 0.00 / 6</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br><br>Here is a heightmap platform maze, in which A is located at height 5, and B is located at height 0. <br>The maze represents a 3D space where movement is constrained by height differences. <br>Characters can only move to adjacent cells if the height difference is at most 1, or jump over gaps.<br><br>A555<br>2B20<br>3015<br>4555<br><br>The character can move:<br>- 1 cell horizontally or vertically, so long as the height is within 1 unit.<br>- Can jump 2 cells horizontally or vertically, so long as:<br>  - source and destination heights are the same<br>  - the height of the cell between the source and destination is lower than the source height (jump over gaps, not through walls!)<br><br>In this case, the character:<br>- starts at A, which is at level 5<br>- walks flat for a bit, <br>- jumps over a gap of height 0 to another level 5 block.<br>- walks flat for a bit<br>- descends until level 2, then jumps over B to level 2,<br>- and then continues down to level 0, reaching B.<br><br>The maze must use only 0-9, A & B to represent height, and must only have one solution.<br>A & B must appear in the grid once each.<br>The path must visit at least 20% of all cells.<br>No single elevation can occupy more than 30% of the grid.<br>Create a maze of size 5x5 that has A at level 5 and B at level 0, and at least 2 jumps.<br>Your output must be ONLY the maze's heightmap, nothing else.<br>Your output must be 5 rows long, and every row must be 5 characters long.<br>The maze must be your only output - Extra text above or below the maze itself corrupt your work.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Cover a 5x5 grid with A at level 5 and B at level 0, requiring at least 2 jumps<br><a href="prompts/Qwen3-Coder-Next-64k_7_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_7_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_7_0.txt">View chain of thought</a><br>
+This is a maze creation that involves climbing "stairs" and jumping over gaps.
+<br><br>
+LLMs fail here for 3 main reasons:<ul>
+<li>They make flat paths (which is banned in the rules)</li>
+<li>They allow way too much jumping, creating loops.</li>
+<li>They screw up the rows and colomn counts.</li>
+</ul>
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Multiple paths exist. Maze must have only one solution.</div></td>
+  </tr>
+    <td colspan='2'><div id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd" class="maze-viewer"><style>#maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd { display:flex; align-items:center; gap:8px; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd input[type="radio"] { display:none; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd .maze-frame { flex:1; text-align:center; order:1; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd .maze-prev { order:0; cursor:pointer; font-size:18px; display:none; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd .maze-next { order:2; cursor:pointer; font-size:18px; display:none; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd .maze-view { display:none; max-width:100%; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-0:checked ~ .maze-frame .view-0 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-0:checked ~ .prev-0 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-0:checked ~ .next-0 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-1:checked ~ .maze-frame .view-1 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-1:checked ~ .prev-1 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-1:checked ~ .next-1 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-2:checked ~ .maze-frame .view-2 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-2:checked ~ .prev-2 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-2:checked ~ .next-2 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-3:checked ~ .maze-frame .view-3 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-3:checked ~ .prev-3 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-3:checked ~ .next-3 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-4:checked ~ .maze-frame .view-4 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-4:checked ~ .prev-4 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-4:checked ~ .next-4 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-5:checked ~ .maze-frame .view-5 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-5:checked ~ .prev-5 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-5:checked ~ .next-5 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-6:checked ~ .maze-frame .view-6 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-6:checked ~ .prev-6 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-6:checked ~ .next-6 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-7:checked ~ .maze-frame .view-7 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-7:checked ~ .prev-7 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-7:checked ~ .next-7 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-8:checked ~ .maze-frame .view-8 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-8:checked ~ .prev-8 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-8:checked ~ .next-8 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-9:checked ~ .maze-frame .view-9 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-9:checked ~ .prev-9 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-9:checked ~ .next-9 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-10:checked ~ .maze-frame .view-10 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-10:checked ~ .prev-10 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-10:checked ~ .next-10 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-11:checked ~ .maze-frame .view-11 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-11:checked ~ .prev-11 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-11:checked ~ .next-11 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-12:checked ~ .maze-frame .view-12 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-12:checked ~ .prev-12 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-12:checked ~ .next-12 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-13:checked ~ .maze-frame .view-13 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-13:checked ~ .prev-13 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-13:checked ~ .next-13 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-14:checked ~ .maze-frame .view-14 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-14:checked ~ .prev-14 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-14:checked ~ .next-14 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-15:checked ~ .maze-frame .view-15 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-15:checked ~ .prev-15 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-15:checked ~ .next-15 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-16:checked ~ .maze-frame .view-16 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-16:checked ~ .prev-16 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-16:checked ~ .next-16 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-17:checked ~ .maze-frame .view-17 { display:block; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-17:checked ~ .prev-17 { display:inline-flex; } #maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-17:checked ~ .next-17 { display:inline-flex; }</style><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-0" checked><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-1"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-2"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-3"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-4"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-5"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-6"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-7"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-8"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-9"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-10"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-11"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-12"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-13"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-14"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-15"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-16"><input type="radio" name="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view" id="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-17"><label class="maze-prev prev-0" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-17">&#8592;</label><label class="maze-next next-0" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-1">&#8594;</label><label class="maze-prev prev-1" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-0">&#8592;</label><label class="maze-next next-1" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-2">&#8594;</label><label class="maze-prev prev-2" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-1">&#8592;</label><label class="maze-next next-2" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-3">&#8594;</label><label class="maze-prev prev-3" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-2">&#8592;</label><label class="maze-next next-3" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-4">&#8594;</label><label class="maze-prev prev-4" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-3">&#8592;</label><label class="maze-next next-4" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-5">&#8594;</label><label class="maze-prev prev-5" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-4">&#8592;</label><label class="maze-next next-5" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-6">&#8594;</label><label class="maze-prev prev-6" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-5">&#8592;</label><label class="maze-next next-6" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-7">&#8594;</label><label class="maze-prev prev-7" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-6">&#8592;</label><label class="maze-next next-7" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-8">&#8594;</label><label class="maze-prev prev-8" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-7">&#8592;</label><label class="maze-next next-8" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-9">&#8594;</label><label class="maze-prev prev-9" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-8">&#8592;</label><label class="maze-next next-9" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-10">&#8594;</label><label class="maze-prev prev-10" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-9">&#8592;</label><label class="maze-next next-10" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-11">&#8594;</label><label class="maze-prev prev-11" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-10">&#8592;</label><label class="maze-next next-11" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-12">&#8594;</label><label class="maze-prev prev-12" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-11">&#8592;</label><label class="maze-next next-12" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-13">&#8594;</label><label class="maze-prev prev-13" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-12">&#8592;</label><label class="maze-next next-13" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-14">&#8594;</label><label class="maze-prev prev-14" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-13">&#8592;</label><label class="maze-next next-14" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-15">&#8594;</label><label class="maze-prev prev-15" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-14">&#8592;</label><label class="maze-next next-15" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-16">&#8594;</label><label class="maze-prev prev-16" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-15">&#8592;</label><label class="maze-next next-16" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-17">&#8594;</label><label class="maze-prev prev-17" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-16">&#8592;</label><label class="maze-next next-17" for="maze-viewer-b928d0c897c6e7ef7e4e32f7d23a21cd-view-0">&#8594;</label><div class="maze-frame"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_above.png" class="maze-view view-0" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_from_a.png" class="maze-view view-1" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_north.png" class="maze-view view-2" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_south.png" class="maze-view view-3" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_west.png" class="maze-view view-4" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_east.png" class="maze-view view-5" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_northeast.png" class="maze-view view-6" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_northwest.png" class="maze-view view-7" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_southeast.png" class="maze-view view-8" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_southwest.png" class="maze-view view-9" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_northclose.png" class="maze-view view-10" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_southclose.png" class="maze-view view-11" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_westclose.png" class="maze-view view-12" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_eastclose.png" class="maze-view view-13" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_northeastclose.png" class="maze-view view-14" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_northwestclose.png" class="maze-view view-15" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_southeastclose.png" class="maze-view view-16" style="max-width: 100%;"><img src="artifacts/7_Visualization_Qwen3-Coder-Next-64k_5_0_southwestclose.png" class="maze-view view-17" style="max-width: 100%;"></div></div></td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Cover a 10x10 grid with A at level 0 and B at level 9, requiring at least 4 jumps<br><a href="prompts/Qwen3-Coder-Next-64k_7_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_7_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_7_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Cover a 15x15 grid with A at level 5 and B at level 5, requiring at least 6 jumps<br><a href="prompts/Qwen3-Coder-Next-64k_7_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_7_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_7_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: Cover a 20x20 grid with A at level 5 and B at level 5, requiring at least 8 jumps<br><a href="prompts/Qwen3-Coder-Next-64k_7_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_7_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_7_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: Cover a 25x25 grid with A at level 5 and B at level 5, requiring at least 10 jumps<br><a href="prompts/Qwen3-Coder-Next-64k_7_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_7_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_7_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Cover a 30x30 grid with A at level 5 and B at level 0, requiring at least 12 jumps<br><a href="prompts/Qwen3-Coder-Next-64k_7_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_7_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_7_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q8'>Test 8: Fit a curve to partition 2D ascii patterns via cubic polynomials</a></th>
+    <th class='score-bad'>Score: 0.00 / 9</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br><br>Here is an 8x8 grid representing a space partition:<br><br>........<br>........<br>..####..<br>..#####.<br>.######.<br>..######<br>..#####.<br>...####.<br><br>0, 0 is the top left, x is horizontal, y is vertical. Coordinates are in integers.<br><br>Using the formula:<br><br>let cell = <br>   '#' if f(x,y) > 0<br>   '.' if f(x,y) <= 0<br><br>where f(x,y) is a polynomial of whatever degree you need to solve this. You can include cross terms like x*y, x**2*y, x*y**2, etc.<br><br>Return the formula as Python function f(x,y) that uses ONLY:<br>- arithmetic operations (+, -, *, /)<br>- powers (**) <br>- parentheses for grouping<br>- integer coordinates x, y<br>- the words "def" and "return"<br><br>Do not use type annotations, casts, conditionals, branches, additional variables, comments or anything else.<br><br>You can use the following example as a template:<br><br>def f(x, y):<br>    return x**2 + 3*y**2 - 4*x*y - 145<br><br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Prompt parameters change between subpasses (increasing difficulty)</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: Small blob cluster (8x8)<br><pre>........
+........
+..####..
+..#####.
+.######.
+..######
+..#####.
+...####.</pre><br><a href="prompts/Qwen3-Coder-Next-64k_8_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_0.txt">View chain of thought</a><br>
+Can the LLM roundtrip a 2D shape through a polynomial?
+<br><br>
+Shapes are procedurally generated from smooth fields so each subpass features
+curves/blobs rather than hardcoded patterns. Larger grids (over 64x64) are
+visualized via attached black/white images instead of ASCII art.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: Smooth corner (12x12)<br><pre>#######.....
+#######.....
+########....
+########....
+##########..
+##########..
+##########..
+#########...
+...####.....
+............
+............
+............</pre><br><a href="prompts/Qwen3-Coder-Next-64k_8_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: Island just off centre (24x24)<br><pre>.........############...
+........##############..
+........##############..
+........##############..
+.......###############..
+.......################.
+.......################.
+........###############.
+........################
+........################
+........################
+.........###############
+..........##############
+...........############.
+.............##########.
+.................#####..
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................</pre><br><a href="prompts/Qwen3-Coder-Next-64k_8_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: Twin islands (24x24)<br><pre>########################
+########################
+########################
+########################
+########################
+########################
+########################
+########################
+########################
+########################
+######################..
+###########......##.....
+##########..............
+########................
+#######.................
+######..................
+###....................#
+......................##
+......................##
+......................##
+......................##
+........................
+........................
+........................</pre><br><a href="prompts/Qwen3-Coder-Next-64k_8_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>No function provided</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 3 - list indices must be integers or slices, not str</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: Low-frequency Thumb (48x48)<br>See prompt image.<br><a href="prompts/Qwen3-Coder-Next-64k_8_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: Peanut shape (64x64)<br>See prompt image.<br><a href="prompts/Qwen3-Coder-Next-64k_8_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: Ellipse (96x96)<br>See prompt image.<br><a href="prompts/Qwen3-Coder-Next-64k_8_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: Asteroid (50x50)<br>See prompt image.<br><a href="prompts/Qwen3-Coder-Next-64k_8_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: Hallowean Decoration (128x128)<br>See prompt image.<br><a href="prompts/Qwen3-Coder-Next-64k_8_8.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_8_8.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_8_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q9'>Test 9: Hamiltonian Loop on Grid</a></th>
+    <th class='score-bad'>Score: 0.00 / 10</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You have a 4*4 grid of unit squares, with cell coordinates (x, y) where 1 <= x <= 4, 1 <= y <= 4.<br><br><br><br>Draw a single closed path that:<br>- Moves from cell to cell using only side-adjacent moves.<br>- Visits every cell exactly once.<br>- Returns to its starting cell (so the path is a loop).<br>- The last cell in your list must be side-adjacent to the first.<br><br>Answer format:<br>Give an ordered list of the 16 cell coordinates for the loop, starting anywhere, for example:<br><br>1,1<br>1,2<br>1,3<br>...<br>2,1<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Grid size increases across subpasses, with a missing chunk in the final subpasses</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: 4x4 grid<br><a href="prompts/Qwen3-Coder-Next-64k_9_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_0.txt">View chain of thought</a><br>
+This is a known simple problem and I'd expect even a 5 year old to solve the simplest case.
+<br><br>
+Observing the Chain-Of-Thought for the simple models even shows them trying to find
+existing solutions on the web to copy paste. It's that well known.
+<br><br>
+As we crank it up, things get harder. LLMs may truncate or lose focus on the longer
+paths, and some of the complex paths, especially with holes, require novel solutions, as without
+any spatial reasoning, this becomes NP-Complete, while a child can solve it with a crayon and a 
+minutes.
+<br><br>
+Using Claude Opus 4.5, Windsurf, $40 of API credits and a day of my life explaining algorithms
+for an AI to implement, I was able to build a solver for this that can solve simple sparse grids in a few minutes
+ (placebo_data/q9.py), this is probably the peak of what I'd expect an AI could do.
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: 4x4 grid with 2 cells blocked<br>
+<pre>
+....
+.X..
+.X..
+....
+</pre><br>
+<br><a href="prompts/Qwen3-Coder-Next-64k_9_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>No steps provided</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 1 - list indices must be integers or slices, not str</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: 8x8 grid<br><a href="prompts/Qwen3-Coder-Next-64k_9_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: 12x12 grid<br><a href="prompts/Qwen3-Coder-Next-64k_9_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: 16x16 grid<br><a href="prompts/Qwen3-Coder-Next-64k_9_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: 16x16 grid with cells (3,3) and (3,4) removed<br>
+<pre>
+................
+................
+..X.............
+..X.............
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+</pre><br>
+<br><a href="prompts/Qwen3-Coder-Next-64k_9_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: 16x16 grid with cells (12, 6), (12, 6), (5, 6), (5, 5), (7, 10), (8, 10) are removed.<br>
+<pre>
+................
+................
+....X......X....
+....X......X....
+................
+................
+................
+................
+................
+......XX........
+................
+................
+................
+................
+................
+................
+</pre><br>
+<br><a href="prompts/Qwen3-Coder-Next-64k_9_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: 16x16 grid where various holes exist.<br>
+<pre>
+................
+.X............X.
+................
+................
+.X............X.
+................
+................
+................
+................
+................
+................
+.X............X.
+................
+................
+.X............X.
+................
+</pre><br>
+<br><a href="prompts/Qwen3-Coder-Next-64k_9_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: 16x16 grid where various holes exist.<br>
+<pre>
+................
+.X............X.
+................
+................
+.X............X.
+................
+................
+.......XX.......
+.......XX.......
+................
+................
+.X............X.
+................
+................
+.X............X.
+................
+</pre><br>
+<br><a href="prompts/Qwen3-Coder-Next-64k_9_8.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_8.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 9</strong><br>Parameters: 16x16 grid where various holes exist.<br>
+<pre>
+................
+.XX...........X.
+.XX.............
+................
+XXXX..........X.
+................
+................
+.......XX.......
+.......XX.......
+................
+................
+XX............X.
+XX............X.
+XX............X.
+XX............X.
+XX..............
+</pre><br>
+<br><a href="prompts/Qwen3-Coder-Next-64k_9_9.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_9_9.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_9_9.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q10'>Test 10: Painting a 3D scene in ASCII, with lighting.</a></th>
+    <th class='score-good'>Score: 0.00 / 0</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>You are a painter, you have a canvas of size 16 * 16 pixels.<br><br>You are painting a scene from the north east, at a 45 degree angle looking down. You are using an orthographic projection.<br><br>The scene contains 5 axis aligned cubes, each with a side length of 1 unit. The cubes bottom-centres are placed at the vertices of a <br>regular pentagram of side length 5 units, centred at the origin, aligned so it's 'pointing' positive y, <br>and is centred in the middle of your painting.<br><br>Your painting is zoomed such that the outer edges of the cubes touch the edges of the canvas.<br><br>Return the canvas as a string, with:<br>- # representing a surface facing up (the top plane of a cube)<br>- " representing a surface facing east or west.<br>- ' representing a surface facing north or south.<br>- (space) representing unpainted pixels, the ground, sky, pentagram or anything else.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Higher and higher resolution ASCII art.</td>
+  </tr>
+  <tr class='test-header'>
+    <th colspan=3><a name='q11'>Test 11: Hyper-snake Challenge</a></th>
+    <th class='score-bad'>Score: 0.00 / 13</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br><br>Do you remember the snake game, where you have to direct a snake around a 2D space to avoid hitting itself? This is hyper-snake!<br><br>You are a snake in a 2D space grid of size [8, 8]. You can move to any adjacent cell in the grid, along any of the<br>available 2 dimensions, but you can not move to a cell which you have visited before, nor can you move "diagonally",<br>that is, you can not move in more than one dimension at a time.<br><br>The game ends when you run out of space to move, when you hit the boundary, or when you run into yourself.<br><br><br><br>You also need to collect the food at: [[1, 1]].<br><br>Return the path of the snake as a list of cells, the first element of which is [0, 0] (where you must start), and going for as long as you can.<br></div></td>
+    <td><strong>Prompt Changes:</strong><br>Dimensions increase from 3D to 10D</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: 2D snake in [8, 8] grid. with [[1, 1]] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_0.txt">View chain of thought</a><br>
+Think Snake on a Nokia Phone, but in higher dimensions.
+<br><br>
+It's interesting to graph the dimensions vs score of LLMs - Eg: why on earth does
+ChatGPT manage to play Snake in 3D, 4D, 6D, but not 5D?
+
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>No path in answer</div></td>
+  </tr>
+    <td colspan='2'>
+<div id="snake-a6edce9ae8" style="width:100%;max-width:600px;margin:0 auto;">
+  <div id="snake-a6edce9ae8-canvas" style="width:100%;height:400px;border:1px solid #444;background:#1a1a2e;"></div>
+  <div id="snake-a6edce9ae8-controls" style="padding:8px;background:#2a2a3e;color:#ddd;font-size:12px;border-radius:0 0 4px 4px;">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <span><b>2D Grid</b> (8 × 8)</span>
+      <span>Path: <b style="color:#0f8">0/64</b> cells</span>
+      <label style="cursor:pointer;"><input type="checkbox" id="snake-a6edce9ae8-animate" checked> Animate</label>
+      <label style="cursor:pointer;"><input type="checkbox" id="snake-a6edce9ae8-showgrid" checked> Grid</label>
+    </div>
+    <div id="snake-a6edce9ae8-sliders" style="margin-top:8px;"></div>
+    <div style="margin-top:4px;font-size:11px;color:#888;">
+      Drag to rotate • Scroll to zoom • Sliders project higher dims to 3D
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// Global coordinator - only animate one viewer at a time (closest to viewport center)
+if (!window.snakeViewerCoordinator) {
+  window.snakeViewerCoordinator = {
+    viewers: {},
+    activeId: null,
+    updateActive: function() {
+      const viewportCenter = window.innerHeight / 2;
+      let closestId = null;
+      let closestDist = Infinity;
+      for (const [id, v] of Object.entries(this.viewers)) {
+        if (!v.visible) continue;
+        const rect = v.container.getBoundingClientRect();
+        const elemCenter = rect.top + rect.height / 2;
+        const dist = Math.abs(elemCenter - viewportCenter);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestId = id;
+        }
+      }
+      this.activeId = closestId;
+    },
+    register: function(id, container) {
+      this.viewers[id] = { container, visible: false };
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          this.viewers[id].visible = e.isIntersecting;
+          this.updateActive();
+        });
+      }, { threshold: 0.1 });
+      observer.observe(container);
+    },
+    isActive: function(id) {
+      return this.activeId === id;
+    }
+  };
+  // Update on scroll
+  let scrollTimeout;
+  window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => window.snakeViewerCoordinator.updateActive(), 50);
+  }, { passive: true });
+}
+</script>
+<script>
+(function() {
+  const viewerId = 'snake-a6edce9ae8';
+  const config = {"dimensions": 2, "gridSize": [8, 8], "startPos": [0, 0], "walls": [], "food": [[1, 1]], "path": []};
+  const container = document.getElementById('snake-a6edce9ae8-canvas');
+  if (!container) { console.error('Container not found'); return; }
+  window.snakeViewerCoordinator.register(viewerId, container);
+  
+  const dims = config.dimensions;
+  // Ensure gridSize is padded to at least 3 dimensions
+  const gridSize = [...config.gridSize];
+  while (gridSize.length < 3) gridSize.push(1);
+  
+  const path = config.path;
+  const walls = config.walls;
+  const food = config.food;
+
+  // Scene setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+
+  // Use fallback dimensions if container not yet laid out
+  let width = container.clientWidth || 600;
+  let height = container.clientHeight || 400;
+  const camera = new THREE.PerspectiveCamera(50, width/height, 0.1, 1000);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
+  container.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 20, 15);
+  scene.add(dirLight);
+
+  // Projection weights for dims > 3 (sliders control these)
+  const projectionWeights = [];
+  for (let d = 3; d < dims; d++) {
+    projectionWeights.push(0.5); // default middle slice
+  }
+
+  // Create sliders for higher dimensions
+  const sliderContainer = document.getElementById('snake-a6edce9ae8-sliders');
+  if (dims > 3) {
+    const dimLabels = ['W', 'V', 'U', 'T', 'S', 'R', 'Q'];
+    for (let d = 3; d < dims; d++) {
+      const idx = d - 3;
+      const label = dimLabels[idx] || `D${d}`;
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:8px;margin:4px 0;';
+      div.innerHTML = `
+        <span style="width:80px;">Dim ${d+1} (${label}):</span>
+        <input type="range" id="snake-a6edce9ae8-dim${d}" min="0" max="1" step="0.01" value="0.5" style="flex:1;">
+        <span id="snake-a6edce9ae8-dim${d}-val" style="width:40px;">0.50</span>
+      `;
+      sliderContainer.appendChild(div);
+      const slider = div.querySelector('input');
+      const valSpan = div.querySelector('span:last-child');
+      slider.addEventListener('input', () => {
+        projectionWeights[idx] = parseFloat(slider.value);
+        valSpan.textContent = slider.value;
+        rebuildVisualization();
+      });
+    }
+  }
+
+  // Project N-dimensional point to 3D
+  function projectTo3D(point) {
+    if (dims <= 3) {
+      // Pad to 3D if needed
+      const p = [...point];
+      while (p.length < 3) p.push(0);
+      return p.slice(0, 3);
+    }
+    // For dims > 3, use weighted projection
+    // Base 3D coords are first 3 dims
+    let x = point[0], y = point[1], z = point[2];
+    // Higher dims influence position based on weights
+    for (let d = 3; d < dims; d++) {
+      const weight = projectionWeights[d - 3];
+      const coord = point[d] / (gridSize[d] - 1 || 1);
+      // Project higher dims as offsets/rotations
+      const angle = (d - 3) * Math.PI / 4 + coord * Math.PI * 0.3;
+      const influence = (coord - weight) * 2;
+      x += influence * Math.cos(angle) * 0.5;
+      y += influence * Math.sin(angle) * 0.5;
+      z += influence * 0.3;
+    }
+    return [x, y, z];
+  }
+
+  // Calculate alpha (visibility) based on higher-dim distance from slice
+  function calcAlpha(point) {
+    if (dims <= 3) return 1.0;
+    let totalDist = 0;
+    for (let d = 3; d < dims; d++) {
+      const coord = point[d] / (gridSize[d] - 1 || 1);
+      const weight = projectionWeights[d - 3];
+      totalDist += Math.abs(coord - weight);
+    }
+    return Math.max(0.1, 1.0 - totalDist * 0.5);
+  }
+
+  // Groups for different elements
+  let gridGroup = new THREE.Group();
+  let pathGroup = new THREE.Group();
+  let markerGroup = new THREE.Group();
+  scene.add(gridGroup);
+  scene.add(pathGroup);
+  scene.add(markerGroup);
+
+  // Materials
+  const gridMaterial = new THREE.LineBasicMaterial({ color: 0x404060, transparent: true, opacity: 0.3 });
+  const pathMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff88, emissive: 0x004422 });
+  const wallMaterial = new THREE.MeshPhongMaterial({ color: 0xff4444, transparent: true, opacity: 0.8 });
+  const foodMaterial = new THREE.MeshPhongMaterial({ color: 0x44ff44, emissive: 0x114411 });
+  const startMaterial = new THREE.MeshPhongMaterial({ color: 0x4488ff, emissive: 0x112244 });
+  const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, emissive: 0x444400 });
+
+  let animProgress = 0;
+  let showGrid = true;
+  let isLoaded = false;
+  const MAX_VISIBLE_NODES = 500; // Only render last N nodes for performance
+
+  // Shared geometries to avoid recreating
+  let sharedSphereGeom = null;
+  let sharedHeadGeom = null;
+  let sharedStartGeom = null;
+
+  function unloadGeometry() {
+    gridGroup.clear();
+    pathGroup.clear();
+    markerGroup.clear();
+    isLoaded = false;
+    cameraInitialized = false; // Allow camera reinit when reactivated
+  }
+
+  function rebuildVisualization() {
+    // Clear old geometry
+    gridGroup.clear();
+    pathGroup.clear();
+    markerGroup.clear();
+    isLoaded = true;
+
+    // Create shared geometries once
+    if (!sharedSphereGeom) {
+      sharedSphereGeom = new THREE.SphereGeometry(0.2, 4, 4);
+      sharedHeadGeom = new THREE.SphereGeometry(0.35, 6, 6);
+      sharedStartGeom = new THREE.SphereGeometry(0.3, 4, 4);
+    }
+
+    // Calculate center for camera
+    const center = gridSize.slice(0, 3).map((s, i) => (s - 1) / 2);
+    while (center.length < 3) center.push(0);
+
+    // Draw grid edges (merged into single buffer)
+    if (showGrid) {
+      const edges = [];
+      function addEdgesRecursive(pos, dim) {
+        if (dim === Math.min(dims, 3)) {
+          for (let d = 0; d < Math.min(dims, 4); d++) {
+            if (pos[d] < gridSize[d] - 1) {
+              const p1 = projectTo3D([...pos, ...Array(Math.max(0, dims-3)).fill(0).map((_, i) => 
+                Math.round(projectionWeights[i] * (gridSize[3+i]-1)))]);
+              const nextPos = [...pos];
+              nextPos[d]++;
+              const p2 = projectTo3D([...nextPos, ...Array(Math.max(0, dims-3)).fill(0).map((_, i) => 
+                Math.round(projectionWeights[i] * (gridSize[3+i]-1)))]);
+              edges.push(...p1, ...p2);
+            }
+          }
+          return;
+        }
+        for (let i = 0; i < gridSize[dim]; i++) {
+          pos[dim] = i;
+          addEdgesRecursive(pos, dim + 1);
+        }
+      }
+      addEdgesRecursive(Array(dims).fill(0), 0);
+
+      if (edges.length > 0) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(edges), 3));
+        gridGroup.add(new THREE.LineSegments(geometry, gridMaterial));
+      }
+    }
+
+    // Draw walls (use instancing concept - but simpler: just fewer segments)
+    walls.forEach(wall => {
+      const pos = projectTo3D(wall);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), wallMaterial);
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      markerGroup.add(mesh);
+    });
+
+    // Draw food
+    food.forEach(f => {
+      const pos = projectTo3D(f);
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), foodMaterial);
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      markerGroup.add(mesh);
+    });
+
+    // Draw path - only last MAX_VISIBLE_NODES with fade
+    if (path.length > 0) {
+      const totalVisible = Math.min(path.length, Math.floor(animProgress * path.length) + 1);
+      const startIdx = Math.max(0, totalVisible - MAX_VISIBLE_NODES);
+      const fadeWindow = MAX_VISIBLE_NODES;
+      
+      // Collect line segments into single merged buffer with vertex colors
+      const linePositions = [];
+      const lineColors = [];
+      
+      for (let i = startIdx; i < totalVisible; i++) {
+        const pos = projectTo3D(path[i]);
+        const alpha = calcAlpha(path[i]);
+        const isStart = i === 0;
+        const isHead = i === totalVisible - 1;
+        
+        // Fade based on distance from head
+        const distFromHead = totalVisible - 1 - i;
+        const fadeFactor = Math.max(0, 1 - distFromHead / fadeWindow);
+        const finalAlpha = alpha * fadeFactor;
+        
+        // Only draw node spheres for head, start
+        if (isHead || isStart) {
+          const geom = isHead ? sharedHeadGeom : (isStart ? sharedStartGeom : sharedSphereGeom);
+          const mat = (isHead ? headMaterial : (isStart ? startMaterial : pathMaterial)).clone();
+          mat.transparent = true;
+          mat.opacity = finalAlpha;
+          const mesh = new THREE.Mesh(geom, mat);
+          mesh.position.set(pos[0], pos[1], pos[2]);
+          pathGroup.add(mesh);
+        }
+        
+        // Add line segment to merged buffer
+        if (i < totalVisible - 1 && fadeFactor > 0.1) {
+          const p1 = pos;
+          const p2 = projectTo3D(path[i + 1]);
+          
+          // Color gradient along path
+          const t = i / Math.max(1, path.length - 1);
+          let r, g, b;
+          if (t < 0.5) {
+            r = 0; g = t * 2; b = 1 - t * 2;
+          } else {
+            r = (t - 0.5) * 2; g = 1; b = 0;
+          }
+          
+          linePositions.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+          // Vertex colors for both endpoints
+          lineColors.push(r * fadeFactor, g * fadeFactor, b * fadeFactor);
+          lineColors.push(r * fadeFactor, g * fadeFactor, b * fadeFactor);
+        }
+      }
+      
+      // Create single merged line geometry
+      if (linePositions.length > 0) {
+        const lineGeom = new THREE.BufferGeometry();
+        lineGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(linePositions), 3));
+        lineGeom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(lineColors), 3));
+        const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.8 });
+        pathGroup.add(new THREE.LineSegments(lineGeom, lineMat));
+      }
+    }
+  }
+
+  // Initial camera setup (only once)
+  let cameraInitialized = false;
+  function initCamera() {
+    if (cameraInitialized) return;
+    cameraInitialized = true;
+    const center = gridSize.slice(0, 3).map((s) => (s - 1) / 2);
+    const maxSize = Math.max(...gridSize.slice(0, 3), 1);
+    camera.position.set(center[0] + maxSize * 2, center[1] + maxSize * 1.5, center[2] + maxSize * 2);
+    controls.target.set(center[0], center[1], center[2]);
+    controls.update();
+  }
+
+  rebuildVisualization();
+  initCamera();
+
+  // Animation checkbox
+  const animCheckbox = document.getElementById('snake-a6edce9ae8-animate');
+  const gridCheckbox = document.getElementById('snake-a6edce9ae8-showgrid');
+  
+  gridCheckbox.addEventListener('change', () => {
+    showGrid = gridCheckbox.checked;
+    rebuildVisualization();
+  });
+
+  // Animation loop - only animate if this viewer is active (closest to viewport center)
+  let lastTime = 0;
+  let wasActive = false;
+  function animate(time) {
+    requestAnimationFrame(animate);
+    
+    const isActive = window.snakeViewerCoordinator.isActive(viewerId);
+    
+    // If becoming inactive, unload geometry to save memory
+    if (wasActive && !isActive) {
+      unloadGeometry();
+      renderer.clear();
+    }
+    
+    // Only do work if active
+    if (isActive) {
+      // Rebuild if just became active or animating
+      if (!wasActive) {
+        rebuildVisualization();
+        initCamera();
+      } else if (animCheckbox.checked && path.length > 1) {
+        const dt = (time - lastTime) / 100 / path.length;
+        lastTime = time;
+        animProgress += dt * 0.3;
+        if (animProgress > 1.5) animProgress = 0;
+        rebuildVisualization();
+      } else if (!animCheckbox.checked && animProgress < 1) {
+        animProgress = 1;
+        rebuildVisualization();
+      }
+      
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    
+    wasActive = isActive;
+  }
+  animate(0);
+
+  // Handle resize
+  const resizeObserver = new ResizeObserver(() => {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  });
+  resizeObserver.observe(container);
+})();
+</script>
+</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: 2D snake in (8, 8) grid. with [(5, 5), (6, 6), (0, 1)] walls. with [[7, 7]] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: 3D snake in [4, 4, 4] grid. with [[1, 1, 1]] walls. with [[1, 2, 1]] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: 3D snake in [4, 4, 4] grid. with [(0, 0, 1)] walls. with [(0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: 4D snake in [5, 5, 5, 5] grid. with [(0, 0, 0, 1), (0, 0, 1, 0), (0, 1, 0, 0)] walls. with [(0, 0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: 4D snake in [5, 3, 3, 5] grid. with [(0, 0, 0, 1), (0, 0, 1, 0), (0, 1, 0, 0)] walls. with [(0, 0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: 5D snake in [4, 4, 4, 4, 4] grid. with [(3, 3, 3, 3, 3)] walls. with [(3, 0, 3, 0, 3), (0, 3, 0, 3, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: 6D snake in [4, 4, 4, 4, 4, 2] grid. with [(0, 0, 1, 0, 0, 0)] walls. with [(0, 0, 3, 0, 0, 1), (0, 0, 0, 0, 0, 1)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: 6D snake in [3, 3, 3, 3, 3, 3] grid. with [(0, 0, 1, 2, 0, 0)] walls. with [(0, 0, 2, 0, 0, 0), (0, 0, 0, 0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_8.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_8.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 9</strong><br>Parameters: 7D snake in [3, 3, 3, 3, 3, 3, 3] grid. with [(0, 0, 1, 2, 0, 0, 0), (0, 2, 1, 0, 0, 0, 0)] walls. with [(0, 0, 0, 0, 0, 1, 1), (0, 0, 0, 1, 1, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_9.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_9.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_9.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 10</strong><br>Parameters: 8D snake in [3, 3, 3, 2, 2, 2, 3, 3] grid. with [(0, 0, 1, 1, 0, 0, 0, 0), (0, 1, 1, 0, 0, 0, 0, 0)] walls. with [(0, 0, 0, 0, 0, 1, 1, 1), (0, 0, 0, 1, 1, 0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_10.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_10.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_10.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 11</strong><br>Parameters: 9D snake in [2, 2, 2, 2, 2, 2, 8, 2, 2] grid. with [(0, 0, 0, 0, 0, 0, 4, 0, 0), (0, 1, 1, 0, 0, 0, 4, 0, 0)] walls. with [(0, 0, 0, 0, 0, 1, 1, 1, 1), (0, 0, 0, 1, 1, 0, 0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_11.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_11.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_11.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 12</strong><br>Parameters: 10D snake in [2, 2, 2, 2, 2, 2, 2, 2, 2, 2] grid. with [(0, 0, 1, 0, 0, 0, 0, 0, 0, 0), (0, 1, 1, 0, 0, 0, 0, 0, 0, 0)] walls. with [(0, 0, 0, 0, 0, 1, 1, 1, 1, 1), (0, 0, 0, 1, 1, 0, 0, 0, 0, 0)] food.<br><a href="prompts/Qwen3-Coder-Next-64k_11_12.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_11_12.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_11_12.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='test-header'>
+    <th colspan=3><a name='q12'>Test 12: Fit a loop into a square that's perimeter is smaller than the total length</a></th>
+    <th class='score-bad'>Score: 0.00 / 40</th>
+  </tr>
+  <tr class='prompt-row'>
+    <td colspan='3'><div style='overflow-x: auto;height: 200px;'><strong>Typical Prompt:</strong><br>You have 3 1m lengths of pipe, and a square area of side length 1 to play with.<br><br>Lay the pipe out to form a closed loop, using all the pipe, and returning to the starting point.<br><br>You can not re-use vertices, and you can not cross the boundary of the area. You do not need to<br>stick to axis aligned paths.<br><br>Return the loop as a list of the pipe endpoints. Note that N pipes requires N+1 verticies to describe a path, but since the<br>first and last vertices are the same, you only need to return N points.<br> The loop must not cross itself or touch itself.</div></td>
+    <td><strong>Prompt Changes:</strong><br>Increasing pipe length, square size, and complications.</td>
+  </tr>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 0</strong><br>Parameters: 3 pipes in 1x1<br><a href="prompts/Qwen3-Coder-Next-64k_12_0.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_0.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_0.txt">View chain of thought</a><br>
+This tests laying out paths in a closed loop within a constrained square.
+
+There are 40 subpasses, each increasing in difficulty.<ul>
+<li>The first ~10 are solvable by basically tracing a permitter or drawing a simple shape.</li>
+<li>10-20 include unusual constraints - requiring edge touching, fixed points, 1 or 2 crossings, convex hull rules. etc</li>
+<li>21-30 require some unusual shapes, as the solution typically requires concentric circles or railway-track-like geometries</li>
+<li>31-40 require either clever algorithms, or special solvers run using code execution. The human-with-tools solver uses a spring simulation written in python.</li>
+</td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Answer must contain a 'points' array</div></td>
+  </tr>
+    <td colspan='2'>Failed to generate nice report for subpass 0 - 'list' object has no attribute 'get'</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 1</strong><br>Parameters: 6 pipes in 2x2<br><a href="prompts/Qwen3-Coder-Next-64k_12_1.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_1.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_1.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 2</strong><br>Parameters: 8 pipes in 2x2<br><a href="prompts/Qwen3-Coder-Next-64k_12_2.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_2.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_2.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 3</strong><br>Parameters: 10 pipes in 3x3<br><a href="prompts/Qwen3-Coder-Next-64k_12_3.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_3.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_3.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 4</strong><br>Parameters: 12 pipes in 3x3<br><a href="prompts/Qwen3-Coder-Next-64k_12_4.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_4.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_4.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 5</strong><br>Parameters: 14 pipes in 3x3<br><a href="prompts/Qwen3-Coder-Next-64k_12_5.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_5.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_5.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 6</strong><br>Parameters: 16 pipes in 3x3<br><a href="prompts/Qwen3-Coder-Next-64k_12_6.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_6.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_6.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 7</strong><br>Parameters: 18 pipes in 4x4<br><a href="prompts/Qwen3-Coder-Next-64k_12_7.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_7.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_7.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 8</strong><br>Parameters: 20 pipes in 4x4<br><a href="prompts/Qwen3-Coder-Next-64k_12_8.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_8.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_8.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 9</strong><br>Parameters: 22 pipes in 7x7<br><a href="prompts/Qwen3-Coder-Next-64k_12_9.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_9.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_9.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 10</strong><br>Parameters: 24 pipes in 4x4<br><a href="prompts/Qwen3-Coder-Next-64k_12_10.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_10.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_10.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 11</strong><br>Parameters: 26 pipes in 5x5 with edge_runner: No crossings, touch at least three edges and keep turning regularly.<br><a href="prompts/Qwen3-Coder-Next-64k_12_11.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_11.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_11.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 12</strong><br>Parameters: 28 pipes in 5x5 with curvy_and_short_runs: No crossings, avoid long straight lines and keep angles gentle.<br><a href="prompts/Qwen3-Coder-Next-64k_12_12.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_12.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_12.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 13</strong><br>Parameters: 30 pipes in 5x5 with balanced_quadrants: No crossings, visit all quadrants of the square at least once.<br><a href="prompts/Qwen3-Coder-Next-64k_12_13.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_13.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_13.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 14</strong><br>Parameters: 32 pipes in 5x5 with stay_off_walls: Stay a small margin away from the walls and still keep a reasonably large hull.<br><a href="prompts/Qwen3-Coder-Next-64k_12_14.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_14.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_14.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 15</strong><br>Parameters: 36 pipes in 6x6 with dense_center: Keep centroid close to the center and avoid clustering points too tightly.<br><a href="prompts/Qwen3-Coder-Next-64k_12_15.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_15.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_15.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 16</strong><br>Parameters: 40 pipes in 6x6 with one_forced_cross: Exactly one crossing is allowed and required, with broad angle flexibility.<br><a href="prompts/Qwen3-Coder-Next-64k_12_16.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_16.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_16.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 17</strong><br>Parameters: 44 pipes in 6x6 with two_forced_crosses: Two crossings are allowed and required, keep angles between 15° and 165°.<br><a href="prompts/Qwen3-Coder-Next-64k_12_17.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_17.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_17.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 18</strong><br>Parameters: 48 pipes in 7x7 with center_start: Start near the center, avoid crossings, and keep angles moderate.<br><a href="prompts/Qwen3-Coder-Next-64k_12_18.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_18.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_18.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 19</strong><br>Parameters: 52 pipes in 9x9 with hull_spreader: No crossings and the convex hull must occupy at least 25% of the board.<br><a href="prompts/Qwen3-Coder-Next-64k_12_19.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_19.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_19.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 20</strong><br>Parameters: 56 pipes in 7x7 with wall_kisser: Must touch all four edges while keeping crossings at zero.<br><a href="prompts/Qwen3-Coder-Next-64k_12_20.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_20.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_20.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 21</strong><br>Parameters: 60 pipes in 8x8<br><a href="prompts/Qwen3-Coder-Next-64k_12_21.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_21.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_21.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 22</strong><br>Parameters: 64 pipes in 8x8<br><a href="prompts/Qwen3-Coder-Next-64k_12_22.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_22.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_22.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 23</strong><br>Parameters: 72 pipes in 9x9<br><a href="prompts/Qwen3-Coder-Next-64k_12_23.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_23.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_23.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 24</strong><br>Parameters: 80 pipes in 10x10<br><a href="prompts/Qwen3-Coder-Next-64k_12_24.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_24.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_24.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 25</strong><br>Parameters: 90 pipes in 12x12<br><a href="prompts/Qwen3-Coder-Next-64k_12_25.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_25.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_25.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 26</strong><br>Parameters: 100 pipes in 14x14<br><a href="prompts/Qwen3-Coder-Next-64k_12_26.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_26.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_26.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 27</strong><br>Parameters: 110 pipes in 15x15<br><a href="prompts/Qwen3-Coder-Next-64k_12_27.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_27.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_27.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 28</strong><br>Parameters: 120 pipes in 16x16<br><a href="prompts/Qwen3-Coder-Next-64k_12_28.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_28.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_28.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 29</strong><br>Parameters: 140 pipes in 18x18<br><a href="prompts/Qwen3-Coder-Next-64k_12_29.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_29.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_29.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 30</strong><br>Parameters: 160 pipes in 20x20<br><a href="prompts/Qwen3-Coder-Next-64k_12_30.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_30.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_30.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 31</strong><br>Parameters: 170 pipes in 24x24<br><a href="prompts/Qwen3-Coder-Next-64k_12_31.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_31.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_31.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 32</strong><br>Parameters: 180 pipes in 26x26<br><a href="prompts/Qwen3-Coder-Next-64k_12_32.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_32.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_32.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 33</strong><br>Parameters: 200 pipes in 27x27<br><a href="prompts/Qwen3-Coder-Next-64k_12_33.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_33.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_33.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 34</strong><br>Parameters: 280 pipes in 28x28<br><a href="prompts/Qwen3-Coder-Next-64k_12_34.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_34.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_34.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 35</strong><br>Parameters: 320 pipes in 30x30<br><a href="prompts/Qwen3-Coder-Next-64k_12_35.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_35.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_35.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 36</strong><br>Parameters: 360 pipes in 32x32<br><a href="prompts/Qwen3-Coder-Next-64k_12_36.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_36.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_36.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 37</strong><br>Parameters: 390 pipes in 35x35<br><a href="prompts/Qwen3-Coder-Next-64k_12_37.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_37.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_37.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 38</strong><br>Parameters: 400 pipes in 40x40<br><a href="prompts/Qwen3-Coder-Next-64k_12_38.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_38.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_38.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>
+  <tr class='subpass-row'>
+    <td rowspan=2><strong>Subpass 39</strong><br>Parameters: 420 pipes in 50x50<br><a href="prompts/Qwen3-Coder-Next-64k_12_39.txt">View exact prompt</a><br><a href="raw/Qwen3-Coder-Next-64k_12_39.txt">View raw AI output</a><br><a href="cot/Qwen3-Coder-Next-64k_12_39.txt">View chain of thought</a><br></td>
+<td colspan=2></td>    <td rowspan=2 class='score-bad'><strong>0.0000</strong><br><div style='font-size: 12px; font-style: italic; color: #666; margin-left: 20px; overflow-x: auto; max-width:200px;'>Skipped due to earlyFail (first subpass scored under 0%)</div></td>
+  </tr>
+    <td>N/A (LLM did not answer)</td>
+    <td>N/A (Test forfeited)</td>

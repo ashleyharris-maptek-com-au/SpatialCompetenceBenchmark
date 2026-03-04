@@ -12,6 +12,8 @@ from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 SIMULATION_CACHE_VERSION = 9
 
+tags = ["3D", "Simulation", "Physics Engine"]
+
 title = "Intuitive Physics - Stacked Block Stability"
 
 prompt = """

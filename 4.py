@@ -1,5 +1,7 @@
 import math, os
 
+tags = ["3D", "Projections", "Packing"]
+
 title = "Tetrahedron Shadow Coverage"
 
 prompt = """

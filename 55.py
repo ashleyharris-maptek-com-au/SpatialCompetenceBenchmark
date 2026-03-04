@@ -30,18 +30,23 @@ def _load_from_cache(cache_key: str):
 
 
 def _save_to_cache(cache_key: str, result):
-  """Save result to cache. Thread/process safe using atomic write."""
+  """Save result to cache. Thread/process safe."""
   cache_file = os.path.join(_cache_dir, f"grade_{cache_key}.json")
-  tmp_file = cache_file + f".{os.getpid()}.tmp"
   try:
-    with open(tmp_file, 'w', encoding='utf-8') as f:
+    with open(cache_file, 'w', encoding='utf-8') as f:
       json.dump(result, f)
-    os.replace(tmp_file, cache_file)
   except (IOError, OSError):
-    try:
-      os.remove(tmp_file)
-    except OSError:
-      pass
+    pass
+
+
+def _clear_cache():
+  """Clear all cached results."""
+  try:
+    for file in os.listdir(_cache_dir):
+      if file.startswith("grade_") and file.endswith(".json"):
+        os.remove(os.path.join(_cache_dir, file))
+  except OSError:
+    pass
 
 
 def _load_vis_from_cache(cache_key: str):
@@ -93,6 +98,8 @@ from visualisations import visualise_record
 DATA_PATH = REPO_ROOT / "data" / "vgb" / "delaunay_dataset.jsonl"
 _DATA = None
 PARSER = PythonLiteralParser()
+
+tags = ["2D", "Solved Algorithm"]
 
 title = "VGB6 — Delaunay Triangulation"
 structure = {

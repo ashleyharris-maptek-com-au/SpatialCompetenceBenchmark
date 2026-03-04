@@ -3,6 +3,8 @@ import math
 import os
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Constructive", "Simulation"]
+
 title = "Can you create build instructions for 3D structures?"
 skip = True
 

@@ -2,6 +2,8 @@ skip = True
 
 import random
 
+tags = ["2D", "Game", "Simulation"]
+
 title = "Tetris(tm) but with only the L-Piece"
 skip = True
 

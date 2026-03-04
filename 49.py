@@ -10,6 +10,8 @@ from LLMBenchCore.ResultPaths import result_path, report_relpath
 from OpticalEngine import (Vec3, LightSource, Screen, OpticalScene, create_device,
                            get_white_light_wavelengths, wavelength_to_rgb, DEVICE_CLASSES)
 
+tags = ["3D", "Simulation", "Image Parsing"]
+
 title = "Optical Device Placement from Ray-Traced Images"
 skip = True
 

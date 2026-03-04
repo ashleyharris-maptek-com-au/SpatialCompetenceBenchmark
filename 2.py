@@ -2,6 +2,8 @@ import itertools
 import math
 import sys
 
+tags = ["3D", "Constructive"]
+
 title = "Build a Lego(tm) hemispherical shell"
 
 prompt = """

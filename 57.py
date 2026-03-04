@@ -17,6 +17,8 @@ DATA_PATH = REPO_ROOT / "data" / "vgb" / "two_segments_curated.jsonl"
 _DATA = None
 PARSER = PythonLiteralParser()
 
+tags = ["2D", "Constructive"]
+
 title = "VGB5 — Two Segments"
 structure = {
   "type": "object",
@@ -35,7 +37,9 @@ structure = {
           "type": "array",
           "minItems": 2,
           "maxItems": 2,
-          "items": {"type": "number"},
+          "items": {
+            "type": "number"
+          },
         },
       },
     },

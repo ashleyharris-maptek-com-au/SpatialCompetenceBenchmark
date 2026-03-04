@@ -6,6 +6,8 @@ import random
 import numpy
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Simulation"]
+
 title = "Collision Prediction - Will moving objects collide?"
 skip = True
 

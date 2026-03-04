@@ -28,6 +28,8 @@ def _save_grade_cache():
       json.dump(_grade_cache, f, indent=2)
 
 
+tags = ["3D", "Constructive"]
+
 title = "3D maze - solution requires jumping over gaps"
 
 prompt = """

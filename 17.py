@@ -1,3 +1,5 @@
+tags = ["3D", "Simulation"]
+
 title = "Sand pile simulator / metric imperial and wall impact"
 skip = True
 prompt = """

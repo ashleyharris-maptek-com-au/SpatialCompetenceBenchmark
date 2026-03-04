@@ -17,6 +17,8 @@ DATA_PATH = REPO_ROOT / "data" / "vgb" / "half_subdivision.jsonl"
 _DATA = None
 PARSER = PythonLiteralParser()
 
+tags = ["3D", "Voxels"]
+
 title = "VGB4 — Half Subdivision Neighbours"
 structure = {
   "type": "object",

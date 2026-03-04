@@ -4,6 +4,8 @@ from scipy.ndimage import gaussian_filter
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path
 
+tags = ["3D", "Visual Memory", "Photo Stiching", "Voxels"]
+
 title = "Can you navigate a mountain range without a heightmap?"
 skip = True
 

@@ -3,6 +3,8 @@ import random
 import OpenScad as vc
 import os
 
+tags = ["3D", "Simulation"]
+
 title = "Net Folding - Can a 2D net fold into a 3D polyhedron?"
 skip = True
 prompt = """

@@ -6,6 +6,8 @@ import scad_format
 
 import OpenScad
 
+tags = ["3D", "Packing"]
+
 title = "Tetrahedron Packing in 3D"
 true = True
 

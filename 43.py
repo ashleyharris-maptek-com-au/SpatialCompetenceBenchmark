@@ -3,6 +3,8 @@ import os
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
+tags = ["3D", "Visual Processing", "Image Stitching", "Voxels"]
+
 title = "Reconstruct a 3D voxel grid from photos"
 earlyFail = True
 skip = True
