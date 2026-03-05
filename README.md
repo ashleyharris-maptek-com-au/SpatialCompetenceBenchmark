@@ -1,8 +1,6 @@
-# MeshBenchmark
+# Spatial Competence Benchmark
 
 A benchmark suite for evaluating AI model performance on geometry and spatial reasoning tasks.
-
-MESH stands for Model Evaluation of Spatial Hueristics.
 
 ## Results
 
@@ -31,7 +29,7 @@ Paper-model reports (tools):
 ```bash
 # Clone the repository
 git clone <REPO_URL>
-cd MeshBenchmark
+cd SpatialCompetenceBenchmark
 
 # Install dependencies
 pip install -r requirements.txt
