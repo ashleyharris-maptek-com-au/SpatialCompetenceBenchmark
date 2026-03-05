@@ -1,14 +1,12 @@
-# MeshBenchmark
+# Spatial Competence Benchmark
 
 A benchmark suite for evaluating AI model performance on geometry and spatial reasoning tasks.
 
-MESH stands for Model Evaluation of Spatial Hueristics.
-
 ## Results
 
-**[View Latest Benchmark Results →](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/index.html)**
+**[View Latest Benchmark Results →](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html)**
 
-![Results](https://ashleyharris-maptek-com-au.github.io/MeshBenchmark/results/topLevelResults.png)
+![Results](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/topLevelResults.png)
 
 Some of the best results broken down by test:
 
