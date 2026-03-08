@@ -11,7 +11,7 @@ A benchmark suite for evaluating AI model performance on geometry and spatial re
 Some of the best results broken down by test:
 
 - [Gemini 3 Pro (w/ reasoning, Web & Python)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/models/gemini-3-pro-preview-Reasoning-Tools/report.html)
-- [ChatGPT 5.1 High (w Web & Python)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/models/gpt-5.2-HighReasoning/report.html)
+- [ChatGPT 5.2 High (HighReasoning, no python)](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/models/gpt-5.2-HighReasoning/report.html)
 
 **[Breakdown by test and per-test details →](https://ashleyharris-maptek-com-au.github.io/SpatialCompetenceBenchmark/results/index.html)**
 

@@ -1,6 +1,6 @@
 import math, os
 
-tags = ["3D", "Projections", "Packing"]
+tags = ["3D", "Projection", "Packing"]
 
 title = "Tetrahedron Shadow Coverage"
 

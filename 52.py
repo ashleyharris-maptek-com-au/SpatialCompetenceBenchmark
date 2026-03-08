@@ -18,7 +18,7 @@ DATA_PATH = REPO_ROOT / "data" / "vgb" / "topology_edge_enumerate_curated.jsonl"
 _DATA = None
 PARSER = PythonLiteralParser()
 
-tags = ["2D", "Funamental Geometry"]
+tags = ["2D", "Fundamental Geometry"]
 
 title = "VGB2 — Topology Edge Tasks: Enumerate Edges"
 structure = {

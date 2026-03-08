@@ -4,7 +4,7 @@ import numpy as np
 import re
 from LLMBenchCore.ResultPaths import result_path
 
-tags = ["Coding", "Visual memory", "2D"]
+tags = ["Coding", "Visual Recall", "2D"]
 title = "Can you trace a rough map of Australia with under 1kb of data?"
 skip = True
 

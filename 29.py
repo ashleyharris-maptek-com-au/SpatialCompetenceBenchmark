@@ -7,7 +7,7 @@ from functools import lru_cache
 from LLMBenchCore.ResultPaths import report_relpath
 from LLMBenchCore.ArtifactStore import ModelArtifactStore, write_if_changed
 
-tags = ["3D", "Coding", "Simulation", "Construction"]
+tags = ["3D", "Coding", "Simulation", "Constructive"]
 
 title = "Cage match. Can LLMs design interlocking parts for 3D printing?"
 

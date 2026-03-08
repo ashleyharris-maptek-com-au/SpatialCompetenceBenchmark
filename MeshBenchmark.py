@@ -38,10 +38,10 @@ class MeshBenchmarkRunner(BenchmarkRunner):
   """
 
   def get_benchmark_title(self) -> str:
-    return "Mesh Benchmark Results"
+    return "Spatial Competence Benchmark Results"
 
   def get_benchmark_subtitle(self) -> str:
-    return "Model Evaluation of Spatial Heuristics."
+    return "Imagination, spatial intuition, visual processing, and 3D reasoning benchmark suite."
 
   def get_benchmark_description(self) -> str:
     return "<p>Can LLMs use internal visualisation or spatial reasoning to solve problems?</p>"
@@ -85,7 +85,16 @@ class MeshBenchmarkRunner(BenchmarkRunner):
 
 
 if __name__ == "__main__":
-  set_placebo_data_provider(["always-wrong", "human-with-tools", "guessing"],
+  set_placebo_data_provider([
+    {"name" : "always-wrong", "description":
+  "A reference that always provides a bad answer - "
+  "its primary purpose is to ensure that the graders will give a 0 and "
+  "regression test negative grading."},
+  {"name" : "human-with-tools", 
+  "description" : "A human with tools. I sat down and spent up to a day on each question "
+  "and tried to write solvers, or solve using any and all tools at my disposal"
+  "(inc. Python, C++, AI web frontends, vibe coding tools, 3D modellers, and probably more.)"},
+  {"name" : "guessing", "description" : "Random guessing. Just picks a random answer."}],
                             placebo_data.get_response)
   runner = MeshBenchmarkRunner()
   run_benchmark_main(runner, __file__)

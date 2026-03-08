@@ -1,4 +1,4 @@
-tags = ["3D", "Reflections"]
+tags = ["3D", "Reflection"]
 
 title = "How many consent forms does this photographer need?"
 skip = True

@@ -17,7 +17,7 @@ DATA_PATH = REPO_ROOT / "data" / "vgb" / "topology_edge_classify_curated.jsonl"
 _DATA = None
 PARSER = PythonLiteralParser()
 
-tags = ["2D", "Partition"]
+tags = ["2D", "Partitioning"]
 
 title = "VGB3 — Topology Edge Tasks: Classify Behaviour"
 structure = {

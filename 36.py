@@ -8,7 +8,7 @@ import os
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
 title = "Cross-Section Slicing - What shape results from cutting a 3D object?"
-tags = ["3D", "Visual Reasoning"]
+tags = ["3D", "Implicit Construction"]
 
 prompt = """
 You are given a 3D object and a cutting plane. Determine the 2D shape that results from 

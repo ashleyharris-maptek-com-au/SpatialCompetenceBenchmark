@@ -46,9 +46,9 @@ def _save_to_cache(cache_key: str, cache_type: str, result):
 earlyFail = True
 skip = True
 
-tags = ["Orbital Dynamics", "Physics Engine", "Gravity", "3D", "NP HARD"]
+tags = ["Orbital Dynamics", "Physics Engine", "Gravity", "3D", "NP Hard"]
 
-title = "Oribital rendenvous travelling salesman problem"
+title = "Orbital rendezvous travelling salesman problem"
 prompt = """
 You are an AI in charge of navigating a spaceship in orbit.
 

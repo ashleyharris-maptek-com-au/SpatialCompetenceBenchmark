@@ -1,6 +1,6 @@
 import random
 
-tags = ["2D", "Projections", "Partitioning"]
+tags = ["2D", "Projection", "Partitioning"]
 
 title = "Grid Partitioning with Off-Axis Lines"
 skip = True

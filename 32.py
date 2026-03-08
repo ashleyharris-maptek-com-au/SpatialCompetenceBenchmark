@@ -1,6 +1,6 @@
 skip = True
 
-tags = ["3D", "Fundamentals"]
+tags = ["3D", "Fundamental Geometry"]
 
 title = "Essay section"
 skip = True

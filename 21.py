@@ -2,7 +2,7 @@ import math, itertools
 import OpenScad as vc
 from LLMBenchCore.ResultPaths import result_path, report_relpath
 
-tags = ["3D", "Constructive", "Simulation", "Physics", "Gravity"]
+tags = ["3D", "Constructive", "Simulation", "Physics Engine", "Gravity"]
 
 title = "Rollercoaster Track planner"
 skip = True

@@ -44,7 +44,7 @@ def _save_to_cache(cache_key: str, cache_type: str, result):
     pass
 
 
-tags = ["2D", "Partition", "ASCII Art"]
+tags = ["2D", "Partitioning", "ASCII Art"]
 
 title = "Fit a curve to partition 2D ascii patterns via cubic polynomials"
 
