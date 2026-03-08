@@ -1,0 +1,261 @@
+```python
+import random
+import collections
+
+GRID_SIZE = 30
+MIN_PATH_LENGTH = int(GRID_SIZE * GRID_SIZE * 0.20)
+MAX_ELEVATION_PERCENTAGE_COUNT = int(0.30 * GRID_SIZE * GRID_SIZE) # Max 270 cells for any height
+MIN_JUMPS = 12
+
+def is_valid(x, y):
+    """Checks if a given coordinate is within the grid boundaries."""
+    return 0 <= x < GRID_SIZE and 0 <= y < GRID_SIZE
+
+def get_height_for_char(c):
+    """Converts a character representation to its integer height."""
+    if c == 'A': return 5
+    if c == 'B': return 0
+    return int(c)
+
+def check_single_solution(h_map_final, ax, ay, bx, by):
+    """
+    Checks if there is exactly one solution path from A to B in the given heightmap.
+    This BFS-based approach collects distinct paths (sequences of coordinates).
+    It uses a `visited_states_for_pruning` to prevent infinite loops and redundant exploration
+    of identical (x,y,height,path_length) states. This is a practical compromise for a 30x30 grid;
+    a truly exhaustive search for all distinct paths without pruning would be computationally
+    prohibitive. Thus, it finds unique "shortest" paths (paths that differ in sequence or length
+    before encountering a pruned state).
+    """
+    found_paths = set()
+    # Queue stores (current_x, current_y, current_height, path_as_tuple)
+    q_solver = collections.deque([((ax, ay, 5), ((ax, ay),))])
+    
+    # Stores states (x, y, height, path_length) that have been added to the queue
+    # to avoid redundant processing and infinite loops for the same state reached via same path length.
+    visited_states_for_pruning = set() 
+    
+    # Heuristic limit for path length in the solver to prevent excessive computation.
+    MAX_SOLVER_PATH_LENGTH = GRID_SIZE * GRID_SIZE * 3 
+
+    while q_solver:
+        (cx, cy, ch), current_path_tuple = q_solver.popleft()
+
+        if len(current_path_tuple) > MAX_SOLVER_PATH_LENGTH:
+            continue
+
+        state_key = (cx, cy, ch, len(current_path_tuple))
+        if state_key in visited_states_for_pruning:
+            continue
+        visited_states_for_pruning.add(state_key)
+
+        if (cx, cy) == (bx, by) and ch == 0:
+            found_paths.add(current_path_tuple)
+            if len(found_paths) > 1:
+                return False # Found multiple distinct paths
+            continue 
+
+        # Adjacent moves (horizontal/vertical)
+        for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]:`
+            nx, ny = cx + dx, cy + dy
+            if is_valid(nx, ny):
+                target_h = h_map_final[ny][nx]
+                if abs(target_h - ch) <= 1:
+                    new_path_tuple = current_path_tuple + ((nx, ny),)
+                    new_state_key = (nx, ny, target_h, len(new_path_tuple))
+                    if new_state_key not in visited_states_for_pruning:
+                        q_solver.append(((nx, ny, target_h), new_path_tuple))
+
+        # Jumps (2 cells horizontal/vertical)
+        for dx, dy in [(0,2), (0,-2), (2,0), (-2,0)]:`
+            nx, ny = cx + dx, cy + dy
+            mx, my = cx + dx//2, cy + dy//2 # Middle cell coordinates
+            if is_valid(nx, ny) and is_valid(mx, my):
+                target_h = h_map_final[ny][nx]
+                middle_h = h_map_final[my][mx]
+                if ch == target_h and middle_h < ch: # Source and dest same height, middle lower
+                    new_path_tuple = current_path_tuple + ((mx, my), (nx, ny))
+                    new_state_key = (nx, ny, target_h, len(new_path_tuple))
+                    if new_state_key not in visited_states_for_pruning:
+                        q_solver.append(((nx, ny, target_h), new_path_tuple))
+    
+    return len(found_paths) == 1
+
+def generate_maze():
+    """Generates a 30x30 heightmap maze meeting all specified constraints."""
+    while True:
+        height_map = [[-1 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)] # -1 means unassigned
+        grid_chars = [[' ' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+
+        # 1. Place A and B randomly, ensuring they are distinct and reasonably far apart.
+        Ax, Ay = random.randint(1, GRID_SIZE - 2), random.randint(1, GRID_SIZE - 2)
+        Bx, By = random.randint(1, GRID_SIZE - 2), random.randint(1, GRID_SIZE - 2)
+        
+        while abs(Ax - Bx) + abs(Ay - By) < GRID_SIZE * 1.5 or (Ax, Ay) == (Bx, By):
+            Ax, Ay = random.randint(1, GRID_SIZE - 2), random.randint(1, GRID_SIZE - 2)
+            Bx, By = random.randint(1, GRID_SIZE - 2), random.randint(1, GRID_SIZE - 2)
+
+        height_map[Ay][Ax] = 5 # A's initial height
+        height_map[By][Bx] = 0 # B's target height
+
+        # 2. Path Generation using BFS with weighted moves.
+        q = collections.deque()
+        # State: (cx, cy, ch, current_path_list, c_jumps, visited_coords_set)
+        # current_path_list stores (x, y, h) for path cells
+        # visited_coords_set stores (x, y) for quick path cycle check
+        q.append((Ax, Ay, 5, [(Ax, Ay, 5)], 0, {(Ax, Ay)}))
+
+        candidate_paths = [] # Stores paths that meet length and jump criteria
+        
+        MAX_GENERATOR_PATH_LENGTH = GRID_SIZE * GRID_SIZE * 1.5 # Heuristic limit for path generator
+
+        while q:
+            cx, cy, ch, current_path_list, c_jumps, visited_path_coords = q.popleft()
+
+            if len(current_path_list) > MAX_GENERATOR_PATH_LENGTH:
+                continue
+
+            if (cx, cy) == (Bx, By) and ch == 0:
+                if c_jumps >= MIN_JUMPS and len(current_path_list) >= MIN_PATH_LENGTH:
+                    candidate_paths.append((current_path_list, c_jumps))
+                continue # Do not continue exploring past B
+
+            moves = []
+
+            # Generate possible jumps
+            # Prioritize jumps if MIN_JUMPS not met, or add randomly if already met
+            if c_jumps < MIN_JUMPS + 5 or random.random() < 0.2:
+                for dx, dy in [(0,2), (0,-2), (2,0), (-2,0)]:`
+                    nx, ny = cx + dx, cy + dy
+                    mx, my = cx + dx//2, cy + dy//2
+                    if is_valid(nx, ny) and is_valid(mx, my) and \
+                       (nx, ny) not in visited_path_coords and \
+                       (mx, my) not in visited_path_coords and \
+                       ch > 0: # Cannot jump over a gap if source height is 0
+                        moves.append((nx, ny, ch, [(mx, my, ch - 1)], c_jumps + 1, 'jump')) # target_h is same as ch
+
+            # Generate possible walks (descend, level, ascend)
+            for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]:`
+                nx, ny = cx + dx, cy + dy
+                if is_valid(nx, ny) and (nx, ny) not in visited_path_coords:
+                    # Prefer descending if above B's height
+                    if ch > 0 and (cx,cy) != (Bx,By) and random.random() < 0.7:
+                        moves.append((nx, ny, ch - 1, [], c_jumps, 'descend'))
+                    # Prefer level walk if at B's height or for general traversal
+                    elif random.random() < 0.6:
+                        moves.append((nx, ny, ch, [], c_jumps, 'level'))
+                    # Allow ascending rarely
+                    elif ch < 9 and random.random() < 0.1:
+                        moves.append((nx, ny, ch + 1, [], c_jumps, 'ascend'))
+
+            # Sort moves for BFS priority: reaching B, then jumps (if needed), descents, level. Add randomness.
+            random.shuffle(moves) 
+            moves.sort(key=lambda move: (
+                1 if (move[0], move[1]) == (Bx, By) and move[2] == 0 else 0, # Reaching B with height 0
+                1 if move[5] == 'jump' and c_jumps < MIN_JUMPS else 0, # Prioritize jumps if not enough
+                1 if move[5] == 'descend' else 0, # Descents
+                0 if move[5] == 'level' else -1, # Level or Ascend
+            ), reverse=True)
+
+            for nx, ny, nh, intermediate_cells, nj, move_type in moves:
+                new_path_list = list(current_path_list)
+                new_visited_coords = set(visited_path_coords)
+
+                valid_move = True
+                for mx, my, mh in intermediate_cells: # For jumps, add middle cell
+                    if (mx, my) in new_visited_coords: 
+                        valid_move = False
+                        break
+                    new_path_list.append((mx, my, mh))
+                    new_visited_coords.add((mx, my))
+                
+                if not valid_move or (nx, ny) in new_visited_coords: # Ensure target isn't already on path
+                    continue
+                
+                new_path_list.append((nx, ny, nh))
+                new_visited_coords.add((nx, ny))
+                
+                q.append((nx, ny, nh, new_path_list, nj, new_visited_coords))
+
+        if not candidate_paths:
+            # print("No valid path found. Retrying generation from start.")
+            continue # Retry the whole maze generation
+
+        # Choose the best path from candidates (e.g., shortest total path length, then most jumps)
+        candidate_paths.sort(key=lambda x: (len(x[0]), -x[1]))
+        best_path_list, final_jumps = candidate_paths[0]
+
+        # 3. Apply the chosen path to the height_map.
+        # Reset height_map to ensure only path cells are set initially.
+        final_height_map_int = [[-1 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+        for px, py, ph in best_path_list:
+            final_height_map_int[py][px] = ph
+        
+        # Ensure A and B are correctly marked with their integer heights.
+        final_height_map_int[Ay][Ax] = 5
+        final_height_map_int[By][Bx] = 0
+
+        # 4. Fill remaining non-path cells with 'wall' heights, balancing distribution.
+        char_counts = collections.defaultdict(int)
+        # Initialize counts for path cells, handling 'A' and 'B' as special chars.
+        for px, py, ph in best_path_list:
+            char_counts[str(ph)] += 1
+        
+        char_counts['A'] = char_counts[str(final_height_map_int[Ay][Ax])]
+        char_counts['B'] = char_counts[str(final_height_map_int[By][Bx])]
+        char_counts[str(final_height_map_int[Ay][Ax])] -= 1 
+        char_counts[str(final_height_map_int[By][Bx])] -= 1 
+
+        # Fill unassigned cells, balancing height distribution.
+        for y in range(GRID_SIZE):
+            for x in range(GRID_SIZE):
+                if final_height_map_int[y][x] == -1: # This cell is not part of the path
+                    
+                    possible_wall_heights = []
+                    # Prioritize heights that are currently under-represented
+                    for h_val in range(10):
+                        if char_counts[str(h_val)] < MAX_ELEVATION_PERCENTAGE_COUNT:
+                            possible_wall_heights.append(h_val)
+                    
+                    if not possible_wall_heights: # Fallback if all heights are maxed
+                        possible_wall_heights = list(range(10)) 
+                    
+                    chosen_wall_h = random.choice(possible_wall_heights)
+                    final_height_map_int[y][x] = chosen_wall_h
+                    char_counts[str(chosen_wall_h)] += 1 
+        
+        # 5. Populate grid_chars for final output and do final constraint checks.
+        final_char_counts = collections.defaultdict(int)
+        for y in range(GRID_SIZE):
+            for x in range(GRID_SIZE):
+                if (x,y) == (Ax,Ay):
+                    grid_chars[y][x] = 'A'
+                elif (x,y) == (Bx,By):
+                    grid_chars[y][x] = 'B'
+                else:
+                    grid_chars[y][x] = str(final_height_map_int[y][x])
+                final_char_counts[grid_chars[y][x]] += 1
+
+        valid_maze = True
+
+        # Check Elevation percentage constraint
+        for char_val, count in final_char_counts.items():
+            if count > MAX_ELEVATION_PERCENTAGE_COUNT:
+                # print(f"Elevation '{char_val}' exceeds 30%: {count} cells. Retrying.")
+                valid_maze = False
+                break
+        if not valid_maze: continue
+
+        # Check Single Solution constraint using the solver
+        if not check_single_solution(final_height_map_int, Ax, Ay, Bx, By):
+            # print("Multiple solutions found or no solution. Retrying.")
+            valid_maze = False
+        
+        if valid_maze:
+            return grid_chars # Successfully generated a valid maze!
+
+# Main execution loop
+maze = generate_maze()
+for row in maze:
+    print("".join(row))
+```
