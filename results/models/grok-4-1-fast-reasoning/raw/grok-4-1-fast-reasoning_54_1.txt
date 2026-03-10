@@ -1,0 +1,300 @@
+<thinking>
+The tree uses a repeating split cycle: z (depth 0), y (1), x (2), x (3), z (4), y (5), etc. The path "0001011" has length 7, so splits are:
+
+- Depth 0: z=0 (low z)
+- 1: y=0 (low y) 
+- 2: x=0 (low x)
+- 3: x=1 (high x)
+- 4: z=0 (low z)
+- 5: y=1 (high y)
+- 6: x=1 (high x)
+
+Target cell bounds (assuming unit cube [0,1]^3, splits at midpoints):
+- z ∈ [0, 0.25)
+- y ∈ [0.5, 0.75)
+- x ∈ [0.5, 0.75)
+
+Face-sharing neighbors differ in exactly one coordinate by crossing one face (adjacent in x, y, or z).
+
+**Possible neighbors:**
+1. **+x neighbor** (x=[0.75,1.0), same y=[0.5,0.75), z=[0,0.25)): Path flips bit 6 (x-split) from 1→0, so "0001010"
+2. **-x neighbor** (x=[0.25,0.5), same y=[0.5,0.75), z=[0,0.25)): Path flips bit 3 (prior x-split) from 1→0, so "0000011"
+3. **+y neighbor** (y=[0.75,1.0), same x=[0.5,0.75), z=[0,0.25)): Path flips bit 5 (y-split) from 1→0, so "0001010"
+4. **-y neighbor** (y=[0.25,0.5), same x=[0.5,0.75), z=[0,0.25)): Path flips bit 1 (y-split) from 0→1, so "0101011"
+5. **+z neighbor** (z=[0.25,0.5), same x=[0.5,0.75), y=[0.5,0.75)): Path flips bit 0 (z-split) from 0→1, so "1001011"
+6. **-z neighbor** (z=[0,0)? Empty, no cell.
+
+Verify existence in tree:
+- "0001010": Exists under 00010/000101/0001010 ✓
+- "0000011": Exists under 0000/00000/000001/0000011 ✓
+- "0101011": Exists under 01/0101/01011/010111? Wait, 0101011 = 01/01010/010101/0101011? Tree has 01010/010100 & 010101, but not explicitly 0101011. Wait, 01011/010110 & 010111 exist, but path 0101011 branches under 01010/010101? 
+
+Recheck tree for "0101011":
+Path: 0(z0)-1(y1)-0(x0)-1(x1)-0(z0)-1(y1)-1(x1)
+0101011 branches: 01/0101/01010? No: 01/0101/01010 & 01011.
+0101011 would be 01010/010101/0101011, but tree shows 01010 has 010100 & 010101 (leaves), no further 010101[0|1]. So 0101011 **not a leaf**—010101 is leaf.
+
++x & +y both "0001010" (same, since last two splits x then y? No: depth5=y1, depth6=x1, flip6→"0001010" (+x), flip5→"0001010" (y0 but same string? "00010 0 1" flip5 bit5 from1→0: positions 0123456="0001011"→ bit5=1→0: "0001001"? Mistake!
+
+**Correct path flips:**
+String "0001011", indices 0:0,1:0,2:1,3:0,4:1,5:1? "0001011" is 7 chars: positions:
+0:'0'(z),1:'0'(y),2:'0'(x),3:'1'(x),4:'0'(z),5:'1'(y),6:'1'(x)
+
+Yes:
+- Flip6 (x): "0001010" ✓ exists
+- Flip3 (x): bit3 '1'→'0': "0000011" ✓ exists
+- Flip5 (y): bit5 '1'→'0': "0001001"
+- Flip1 (y): bit1 '0'→'1': "0101011"
+- Flip0 (z): bit0 '0'→'1': "1001011"
+- Flip4 (z): bit4 '0'→'1': "0001111" (for -z? No, depth4 z=0 low, flip to1 high z—but target low z side.
+
+**Correct neighbor paths:**
+- +x (cross depth6): flip bit6 1→0: "0001010" ✓
+- -x (cross depth3, since depth3=1 high→low): flip bit3 1→0: "0000011" ✓
+- +y (depth5=1 high→higher? Depth5 y-split=1 (high y [0.5,0.75)→[0.75,1)), flip bit5 1→0? No:
+  Child 0=low half, 1=high half of parent.
+  Target bit5=1 → high y child, so -y neighbor (low y side) flip5 1→0: "0001001"
+  +y neighbor would require sibling or ancestor flip—but since leaf, +y is flip to low child of same parent? No: for high child, low sibling is -direction.
+  To find adjacent:
+    Neighbors share prefix up to differing split axis.
+
+**Systematic: common prefix method**
+Target: "0001011"
+Split axes: d%5: 0z,1y,2x,3x,4z → repeat.
+
+Find leaves sharing longest common prefix, differing at split axis with opposite child, no further splits in differing direction until match size.
+
+But easier: since axis-aligned grid, compute cell bounds, find adjacent cells present as leaves.
+
+From tree inspection:
+"0001001": Under 00010/000100/0001001 ✓ exists!
+"0101011": Check 01/0101/01011? 0101/01010 & 01011.
+"0101011" prefix "01010" exists, then "010101" would be 01010/1, but 01010 has 010100 & 010101 ✓, and 010101 is leaf (no children), so "0101011" not present ×
+"1001011": 1/10/101/1011? 10/101/1011 exists? Tree:10/101/1011/10110 etc, but 1011 has 10110 & 10111, no direct 1011 leaf. "1001011"=1/10/010/1011? "1001011" positions:1(z1)0(y0)0(x0)1(x1)0(z0)1(y1)1(x1)
+Under 10/100? No: bit2=0 so 100, but 100/1001? Tree 10/100/1001/10010 etc, not matching later bits. Trace: root-1-0-0-1-0-1-1
+1(z1)-0(y0)-0(x0)-1(x1)-0(z0)-1(y1)-1(x1)
+Tree:1/10/100/1001? 100 has 1000 & 1001, 1001/10010 & 10011 ✓ but "1001011" after 1001 is 10010/100101/1001011? Tree has 10010/100100 & 100101/1001010 & 1001011? No, 100101 has 1001010 & 1001011? Tree shows 10010/100100 & 100101, then 1001010 & 1001011 under 100101? Looking: 1001/10010/.../1001010 & 1001011 yes! Under 10010/100101/1001010 & 1001011? Text: 10010 | ├──100100 | └──100101 | | ├──1001010 | └──1001011 Yes ✓ "1001011" exists.
+
+**-y neighbor "0101011" missing**, others present.
+
+Is there -y? Since depth1=0 (low y [0,0.5)), -y would be outside or different branch, but flip bit1 0→1 goes to high y at that level [0.5,1), but target's y=[0.5,0.75) is high child of depth1 low? Let's compute bounds properly.
+
+**Bounds calculation:**
+Start [0,1]^3
+d0 z=0: [0,0.5) z
+d1 y=0: [0,0.5) y  
+d2 x=0: [0,0.5) x
+d3 x=1: of prev x[0,0.5) split to x[0.25,0.5)  [since child1 high half]
+d4 z=0: prev z[0,0.5)-> [0,0.25)
+d5 y=1: prev y[0,0.5) -> high [0.25,0.5)? No:
+
+Each split bisects parent's interval.
+
+Parent at d4 end: after d0z0:[0,0.5]z, d1y0:[0,0.5]y, d2x0:[0,0.5]x, d3x1: parent x[0,0.5] split mid0.25, child1:[0.25,0.5]x, z still[0,0.5],y[0,0.5]
+d4 z=0: parent z[0,0.5]->child0 [0,0.25]z
+d5 y=1: parent y[0,0.5]-> mid 0.25, child1 high [0.25,0.5]y
+d6 x=1: parent x[0.25,0.5]-> mid 0.375, child1 [0.375,0.5]x ? Earlier miscalc.
+
+Correct bounds for "0001011":
+- z: d0=0 → [0,0.5]; d4=0 → split [0,0.5]z to [0,0.25]
+- y: d1=0 → [0,0.5]; d5=1 → split [0,0.5]y to [0.25,0.5]
+- x: d2=0 → [0,0.5]; d3=1 → [0.25,0.5]; d6=1 → split [0.25,0.5]x mid0.375 to [0.375,0.5]
+
+Target: x[0.375,0.5], y[0.25,0.5], z[0,0.25]
+
+Now faces:
+1. +x face x=0.5: neighbor x[0.5, ?] but since coarsest x containing 0.5 is from higher level? But for leaf-adj: the cell immediately across, which shares prefix up to last x-split differing.
+
+Since tree irregular, verify each candidate by existence & adjacency.
+
+From flips:
+- Flip last x (d6): "0001010" : changes x from high[0.375,0.5] to low[0.25,0.375] of same parent → adjacent -x
+- To +x across x=0.5: since parent's x[0.25,0.5], high child to parent's sibling? Parent at d5 end is x[0.25,0.5], which came from d3=1 high of d2's [0,0.5].
+  +x neighbor across x=0.5 would be the low x child? No x=0.5 is boundary of d2=0's high d3? d2=0 [0,0.5]x, d3=1 [0.25,0.5], so x=0.5 is outer face, +x neighbor is the cell in the high sibling at d2 level, i.e. flip d2 from 0→1: bit2 '0'→'1': "0011011"
+
+**General rule for leaf neighbors in octree-like: to find face neighbor in direction, find the deepest split where the direction axis matches the face, flip that bit, keep subsequent bits (truncate to that prefix + flip + suffix path in sibling subtree). But since binary tree, sibling path exists if leaf at same depth.**
+
+Since all leaves not necessarily same depth, but for face share, must be leaves whose cells share the 2D face.
+
+But to simplify, since problem asks for leaves that share a face, and tree given, the flip methods for single bit flip at the relevant split depth give the adjacent if exists.
+
+From earlier candidates:
+- d6 flip (x): "0001010" exists, shares x-face (thin slab)
+- d3 flip (x): "0000011" exists, but does it share face? "0000011" path 00000 1 1, so same prefix "0000", then d4=0 same, d5=1 same, d6=1 same? No "0000011" prefix "000001" then1, but target "0001011", common prefix "000", then d3 differs 0 vs1.
+  Since between d3 split, and subsequent splits same bits, yes they share the face at x=0.25? Target d3=1 [0.25,0.5], flip d3=0 [0,0.25] of same parent, and since subsequent splits match bits 4,5,6, the cells are adjacent across x=0.25 face.
+
+Yes.
+
+- d5 flip (y): "0001001" = flip bit5 1→0: prefix "00010" same, d5 differ, d6=1 but sibling has it? Exists ✓, shares y-face at y=0.25? d5 parent y[0,0.5]? d1=0 y[0,0.5], no further y till d5 split on [0,0.5]y to child0 [0,0.25] child1[0.25,0.5], yes flip shares y=0.25 face.
+
+- d1 flip (y): "0101011" bit1 0→1: common prefix "0", d1 differ 0vs1, then bits2-6 "01011" must match path in sibling "1...." subtree. But "0101011" not leaf as 010101 leaf blocks extension.
+
+Does "0101011" exist? No.
+
+But is there a leaf that covers the adjacent region across y=0.5? Target y[0.25,0.5] is within d1=0 low y[0,0.5], so +y face at y=0.5, neighbor in d1=1 high y[0.5,1.0], with matching x,z subdivisions.
+
+The adjacent cell would be prefix "" + flip d1 to1 + suffix bits2-6 "01011" i.e. "1" + "01011" = "101011"? No: full path flip bit1, keep others: original bits 0:0,1:0→1,2:0,3:1,4:0,5:1,6:1 → "0101011" yes.
+
+Since "0101011" not present (010101 is leaf, which is "010101" len6, covers the region where "010101?" would be, but does "010101" share face with target?
+
+"010101" path: bits0-5:0(z0)1(y1)0(x0)1(x1)0(z0)1(y1), leaf so no d6 split.
+
+Target "0001011" bits0-5:0 0 0 1 0 1, differs at bit1.
+
+Common prefix "0", d1 differs 0 vs1.
+
+The cell "010101": bounds:
+Similar calc: d0 z0[0,0.5], d1 y1[0.5,1.0], d2 x0[0,0.5], d3 x1[0.25,0.5], d4 z0[0,0.25], d5 y1 split parent y[0.5,1]-> [0.75,1.0]y ! 
+
+d5 y1 on high y parent [0.5,1] mid 0.75, child1 [0.75,1].
+
+Target y[0.25,0.5], so y=0.5 face: target's +y face at 0.5 borders the d1=1 parent's low side y[0.5,0.75...? But since "010101" is further subdivided at d5 to [0.75,1], no: "010101" is the high child at d5, so [0.75,1]y, x[0.25,0.5], z[0,0.25].
+
+Target [0.25,0.5]y up to 0.5, so shares face at y=0.5? No, "010101"'s y starts at 0.75, gap [0.5,0.75] covered by the low sibling at d5 "010100".
+
+"010100" path "010100": d5=0 low [0.5,0.75]y, x no d6 so full parent's x[0.25,0.5], z[0,0.25].
+
+Yes! Target x[0.375,0.5] subset [0.25,0.5], y[0.25,0.5] up to 0.5 borders "010100" y[0.5,0.75], same x-range & z, so yes shares the face at y=0.5, even though coarser in x (no d6 split).
+
+The neighbor is "010100", not the flipped full path.
+
+For +z across z=0.25: target z[0,0.25], +z neighbor flip d4 bit4 0→1: "0001111"
+
+"0001111": exists? Under 0001/00011/000111 ✓ yes.
+
+Bounds for "0001111": same prefix "0001", d4=1 high z[0.25,0.5], then d5=1 y[0.25,0.5]? Prefix "0001" bits0-3:0001 same as target 0001? Target "0001011" bits0-3 "0001" yes, d4 flip 0→1, then bits5-6 "11".
+
+So "0001 1 1 1", yes shares z=0.25 face.
+
+For -z across z=0: flip d0 to1? Earlier "1001011" for +z at d0? No.
+
+Target low z d0=0 [0,0.5], but subdivided d4=0 [0,0.25], -z face z=0 is outer boundary, no neighbor.
+
+For +z at d0 level? No need since internal.
+
+Now -x: earlier "0000011" flip d3, shares x=0.25? Target after d3=1 x[0.25,0.5], flip d3=0 x[0,0.25] same other bounds up to there, then matching suffix splits yes.
+
+For +x at outer x=0.5: since d3 high [0.25,0.5] outer face x=0.5, neighbor would be flip d2 bit2 0→1: "0011011"
+
+Check "0011011": path flip bit2 '0'→'1': "0011011"
+
+Does it exist? "0011011" under 00/001/0011/00110? Tree 00/001/0011/00110 & 00111.
+
+0011/00110/001100 &001101, 001101 leaf? No further. "0011011" would be 001101/1 no, 001101 is leaf len6.
+
+Similar to before, check if "001101" shares face.
+
+Target x[0.375,0.5] up to 0.5, d2=0 low x[0,0.5].
+
+Flip d2 to1 high x[0.5,1.0].
+
+"001101" path: bits0:0,1:0,2:1(x1 [0.5,1]),3:1(x high of [0.5,1]->[0.75,1]),4:0(z0 [0,0.25]),5:1(y1 [0.25,0.5])
+
+d3=1 on d2=1 parent x[0.5,1] mid0.75, child1 [0.75,1]x !! So starts at 0.75, not covering [0.5,0.75].
+
+The low child at d3 "001001" ? Would cover [0.5,0.75]x.
+
+Check if "001001" exists: 00/001/0010/00100/001000? Tree 001/0010/00100/001000 &001001 ✓ "001001" leaf? 00100/001001 yes leaf.
+
+Bounds "001001": d0=0 z[0,0.5], d1=0 y[0,0.5], d2=1 x[0.5,1], d3=0 low [0.5,0.75]x, d4=0? "001001" len6 bits0-5:0 0 1 0 0 1 ? "001001" =0(z0)0(y0)1(x1)0(x0)0(z0)1(y1)
+
+Yes, x d2=1[0.5,1], d3=0[0.5,0.75], z d4=0[0,0.25], y d5=1[0.25,0.5] perfect match to target y[0.25,0.5] z[0,0.25] x[0.5,0.75] borders target's [0.375,0.5] at x=0.5.
+
+Yes!
+
+For +z outer? d4=0 low [0,0.25] of d0=0 [0,0.5], so +z internal already covered by flip d4 "0001111", -z outer no.
+
+For -y across y=0.25? No, -y face of target at y=0.25 is internal, covered by flip d5 "0001001".
+
+Earlier +y flip d1 not leaf, but coarser "010100" covers exactly the adjacent [0.5,0.75]y same x,z range.
+
+Is there -x outer? Target x low face at 0.375 covered by flip d6, high at 0.5 by "001001".
+
+So list all leaf neighbors:
+
+1. "0001010" (-x thin)
+
+2. "0000011" (-x coarse? Wait flip d3)
+
+Does "0000011" really share face? Let's confirm bounds.
+
+"0000011": bits 0:0,1:0,2:0,3:0(x0),4:0,5:1,6:1
+
+x path: d2=0 [0,0.5], d3=0 low [0,0.25], d6=1 high of parent at d5 end x[0,0.25]->[0.125,0.25]? 
+
+Parent before d6: after d3=0 x[0,0.25], no x split between d3-d6, so d6 splits x[0,0.25] mid 0.125 to child1 [0.125,0.25]x, y[0.25,0.5], z[0,0.25]
+
+Target x[0.375,0.5], so x=0.25 border: yes, "0000011" up to 0.25, target from 0.25, same y z → shares x=0.25 face. Yes.
+
+3. "0001001" (-y)
+
+"0001001": flip d5 to0: bits0-4 same "00010",5:0,6:1 → x same [0.375,0.5]? d6=1 high [0.375,0.5], but y child0 low of d5 parent y[0,0.5] → [0,0.25]y, same x z → shares y=0.25. Yes.
+
+4. "010100" (+y coarse)
+
+As above, shares y=0.5, x[0.25,0.5]>target's [0.375,0.5], but since no finer split differing, the face projection shares.
+
+To share a face means their intersection is a 2D face (rectangle), i.e. abut exactly on one plane, overlap fully on other two dims.
+
+For "010100": x[0.25,0.5], y[0.5,0.75], z[0,0.25]
+
+Target: x[0.375,0.5], y[0.25,0.5], z[0,0.25]
+
+Intersection on plane y=0.5: x overlap [0.375,0.5], z[0,0.25] → positive area face shared. Yes.
+
+5. "0001111" (+z)
+
+"0001111": bits0-3 "0001",4:1,5:1,6:1 z d4=1 [0.25,0.5], x d6=1 high [0.375,0.5] of its parent x[0.25,0.5] same as target parent, y d5=1 [0.25,0.5] → shares z=0.25 face fully x[0.375,0.5] y[0.25,0.5]. Yes.
+
+6. "001001" (+x coarse)
+
+"001001": x[0.5,0.75], y[0.25,0.5], z[0,0.25] shares x=0.5 face, y z full overlap [0.25,0.5]x[0,0.25]. Target x to 0.5, yes [0.375,0.5] subset. Yes.
+
+7. "1001011" ? Earlier for flip d0, but d0 flip to "1001011" exists, but is it adjacent?
+
+"1001011" bounds: bit0=1 z[0.5,1], then bit1=0 y[0,0.5], bit2=0 x[0,0.5],3=1 x[0.25,0.5],4=0 z? d4 z-split but parent z[0.5,1] split to child0 [0.5,0.75]z !!,5=1 y[0.25,0.5],6=1 x split to [0.375,0.5]
+
+So z[0.5,0.75], far from target's [0,0.25], no shared face.
+
+Not adjacent.
+
+Is there more? For example, for -z no.
+
+For +z coarser? No need.
+
+Is "0001010" distinct, yes.
+
+Now, are there duplicates? No.
+
+Confirm all exist as leaves (no children):
+
+- "0001010": yes, under 00010/000101/0001010 leaf.
+
+- "0000011": yes, 0000/00000/000001/0000011 leaf? Tree: 000001/0000010 & 0000011, and 0000011 has no children shown → leaf.
+
+In tree: │ │ │ │ │ └── 0000011 yes leaf.
+
+- "0001001": 00010/000100/0001001 leaf yes.
+
+- "010100": 01/0101/01010/010100 leaf yes.
+
+- "0001111": 0001/00011/000111 leaf? Tree │ │ │ └── 000111 yes leaf.
+
+- "001001": 00/001/0010/00100/001001 leaf yes.
+
+Any others? For example, does flip d4 for -z? But d4=0 low, flip to1 is +z already.
+
+I think these are all six possible directions where adjacent cell exists as leaf.
+
+Target has faces in +/- x,y,z where boundary crossed into existing leaf.
+
+No more, as outer faces don't have neighbors.
+
+So neighbors: 0000011, 0001001, 0001010, 0001111, 001001, 010100
+
+Sort lex? But list as is, comma sep but JSON array.
+
+</thinking>
+{
+  "neighbors": ["0000011","0001001","0001010","0001111","001001","010100"]
+}

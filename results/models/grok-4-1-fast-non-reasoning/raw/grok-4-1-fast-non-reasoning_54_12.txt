@@ -1,0 +1,1433 @@
+<thinking>
+The tree uses a repeating cycle for split directions: x, x, y, x, y, y (period 6). For a path of length n, the k-th split (0-based) is along axis cycle[k % 6], where cycle = ['x','x','y','x','y','y']. '0' is left/lower half, '1' is right/upper half.
+
+Target "001101" has length 6, path bits [0,0,1,1,0,1]. Split axes: positions 0:x,1:x,2:y,3:x,4:y,5:y.
+
+To find leaf cells sharing a boundary segment, identify the deepest common ancestor (DCA) with each leaf, then find the sibling subtree leaves at the first differing level where the split is perpendicular to the path from DCA to target.
+
+Since it's a complete subdivision to mostly depth 9, but target at depth 6 is a leaf (no children shown), neighbors are leaves whose paths diverge at depth 6 or earlier along a perpendicular split.
+
+Standard quadtree neighbor finding: for each direction (left, right, bottom, top), walk up until finding a sibling across the boundary, then walk down the opposite child.
+
+But since binary tree with fixed axes, boundaries correspond to splits where adjacent cells are split by that cut.
+
+Given the tree is given, and target "001101" under 00 -> 001 -> 0011 -> 00110? Wait, let's trace the path.
+
+The tree root splits to "0" and "1".
+
+Under "0":
+
+- "00"
+
+  - "001"
+
+    - "0011"
+
+      - "00110"  (001 +1 +0 ? "0011" then "00110")
+
+"001101" is "00110" + "1", but in tree:
+
+Under "00" -> "001" -> "0011" -> "00110" -> ? The tree shows:
+
+│   │           ├── 00110
+
+│   │           │   ├── 001100
+
+│   │           │   └── 001101
+
+Yes! "001101" is under 00110 -> 001101, and it's a leaf (no further children shown).
+
+001101 length 6, yes.
+
+Now, this cell at depth 6 is a leaf.
+
+Its parent is "00110" (depth 5), split at level 5: axis cycle[5]='y', so horizontal split.
+
+Left child "001100" (0), right "001101" (1).
+
+So immediate horizontal neighbors: the leaves under sibling "001100".
+
+"001100" has children:
+
+├── 001100
+
+│   ├── 0011000
+
+│   └── 0011001
+
+So splits further, leaves are "0011000..." but actually deeper, but since full subtree, all deepest leaves under "001100".
+
+But the task is to list **every leaf** that shares a boundary segment, meaning any leaf whose cell shares a positive-length boundary with the target cell.
+
+Since target is leaf at depth 6, its cell is subdivided further in other branches, but no: leaves define the final cells.
+
+The tree shows the subdivision, leaves are the final undivided cells.
+
+So target leaf cell "001101" corresponds to the rectangle reached by that path.
+
+Neighbors are other leaf rectangles that share an edge segment (not just vertex).
+
+Since the tree is irregular depth, need to find all leaves whose cells adjoin it horizontally or vertically.
+
+Because axes are known, horizontal adjacency across y-splits, vertical across x-splits.
+
+To find all such, one way is to trace back from target, at each split level where it has a sibling branch that is further subdivided into leaves.
+
+Start from target path P = "001101"
+
+For horizontal neighbors (across y-split): find positions k where cycle[k]=='y', and the prefix up to k-1 same, but at k differs (sibling), then all leaves under that sibling subtree.
+
+Similarly for vertical (x-split).
+
+But only if the split at k creates the boundary, and since deeper subdivisions may align or not, but because it's axis-aligned, any leaf under the sibling at that level will share some segment if the subtrees cover the full sibling cell.
+
+Since all branches seem to subdivide to similar depths, but to be precise: leaves under sibling at divergence level share the full height of that split's boundary segment, subdivided.
+
+The problem asks for every such leaf.
+
+So let's list all adjacent subtrees.
+
+First, find the path: bits p0=0, p1=0, p2=1, p3=1, p4=0, p5=1
+
+Splits: level 0: p0=0, axis x (vertical split)
+
+1: p1=0, x vert
+
+2: p2=1, y horiz
+
+3: p3=1, x vert
+
+4: p4=0, y horiz
+
+5: p5=1, y horiz
+
+Now, to find neighbors:
+
+We trace for each possible adjacent direction.
+
+But since binary, equivalent to finding sibling divergences.
+
+**Horizontal neighbors** (across y-split, i.e., differ at some y-split position):
+
+Possible at levels k where cycle[k]=='y': k=2,4,5,...
+
+For each such k from 5 downto 0:
+
+Check if prefix p[0..k-1] same as some existing branch, but sibling at k: i.e. the path with flip at k, prefix[0..k-1] + (1-pk) + anything.
+
+But only if that sibling exists in tree, and collect its leaves.
+
+Since tree given, better to trace up from target, at each ancestor, look at sibling, collect all leaves under sibling if the split to ancestor is y-split (for horiz adj).
+
+Yes, standard way:
+
+From current = target leaf.
+
+While current has parent:
+
+  Let split_dir = axis of the split to current's parent. (the level of the bit differing from parent)
+
+  Let sibling = the other child of parent.
+
+  If sibling exists and split_dir == 'y': then all leaves under sibling are horizontal neighbors.
+
+  Elif split_dir == 'x': all vertical neighbors.
+
+  Then set current = parent.
+
+Also, need to handle if sibling not leaf, recurse to its leaves.
+
+But since irregular, but in this tree, we need to list all terminal leaves.
+
+But wait, no: even for deeper, since the boundary segment is shared with the entire sibling cell, but if sibling subdivided, each subleaf shares part of it.
+
+Yes, so collect all leaves in those sibling subtrees.
+
+Similarly for all such ancestors.
+
+Note: multiple levels may contribute if sibling exists at multiple.
+
+But importantly, only if the sibling subtree leaves actually border the target cell's extent.
+
+Since uniform bisection, yes, all leaves under sibling at that level share the boundary segment corresponding to the size at that level.
+
+Deeper splits don't affect the shared segment existence.
+
+So, let's trace the ancestors of "001101"
+
+Leaf: "001101"
+
+Parent at depth 5: "00110" , bit5=1, so sibling "001100" (flip bit5), split5=y → horizontal neighbors: all leaves under "001100"
+
+From tree:
+
+001100
+
+├── 0011000
+
+│   ├── 00110000 ? Wait, tree shows:
+
+Wait, looking back:
+
+Under 0011:
+
+│   │           └── 00111  no, earlier:
+
+Wait, in the 00 ->001 ->0011 ->00110
+
+│   │           │   ├── 001100
+
+│   │           │   │   ├── 0011000
+
+│   │           │   │   └── 0011001
+
+Yes,
+
+│   │           │   └── 001101   <--- target
+
+So sibling "001100" splits to "0011000" and "0011001"
+
+Now, does "0011000" have children? Tree shows:
+
+No further under 0011000 or 0011001? Wait, looking:
+
+In the paste, under 00110:
+
+│   │           │   ├── 001100
+
+│   │           │   │   ├── 0011000
+
+│   │           │   │   └── 0011001
+
+No indentation showing children for them, whereas others have deeper ├── ...
+
+Wait, actually scanning the text:
+
+After 0011001 no further for it, but wait:
+
+No, "0011000" and "0011001" appear to be leaves? No, wait:
+
+The tree shows:
+
+│   │           ├── 00110
+
+│   │           │   ├── 001100
+
+│   │           │   │   ├── 0011000
+
+│   │           │   │   └── 0011001
+
+│   │           │   └── 001101
+
+Yes, 0011000 and 0011001 have no children listed under them (no │   │   │   ├── ), so they are leaves at depth 7? "0011000" length 7, yes.
+
+"00110" len5, +0="0011000" len7? "00110"+"0"="001100", no:
+
+Labels are concatenated strings.
+
+The node labeled "00110" has children "001100" and "001101".
+
+"00110" + "0" = "001100", "00110"+"1"="001101".
+
+Then "001100" has children "0011000" and "0011001".
+
+Yes, "001100"+"0"="0011000", etc.
+
+Are "0011000" and "0011001" leaves? Looking at indentation:
+
+│   │           │   │   ├── 0011000
+
+│   │           │   │   └── 0011001
+
+No further sub-branches under them in the text, unlike others that have deeper ├── under them.
+
+For example, nearby "001101" also no children.
+
+But earlier branches have deeper.
+
+For 001100's children: no further, so leaves: "0011000", "0011001"
+
+Great.
+
+So horizontal neighbors from level 5 (y-split): "0011000", "0011001"
+
+Next, go to parent of "00110": which is "0011", bit4=0, so path to "00110" is "0011"+"0", sibling "0011"+"1" = "00111"
+
+Split at level4: cycle[4]='y', horizontal again.
+
+So sibling "00111" , collect all leaves under it.
+
+From tree:
+
+Under "0011":
+
+├── 00110  (as above)
+
+└── 00111
+
+    ├── 001110 ? No:
+
+│   │           └── 00111
+
+│   │               ├── 001110
+
+│   │               │   ├── 0011100
+
+│   │               │   └── 0011101
+
+│   │               └── 001111
+
+So "00111" children: "001110", "001111"
+
+Then "001110":
+
+├── 0011100
+
+└── 0011101
+
+No further? Tree:
+
+│   │               ├── 001110
+
+│   │               │   ├── 0011100
+
+│   │               │   └── 0011101
+
+│   │               └── 001111
+
+Yes, "0011100","0011101" leaves? No further listed.
+
+"001111" ? 
+
+│   │               └── 001111
+
+No children shown, so "001111" leaf at depth 6.
+
+"00111" len5, "001110"=00111+0 len6, no: labels are absolute paths.
+
+The label "00111" is depth 5? Let's count consistently.
+
+Root ""
+
+-0 (depth1)
+
+--00 (2)
+
+---001 (3)
+
+----0011 (4)
+
+-----00110 (5)
+
+------001100 (6)
+
+-------0011000 (7)
+
+-------0011001 (7)
+
+------001101 (6) target depth6 !
+
+Target "001101" depth6, but its sibling "001100" depth6 split to depth7 leaves.
+
+Inconsistent depth.
+
+"00110" depth5 split y to two depth6: "001100" and "001101"
+
+But "001101" is leaf at depth6, while "001100" further split to depth7 leaves "0011000","0011001"
+
+Yes.
+
+Now back, parent of "00110" is "0011" depth4.
+
+"0011" + "0" = "00110", "0011"+"1"="00111" depth5.
+
+Split level4 y.
+
+Sibling subtree "00111" (depth5), its leaves:
+
+"00111" splits to ? From tree:
+
+Under 0011:
+
+├── 00110
+
+└── 00111
+
+    ├── 001110
+
+    │   ├── 0011100
+
+    │   └── 0011101
+
+    └── 001111
+
+So "001110" depth6, children "0011100" d7, "0011101" d7, assume leaves.
+
+"001111" depth6, no children, leaf.
+
+So leaves under "00111": "0011100", "0011101", "001111"
+
+Horizontal neighbors also these.
+
+Do they share boundary with target?
+
+Yes, because from the level4 split, the sibling cell "00111" full covers the horizontal adjacent at that coarser level, and its subleaves cover it.
+
+Next parent of "0011" depth4: "001" depth3, bit3=1, so sibling of "0011" is "0010"
+
+Split level3: cycle[3]='x' → vertical neighbors.
+
+Sibling "0010"
+
+Does "0010" exist? Yes.
+
+Collect all leaves under "0010"
+
+This will be many.
+
+But first continue tracing.
+
+Next, parent of "001": "00" depth2, bit2=1, sibling "00"+"0"="000"
+
+Split level2: cycle[2]='y' → horizontal neighbors from "000" subtree.
+
+Yes.
+
+Then parent of "00": "0" depth1, bit1=0, sibling "0"+"1"="01"
+
+Split1: cycle[1]='x' vertical.
+
+Then root, bit0=0, sibling "1", split0 x vertical.
+
+For each such sibling subtree where split_dir perpendicular? No: for horizontal neighbors only when split_dir=='y', collect sibling leaves as horiz neigh.
+
+For vertical when 'x'.
+
+Yes.
+
+To list all unique leaf labels from all such relevant sibling subtrees.
+
+Note no duplicates since different prefixes.
+
+Now, need to collect all terminal leaves from those subtrees.
+
+This tree is deep, but since it's text, we can enumerate for the relevant branches.
+
+First, already have from level5 y: horiz: "0011000","0011001"
+
+Level4 y: horiz: "0011100","0011101","001111"
+
+Now, level3 x: vert neighbors: all leaves under sibling "0010"
+
+What are leaves under "0010"?
+
+From tree under 00 ->0010
+
+│   │       ├── 0010
+
+│   │       │   ├── 00100
+
+│   │       │   │   ├── 001000
+
+│   │       │   │   └── 001001
+
+│   │       │   └── 00101
+
+│   │       │       ├── 001010
+
+│   │       │       │   ├── 0010100
+
+... and it goes deep.
+
+This is a lot, almost the whole subtree.
+
+The problem expects all of them, as "every leaf".
+
+But look at the schema: "neighbors": array of strings, binary strings.
+
+And since many, but feasible, but tedious to list manually.
+
+Perhaps there's a pattern or better way.
+
+Notice the tree structure is highly regular: it looks like almost all branches subdivide until depth 9, but some stop earlier.
+
+Looking at the deepest are 9 bits.
+
+Target "001101" depth6 leaf.
+
+To find neighbors, but listing hundreds? No, subtrees have specific sizes.
+
+First, let's see size of "0010" subtree.
+
+But perhaps I need to parse the tree structure more carefully.
+
+Perhaps the tree is such that leaves are only the deepest ones, but no, leaves are nodes without children.
+
+To do this properly, I need to identify all terminal nodes (no ├── under them).
+
+But since it's a puzzle, perhaps the target "001101" has few neighbors because sibling subtrees are small.
+
+From above, at level5: 2 leaves
+
+Level4: 3 leaves
+
+Already 5 horiz.
+
+Then level3 x: "0010" subtree is large.
+
+Under "0010":
+
+├── 00100
+
+│   ├── 001000
+
+│   └── 001001
+
+"001000" and "001001" leaves? Looking:
+
+│   │       │   │   ├── 001000
+
+│   │       │   │   └── 001001
+
+No further, yes leaves depth6.
+
+Then sibling under 0010: 00101
+
+├── 001010
+
+│   ├── 0010100
+
+│   └── 0010101
+
+│   │       │       ├── 001010
+
+│   │       │       │   ├── 0010100
+
+│   │       │       │   └── 0010101
+
+Then under 0010101 ?
+
+│   │       │       │       ├── 00101010
+
+No, under 001010:
+
+├── 0010100  leaf? No further listed? 
+
+The tree shows deeper for some.
+
+After 0010101:
+
+│   │       │       │       ├── 00101010
+
+│   │       │       │       │   ├── 001010100
+
+│   │       │       │       │   └── 001010101
+
+│   │       │       │       └── 00101011
+
+So "001010" depth5? Wait, let's clarify depths.
+
+Path "0010" depth4 (0-0-1-0)
+
+Then children "00100" ( +0 d5), "00101"(+1 d5)
+
+Then under "00100" d5: "001000"(+0 d6), "001001"(+1 d6), leaves.
+
+Under "00101" d5: "001010"(+0 d6), "001011"(+1 d6)? No, tree:
+
+│   │       │   └── 00101
+
+│   │       │       ├── 001010
+
+│   │       │       └── 001011
+
+Yes, "001011"
+
+Earlier I missed.
+
+The tree:
+
+│   │       ├── 0010
+
+│   │       │   ├── 00100
+
+│   │       │   │   ├── 001000
+
+│   │       │   │   └── 001001
+
+│   │       │   └── 00101
+
+│   │       │       ├── 001010
+
+│   │       │       │   ├── 0010100
+
+│   │       │       │   └── 0010101
+
+│   │       │       │       ├── 00101010
+
+The indentation shows "0010101" has children "00101010" and "00101011"
+
+Yes.
+
+Then "001011"
+
+│   │       │       └── 001011
+
+│   │       │           ├── 0010110
+
+... yes, large.
+
+So "0010" subtree has many leaves, all the way to depth9 probably.
+
+This will be dozens of leaves.
+
+The response is to list them all as comma separated? But JSON array.
+
+But to solve, I need to enumerate all terminal leaves from all relevant sibling subtrees.
+
+This seems time consuming, but since it's a puzzle, perhaps only immediate siblings, but the problem says "every leaf that shares a boundary segment"
+
+In subdivided grid, a cell shares boundary with all leaves that cover the adjacent cell's boundary.
+
+Yes, so all of them.
+
+Perhaps the tree is designed so that some branches stop early.
+
+Perhaps notice the pattern: it looks like the tree is subdivided until a certain pattern, but perhaps it's a fractal or something, but no.
+
+Perhaps the target is "001101", and to find neighbors, but perhaps only the immediate ones if deeper don't share full segment? No, even small leaves on the other side share some segment.
+
+The problem says "shares a boundary segment", so any positive length shared edge.
+
+So all such leaves.
+
+To implement, I need to parse the tree and find all leaves under specific prefixes.
+
+Since it's text, I can mentally list for small subtrees.
+
+First, let's list all sibling subtrees for the target.
+
+Target path "001101"
+
+Ancestors (prefixes): 
+
+depth6: "001101"
+
+d5: "00110"
+
+d4: "0011"
+
+d3: "001"
+
+d2: "00"
+
+d1: "0"
+
+d0: ""
+
+For each level k=0 to5, the split at k is the bit k of target.
+
+The sibling at level k is the prefix[0..k-1] + (1-p_k) , and if that node exists, and if cycle[k] =='y' then horiz, else vert.
+
+And collect leaves from that sibling node's subtree.
+
+Yes.
+
+So let's list for each k:
+
+k=5: prefix0-4 "00110", p5=1, sibling_prefix "00110" flip5to0 = "001100"
+
+cycle[5 %6]= cycle5='y' → horiz
+
+Leaves under "001100": as above, "0011000", "0011001"  (depth7)
+
+k=4: prefix0-3 "0011", p4=0, sibling "0011" +1= "00111"
+
+cycle4='y' → horiz
+
+Leaves under "00111": "0011100", "0011101", "001111"   (0011100 d7,0011101 d7,001111 d6)
+
+From tree:
+
+00111
+
+├── 001110   d6
+
+│   ├── 0011100 d7 leaf
+
+│   └── 0011101 d7 leaf
+
+└── 001111 d6 leaf
+
+Yes.
+
+k=3: prefix0-2 "001", p3=1, sibling "001"+0="0010"
+
+cycle3='x' → vert
+
+Leaves under "0010": this is big, need to list all terminal ones.
+
+k=2: prefix0-1 "00", p2=1, sibling "00"+0="000"
+
+cycle2='y' → horiz
+
+"000" subtree huge.
+
+k=1: prefix0 "0", p1=0, sibling "0"+1="01"
+
+cycle1='x' → vert
+
+"01" huge.
+
+k=0: prefix "" , p0=0, sibling "1"
+
+cycle0='x' → vert
+
+"1" huge.
+
+This can't be, the list would be almost all leaves in the tree, hundreds probably.
+
+That can't be the intention, as the response would be massive.
+
+Perhaps I have a misconception.
+
+The subdivision tree defines the final cells as the leaves, so the unit square is partitioned into these leaf rectangles, no overlap, full cover.
+
+Two leaf cells share a boundary segment if their rectangles share an edge of positive length.
+
+Not all leaves under sibling at coarse level share with the target leaf.
+
+That's the key mistake!
+
+If the sibling cell at divergence level k is further subdivided, then only the subleaves that are adjacent across that specific cut share the boundary with the target side.
+
+The target at finer level only borders the part of the sibling cell that corresponds to the target's sub-position.
+
+No: the target leaf is at depth 6, its cell is 1/2^6 size in the varying directions.
+
+But the shared boundary with a coarser sibling is the full height/width at that level, but since the target cell is a small part of its ancestor's cell at level k, it only shares the portion corresponding to its position within the ancestor cell.
+
+But since the adjacent side is the full span of the ancestor cell at level k, the target cell spans only the sub-interval in the perpendicular direction.
+
+But anyway, the small target cell shares a small segment with the adjacent cell at level k, but since the sibling cell at level k may be subdivided, the small segment may be shared with one specific subleaf, or split among several if subdivided perpendicular to the boundary.
+
+To correctly find which leaves share the boundary segment, it's more involved.
+
+The boundary segment across the split at level k is the full size in the direction perpendicular to the split.
+
+For example, for a y-split (horizontal boundary), the shared edge is horizontal, length full width of the parent cell at that level.
+
+The target leaf, being deeper, its position is in a specific sub-lane in x-direction within that parent cell.
+
+Similarly, on the sibling side, the subleaves that cover the same x-sub-lane will share the segment with the target.
+
+To find exactly, we need to match the path after divergence in the directions perpendicular to the split.
+
+This is the standard way to find quadtree neighbors, but here binary with known axes.
+
+For each possible divergence level k where the split axis at k creates the boundary.
+
+For sibling across that split, then from level k+1 onward, the paths must match the target's path[k+1:] in the directions perpendicular to the split axis at k.
+
+No: the shared boundary is along the split direction? Let's think geometrically.
+
+Let's define.
+
+Each split bisects the current rectangle.
+
+x-split: vertical line in middle, left 0 right 1.
+
+y-split: horizontal line middle, lower 0 upper 1.
+
+Two cells share a vertical boundary if they have a common parent that was x-split, and one took 0 other 1, and their subpaths after that match exactly (same sequence of splits).
+
+Similarly for horizontal boundary: common parent y-split, differ on that bit, same subsequent path.
+
+Yes! That's the precise condition.
+
+Cells share a full side if they are siblings across the split.
+
+But since different depths, more generally: two leaves share a boundary segment iff their paths are equal up to some prefix m, differ at m+1 where axis[m]=='x' (for vert boundary) or 'y' horiz, and then from m+2 to end, their paths match exactly.
+
+No: to share a segment, not full side.
+
+If one is leaf earlier, then it shares with multiple on the other side.
+
+But precisely: the lowest common ancestor (LCA) split separates them (differ at first differing bit pos = depth(LCA), say d= length(LCA path), then the split at d is the separating split, axis[d].
+
+Then, to share boundary, their remaining paths (suffix after d) must "align" in the direction perpendicular to axis[d].
+
+That is, the splits after d that are perpendicular to axis[d] must have matching bits in those positions.
+
+The parallel splits subdivide the shared boundary length, but as long as matching in perp, they remain adjacent.
+
+The positions after d where axis[j] is perpendicular to axis[d], the bits must match between the two paths.
+
+And the length of shared segment depends on how deep they match in perp directions.
+
+But since we just need shares positive length, as long as they match all the perp splits up to their depths.
+
+But since different depths, pad the shorter with "no split".
+
+If one stops early, it means no further subdivision, so it covers all sub in that direction.
+
+For a shorter path, it matches any continuation in the perp directions.
+
+To find all leaves adjacent to target, for each possible separating level d=0 to len(target)-1, consider potential neighbors whose path agrees on 0..d-1, differs at d (sibling), and then for j=d+1 to min(len(neigh),len(target)), if axis[j] perp to axis[d], then bits must match target's bit j and neigh's bit j.
+
+And if len(neigh) < len(target), then for remaining j= len(neigh)+1 to len(target)-1, ok (covers all).
+
+If len(target) < len(neigh), then for remaining perp splits, the neigh must not subdivide in a way? No, since target covers full in its no-subdivide.
+
+It's symmetric.
+
+But to implement, since tree small, but manually hard.
+
+Since the tree is given as text, perhaps the puzzle is to find leaves that are "next to" in some sense.
+
+Perhaps notice that most leaves are at depth 9, and some earlier leaves cover larger areas.
+
+To find neighbors, perhaps start from target and find immediate adjacent cells, i.e. the sibling if leaf, or recurse.
+
+But to be systematic, since small number probably, perhaps the neighbors are only the immediate siblings because other divergences would require matching long suffixes.
+
+Yes, for coarse LCA, the suffix match in perp directions is unlikely unless the paths match in those positions.
+
+For example, for k=5, sibling prefix "001100", then since d=5, suffix after 5 is empty for both sides? For siblings at leaf level.
+
+For immediate sibling subtree.
+
+Since target depth 6, sibling "001100" depth6, but it splits further to depth7 leaves "0011000" and "0011001".
+
+The separating split d=5, axis[5]='y' horiz boundary.
+
+Now, suffix after 5: target has no more bits (depth6), sibling children have bit6.
+
+Since target has no further splits, it covers the full in both x and y sub.
+
+On sibling side, since axis[6]=cycle[6%6]=cycle0='x', which for horiz boundary (split y), the perp direction is x (vertical splits subdivide the height? Wait.
+
+Let's define properly.
+
+For a horizontal boundary (y-split at d), the boundary is horizontal line, length = width of parent cell.
+
+Subsequent splits: x-splits subdivide the width (parallel to boundary? No.
+
+The rectangle at LCA depth d parent.
+
+Split y: lower half 0, upper 1 say.
+
+The shared boundary is the horizontal midline, spanning the full x-range of the parent rect.
+
+Now, subsequent splits in lower (target side say) and upper (sibling side):
+
+A subsequent x-split subdivides horizontally the rect, i.e. left-right, so splits the width of the boundary line into left and right parts.
+
+To remain adjacent across the same segment part, the left/right choice (bit for x-split) must match between the two sides.
+
+A subsequent y-split subdivides vertically the height, but since the boundary is at the midline, y-split above or below doesn't affect the boundary location, it just makes thinner in height, but the boundary segment is still there for the full height subpart? No, y-split on one side subdivides its height, but the boundary length is unaffected by y-splits on either side, because y-splits are parallel to the boundary (horizontal boundary, y-split makes horizontal cuts).
+
+No:
+
+The shared boundary is fixed horizontal line segment across the x-span.
+
+When you x-split on either side, it cuts the rectangle vertically, so the boundary segment is split into left and right parts, and the left part on left side is adjacent to left part on right side only if both chose same left/right.
+
+No: for the sides.
+
+Assume target is right child (1), sibling left (0) of y-split.
+
+The boundary is between left rect and right rect.
+
+Now, if on left side (sibling), I do x-split, it splits the left rect into left-left and left-right, the boundary segment is split into left part and right part.
+
+Similarly on right side (target).
+
+The left-left subrect shares boundary with the corresponding left subrect on right side.
+
+So yes, for x-splits (perp to boundary), the bits must match to share the same segment part.
+
+For y-splits on left side, it splits the left rect into lower and upper, but since the boundary is the bottom of upper or top of lower? For y-split at LCA, left is lower say (0), right upper (1), boundary is top of lower, bottom of upper.
+
+If further y-split in lower (left sibling), it splits lower into even lower and mid, then the boundary (top of lower) is now only the top of the mid subrect, the even lower doesn't reach the boundary.
+
+No!
+
+The lower rect's top boundary is fixed, regardless of further horizontal splits inside it.
+
+Further y-splits (horizontal cuts) inside the lower rect subdivide its height, but the top edge remains the full width top edge of the whole lower rect, distributed among the top layer of subrects.
+
+The top row of subrects after y-subdivisions will share the full top boundary, subdivided in x if x-split.
+
+Further y-splits do not affect which subcells touch the boundary; all the topmost layer touch the boundary.
+
+No: if you do y-split in lower rect, say lower rect split horiz into lower-lower (0) and lower-upper (1), then the original top boundary of lower is now the top boundary only of the lower-upper subrect; the lower-lower subrect has its top internal to the lower rect, not reaching the original boundary.
+
+Yes! So further y-splits on the side DO affect which subcells touch the boundary.
+
+The subcells that touch the boundary are those that trace back to the side facing the boundary.
+
+For horizontal boundary, the adjacent cells are those whose path from LCA, in the direction towards the boundary.
+
+For the lower side (0 child of y-split), the subcells that reach the top edge are those that always take the '1' child in all subsequent y-splits.
+
+Similarly for upper side, always take '0' in subsequent y-splits to reach the bottom edge.
+
+Yes, that's the general rule for grid neighbors in adaptive subdivisions.
+
+To find neighbors across a particular separating split at d, axis[d]='y' for horiz.
+
+Then, for the sibling side (flip bit d), then the suffix path must match the target's suffix path in ALL x-split positions (perp, to match x-lane), and in y-split positions, must be the one towards the boundary: for the 0-side sibling, bit=1 for y-splits, for 1-side sibling bit=0 for y-splits.
+
+And the length can be longer.
+
+This is getting complicated, but for manual, since depths are small, and target depth 6 small, suffixes short.
+
+Let's apply for each possible d.
+
+Start with closest, largest possible shared segment.
+
+First, d=5, axis5='y', target bit5=1, so target is upper child, sibling lower child bit5=0 "001100"
+
+Suffix after d=5: target has no more bits (depth6).
+
+Sibling "001100" depth6, but has children, so for leaves under it.
+
+Since target no further bits, it covers full its cell, so full height and width of its depth6 cell.
+
+The shared boundary is the full horizontal edge between the two depth6 cells "001100" and "001101".
+
+Now, since "001101" is leaf, full.
+
+On sibling "001100", it is further subdivided by split6: axis6=cycle0='x', vertical split.
+
+So the two children "0011000" left, "0011001" right.
+
+Each shares half the boundary segment with the target cell, since x-split subdivides the width, and no further, and since target no split, both share with the full height target.
+
+Since perp split (x perp to y-boundary), and no matching needed since target no suffix bit6.
+
+Since target has no bit6, it covers both left and right, so both subleaves on sibling side share part of the boundary with target.
+
+Yes, so "0011000", "0011001" are neighbors.
+
+Perfect.
+
+Next, d=4, axis4='y', target bit4=0, wait target path "0 0 1 1 0 1" so bit0=0,1=0,2=1,3=1,4=0,5=1
+
+bit4=0, so target child 0 (lower), sibling bit4=1 "00111"
+
+Now, suffix after d=4: target's bits 5: bit5=1
+
+Sibling "00111" depth5.
+
+The shared boundary full width at level4.
+
+Target side: from level4 child0 "00110", further split at5 y to "001100"(0) and "001101"(1), but target is "001101" upper sub of lower? bit5=1 upper.
+
+For the lower side (target side bit4=0), to reach the upper edge (boundary), since bit4=0 lower, the towards-boundary is upper subcells, i.e. bit=1 at y-splits.
+
+Yes, at level5 y-split, target took bit5=1, which is upper, so yes it reaches.
+
+The sibling side bit4=1 upper child of level4 y-split, to reach the boundary (lower edge of upper), needs to take lower=0 at subsequent y-splits.
+
+Suffix length: target suffix bit5 (y-split):1
+
+Now, for sibling side, the leaves under "00111", their paths suffix bit5 (level5), bit6,...
+
+First, axis5='y'
+
+For matching:
+
+Since boundary horiz (y-split at4), perp splits are x-splits: must match bits at x positions in suffix.
+
+Parallel splits y: must be towards boundary.
+
+For target side (lower=0 at d=4): towards boundary (upper edge): take 1 at subsequent y-splits. Yes bit5=1 good.
+
+For sibling side (upper=1 at d=4): towards boundary (lower edge): take 0 at subsequent y-splits.
+
+Also, at x-split positions in suffix, bits must match target's.
+
+Suffix starts at level5: axis5=y parallel, so for sibling must take 0 (towards), target took 1 (towards).
+
+No perp yet.
+
+Then level6 axis6=x perp, so must match bit6 if present.
+
+But target depth6 no bit6, meaning target not subdivided at6, so covers both 0 and 1 at level6 x.
+
+Thus, on sibling side, can have any bit6.
+
+Now, look at leaves under "00111":
+
+"001111" depth6: suffix after4: bit5=1 ? "00111" is prefix0-4 "0011" + bit4=1, so path "00111", suffix bit4 wait no.
+
+Prefix to d=4 is "0011" ? d=4 split is bit4.
+
+The path up to LCA "0011" depth4, then target bit4=0 -> "00110"...
+
+Sibling bit4=1 -> "00111" depth5.
+
+"00111" is already depth5, suffix after4 is bit4 wait no: bits are 0 to4 for depth5? Depth = number of bits.
+
+Label length = depth.
+
+So "0011" len4 depth4.
+
+Child "00110" len5, "00111" len5.
+
+For leaves under sibling "00111" len5, their full path = "00111" + suffix bits from level5 on.
+
+For "001111" : "001111" len6, so suffix after d=4 (after bit4): the bit5 = last '1', so bit5=1
+
+But for sibling upper side, parallel y-split at5, needs bit5=0 to reach boundary.
+
+But here bit5=1, which is upper sub on upper side, so away from boundary.
+
+Thus "001111" does NOT reach the boundary, it's the upper part of the upper cell, doesn't touch the lower boundary.
+
+Yes!
+
+Now, the other leaves "0011100" len7 "0011100" bits: prefix "00111" bit5=0 (since "00111"+"0"="001110"), then bit6=0 "0011100"
+
+Similarly "0011101" bit5=0, bit6=1
+
+So for these, suffix after4: bit5=0, bit6=0 or1
+
+Yes, bit5=0 which is towards boundary for upper side. Perfect.
+
+Now, perp splits: level5 y parallel ok (towards).
+
+level6 x perp, target has no bit6 (covers both), so both 0 and1 ok.
+
+No further.
+
+So yes, "0011100" and "0011101" share boundary with target.
+
+But "001111" does not.
+
+Great! So only the ones towards the boundary.
+
+This filters a lot.
+
+Now, let's confirm geometrically: "00111" split at level5 axis5=y, since upper cell "00111" bit4=1 upper, split y: child0 lower "001110", child1 upper "001111"
+
+Yes, only "001110" reaches the bottom boundary, "001111" does not.
+
+And "001110" split x at6 to "0011100" and "0011101", both reach since x-split doesn't affect vertical reach.
+
+Yes.
+
+So for d=4, neighbors: "0011100","0011101"
+
+Note "0011000","0011001" from d=5 already listed, different.
+
+Now, next d=3, axis3='x' vertical boundary.
+
+Target bit3=1 right say, sibling bit3=0 "0010" left.
+
+Suffix after3: target's bits4=0,5=1
+
+axis4=y parallel? For vertical boundary (x-split d=3), perp splits are y-splits (subdivide the height of boundary).
+
+Parallel splits x-splits subdivide the width.
+
+For vertical boundary: full height span of parent at d=3.
+
+To reach the boundary:
+
+Target side right (bit3=1), towards left edge: take 0 at subsequent x-splits.
+
+Sibling left (0), towards right edge: take 1 at subsequent x-splits.
+
+For perp y-splits: bits must match.
+
+Suffix bits: level4=y perp, must match bit4 between neigh and target.
+
+Target bit4=0
+
+level5=y perp again, match bit5=1
+
+level6=x parallel, etc.
+
+For a leaf under "0010" to neighbor target across d=3:
+
+Its path[0:3]="0010" (bits0-2 same, bit3=0)
+
+Then its suffix bits4,... must:
+
+At parallel positions (x-splits after3): bit=1 (towards)
+
+At perp positions (y after3): match target's corresponding bit.
+
+And if shorter than target, then for remaining perp, since target has them, but shorter means covers all, so ok only if no further perp required? Since shorter leaf covers full in perp direction too.
+
+But target depth6, so suffix len2.
+
+If neigh depth <6, say depth5 "0010" but does it have leaf at5? No.
+
+Let's see leaves under "0010", their depths.
+
+But first, towards condition: subsequent x-splits: levels where cycle[j]=='x' for j>=4, must have bit j =1 for sibling left side.
+
+cycle: j%6: 0x,1x,2y,3x,4y,5y,...
+
+So j=4 y perp
+
+j=5 y perp
+
+j=6=0 x parallel → must bit6=1
+
+j=7=1 x parallel → bit7=1
+
+j=8=2 y perp match target but target no bit8
+
+j=9=3 x parallel bit9=1 etc.
+
+Since target depth6, no bits6+, so for neigh, if depth<=6, no parallel after, ok (covers full towards? Wait.
+
+For parallel direction (here x for vert boundary? Vertical boundary length is height, perp is y (vertical splits subdiv height).
+
+Parallel splits would be x-splits, which subdivide width, away or towards.
+
+Yes.
+
+If the neigh has no further parallel splits, it covers full width, including towards the boundary.
+
+Since "towards" means the subpart facing the boundary.
+
+If no split in parallel dir, yes covers including facing.
+
+The condition is: for all parallel splits it did make (up to its depth), the bit must be the towards one.
+
+And if it stops before some parallel split that target "did" (but target didn't split further), since target covers full, it's ok.
+
+Since target stopped at6, no further splits, covers full perp (y4=0,y5=1 fixed, but full x since no x after3).
+
+Now, for neigh under "0010":
+
+Must have at perp positions j=4 y: bit4 = target bit4=0
+
+j=5 y: bit5= target1
+
+And for any x positions j>=6 that it has, bitj=1 (towards)
+
+And if it has y j>=6, since target no, target covers full y? No target fixed y4=0 y5=1, but since no further y, but wait target depth6 means no split at6+, so in y direction at level6+ it covers full subintervals.
+
+But since perp is y, for j>=6 y positions, neigh bit must match "target's" which is "any" since covers all.
+
+So neigh can have any at later perp.
+
+Summary for d=3 vert neigh from "0010" + suffix where bit4=0, bit5=1, and for all its x-split bits j>=6 bitj=1, and length >=5 (since bit5).
+
+Prefix "0010" len4, +bit4=0 -> "00100" len5, then bit5=1 "001001" len6
+
+So must go through "00100" then "001001" ?
+
+Yes.
+
+Is there leaves that pass bit4=0 bit5=1 under "0010"?
+
+Under "0010":
+
+Children: "00100" (bit4=0), "00101" (bit4=1)
+
+Yes "00100" bit4=0 good.
+
+Then under "00100": "001000" (bit5=0), "001001" (bit5=1) perfect.
+
+Now, "001001" len6, is it a leaf? Yes, from tree:
+
+│   │       │   │   └── 001001
+
+No children, yes leaf at depth6.
+
+Does it satisfy? Suffix bit4=0 match, bit5=1 match.
+
+No further bits, so no parallel bits to check, good.
+
+So "001001" is a vertical neighbor across d=3.
+
+Are there deeper leaves under "001001"? No, it's leaf.
+
+Great.
+
+Now, are there deeper? No children.
+
+Is that the only one? Yes, because to have bit4=0 bit5=1 leads exactly to "001001", and it's leaf.
+
+Perfect.
+
+So added "001001"
+
+Now, next d=2, axis2='y' horiz boundary.
+
+Target bit2=1 upper?, sibling bit2=0 "000"
+
+Suffix after2: target bits3=1,4=0,5=1
+
+axis3=x perp (for horiz bound, perp x)
+
+axis4=y parallel
+
+axis5=y parallel
+
+For sibling "000" side, since target bit2=1 upper side, sibling 0 lower side.
+
+For lower side: towards boundary upper edge → bit=1 at parallel y-splits after2.
+
+Target side upper: towards lower edge → bit=0 at y-splits after.
+
+Target bits after2: bit3 x perp=1 must match
+
+bit4 y parallel=0 , and since upper side, towards=0 yes good.
+
+bit5 y parallel=1 , but for upper side towards lower: bit=0 at y5? Target bit5=1, but towards should be 0? Contradiction?
+
+Target bit4=0 good for towards.
+
+bit5=1, but for upper side (bit2=1), subsequent y-split level5, towards boundary (lower edge of upper): take child 0 lower.
+
+But target took 1 upper, so target itself does not reach the boundary at this coarse level!!
+
+Similar to before.
+
+For d=2, since on target side, the path after d=2 has at parallel y-split5 bit5=1 !=0 (towards), so target does not reach this coarse boundary.
+
+Thus, no neighbors across d=2.
+
+Yes! Filters it out.
+
+Perfect.
+
+Now, d=1, axis1='x' vert boundary.
+
+Target bit1=0 left?, sibling "01" bit1=1
+
+Suffix after1: bits2=1,3=1,4=0,5=1
+
+axis2=y perp must match1
+
+3 x parallel
+
+4 y perp match0
+
+5 y perp match1
+
+For target side bit1=0 left side, towards right boundary: take bit=1 at subsequent parallel x-splits.
+
+Target bit3 (x level3)=1 good.
+
+No other x before end.
+
+For sibling right side bit1=1, towards left boundary: bit=0 at parallel x after1.
+
+Now, perp: bit2 y=1 match
+
+bit4 y=0
+
+bit5 y=1
+
+So neigh path prefix "01" len2, then bit2=1 → "011" ? "0"+"1"="01", +bit2=1 →"011"
+
+Then bit3 ? But parallel x3, for sibling right side must bit3=0 (towards)
+
+Then bit4=0 "0110" wait.
+
+bit3=0 for sibling.
+
+But target bit3=1, but bit3 is parallel, not perp, so no need to match, only towards.
+
+Yes.
+
+So for neigh: bit2=1 (perp match), bit3=0 (parallel towards), bit4=0 (perp), bit5=1 (perp)
+
+So path "01" +1 0 0 1 = "011001"
+
+Now, does such leaf exist under "01"?
+
+First, does the path exist to "011001" and is leaf or has subleaves satisfying further.
+
+But since target depth6, and if "011001" exists as leaf, yes.
+
+Let's check if "011001" is in tree.
+
+Under "01":
+
+├── 010
+
+└── 011
+
+Yes "011"
+
+Then under 011:
+
+├── 0110  (bit3=0 good)
+
+│   ├── 01100 bit4=0
+
+│   └── 01101 bit4=1
+
+Yes "01100" bit4=0
+
+Then under "01100":
+
+│           │   ├── 01100
+
+No, under 0110:
+
+├── 01100
+
+└── 01101
+
+Then under 01100 ? Does it have children?
+
+Tree:
+
+│       └── 011
+
+│           ├── 0110
+
+│           │   ├── 01100
+
+│           │   └── 01101
+
+│           │       ├── 011010  wait, under 01101 ?
+
+│           │       ├── 011010
+
+No, indentation:
+
+From the text:
+
+│           ├── 0110
+
+│           │   ├── 01100
+
+│           │   └── 01101
+
+│           │       ├── 011010
+
+The │           │       ├── 011010 under 01101.
+
+So "01100" has no children listed, so "01100" is leaf at depth5? "01100" len5.
+
+But we need bit5=1, "01100" +1 = "011001" len6.
+
+But "01100" is leaf, no children, so no "011001".
+
+Thus, no path with bit5=1 under "01100".
+
+Therefore, no leaf with bit2=1 bit3=0 bit4=0 bit5=1.
+
+Thus no neighbors across d=1.
+
+Great.
+
+Finally, d=0, axis0='x' vert.
+
+Target bit0=0 left, sibling "1" right.
+
+Suffix after0: bits1-5: 0,1,1,0,1
+
+Now, perp y positions: 2,4,5 must match 1,0,1
+
+Parallel x:1,3 must towards: since target left bit0=0, towards right: bit=1 at x-splits after0.
+
+Target bit1(x)=0 !=1 ! Oh, target bit1=0 not towards.
+
+Thus target does not reach the boundary across d=0.
+
+No neighbors there.
+
+Perfect.
+
+Now, earlier d=3 we have one.
+
+Is there d=6? No, leaf.
+
+We have from d=5: "0011000","0011001"
+
+d=4: "0011100","0011101"
+
+d=3: "001001"
+
+Is that all?
+
+For d=3, only "001001", yes.
+
+Are there any others? For deeper, but since leaf no.
+
+Also, perhaps self doesn't count.
+
+Do any overlap? No.
+
+So the neighbors are: 0011000,0011001,0011100,0011101,001001
+
+Is that all?
+
+For d=5 and d=4 horiz, d=3 vert.
+
+Yes.
+
+Verify if there are more, like across other directions, but I think this covers all possible LCAs.
+
+Yes, every pair has a unique LCA depth where they first differ.
+
+So all possible neighbors found this way.
+
+List as strings: "001001","0011000","0011001","0011100","0011101"
+
+Probably sort or as is.
+
+The problem: comma-separated list but in JSON array.
+
+No quotes needed but strings.
+
+Schema allows ^(?:[01]+)?$ so binary strings, empty ok but not.
+
+I think this is it.
+
+Confirm if "001001" indeed shares.
+
+Yes, "001001" path bits 0:0,1:0,2:1,3:0,4:0,5:1
+
+Target 0:0,1:0,2:1,3:1,4:0,5:1
+
+Differ at 3, prefix "001", axis3 x vert boundary.
+
+Suffix after3: both bit4=0 y perp match, bit5=1 y perp match.
+
+And both depth6 leaves.
+
+For towards: target bit3=1 right side, subsequent x-splits: next x is level6 but none.
+
+No parallel splits after, ok.
+
+Sibling left bit3=0, no further parallel, ok.
+
+Perfect.
+
+Similarly others.
+
+For d=4, target bit4=0 lower, sibling1 upper.
+
+Suffix bit5: target=1 upper good for lower side.
+
+Sibling for "001110x": bit5=0 lower good for upper side.
+
+No further perp (x at6), and since leaves at7, but target no bit6, ok.
+
+Yes.
+
+So all good.
+
+The list: 001001,0011000,0011001,0011100,0011101
+
+Probably in order, but array ok.
+
+</thinking>
+{
+  "neighbors": ["001001","0011000","0011001","0011100","0011101"]
+}
