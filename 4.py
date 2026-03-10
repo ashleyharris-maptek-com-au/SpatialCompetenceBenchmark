@@ -3,6 +3,7 @@ import math, os
 tags = ["3D", "Projection", "Packing"]
 
 title = "Tetrahedron Shadow Coverage"
+earlyFail = True
 
 prompt = """
 Here is the points and faces of a regular tetrahedron with all sides equal 1, resting on the Z=0 plane and with an edge along the X=0 plane:

@@ -32,7 +32,7 @@ def compareVolumeAgainstOpenScad(index: int, subPass: int, result, testGlobals: 
   if "earlyFailTest" in testGlobals:
     try:
       reason = testGlobals["earlyFailTest"](result, subPass)
-    except e:
+    except Exception as e:
       reason = "Exception " + str(
         e
       ) + " while judging earlyFail criteria. Typically this occurs with a very malformed response."

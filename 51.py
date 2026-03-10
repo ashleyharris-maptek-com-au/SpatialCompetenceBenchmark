@@ -23,7 +23,7 @@ FIGURES_DIR = VGB_ROOT / "data" / "figures" / "topology_enumeration"
 GENERATOR_SCRIPT = VGB_ROOT / "scripts" / "generate_topology_enumeration_figures.py"
 
 tags = ["2D", "Fundamental Geometry"]
-
+earlyFail=True
 title = "VGB1 — Topology Enumeration"
 structure = {
   "type": "object",

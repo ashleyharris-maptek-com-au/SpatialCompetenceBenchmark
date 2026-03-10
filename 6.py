@@ -89,6 +89,8 @@ def resultToNiceReport(result, subPass, aiEngineName):
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
+  if not isinstance(answer, dict):
+    return 0, "Answer must be a dictionary"
   sizes = [6, 8, 12, 16, 24, 20]
   counts = [50, 100, 200, 400, 1000, 500]
   if subPass < 0 or subPass >= len(sizes):

@@ -18,6 +18,7 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 tags = ["2D", "Constructive"]
+earlyFail=True
 
 title = "VGB5 — Two Segments"
 structure = {

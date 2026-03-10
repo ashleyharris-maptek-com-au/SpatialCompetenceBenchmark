@@ -108,6 +108,8 @@ def resultToImage(result, subPass, aiEngineName: str, fromAbove: bool = False):
 
 
 def gradeAnswer(result: dict, subPass, aiEngineName: str):
+  if not isinstance(result, dict):
+    return 0, "Result was not a valid dict."
   buildingWidth = 2  # Default width for subpass 0
   if subPass == 1:
     buildingWidth = 4

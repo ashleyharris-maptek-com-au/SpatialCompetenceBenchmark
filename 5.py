@@ -50,6 +50,8 @@ def prepareSubpassPrompt(index):
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
+  if not isinstance(answer, dict):
+    return 0, "Answer must be a dictionary"
   answer = answer["maze"].strip()
   if answer.count("A") != 1 or answer.count("B") != 1:
     return 0, "Maze must have exactly one A and one B"

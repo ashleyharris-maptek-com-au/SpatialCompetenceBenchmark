@@ -243,6 +243,9 @@ def prepareSubpassPrompt(index):
 
 
 def gradeAnswer(answer: dict, subPass: int, aiEngineName: str):
+  if not isinstance(answer, dict):
+    return 0, "Invalid answer format"
+
   if "steps" not in answer or len(answer["steps"]) == 0:
     return 0, "No steps provided"
 

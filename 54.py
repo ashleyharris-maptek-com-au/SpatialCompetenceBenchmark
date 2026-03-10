@@ -18,6 +18,7 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 tags = ["3D", "Voxels"]
+earlyFail=True
 
 title = "VGB4 — Half Subdivision Neighbours"
 structure = {

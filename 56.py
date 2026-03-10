@@ -18,6 +18,7 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 tags = ["2D", "Voxels", "Constructive"]
+earlyFail=True
 
 title = "VGB7 — Shikaku Rectangles"
 structure = {

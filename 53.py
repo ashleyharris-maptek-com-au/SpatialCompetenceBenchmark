@@ -18,6 +18,7 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 tags = ["2D", "Partitioning"]
+earlyFail=True
 
 title = "VGB3 — Topology Edge Tasks: Classify Behaviour"
 structure = {

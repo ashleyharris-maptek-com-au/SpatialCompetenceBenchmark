@@ -100,6 +100,7 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 tags = ["2D", "Solved Algorithm"]
+earlyFail=True
 
 title = "VGB6 — Delaunay Triangulation"
 structure = {

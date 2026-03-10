@@ -6,6 +6,8 @@ tags = ["3D", "Projection", "ASCII Art"]
 
 title = "Painting a 3D scene in ASCII, with lighting."
 
+earlyFail = True
+
 subpassParamSummary = ["16x16", "32x32", "64x64", "128x128", "256x256"]
 
 promptChangeSummary = "Higher and higher resolution ASCII art."
@@ -80,9 +82,13 @@ def generateReferenceAscii(gridSize: int, aiEngineName: str):
   viz_path = result_path("10_" + aiEngineName + "_Visualization.png", aiEngineName)
   if not os.path.exists(viz_path):
     generateReferencePicture(aiEngineName)
-
-  # Load the PNG file
-  img = Image.open(viz_path)
+  try:
+    # Load the PNG file
+    img = Image.open(viz_path)
+  except Exception as e:
+    print(f"Error loading image: {e}")
+    os.remove(viz_path)
+    return " " * (gridSize * (gridSize + 1))
   img_array = np.array(img.convert("RGB"))
 
   # Find bounding box by removing black edges

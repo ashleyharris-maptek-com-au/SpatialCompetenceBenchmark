@@ -19,6 +19,7 @@ _DATA = None
 PARSER = PythonLiteralParser()
 
 tags = ["2D", "Fundamental Geometry"]
+earlyFail=True
 
 title = "VGB2 — Topology Edge Tasks: Enumerate Edges"
 structure = {
